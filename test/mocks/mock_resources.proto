@@ -11,7 +11,7 @@ import "github.com/solo-io/solo-kit/api/v1/status.proto";
 /*
 @solo-kit:resource.short_name=mk
 @solo-kit:resource.plural_name=mocks
-@solo-kit:resource.resource_groups=testing.solo.io,festing.solo.io
+@solo-kit:resource.resource_groups=testing.solo.io
 */
 message MockResource {
     string data = 1;
@@ -22,7 +22,7 @@ message MockResource {
 /*
 @solo-kit:resource.short_name=fk
 @solo-kit:resource.plural_name=fakes
-@solo-kit:resource.resource_groups=testing.solo.io,blesting.solo.io
+@solo-kit:resource.resource_groups=testing.solo.io
 */
 message FakeResource {
     uint32 count = 1;
