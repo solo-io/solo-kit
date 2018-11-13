@@ -11,8 +11,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/mocks"
-	"github.com/solo-io/solo-kit/test/tests/generic"
 	"github.com/solo-io/solo-kit/test/setup"
+	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )

@@ -30,7 +30,7 @@ func NewFakeResourceClient(rcFactory factory.ResourceClientFactory) (FakeResourc
 func NewFakeResourceClientWithToken(rcFactory factory.ResourceClientFactory, token string) (FakeResourceClient, error) {
 	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
 		ResourceType: &FakeResource{},
-		Token: token,
+		Token:        token,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating base FakeResource resource client")
@@ -108,4 +108,3 @@ func convertToFakeResource(resources resources.ResourceList) FakeResourceList {
 	}
 	return fakeResourceList
 }
-

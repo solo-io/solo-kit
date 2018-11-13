@@ -13,8 +13,3 @@ func TestTestingsoloio(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Testingsoloio Suite")
 }
-
-
-
-
-
