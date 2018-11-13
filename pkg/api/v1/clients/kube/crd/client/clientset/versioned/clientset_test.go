@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/mocks"
-	"github.com/solo-io/solo-projects/test/services"
+	"github.com/solo-io/solo-kit/test/setup"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -29,14 +29,14 @@ var _ = Describe("Clientset", func() {
 	)
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
-		err := services.SetupKubeForTest(namespace)
+		err := setup.SetupKubeForTest(namespace)
 		Expect(err).NotTo(HaveOccurred())
 		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		services.TeardownKube(namespace)
+		setup.TeardownKube(namespace)
 	})
 	It("registers, creates, deletes resource implementations", func() {
 		apiextsClient, err := apiexts.NewForConfig(cfg)
