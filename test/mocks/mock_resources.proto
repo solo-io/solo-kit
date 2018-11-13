@@ -1,6 +1,6 @@
 syntax = "proto3";
-package mocks.api.v1;
-option go_package = "github.com/solo-io/solo-kit/test/mocks";
+package testing.solo.io;
+option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
@@ -26,6 +26,5 @@ message MockResource {
 */
 message FakeResource {
     uint32 count = 1;
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
 }
