@@ -25,7 +25,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-projects/test/services"
+	"github.com/solo-io/solo-kit/test/setup"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -50,9 +50,9 @@ var _ = Describe("{{ upper_camel .Project.Version }}Emitter", func() {
 	BeforeEach(func() {
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
-		err := services.SetupKubeForTest(namespace1)
+		err := setup.SetupKubeForTest(namespace1)
 		Expect(err).NotTo(HaveOccurred())
-		err = services.SetupKubeForTest(namespace2)
+		err = setup.SetupKubeForTest(namespace2)
 		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		Expect(err).NotTo(HaveOccurred())
@@ -88,8 +88,8 @@ var _ = Describe("{{ upper_camel .Project.Version }}Emitter", func() {
 		emitter = New{{ .GoName }}Emitter({{ $clients }})
 	})
 	AfterEach(func() {
-		services.TeardownKube(namespace1)
-		services.TeardownKube(namespace2)
+		setup.TeardownKube(namespace1)
+		setup.TeardownKube(namespace2)
 	})
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
