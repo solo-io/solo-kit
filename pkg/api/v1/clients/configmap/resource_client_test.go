@@ -11,8 +11,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/mocks"
+	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
-	"github.com/solo-io/solo-projects/test/services"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -30,7 +30,7 @@ var _ = Describe("Base", func() {
 	)
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
-		err := services.SetupKubeForTest(namespace)
+		err := setup.SetupKubeForTest(namespace)
 		Expect(err).NotTo(HaveOccurred())
 		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
@@ -40,7 +40,7 @@ var _ = Describe("Base", func() {
 		client, err = NewResourceClient(kube, &mocks.MockResource{})
 	})
 	AfterEach(func() {
-		services.TeardownKube(namespace)
+		setup.TeardownKube(namespace)
 	})
 	It("CRUDs resources", func() {
 		generic.TestCrudClient(namespace, client, time.Minute)

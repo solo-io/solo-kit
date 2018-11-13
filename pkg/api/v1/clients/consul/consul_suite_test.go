@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
-	"github.com/solo-io/solo-projects/test/services"
+	"github.com/solo-io/solo-kit/test/setup"
 )
 
 func TestConsul(t *testing.T) {
@@ -21,13 +21,13 @@ func TestConsul(t *testing.T) {
 }
 
 var (
-	consulFactory  *services.ConsulFactory
-	consulInstance *services.ConsulInstance
+	consulFactory  *setup.ConsulFactory
+	consulInstance *setup.ConsulInstance
 	err            error
 )
 
 var _ = BeforeSuite(func() {
-	consulFactory, err = services.NewConsulFactory()
+	consulFactory, err = setup.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
 	consulInstance, err = consulFactory.NewConsulInstance()
 	Expect(err).NotTo(HaveOccurred())

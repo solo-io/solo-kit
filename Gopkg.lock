@@ -341,17 +341,6 @@
   version = "v2.3.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:6bc9f1251db7b9e95316813d9564d158a886b796f5073e767151b2c1178c7109"
-  name = "github.com/keybase/go-ps"
-  packages = [
-    ".",
-    "darwincgo",
-  ]
-  pruneopts = "UT"
-  revision = "668c8856d9992f97248b3177d45743d2cc1068db"
-
-[[projects]]
   digest = "1:dfe5159383dfcd370555c35374ac99022906f987b55cc65a830fb9ced970b4b1"
   name = "github.com/lyft/protoc-gen-validate"
   packages = ["validate"]
@@ -390,14 +379,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
-
-[[projects]]
-  branch = "master"
-  digest = "1:544635141f5fb084637823f438f3563be046a9730c256d2e7760dbb741cd88b5"
-  name = "github.com/mitchellh/hashstructure"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2bca23e0e452137f789efbc8610126fd8b94f73b"
 
 [[projects]]
   branch = "master"
@@ -579,14 +560,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "421003c15226e9ad2c16066c5c898f94a4688fae"
-
-[[projects]]
-  digest = "1:c8e65bed0c93c324172ed188085673e4f2fef8704f579af5fc41c3997de90b17"
-  name = "github.com/solo-io/solo-projects"
-  packages = ["test/services"]
-  pruneopts = "UT"
-  revision = "71826f43149310cefcd8255c487b0c4908edb523"
-  version = "v1"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -1013,19 +986,16 @@
     "github.com/hashicorp/vault/api",
     "github.com/iancoleman/strcase",
     "github.com/k0kubun/pp",
-    "github.com/mitchellh/hashstructure",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
     "github.com/pseudomuto/protokit",
     "github.com/radovskyb/watcher",
     "github.com/solo-io/kubecontroller",
-    "github.com/solo-io/solo-projects/test/services",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
-    "go.opencensus.io/trace",
     "go.opencensus.io/zpages",
     "go.uber.org/zap",
     "golang.org/x/net/context",

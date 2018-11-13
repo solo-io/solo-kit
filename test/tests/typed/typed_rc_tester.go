@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
-	"github.com/solo-io/solo-projects/test/services"
+	"github.com/solo-io/solo-kit/test/setup"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -51,7 +51,7 @@ func (rct *KubeRcTester) Skip() bool {
 }
 
 func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
-	err := services.SetupKubeForTest(namespace)
+	err := setup.SetupKubeForTest(namespace)
 	Expect(err).NotTo(HaveOccurred())
 	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
@@ -63,7 +63,7 @@ func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
 }
 
 func (rct *KubeRcTester) Teardown(namespace string) {
-	services.TeardownKube(namespace)
+	setup.TeardownKube(namespace)
 }
 
 /*
@@ -72,8 +72,8 @@ func (rct *KubeRcTester) Teardown(namespace string) {
  *
  */
 type ConsulRcTester struct {
-	consulInstance *services.ConsulInstance
-	consulFactory  *services.ConsulFactory
+	consulInstance *setup.ConsulInstance
+	consulFactory  *setup.ConsulFactory
 }
 
 func (rct *ConsulRcTester) Description() string {
@@ -90,7 +90,7 @@ func (rct *ConsulRcTester) Skip() bool {
 
 func (rct *ConsulRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	var err error
-	rct.consulFactory, err = services.NewConsulFactory()
+	rct.consulFactory, err = setup.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
 	rct.consulInstance, err = rct.consulFactory.NewConsulInstance()
 	Expect(err).NotTo(HaveOccurred())
@@ -184,7 +184,7 @@ func (rct *KubeConfigMapRcTester) Skip() bool {
 }
 
 func (rct *KubeConfigMapRcTester) Setup(namespace string) factory.ResourceClientFactory {
-	err := services.SetupKubeForTest(namespace)
+	err := setup.SetupKubeForTest(namespace)
 	Expect(err).NotTo(HaveOccurred())
 	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
@@ -197,7 +197,7 @@ func (rct *KubeConfigMapRcTester) Setup(namespace string) factory.ResourceClient
 }
 
 func (rct *KubeConfigMapRcTester) Teardown(namespace string) {
-	services.TeardownKube(namespace)
+	setup.TeardownKube(namespace)
 }
 
 /*
@@ -216,7 +216,7 @@ func (rct *KubeSecretRcTester) Skip() bool {
 }
 
 func (rct *KubeSecretRcTester) Setup(namespace string) factory.ResourceClientFactory {
-	err := services.SetupKubeForTest(namespace)
+	err := setup.SetupKubeForTest(namespace)
 	Expect(err).NotTo(HaveOccurred())
 	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
@@ -229,7 +229,7 @@ func (rct *KubeSecretRcTester) Setup(namespace string) factory.ResourceClientFac
 }
 
 func (rct *KubeSecretRcTester) Teardown(namespace string) {
-	services.TeardownKube(namespace)
+	setup.TeardownKube(namespace)
 }
 
 /*
@@ -238,8 +238,8 @@ func (rct *KubeSecretRcTester) Teardown(namespace string) {
  *
  */
 type VaultRcTester struct {
-	vaultInstance *services.VaultInstance
-	vaultFactory  *services.VaultFactory
+	vaultInstance *setup.VaultInstance
+	vaultFactory  *setup.VaultFactory
 }
 
 func (rct *VaultRcTester) Description() string {
@@ -256,7 +256,7 @@ func (rct *VaultRcTester) Skip() bool {
 
 func (rct *VaultRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	var err error
-	rct.vaultFactory, err = services.NewVaultFactory()
+	rct.vaultFactory, err = setup.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
 	rct.vaultInstance, err = rct.vaultFactory.NewVaultInstance()
 	Expect(err).NotTo(HaveOccurred())

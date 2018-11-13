@@ -11,8 +11,10 @@ import types "github.com/gogo/protobuf/types"
 
 import bytes "bytes"
 
-import context "golang.org/x/net/context"
-import grpc "google.golang.org/grpc"
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -983,8 +985,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for ApiServer service
-
+// ApiServerClient is the client API for ApiServer service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ApiServerClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Read(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (*ReadResponse, error)
@@ -1079,8 +1082,7 @@ func (x *apiServerWatchClient) Recv() (*ListResponse, error) {
 	return m, nil
 }
 
-// Server API for ApiServer service
-
+// ApiServerServer is the server API for ApiServer service.
 type ApiServerServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Read(context.Context, *ReadRequest) (*ReadResponse, error)
