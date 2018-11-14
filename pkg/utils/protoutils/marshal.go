@@ -94,6 +94,22 @@ func MapStringStringToMapStringInterface(stringMap map[string]string) (map[strin
 	return interfaceMap, nil
 }
 
+// ilackarms: help come up with a better name for this please
+// values in stringMap are yaml encoded or error
+// used by configmap resource client
+func MapStringByteArrayToMapStringInterface(inputMap map[string][]byte) (map[string]interface{}, error) {
+	interfaceMap := make(map[string]interface{})
+	for k, bytesVal := range inputMap {
+		var interfaceVal interface{}
+		if err := yaml.Unmarshal(bytesVal, &interfaceVal); err != nil {
+			return nil, errors.Errorf("%v cannot be parsed as yaml")
+		} else {
+			interfaceMap[k] = interfaceVal
+		}
+	}
+	return interfaceMap, nil
+}
+
 // reverse of previous
 func MapStringInterfaceToMapStringString(interfaceMap map[string]interface{}) (map[string]string, error) {
 	stringMap := make(map[string]string)
@@ -105,4 +121,17 @@ func MapStringInterfaceToMapStringString(interfaceMap map[string]interface{}) (m
 		stringMap[k] = string(yml)
 	}
 	return stringMap, nil
+}
+
+// reverse of previous
+func MapStringInterfaceToMapStringByteArray(interfaceMap map[string]interface{}) (map[string][]byte, error) {
+	stringByteMap := make(map[string][]byte)
+	for k, interfaceVal := range interfaceMap {
+		yml, err := yaml.Marshal(interfaceVal)
+		if err != nil {
+			return nil, errors.Wrapf(err, "map values must be serializable to json")
+		}
+		stringByteMap[k] = yml
+	}
+	return stringByteMap, nil
 }
