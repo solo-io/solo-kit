@@ -94,22 +94,6 @@ func MapStringStringToMapStringInterface(stringMap map[string]string) (map[strin
 	return interfaceMap, nil
 }
 
-// ilackarms: help come up with a better name for this please
-// values in stringMap are yaml encoded or error
-// used by configmap resource client
-func MapStringByteArrayToMapStringInterface(inputMap map[string][]byte) (map[string]interface{}, error) {
-	interfaceMap := make(map[string]interface{})
-	for k, bytesVal := range inputMap {
-		var interfaceVal interface{}
-		if err := yaml.Unmarshal(bytesVal, &interfaceVal); err != nil {
-			return nil, errors.Errorf("%v cannot be parsed as yaml")
-		} else {
-			interfaceMap[k] = interfaceVal
-		}
-	}
-	return interfaceMap, nil
-}
-
 // reverse of previous
 func MapStringInterfaceToMapStringString(interfaceMap map[string]interface{}) (map[string]string, error) {
 	stringMap := make(map[string]string)
@@ -121,6 +105,22 @@ func MapStringInterfaceToMapStringString(interfaceMap map[string]interface{}) (m
 		stringMap[k] = string(yml)
 	}
 	return stringMap, nil
+}
+
+// ilackarms: help come up with a better name for this please
+// values in stringMap are yaml encoded or error
+// used by secret resource client
+func MapStringByteArrayToMapStringInterface(inputMap map[string][]byte) (map[string]interface{}, error) {
+	interfaceMap := make(map[string]interface{})
+	for k, bytesVal := range inputMap {
+		var interfaceVal interface{}
+		if err := yaml.Unmarshal(bytesVal, &interfaceVal); err != nil {
+			return nil, errors.Errorf("%v cannot be parsed as yaml")
+		} else {
+			interfaceMap[k] = interfaceVal
+		}
+	}
+	return interfaceMap, nil
 }
 
 // reverse of previous
