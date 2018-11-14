@@ -1,11 +1,10 @@
 # solo-kit
 Tools for Building Declarative API, stateless Projects
 
-# Dev cycle usage notes
-## basic init
+## init
 - pull repo
 - gather dependencies: `dep ensure -v`
-## solo-kit-specific
+## usage
 - whenever you change or add an api
   - apis are represented in protobuf files with solo-kit-specific annotations
   - generated protobuf files have the `.pb.go` suffix
