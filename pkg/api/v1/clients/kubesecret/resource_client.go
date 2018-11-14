@@ -30,7 +30,7 @@ func (rc *ResourceClient) fromKubeSecret(secret *v1.Secret) (resources.Resource,
 		return nil, nil
 	}
 	// convert mapstruct to our object
-	resourceMap, err := protoutils.MapStringByteArrayToMapStringInterface(secret.Data)
+	resourceMap, err := protoutils.MapStringStringToMapStringInterface(toStringStringMap(secret.Data))
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing secret data as map[string]interface{}")
 	}
@@ -42,14 +42,30 @@ func (rc *ResourceClient) fromKubeSecret(secret *v1.Secret) (resources.Resource,
 	return resource, nil
 }
 
+func toStringStringMap(input map[string][]byte) map[string]string {
+	output := make(map[string]string)
+	for k, v := range input {
+		output[k] = string(v)
+	}
+	return output
+}
+
+func fromStringStringMap(input map[string]string) map[string][]byte {
+	output := make(map[string][]byte)
+	for k, v := range input {
+		output[k] = []byte(v)
+	}
+	return output
+}
+
 func (rc *ResourceClient) toKubeSecret(resource resources.Resource) (*v1.Secret, error) {
 	resourceMap, err := protoutils.MarshalMap(resource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling resource as map")
 	}
-	resourceData, err := protoutils.MapStringInterfaceToMapStringByteArray(resourceMap)
+	resourceData, err := protoutils.MapStringInterfaceToMapStringString(resourceMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "internal err: converting resource map to map[string][]byte")
+		return nil, errors.Wrapf(err, "internal err: converting resource map to map[string]string")
 	}
 	// metadata moves over to kube style
 	delete(resourceData, "metadata")
@@ -61,7 +77,7 @@ func (rc *ResourceClient) toKubeSecret(resource resources.Resource) (*v1.Secret,
 	meta.Annotations[annotationKey] = rc.Kind()
 	return &v1.Secret{
 		ObjectMeta: meta,
-		Data:       resourceData,
+		Data:       fromStringStringMap(resourceData),
 	}, nil
 }
 
