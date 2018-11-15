@@ -5,7 +5,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -21,7 +20,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const dataKey = "data"
 const annotationKey = "resource_kind"
 
 func (rc *ResourceClient) fromKubeSecret(secret *v1.Secret) (resources.Resource, error) {
@@ -31,28 +29,47 @@ func (rc *ResourceClient) fromKubeSecret(secret *v1.Secret) (resources.Resource,
 	if len(secret.ObjectMeta.Annotations) == 0 || secret.ObjectMeta.Annotations[annotationKey] != rc.Kind() {
 		return nil, nil
 	}
-	resource.SetMetadata(kubeutils.FromKubeMeta(secret.ObjectMeta))
-	data, ok := secret.Data[dataKey]
-	if !ok {
-		return nil, errors.Errorf("kubernetes secret %v missing required key \"data\"", secret.Name)
-	}
-	// assumes the data is YAML-encoded
-	jsn, err := yaml.YAMLToJSON(data)
+	// convert mapstruct to our object
+	resourceMap, err := protoutils.MapStringStringToMapStringInterface(toStringStringMap(secret.Data))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "parsing secret data as map[string]interface{}")
 	}
-	return resource, protoutils.UnmarshalBytes(jsn, resource)
+
+	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
+		return nil, errors.Wrapf(err, "reading secret data into %v", rc.Kind())
+	}
+	resource.SetMetadata(kubeutils.FromKubeMeta(secret.ObjectMeta))
+	return resource, nil
+}
+
+func toStringStringMap(input map[string][]byte) map[string]string {
+	output := make(map[string]string)
+	for k, v := range input {
+		output[k] = string(v)
+	}
+	return output
+}
+
+func fromStringStringMap(input map[string]string) map[string][]byte {
+	output := make(map[string][]byte)
+	for k, v := range input {
+		output[k] = []byte(v)
+	}
+	return output
 }
 
 func (rc *ResourceClient) toKubeSecret(resource resources.Resource) (*v1.Secret, error) {
-	jsn, err := protoutils.MarshalBytes(resource)
+	resourceMap, err := protoutils.MarshalMap(resource)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "marshalling resource as map")
 	}
-	data, err := yaml.JSONToYAML(jsn)
+	resourceData, err := protoutils.MapStringInterfaceToMapStringString(resourceMap)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "internal err: converting resource map to map[string]string")
 	}
+	// metadata moves over to kube style
+	delete(resourceData, "metadata")
+
 	meta := kubeutils.ToKubeMeta(resource.GetMetadata())
 	if meta.Annotations == nil {
 		meta.Annotations = make(map[string]string)
@@ -60,9 +77,7 @@ func (rc *ResourceClient) toKubeSecret(resource resources.Resource) (*v1.Secret,
 	meta.Annotations[annotationKey] = rc.Kind()
 	return &v1.Secret{
 		ObjectMeta: meta,
-		Data: map[string][]byte{
-			dataKey: data,
-		},
+		Data:       fromStringStringMap(resourceData),
 	}, nil
 }
 
@@ -115,7 +130,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, err
 	}
 	if resource == nil {
-		return nil, errors.Errorf("secret %v is not kind %v", rc.Kind())
+		return nil, errors.Errorf("secret %v is not kind %v", name, rc.Kind())
 	}
 	return resource, nil
 }
