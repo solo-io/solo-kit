@@ -140,13 +140,13 @@ import "github.com/solo-io/solo-kit/api/v1/status.proto";
  */
 message {{ .ResourceName }} {
     // The Resource-specific config is called a spec.
-    {{ .ResourceName }}Spec spec = 2;
+    {{ .ResourceName }}Spec spec = 1;
 
     // Status indicates the validation status of the resource. Status is read-only by clients, and set by {{ .ProjectName }} during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    core.solo.io.Status status = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
 
     // Metadata contains the object metadata for this resource
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 3 [(gogoproto.nullable) = false];
 }
 
 // TODO: describe the {{ .ResourceName }}Spec
