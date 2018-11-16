@@ -5,12 +5,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/solo-kit/test/mocks/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/mocks"
 	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/kubernetes"
@@ -37,7 +38,7 @@ var _ = Describe("Base", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kube, err := kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		client, err = NewResourceClient(kube, &mocks.MockResource{})
+		client, err = NewResourceClient(kube, &v1.MockResource{})
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace)

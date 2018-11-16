@@ -3,6 +3,8 @@ package generic
 import (
 	"time"
 
+	"github.com/solo-io/solo-kit/test/mocks/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -11,14 +13,13 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/test/mocks"
 )
 
 // Call within "It"
 func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Duration) {
 	client.Register()
 	foo := "foo"
-	input := mocks.NewMockResource(namespace, foo)
+	input := v1.NewMockResource(namespace, foo)
 	data := "hello: goodbye"
 	input.Data = data
 	labels := map[string]string{"pick": "me"}
@@ -34,14 +35,14 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsExist(err)).To(BeTrue())
 
-	Expect(r1).To(BeAssignableToTypeOf(&mocks.MockResource{}))
+	Expect(r1).To(BeAssignableToTypeOf(&v1.MockResource{}))
 	Expect(r1.GetMetadata().Name).To(Equal(foo))
 	if namespace == "" {
 		namespace = DefaultNamespace
 	}
 	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
 	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(""))
-	Expect(r1.(*mocks.MockResource).Data).To(Equal(data))
+	Expect(r1.(*v1.MockResource).Data).To(Equal(data))
 
 	// if exists and resource ver was not updated, error
 	_, err = client.Write(input, clients.WriteOpts{
@@ -73,7 +74,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	Expect(errors.IsNotExist(err)).To(BeTrue())
 
 	boo := "boo"
-	input = &mocks.MockResource{
+	input = &v1.MockResource{
 		Data: data,
 		Metadata: core.Metadata{
 			Name:      boo,
@@ -129,7 +130,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 		r2, err = client.Write(r2, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		input = &mocks.MockResource{
+		input = &v1.MockResource{
 			Data: data,
 			Metadata: core.Metadata{
 				Name:      "goo",
