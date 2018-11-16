@@ -20,7 +20,7 @@ type Plugin struct {
 
 func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeGeneratorResponse, error) {
 	log.DefaultOut = &bytes.Buffer{}
-	if false {
+	if os.Getenv("DEBUG") == "1" {
 		log.DefaultOut = os.Stderr
 	}
 
