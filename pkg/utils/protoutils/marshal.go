@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var jsonpbMarshaler = &jsonpb.Marshaler{OrigName: true}
+var jsonpbMarshaler = &jsonpb.Marshaler{OrigName: false}
 
 // this function is designed for converting go object (that is not a proto.Message) into a
 // pb Struct, based on json struct tags
