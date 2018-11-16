@@ -28,7 +28,7 @@ func GenerateFiles(project *Project) (Files, error) {
 	for _, res := range project.Resources {
 		// only generate files for the resources in our group, otherwise we import
 		if res.GroupName != project.GroupName {
-			log.Printf("not generating solo-kit " +
+			log.Printf("not generating solo-kit "+
 				"clients for resource %v, group name must match package name %v", res.GroupName, project.GroupName)
 			continue
 		}
