@@ -1,6 +1,8 @@
 package configmap_test
 
 import (
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"time"
@@ -28,6 +30,7 @@ var _ = Describe("Base", func() {
 		namespace string
 		cfg       *rest.Config
 		client    *ResourceClient
+		kube      kubernetes.Interface
 	)
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
@@ -36,7 +39,7 @@ var _ = Describe("Base", func() {
 		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		Expect(err).NotTo(HaveOccurred())
-		kube, err := kubernetes.NewForConfig(cfg)
+		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		client, err = NewResourceClient(kube, &v1.MockResource{})
 	})
@@ -45,5 +48,24 @@ var _ = Describe("Base", func() {
 	})
 	It("CRUDs resources", func() {
 		generic.TestCrudClient(namespace, client, time.Minute)
+	})
+	It("uses json keys when serializing", func() {
+		foo := "test-data-keys"
+		input := v1.NewMockResource(namespace, foo)
+		data := "hello: goodbye"
+		input.Data = data
+		labels := map[string]string{"pick": "me"}
+		input.Metadata.Labels = labels
+
+		err := client.Register()
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = client.Write(input, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cm.Data).To(HaveKey("data.json"))
+		Expect(cm.Data["data.json"]).To(ContainSubstring("'hello: goodbye'"))
 	})
 })
