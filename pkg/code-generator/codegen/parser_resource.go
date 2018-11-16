@@ -83,7 +83,7 @@ func getResources(project *Project, messages []ProtoMessageWrapper) ([]*Resource
 		}
 		sort.Strings(sortedImports)
 		for _, imp := range sortedImports {
-			rg.Imports = imp + " \"" + imports[imp] + "\"\n\t"
+			rg.Imports += imp + " \"" + imports[imp] + "\"\n\t"
 		}
 
 		resourceGroups = append(resourceGroups, rg)
