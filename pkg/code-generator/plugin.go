@@ -1,4 +1,4 @@
-package protoc
+package code_generator
 
 import (
 	"bytes"
@@ -75,10 +75,17 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 	}
 
 	if docsDir != "" {
-		resp.File = append(resp.File, &plugin_go.CodeGeneratorResponse_File{
-			Name:    proto.String(filepath.Join(docsDir, "testy.md")),
-			Content: proto.String("how ya doin, bub?"),
-		})
+		docs, err := docgen.GenerateDocs(project)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, file := range docs {
+			resp.File = append(resp.File, &plugin_go.CodeGeneratorResponse_File{
+				Name:    proto.String(filepath.Join(docsDir, file.Filename)),
+				Content: proto.String(file.Content),
+			})
+		}
 	}
 
 	return resp, nil
