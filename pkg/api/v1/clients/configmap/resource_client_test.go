@@ -1,11 +1,12 @@
 package configmap_test
 
 import (
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/solo-kit/test/mocks/v1"
 

@@ -75,6 +75,7 @@ func generateFilesForXdsResource(resource *XDSResource) (Files, error) {
 	}
 	return v, nil
 }
+
 func generateFilesForResource(resource *Resource) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
