@@ -10,6 +10,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
+	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
@@ -52,7 +54,7 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 		}
 	}
 
-	project, err := codegen.ParseRequest(projectFile, req)
+	project, err := parser.ParseRequest(projectFile, req)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +77,7 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 	}
 
 	if docsDir != "" {
-		docs, err := docgen.GenerateDocs(project)
+		docs, err := docgen.GenerateFiles(project)
 		if err != nil {
 			return nil, err
 		}

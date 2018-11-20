@@ -1,6 +1,7 @@
-package codegen
+package parser
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"strings"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -32,7 +33,7 @@ type xdsMessage struct {
 	protoPackage    string
 }
 
-func getXdsResources(project *Project, messages []ProtoMessageWrapper, services []*protokit.ServiceDescriptor) ([]*XDSResource, error) {
+func getXdsResources(project *model.Project, messages []ProtoMessageWrapper, services []*protokit.ServiceDescriptor) ([]*model.XDSResource, error) {
 	var msgs []*xdsMessage
 	var svcs []*xdsService
 
@@ -70,8 +71,8 @@ func getXdsResources(project *Project, messages []ProtoMessageWrapper, services 
 	return processMessagesAndServices(project, msgs, svcs)
 }
 
-func processMessagesAndServices(project *Project, msgs []*xdsMessage, svcs []*xdsService) ([]*XDSResource, error) {
-	var resources []*XDSResource
+func processMessagesAndServices(project *model.Project, msgs []*xdsMessage, svcs []*xdsService) ([]*model.XDSResource, error) {
+	var resources []*model.XDSResource
 	for _, svc := range svcs {
 		var message *xdsMessage
 		for i, msg := range msgs {
@@ -85,7 +86,7 @@ func processMessagesAndServices(project *Project, msgs []*xdsMessage, svcs []*xd
 			return nil, errors.Errorf("no message defined for service %v", svc.name)
 		}
 
-		resources = append(resources, &XDSResource{
+		resources = append(resources, &model.XDSResource{
 			MessageType:  message.name,
 			Name:         svc.name,
 			NameField:    message.nameField,

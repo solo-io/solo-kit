@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(funcs).Parse(`package {{ .Project.Version }}
+var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`package {{ .Project.Version }}
 
 {{- $clients := new_str_slice }}
 {{- range .Resources}}

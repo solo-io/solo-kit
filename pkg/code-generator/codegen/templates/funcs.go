@@ -7,7 +7,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-var funcs = template.FuncMap{
+var Funcs = template.FuncMap{
 	"join":        strings.Join,
 	"lowercase":   strings.ToLower,
 	"lower_camel": strcase.ToLowerCamel,

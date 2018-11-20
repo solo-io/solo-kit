@@ -1,10 +1,11 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 	"text/template"
 )
 
-var ResourceGroupEventLoopTemplate = template.Must(template.New("resource_group_event_loop").Funcs(funcs).Parse(`package {{ .Project.Version }}
+var ProjectTemplate = template.Must(template.New("resource_group_event_loop").Funcs(templates.Funcs).Parse(`package {{ .Project.Version }}
 
 import (
 	"context"

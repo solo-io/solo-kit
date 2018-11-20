@@ -1,10 +1,11 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 	"text/template"
 )
 
-var ResourceReconcilerTemplate = template.Must(template.New("resource_client").Funcs(funcs).Parse(`package {{ .Project.Version }}
+var ResourceGroupTemplate = template.Must(template.New("resource_client").Funcs(templates.Funcs).Parse(`package {{ .Project.Version }}
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reconcile"

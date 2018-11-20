@@ -1,4 +1,4 @@
-package codegen
+package model
 
 // SOLO-KIT Descriptors from which code can be generated
 

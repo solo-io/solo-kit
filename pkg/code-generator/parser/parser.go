@@ -1,7 +1,8 @@
-package codegen
+package parser
 
 import (
 	"encoding/json"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"io/ioutil"
 	"strings"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
-func ParseRequest(projectFile string, req *plugin_go.CodeGeneratorRequest) (*Project, error) {
+func ParseRequest(projectFile string, req *plugin_go.CodeGeneratorRequest) (*model.Project, error) {
 	log.Printf("using project file: %v", projectFile)
 	projectConfig, err := loadProjectConfig(projectFile)
 	if err != nil {
@@ -39,7 +40,7 @@ func ParseRequest(projectFile string, req *plugin_go.CodeGeneratorRequest) (*Pro
 		services = append(services, file.GetServices()...)
 	}
 
-	project := &Project{
+	project := &model.Project{
 		ProjectConfig: projectConfig,
 		GroupName:     projectConfig.Name,
 	}
@@ -60,12 +61,12 @@ func ParseRequest(projectFile string, req *plugin_go.CodeGeneratorRequest) (*Pro
 	return project, nil
 }
 
-func loadProjectConfig(path string) (ProjectConfig, error) {
+func loadProjectConfig(path string) (model.ProjectConfig, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return ProjectConfig{}, err
+		return model.ProjectConfig{}, err
 	}
-	var pc ProjectConfig
+	var pc model.ProjectConfig
 	err = json.Unmarshal(b, &pc)
 	return pc, err
 }
@@ -74,10 +75,10 @@ func goName(n string) string {
 	return strcase.ToCamel(strings.Split(n, ".")[0])
 }
 
-func collectFields(msg *protokit.Descriptor) []*Field {
-	var fields []*Field
+func collectFields(msg *protokit.Descriptor) []*model.Field {
+	var fields []*model.Field
 	for _, f := range msg.GetField() {
-		fields = append(fields, &Field{
+		fields = append(fields, &model.Field{
 			Name:     f.GetName(),
 			TypeName: f.GetTypeName(),
 		})
