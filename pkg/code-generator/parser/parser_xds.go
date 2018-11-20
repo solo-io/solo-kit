@@ -1,12 +1,11 @@
 package parser
 
 import (
-	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"strings"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-
 	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 

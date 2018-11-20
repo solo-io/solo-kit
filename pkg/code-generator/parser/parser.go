@@ -2,7 +2,6 @@ package parser
 
 import (
 	"encoding/json"
-	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"io/ioutil"
 	"strings"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/iancoleman/strcase"
 	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
