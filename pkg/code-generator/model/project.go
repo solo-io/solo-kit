@@ -34,6 +34,8 @@ type Resource struct {
 
 	ResourceGroups []*ResourceGroup
 	Project        *Project
+
+	Filename string // the proto file where this resource is contained
 }
 
 type Field struct {

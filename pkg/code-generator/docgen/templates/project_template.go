@@ -7,9 +7,9 @@ import (
 )
 
 var ProjectTemplate = template.Must(template.New("p").Funcs(templates.Funcs).Parse(`
-### {{ .Name }} {{.Version}} API Reference:
+### {{ .Name }} {{.Version}} Top Level API Objects:
 {{- range .Resources}}
-- [{{ .ImportPrefix }}{{ .Name }}](./{{ snake .Name }}.sk.md)
+- [{{ .ImportPrefix }}{{ .Name }}](./{{ .Filename }}.sk.md#{{ .Name }})
 {{- end}}
 
 `))

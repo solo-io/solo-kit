@@ -37,11 +37,17 @@ var ProtoFileTemplate = template.Must(template.New("resource").Funcs(templates.F
 
 Description: {{ .Comments.Leading }}
 
-`+"```"+`yaml
+` + "```" + `yaml
 {{range .Fields -}}
 "{{ printfptr "%v" .Name}}": {{ fieldType . }}
 {{end}}
-`+"```"+`
+` + "```" + `
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+{{range .Fields -}}
+| {{ printfptr "%v" .Name }} | {{linkForType . }} | {{nobr .Comments.Leading}} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+{{end}}
 
 {{- end }}
 

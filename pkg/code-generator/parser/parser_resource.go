@@ -139,5 +139,6 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, []st
 		PluralName: pluralName,
 		HasStatus:  hasStatus,
 		Fields:     fields,
+		Filename:   msg.GetFile().GetName(),
 	}, resourceGroups, nil
 }
