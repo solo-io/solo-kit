@@ -7,5 +7,9 @@ import (
 )
 
 var ProjectTemplate = template.Must(template.New("p").Funcs(templates.Funcs).Parse(`
-{{ . }}
+### {{ .Name }} {{.Version}} API Reference:
+{{- range .Resources}}
+- [{{ .ImportPrefix }}{{ .Name }}](./{{ snake .Name }}.sk.md)
+{{- end}}
+
 `))
