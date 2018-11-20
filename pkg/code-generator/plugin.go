@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pseudomuto/protokit"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
@@ -77,7 +79,7 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 	}
 
 	if docsDir != "" {
-		docs, err := docgen.GenerateFiles(project)
+		docs, err := docgen.GenerateFiles(project, protokit.ParseCodeGenRequest(req))
 		if err != nil {
 			return nil, err
 		}

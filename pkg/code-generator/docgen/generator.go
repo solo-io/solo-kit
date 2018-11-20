@@ -5,6 +5,7 @@ import (
 	"text/template"
 
 	"github.com/iancoleman/strcase"
+	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/templates"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
@@ -19,25 +20,36 @@ type File struct {
 
 type Files []File
 
-func GenerateFiles(project *model.Project) (Files, error) {
+func generateFilesForProtoFiles(protoFiles []*protokit.FileDescriptor) (Files, error) {
+	var v Files
+	for suffix, tmpl := range map[string]*template.Template{
+		".sk.md": templates.ProtoFileTemplate,
+	} {
+		for _, protoFile := range protoFiles {
+			content, err := generateProtoFileFile(protoFile, tmpl)
+			if err != nil {
+				return nil, err
+			}
+			v = append(v, File{
+				Filename: strcase.ToSnake(protoFile.GetName()) + suffix,
+				Content:  content,
+			})
+		}
+	}
+
+	return v, nil
+}
+
+func GenerateFiles(project *model.Project, protoFiles []*protokit.FileDescriptor) (Files, error) {
 	files, err := generateFilesForProject(project)
 	if err != nil {
 		return nil, err
 	}
-	for _, res := range project.Resources {
-		fs, err := generateFilesForResource(res)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, fs...)
+	messageFiles, err := generateFilesForProtoFiles(protoFiles)
+	if err != nil {
+		return nil, err
 	}
-	for _, grp := range project.ResourceGroups {
-		fs, err := generateFilesForResourceGroup(grp)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, fs...)
-	}
+	files = append(files, messageFiles...)
 
 	for i := range files {
 		files[i].Content = fileHeader + files[i].Content
@@ -45,44 +57,10 @@ func GenerateFiles(project *model.Project) (Files, error) {
 	return files, nil
 }
 
-func generateFilesForResource(resource *model.Resource) (Files, error) {
-	var v Files
-	for suffix, tmpl := range map[string]*template.Template{
-		".sk.md": templates.ResourceTemplate,
-	} {
-		content, err := generateResourceFile(resource, tmpl)
-		if err != nil {
-			return nil, err
-		}
-		v = append(v, File{
-			Filename: strcase.ToSnake(resource.Name) + suffix,
-			Content:  content,
-		})
-	}
-	return v, nil
-}
-
-func generateFilesForResourceGroup(rg *model.ResourceGroup) (Files, error) {
-	var v Files
-	for suffix, tmpl := range map[string]*template.Template{
-		".sk.md": templates.ResourceGroupTemplate,
-	} {
-		content, err := generateResourceGroupFile(rg, tmpl)
-		if err != nil {
-			return nil, err
-		}
-		v = append(v, File{
-			Filename: strcase.ToSnake(rg.GoName) + suffix,
-			Content:  content,
-		})
-	}
-	return v, nil
-}
-
 func generateFilesForProject(project *model.Project) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
-		".sk.md": templates.ProjectTemplate,
+		".project.sk.md": templates.ProjectTemplate,
 	} {
 		content, err := generateProjectFile(project, tmpl)
 		if err != nil {
@@ -96,25 +74,17 @@ func generateFilesForProject(project *model.Project) (Files, error) {
 	return v, nil
 }
 
-func generateResourceFile(resource *model.Resource, tmpl *template.Template) (string, error) {
-	buf := &bytes.Buffer{}
-	if err := tmpl.Execute(buf, resource); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-func generateResourceGroupFile(rg *model.ResourceGroup, tmpl *template.Template) (string, error) {
-	buf := &bytes.Buffer{}
-	if err := tmpl.Execute(buf, rg); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
 func generateProjectFile(project *model.Project, tmpl *template.Template) (string, error) {
 	buf := &bytes.Buffer{}
 	if err := tmpl.Execute(buf, project); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func generateProtoFileFile(protoFile *protokit.FileDescriptor, tmpl *template.Template) (string, error) {
+	buf := &bytes.Buffer{}
+	if err := tmpl.Execute(buf, protoFile); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
