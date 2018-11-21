@@ -317,6 +317,14 @@
   revision = "90d371a664d668ca3e61d3ddddf1916662959f11"
 
 [[projects]]
+  digest = "1:5258ca648f4cf40b7bc7c52b85009546699332616f9ed23d89b6798baca6f707"
+  name = "github.com/ilackarms/protoc-gen-doc"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "728a624b38e5ae90bb3e5da5f406e05138f1517c"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:3e260afa138eab6492b531a3b3d10ab4cb70512d423faa78b8949dec76e66a21"
   name = "github.com/imdario/mergo"
   packages = ["."]
@@ -520,6 +528,14 @@
   ]
   pruneopts = "UT"
   revision = "05ee40e3a273f7245e8777337fc7b46e533a9a92"
+
+[[projects]]
+  digest = "1:d7aa51c836ace8d00a3d88b4058c470624bdd7045cd3b0f58c2d6ba7ab4433dc"
+  name = "github.com/pseudomuto/protoc-gen-doc"
+  packages = ["parser"]
+  pruneopts = "UT"
+  revision = "728a624b38e5ae90bb3e5da5f406e05138f1517c"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:37fe5a9adb37233d7f2d764dcdef5e2537d0d927bf57a6095f178817c8c616e5"
@@ -985,6 +1001,7 @@
     "github.com/hashicorp/go-multierror",
     "github.com/hashicorp/vault/api",
     "github.com/iancoleman/strcase",
+    "github.com/ilackarms/protoc-gen-doc",
     "github.com/k0kubun/pp",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
