@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var ResourceGroupEventLoopTemplate = template.Must(template.New("resource_group_event_loop").Funcs(funcs).Parse(`package {{ .Project.Version }}
+var ResourceGroupEventLoopTemplate = template.Must(template.New("resource_group_event_loop").Funcs(Funcs).Parse(`package {{ .Project.Version }}
 
 import (
 	"context"

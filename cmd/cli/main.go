@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
+	"github.com/solo-io/solo-kit/pkg/cli"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -44,7 +44,7 @@ func main() {
 
 	log.Printf("gopath: %v", projectGopath)
 
-	err = cmd.InitProject(projectName, projectGopath, resourceNames...)
+	err = cli.InitProject(projectName, projectGopath, resourceNames...)
 	if err != nil {
 		log.Fatal(err)
 	}

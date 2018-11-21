@@ -1,4 +1,4 @@
-package codegen
+package parser
 
 import (
 	"sort"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
@@ -28,9 +29,9 @@ type ProtoMessageWrapper struct {
 	Message   *protokit.Descriptor
 }
 
-func getResources(project *Project, messages []ProtoMessageWrapper) ([]*Resource, []*ResourceGroup, error) {
-	resourcesByGroup := make(map[string][]*Resource)
-	var resources []*Resource
+func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*model.Resource, []*model.ResourceGroup, error) {
+	resourcesByGroup := make(map[string][]*model.Resource)
+	var resources []*model.Resource
 	for _, msg := range messages {
 		resource, groups, err := describeResource(msg)
 		if err != nil {
@@ -51,11 +52,11 @@ func getResources(project *Project, messages []ProtoMessageWrapper) ([]*Resource
 		resources = append(resources, resource)
 	}
 
-	var resourceGroups []*ResourceGroup
+	var resourceGroups []*model.ResourceGroup
 
 	for group, resources := range resourcesByGroup {
 		log.Printf("group: %v", group)
-		rg := &ResourceGroup{
+		rg := &model.ResourceGroup{
 			Name:      group,
 			GoName:    goName(group),
 			Project:   project,
@@ -97,7 +98,7 @@ func getResources(project *Project, messages []ProtoMessageWrapper) ([]*Resource
 	return resources, resourceGroups, nil
 }
 
-func describeResource(messageWrapper ProtoMessageWrapper) (*Resource, []string, error) {
+func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, []string, error) {
 	msg := messageWrapper.Message
 	// not a solo kit resource, or you messed up!
 	if !hasField(msg, "metadata", metadataTypeName) {
@@ -130,7 +131,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*Resource, []string, 
 
 	fields := collectFields(msg)
 
-	return &Resource{
+	return &model.Resource{
 		Name:       name,
 		GroupName:  msg.GetPackage(),
 		GoPackage:  messageWrapper.GoPackage,
@@ -138,5 +139,6 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*Resource, []string, 
 		PluralName: pluralName,
 		HasStatus:  hasStatus,
 		Fields:     fields,
+		Filename:   msg.GetFile().GetName(),
 	}, resourceGroups, nil
 }

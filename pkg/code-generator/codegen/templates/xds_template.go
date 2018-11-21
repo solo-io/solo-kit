@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var XdsTemplate = template.Must(template.New("xds_template").Funcs(funcs).Parse(`package {{ .Project.Version }}
+var XdsTemplate = template.Must(template.New("xds_template").Funcs(Funcs).Parse(`package {{ .Project.Version }}
 
 import (
 	"context"

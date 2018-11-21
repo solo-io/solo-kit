@@ -90,7 +90,7 @@ ${GOPATH}/src/github.com/99designs/gqlgen/:
 	git clone --branch v0.4.4 --depth 1 https://github.com/99designs/gqlgen/
 
 $(OUTPUT_DIR)/protoc-gen-solo-kit: $(SOURCES)
-	go build -o $@ cmd/generator/main.go
+	go build -o $@ cmd/protoc-gen-solo-kit/main.go
 
 ${GOPATH}/bin/protoc-gen-solo-kit: $(OUTPUT_DIR)/protoc-gen-solo-kit
 	cp $(OUTPUT_DIR)/protoc-gen-solo-kit ${GOPATH}/bin/

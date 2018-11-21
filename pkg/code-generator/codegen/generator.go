@@ -5,7 +5,8 @@ import (
 	"text/template"
 
 	"github.com/iancoleman/strcase"
-	"github.com/solo-io/solo-kit/pkg/code-generator/templates"
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
@@ -20,7 +21,7 @@ type File struct {
 
 type Files []File
 
-func GenerateFiles(project *Project) (Files, error) {
+func GenerateFiles(project *model.Project) (Files, error) {
 	files, err := generateFilesForProject(project)
 	if err != nil {
 		return nil, err
@@ -59,7 +60,7 @@ func GenerateFiles(project *Project) (Files, error) {
 	return files, nil
 }
 
-func generateFilesForXdsResource(resource *XDSResource) (Files, error) {
+func generateFilesForXdsResource(resource *model.XDSResource) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
 		"_xds.sk.sk.go": templates.XdsTemplate,
@@ -75,7 +76,8 @@ func generateFilesForXdsResource(resource *XDSResource) (Files, error) {
 	}
 	return v, nil
 }
-func generateFilesForResource(resource *Resource) (Files, error) {
+
+func generateFilesForResource(resource *model.Resource) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
 		".sk.go":            templates.ResourceTemplate,
@@ -95,7 +97,7 @@ func generateFilesForResource(resource *Resource) (Files, error) {
 	return v, nil
 }
 
-func generateFilesForResourceGroup(rg *ResourceGroup) (Files, error) {
+func generateFilesForResourceGroup(rg *model.ResourceGroup) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
 		"_snapshot.sk.go":           templates.ResourceGroupSnapshotTemplate,
@@ -116,7 +118,7 @@ func generateFilesForResourceGroup(rg *ResourceGroup) (Files, error) {
 	return v, nil
 }
 
-func generateFilesForProject(project *Project) (Files, error) {
+func generateFilesForProject(project *model.Project) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
 		"_suite_test.go": templates.ProjectTestSuiteTemplate,
@@ -133,7 +135,7 @@ func generateFilesForProject(project *Project) (Files, error) {
 	return v, nil
 }
 
-func generateXdsResourceFile(resource *XDSResource, tmpl *template.Template) (string, error) {
+func generateXdsResourceFile(resource *model.XDSResource, tmpl *template.Template) (string, error) {
 	buf := &bytes.Buffer{}
 	if err := tmpl.Execute(buf, resource); err != nil {
 		return "", err
@@ -141,7 +143,7 @@ func generateXdsResourceFile(resource *XDSResource, tmpl *template.Template) (st
 	return buf.String(), nil
 }
 
-func generateResourceFile(resource *Resource, tmpl *template.Template) (string, error) {
+func generateResourceFile(resource *model.Resource, tmpl *template.Template) (string, error) {
 	buf := &bytes.Buffer{}
 	if err := tmpl.Execute(buf, resource); err != nil {
 		return "", err
@@ -149,7 +151,7 @@ func generateResourceFile(resource *Resource, tmpl *template.Template) (string, 
 	return buf.String(), nil
 }
 
-func generateResourceGroupFile(rg *ResourceGroup, tmpl *template.Template) (string, error) {
+func generateResourceGroupFile(rg *model.ResourceGroup, tmpl *template.Template) (string, error) {
 	buf := &bytes.Buffer{}
 	if err := tmpl.Execute(buf, rg); err != nil {
 		return "", err
@@ -157,7 +159,7 @@ func generateResourceGroupFile(rg *ResourceGroup, tmpl *template.Template) (stri
 	return buf.String(), nil
 }
 
-func generateProjectFile(project *Project, tmpl *template.Template) (string, error) {
+func generateProjectFile(project *model.Project, tmpl *template.Template) (string, error) {
 	buf := &bytes.Buffer{}
 	if err := tmpl.Execute(buf, project); err != nil {
 		return "", err

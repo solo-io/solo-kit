@@ -1,15 +1,20 @@
-package protoc
+package code_generator
 
 import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/pseudomuto/protokit"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
+	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
+	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
@@ -25,7 +30,17 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 	}
 
 	log.Printf("received request files: %v | params: %v", req.FileToGenerate, req.GetParameter())
-	projectFile := req.GetParameter()
+	paramString := req.GetParameter()
+	params := strings.Split(paramString, ",")
+	if len(params) < 1 {
+		return nil, errors.Errorf("must provide project file via --solo-kit_opt=${PROJECT_DIR}/project.json[,{DOCS_DIR}]")
+	}
+	projectFile := params[0]
+	var docsDir string
+	if len(params) > 1 {
+		docsDir = params[1]
+	}
+
 	if projectFile == "" {
 		return nil, errors.Errorf(`must provide project file via --solo-kit_out=${PWD}/project.json:${OUT}`)
 	}
@@ -41,7 +56,7 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 		}
 	}
 
-	project, err := codegen.ParseRequest(projectFile, req)
+	project, err := parser.ParseRequest(projectFile, req)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +76,20 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 			Name:    proto.String(file.Filename),
 			Content: proto.String(file.Content),
 		})
+	}
+
+	if docsDir != "" {
+		docs, err := docgen.GenerateFiles(project, protokit.ParseCodeGenRequest(req))
+		if err != nil {
+			return nil, err
+		}
+
+		for _, file := range docs {
+			resp.File = append(resp.File, &plugin_go.CodeGeneratorResponse_File{
+				Name:    proto.String(filepath.Join(docsDir, file.Filename)),
+				Content: proto.String(file.Content),
+			})
+		}
 	}
 
 	return resp, nil

@@ -1,4 +1,4 @@
-package codegen
+package model
 
 // SOLO-KIT Descriptors from which code can be generated
 
@@ -34,6 +34,8 @@ type Resource struct {
 
 	ResourceGroups []*ResourceGroup
 	Project        *Project
+
+	Filename string // the proto file where this resource is contained
 }
 
 type Field struct {
