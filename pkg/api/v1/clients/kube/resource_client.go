@@ -182,7 +182,7 @@ func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, re
 	resourceName := strings.Replace(typeof.String(), "*", "", -1)
 	resourceName = strings.Replace(resourceName, ".", "", -1)
 
-	return &ResourceClient{
+	rc := &ResourceClient{
 		crd:          crd,
 		apiexts:      apiExts,
 		kube:         crdClient,
@@ -190,7 +190,15 @@ func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, re
 		resourceName: resourceName,
 		resourceType: resourceType,
 		sharedCache:  sharedCache,
-	}, nil
+	}
+
+	/*
+		shared informer factory for all namespaces; and then filter desired namespace in list and watch!
+		zbam!
+	*/
+	rc.sharedCache.sharedInformerFactory.Register(rc)
+
+	return rc, nil
 }
 
 var _ clients.ResourceClient = &ResourceClient{}
@@ -204,12 +212,6 @@ func (rc *ResourceClient) NewResource() resources.Resource {
 }
 
 func (rc *ResourceClient) Register() error {
-	/*
-		shared informer factory for all namespaces; and then filter desired namespace in list and watch!
-		zbam!
-
-	*/
-	rc.sharedCache.sharedInformerFactory.Register(rc)
 	return rc.crd.Register(rc.apiexts)
 }
 
