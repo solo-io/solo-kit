@@ -1,12 +1,37 @@
+/*
+Syntax Comments
+Syntax Comments a
+*/
+
 syntax = "proto3";
+
+/*
+package Comments
+package Comments a
+*/
 package testing.solo.io;
+/*
+go_package Comments
+go_package Comments a
+*/
 option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
+/*
+go_package Comments
+go_package Comments a
+*/
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
+
+
+
+/*
+below Comments
+below Comments a
+*/
 
 /*
 @solo-kit:resource.short_name=mk

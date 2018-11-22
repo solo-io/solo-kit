@@ -3,6 +3,12 @@
 
 package v1 // import "github.com/solo-io/solo-kit/test/mocks/v1"
 
+/*
+
+package Comments
+package Comments a
+*/
+
 import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
@@ -39,7 +45,7 @@ func (m *MockResource) Reset()         { *m = MockResource{} }
 func (m *MockResource) String() string { return proto.CompactTextString(m) }
 func (*MockResource) ProtoMessage()    {}
 func (*MockResource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_mock_resources_53046872aed7bdaa, []int{0}
+	return fileDescriptor_mock_resources_a6b2833fb0d9e8b1, []int{0}
 }
 func (m *MockResource) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MockResource.Unmarshal(m, b)
@@ -96,7 +102,7 @@ func (m *FakeResource) Reset()         { *m = FakeResource{} }
 func (m *FakeResource) String() string { return proto.CompactTextString(m) }
 func (*FakeResource) ProtoMessage()    {}
 func (*FakeResource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_mock_resources_53046872aed7bdaa, []int{1}
+	return fileDescriptor_mock_resources_a6b2833fb0d9e8b1, []int{1}
 }
 func (m *FakeResource) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FakeResource.Unmarshal(m, b)
@@ -199,10 +205,10 @@ func (this *FakeResource) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("mock_resources.proto", fileDescriptor_mock_resources_53046872aed7bdaa)
+	proto.RegisterFile("mock_resources.proto", fileDescriptor_mock_resources_a6b2833fb0d9e8b1)
 }
 
-var fileDescriptor_mock_resources_53046872aed7bdaa = []byte{
+var fileDescriptor_mock_resources_a6b2833fb0d9e8b1 = []byte{
 	// 274 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0xc9, 0xcd, 0x4f, 0xce,
 	0x8e, 0x2f, 0x4a, 0x2d, 0xce, 0x2f, 0x2d, 0x4a, 0x4e, 0x2d, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9,
