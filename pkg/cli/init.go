@@ -133,8 +133,7 @@ import "github.com/solo-io/solo-kit/api/v1/status.proto";
 @solo-kit:resource
 @solo-kit:resource.short_name={{ .ShortName }}
 @solo-kit:resource.plural_name={{ .PluralName }}
-@solo-kit:resource.group_name={{ .ProjectName }}.api.v1
-@solo-kit:resource.version=v1
+
 
 // TODO: place your comments here
  */
