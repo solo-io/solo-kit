@@ -29,7 +29,7 @@ func KeysAndValues(m map[string]string) ([]string, []string) {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	var values [] string
+	var values []string
 	for _, k := range keys {
 		values = append(values, m[k])
 	}
