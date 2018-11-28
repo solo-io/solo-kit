@@ -74,7 +74,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client) {
 	Expect(r1.Metadata.ResourceVersion).NotTo(Equal(input.Metadata.ResourceVersion))
 	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
 	{{- range .Fields }}
-		{{- if (not (eq .Name "metadata")) }}
+		{{- if and (not (eq .Name "metadata")) (not .IsOneof) }}
 	Expect(r1.{{ upper_camel .Name }}).To(Equal(input.{{ upper_camel .Name }}))
 		{{- end }}
 	{{- end }}

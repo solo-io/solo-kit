@@ -81,6 +81,7 @@ func collectFields(msg *protokit.Descriptor) []*model.Field {
 		fields = append(fields, &model.Field{
 			Name:     f.GetName(),
 			TypeName: f.GetTypeName(),
+			IsOneof:  f.OneofIndex != nil,
 		})
 	}
 	log.Printf("%v", fields)

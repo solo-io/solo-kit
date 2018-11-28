@@ -68,8 +68,8 @@ func MockResourceClientTest(namespace string, client MockResourceClient) {
 	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
 	Expect(r1.Metadata.ResourceVersion).NotTo(Equal(input.Metadata.ResourceVersion))
 	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
-	Expect(r1.Data).To(Equal(input.Data))
 	Expect(r1.Status).To(Equal(input.Status))
+	Expect(r1.Data).To(Equal(input.Data))
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,

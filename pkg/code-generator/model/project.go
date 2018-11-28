@@ -41,6 +41,7 @@ type Resource struct {
 type Field struct {
 	Name     string
 	TypeName string
+	IsOneof  bool // we ignore oneof fields in test generation
 }
 
 type ResourceGroup struct {

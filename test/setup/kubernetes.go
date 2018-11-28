@@ -3,13 +3,13 @@ package setup
 import (
 	"bytes"
 	"fmt"
-	"github.com/onsi/gomega"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
