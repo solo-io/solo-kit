@@ -34,14 +34,21 @@ below Comments a
 */
 
 /*
+Mock resources for goofin off
 @solo-kit:resource.short_name=mk
 @solo-kit:resource.plural_name=mocks
 @solo-kit:resource.resource_groups=testing.solo.io
 */
 message MockResource {
-    string data = 1 [json_name="data.json", (gogoproto.jsontag) = "data.json"];
     core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+
+    string data = 1 [json_name="data.json", (gogoproto.jsontag) = "data.json"];
+
+    oneof test_oneof_fields {
+        string oneof_one = 3;
+        bool oneof_two = 2;
+    };
 }
 
 /*
