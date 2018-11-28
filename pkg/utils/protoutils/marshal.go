@@ -78,16 +78,6 @@ func UnmarshalMap(m map[string]interface{}, into proto.Message) error {
 	return UnmarshalBytes(data, into)
 }
 
-func MarshalJSON(from proto.Message) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := jsonpbMarshaler.Marshal(buf, from)
-	return buf.Bytes(), err
-}
-
-func UnmarshalJSON(data []byte, into proto.Message) error {
-	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
-}
-
 // ilackarms: help come up with a better name for this please
 // values in stringMap are yaml encoded or error
 // used by configmap resource client

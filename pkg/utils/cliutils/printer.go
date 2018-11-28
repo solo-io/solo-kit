@@ -47,7 +47,7 @@ func PrintList(output, template string, list interface{}, tblPrn Printer, w io.W
 
 // PrintJSON - prints the given proto.Message to io.Writer in JSON
 func PrintJSON(m proto.Message, w io.Writer) error {
-	b, err := protoutils.MarshalJSON(m)
+	b, err := protoutils.MarshalBytes(m)
 	if err != nil {
 		return errors.Wrap(err, "unable to convert to JSON")
 	}
@@ -57,7 +57,7 @@ func PrintJSON(m proto.Message, w io.Writer) error {
 
 // PrintYAML - prints the given proto.Message to io.Writer in YAML
 func PrintYAML(m proto.Message, w io.Writer) error {
-	jsn, err := protoutils.MarshalJSON(m)
+	jsn, err := protoutils.MarshalBytes(m)
 	if err != nil {
 		return errors.Wrap(err, "unable to marshal")
 	}
