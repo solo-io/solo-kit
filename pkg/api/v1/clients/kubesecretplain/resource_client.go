@@ -20,8 +20,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// KubeClient for raw secrets, e.g. only map[string]string
-// TODO: merge this with kubesecret client
+// KubeClient for plain secrets, e.g. only map[string]string
+// object must be
+// TODO: refactor this with kubesecret client
+
 const annotationKey = "resource_kind"
 
 func (rc *ResourceClient) fromKubeSecret(secret *v1.Secret) (resources.Resource, error) {
@@ -34,7 +36,7 @@ func (rc *ResourceClient) fromKubeSecret(secret *v1.Secret) (resources.Resource,
 	// only works for string fields
 	resourceMap := make(map[string]interface{})
 	for k, v := range secret.Data {
-		resourceMap[k] = v
+		resourceMap[k] = string(v)
 	}
 	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
 		return nil, errors.Wrapf(err, "reading secret data into %v", rc.Kind())
@@ -51,8 +53,6 @@ func (rc *ResourceClient) toKubeSecret(resource resources.Resource) (*v1.Secret,
 	kubeSecretData := make(map[string][]byte)
 	for k, v := range resourceMap {
 		switch val := v.(type) {
-		case []byte:
-			kubeSecretData[k] = val
 		case string:
 			kubeSecretData[k] = []byte(val)
 		default:
@@ -81,6 +81,7 @@ type ResourceClient struct {
 }
 
 func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resource) (*ResourceClient, error) {
+	// TODO: boot time check that the resourceType is valid
 	return &ResourceClient{
 		kube:         kube,
 		resourceName: reflect.TypeOf(resourceType).String(),

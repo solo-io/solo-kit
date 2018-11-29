@@ -68,8 +68,7 @@ var _ = Describe("Base", func() {
 		cm, err := kube.CoreV1().Secrets(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
-		Expect(cm.Data["data.json"]).To(ContainSubstring("'hello: goodbye'"))
-		Expect(cm.Data["data.json"]).To(Equal("hello: goodbye\n"))
+		Expect(string(cm.Data["data.json"])).To(Equal("hello: goodbye"))
 	})
 	// no string escape
 })
