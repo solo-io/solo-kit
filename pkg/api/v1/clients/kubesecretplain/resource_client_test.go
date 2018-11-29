@@ -70,5 +70,23 @@ var _ = Describe("Base", func() {
 		Expect(cm.Data).To(HaveKey("data.json"))
 		Expect(string(cm.Data["data.json"])).To(Equal("hello: goodbye"))
 	})
+	It("emits empty fields", func() {
+		foo := "test-data-keys"
+		input := v1.NewMockResource(namespace, foo)
+		data := ""
+		input.Data = data
+		labels := map[string]string{"pick": "me"}
+		input.Metadata.Labels = labels
+
+		err := client.Register()
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = client.Write(input, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		cm, err := kube.CoreV1().Secrets(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cm.Data).To(HaveKey("data.json"))
+	})
 	// no string escape
 })
