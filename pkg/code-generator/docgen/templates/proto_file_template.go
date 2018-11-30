@@ -15,7 +15,7 @@ var ProtoFileTemplate = template.Must(template.New("resource").Funcs(templates.F
 
 ## Description:
 {{- range .SyntaxComments.Detached }}  
-{{ printf "%v" . }}
+{{ remove_magic_comments (printf "%v" .) }}
 {{- end }}  
 
 ## Contents:
@@ -35,7 +35,7 @@ var ProtoFileTemplate = template.Must(template.New("resource").Funcs(templates.F
 {{range .Messages }}  
 ### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
 
-Description: {{ .Comments.Leading }}
+Description: {{ remove_magic_comments .Comments.Leading }}
 
 ` + "```" + `yaml
 {{range .Fields -}}
@@ -46,7 +46,7 @@ Description: {{ .Comments.Leading }}
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 {{range .Fields -}}
-| {{ printfptr "%v" .Name }} | {{linkForType . }} | {{nobr .Comments.Leading}} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+| {{ printfptr "%v" .Name }} | {{linkForType . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
 {{- end }}

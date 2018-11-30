@@ -2,7 +2,7 @@ package templates
 
 import (
 	"fmt"
-	htmltemplate "html/template"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -10,6 +10,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protoc-gen-doc"
 	"github.com/pseudomuto/protokit"
+	htmltemplate "html/template"
 )
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
@@ -25,6 +26,8 @@ var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
 	descriptor.FieldDescriptorProto_TYPE_BYTES:  "***TODO BYTES***!",
 }
 
+var magicCommentRegex = regexp.MustCompile("@solo-kit:.*")
+
 var Funcs = template.FuncMap{
 	"join":        strings.Join,
 	"lowercase":   strings.ToLower,
@@ -39,6 +42,17 @@ var Funcs = template.FuncMap{
 	"noescape":    noEscape,
 	"linkForType": linkForType,
 	"printfptr":   printPointer,
+	"remove_magic_comments": func(in string) string {
+		lines := strings.Split(in, "\n")
+		var linesWithoutMagicComments []string
+		for _, line := range lines {
+			if magicCommentRegex.MatchString(line) {
+				continue
+			}
+			linesWithoutMagicComments = append(linesWithoutMagicComments, line)
+		}
+		return strings.Join(linesWithoutMagicComments, "\n")
+	},
 	"new_str_slice": func() *[]string {
 		var v []string
 		return &v

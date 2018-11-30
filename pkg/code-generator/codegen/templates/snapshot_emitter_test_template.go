@@ -7,8 +7,12 @@ import (
 var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`package {{ .Project.Version }}
 
 {{- $clients := new_str_slice }}
+{{- $needs_kube_client := false }}
 {{- range .Resources}}
 {{- $clients := (append_str_slice $clients (printf "%vClient"  (lower_camel .Name))) }}
+{{- if not .HasStatus }}
+{{- $needs_kube_client = true }}
+{{- end}}
 {{- end}}
 {{- $clients := (join_str_slice $clients ", ") }}
 
@@ -59,8 +63,12 @@ var _ = Describe("{{ upper_camel .Project.Version }}Emitter", func() {
 
 		cache := kuberc.NewKubeCache()
 
-{{- range .Resources }}
+{{- if $needs_kube_client }}
+var kube kubernetes.Interface
+{{- end }}
 
+
+{{- range .Resources }}
 		// {{ .Name }} Constructor
 {{- if .HasStatus }}
 		{{ lower_camel .Name }}ClientFactory := &factory.KubeResourceClientFactory{
@@ -69,9 +77,9 @@ var _ = Describe("{{ upper_camel .Project.Version }}Emitter", func() {
 		    SharedCache: cache,
 		}
 {{- else }}
-{{/* TODO(ilackarms): Come with a more generic way to specify that a resource is "Secret"*/}}
 		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
+{{/* TODO(ilackarms): Come with a way to specify that a resource is based on the secret client or configmap client*/}}
 {{- if (eq .Name "Secret") }}
 		{{ lower_camel .Name }}ClientFactory := &factory.KubeSecretClientFactory{
 			Clientset: kube,

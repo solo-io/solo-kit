@@ -2,13 +2,11 @@ package cliutils
 
 import (
 	"fmt"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"io"
 	"reflect"
 	"strings"
 	"text/template"
-
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
@@ -33,7 +31,6 @@ func Print(output, template string, m proto.Message, tblPrn Printer, w io.Writer
 		return tblPrn(m, w)
 	}
 }
-
 // PrintJSON - prints the given proto.Message to io.Writer in JSON
 func PrintJSON(m proto.Message, w io.Writer) error {
 	b, err := protoutils.MarshalBytes(m)
