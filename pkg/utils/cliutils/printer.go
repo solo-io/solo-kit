@@ -69,6 +69,8 @@ func PrintList(output, template string, list interface{}, tblPrn Printer, w io.W
 	switch strings.ToLower(output) {
 	case "yaml":
 		return PrintYAMLList(list, w)
+	case "yml":
+		return PrintYAMLList(list, w)
 	case "json":
 		return PrintJSONList(list, w)
 	case "template":
