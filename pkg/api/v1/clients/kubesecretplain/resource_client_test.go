@@ -1,6 +1,5 @@
 package kubesecretplain_test
 
-
 import (
 	"os"
 	"path/filepath"
