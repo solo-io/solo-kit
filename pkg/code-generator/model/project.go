@@ -5,6 +5,7 @@ package model
 type ProjectConfig struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
+	DocsDir string `json:"docs_dir"`
 }
 
 type Project struct {

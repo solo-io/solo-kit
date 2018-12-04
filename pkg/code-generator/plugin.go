@@ -5,12 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/pseudomuto/protokit"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
+	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
@@ -32,19 +30,10 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 	}
 
 	log.Printf("received request files: %v | params: %v", req.FileToGenerate, req.GetParameter())
-	paramString := req.GetParameter()
-	params := strings.Split(paramString, ",")
-	if len(params) < 1 {
-		return nil, errors.Errorf("must provide project file via --solo-kit_opt=${PROJECT_DIR}/project.json[,{DOCS_DIR}]")
-	}
-	projectFile := params[0]
-	var docsDir string
-	if len(params) > 1 {
-		docsDir = params[1]
-	}
+	projectFile := req.GetParameter()
 
 	if projectFile == "" {
-		return nil, errors.Errorf(`must provide project file via --solo-kit_out=${PWD}/project.json:${OUT}`)
+		return nil, errors.Errorf(`must provide project file via --solo-kit_opt=${PWD}/project.json`)
 	}
 
 	// if OutputDescriptors==true save request as a descriptors file
@@ -108,7 +97,7 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 			}
 		}
 
-		log.Printf("added %v ProtoFile, total: %v", len(req.ProtoFile) - old, len(req.ProtoFile))
+		log.Printf("added %v ProtoFile, total: %v", len(req.ProtoFile)-old, len(req.ProtoFile))
 		log.Printf("added %v FileToGenerate, total: %v", oldFileToGenerate, req.FileToGenerate)
 
 		collectedDescriptorsBytes, err := proto.Marshal(req)
@@ -142,7 +131,7 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 		})
 	}
 
-	if docsDir != "" {
+	if project.DocsDir != "" {
 		docs, err := docgen.GenerateFiles(project, protokit.ParseCodeGenRequest(req))
 		if err != nil {
 			return nil, err
@@ -150,7 +139,7 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 
 		for _, file := range docs {
 			resp.File = append(resp.File, &plugin_go.CodeGeneratorResponse_File{
-				Name:    proto.String(filepath.Join(docsDir, file.Filename)),
+				Name:    proto.String(filepath.Join(project.DocsDir, file.Filename)),
 				Content: proto.String(file.Content),
 			})
 		}
