@@ -1,5 +1,9 @@
 package model
 
+import (
+	"github.com/golang/protobuf/protoc-gen-go/plugin"
+)
+
 // SOLO-KIT Descriptors from which code can be generated
 
 type ProjectConfig struct {
@@ -16,6 +20,8 @@ type Project struct {
 	ResourceGroups []*ResourceGroup
 
 	XDSResources []*XDSResource
+
+	Request *plugin_go.CodeGeneratorRequest
 }
 
 type Resource struct {

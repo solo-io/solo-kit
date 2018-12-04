@@ -43,6 +43,7 @@ func ParseRequest(projectFile string, req *plugin_go.CodeGeneratorRequest) (*mod
 	project := &model.Project{
 		ProjectConfig: projectConfig,
 		GroupName:     projectConfig.Name,
+		Request:       req,
 	}
 	resources, resourceGroups, err := getResources(project, messages)
 	if err != nil {

@@ -1,12 +1,13 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/funcs"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"text/template"
-
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 )
 
-var ProtoFileTemplate = template.Must(template.New("resource").Funcs(templates.Funcs).Parse(`
+func ProtoFileTemplate(project *model.Project) *template.Template {
+	return template.Must(template.New("p").Funcs(funcs.TemplateFuncs(project)).Parse(`
 ## Package:
 {{ .Package }}
 
@@ -55,3 +56,4 @@ Description: {{ remove_magic_comments .Comments.Leading }}
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
 <!-- End of HubSpot Embed Code -->
 `))
+}

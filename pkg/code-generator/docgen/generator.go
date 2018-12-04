@@ -20,10 +20,10 @@ type File struct {
 
 type Files []File
 
-func generateFilesForProtoFiles(protoFiles []*protokit.FileDescriptor) (Files, error) {
+func generateFilesForProtoFiles(project *model.Project, protoFiles []*protokit.FileDescriptor) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
-		".sk.md": templates.ProtoFileTemplate,
+		".sk.md": templates.ProtoFileTemplate(project),
 	} {
 		for _, protoFile := range protoFiles {
 			content, err := generateProtoFileFile(protoFile, tmpl)
@@ -45,7 +45,7 @@ func GenerateFiles(project *model.Project, protoFiles []*protokit.FileDescriptor
 	if err != nil {
 		return nil, err
 	}
-	messageFiles, err := generateFilesForProtoFiles(protoFiles)
+	messageFiles, err := generateFilesForProtoFiles(project, protoFiles)
 	if err != nil {
 		return nil, err
 	}

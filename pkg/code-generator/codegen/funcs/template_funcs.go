@@ -2,6 +2,8 @@ package funcs
 
 import (
 	"fmt"
+	"github.com/solo-io/solo-kit/pkg/errors"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
@@ -41,7 +43,7 @@ func TemplateFuncs(project *model.Project) template.FuncMap {
 		"p":           gendoc.PFilter,
 		"para":        gendoc.ParaFilter,
 		"nobr":        gendoc.NoBrFilter,
-		"fieldType":   fieldType,
+		"fieldType":   fieldType(project),
 		"yamlType":    yamlType,
 		"noescape":    noEscape,
 		"linkForType": linkForType(project),
@@ -112,37 +114,164 @@ func noEscape(s string) htmltemplate.HTML {
 	return htmltemplate.HTML(s)
 }
 
-func fieldType(field *protokit.FieldDescriptor) string {
-	fieldType := func() string {
-		switch field.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			return field.GetTypeName()
+func fieldType(project *model.Project) func(field *protokit.FieldDescriptor) (string, error) {
+	return func(field *protokit.FieldDescriptor) (string, error) {
+		fieldTypeStr := func() string {
+			switch field.GetType() {
+			case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+				return field.GetTypeName()
+			}
+			if typeName, ok := primitiveTypes[field.GetType()]; ok {
+				return typeName
+			}
+			return "UNSUPPORTED: " + field.GetType().String() + ": " + field.GetName()
+		}()
+		if field.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+			fieldTypeStr = "[]" + strings.TrimPrefix(fieldTypeStr, ".")
 		}
-		if typeName, ok := primitiveTypes[field.GetType()]; ok {
-			return typeName
+		if strings.HasSuffix(fieldTypeStr, "Entry") {
+			msg, err := getMessageForField(project, field)
+			if err != nil {
+				return "", err
+			}
+			if len(msg.Field) != 2 {
+				return "", errors.Errorf("message %v was Entry type, expected map", msg.GetName())
+			}
+			key, err := fieldType(project)(&protokit.FieldDescriptor{FieldDescriptorProto: msg.Field[0]})
+			if err != nil {
+				return "", err
+			}
+			val, err := fieldType(project)(&protokit.FieldDescriptor{FieldDescriptorProto: msg.Field[1]})
+			if err != nil {
+				return "", err
+			}
+			fieldTypeStr = "map<" + key + ", " + val + ">"
 		}
-		return "UNSUPPORTED: " + field.GetType().String() + ": " + field.GetName()
-	}()
-	if field.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-		fieldType = "[" + fieldType + "]"
+		return fieldTypeStr, nil
 	}
-	return fieldType
 }
 
-func linkForType(project *model.Project) func(field *protokit.FieldDescriptor) string {
-	return func(field *protokit.FieldDescriptor) string {
-		typeName := fieldType(field)
-		if _, ok := primitiveTypes[field.GetType()]; ok {
-			return typeName
+func linkForType(project *model.Project) func(field *protokit.FieldDescriptor) (string, error) {
+	return func(field *protokit.FieldDescriptor) (string, error) {
+		typeName, err := fieldType(project)(field)
+		if err != nil {
+			return "", err
 		}
-		fileName := field.Message.GetFile().GetName()
-		link := strcase.ToSnake(fileName) + ".sk.md#" + field.Message.GetName()
+		if _, ok := primitiveTypes[field.GetType()]; ok {
+			return typeName, nil
+		}
+		file, err := getFileForField(project, field)
+		if err != nil {
+			return "", err
+		}
+		msg, err := getMessageForField(project, field)
+		if err != nil {
+			return "", err
+		}
+		link := filepath.Base(strcase.ToSnake(file.GetName())) + ".sk.md#" + msg.GetName()
 		if strings.Contains(typeName, "google.protobuf.Duration") {
 			link = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration"
 		}
 		if strings.Contains(typeName, "google.protobuf.Struct") {
 			link = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct"
 		}
-		return "[" + typeName + "](" + link + ")"
+		if strings.Contains(typeName, "google.protobuf.StringValue") {
+			link = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value"
+		}
+		linkText := "[" + typeName + "](" + link + ")"
+		return linkText, nil
 	}
 }
+
+func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, error) {
+	parts := strings.Split(strings.TrimPrefix(field.GetTypeName(), "."), ".")
+	if strings.HasSuffix(parts[len(parts)-1], "Entry") {
+		parts = parts[:len(parts)-1]
+	}
+	messageName := parts[len(parts)-1]
+	packageName := strings.Join(parts[:len(parts)-1], ".")
+	for _, protoFile := range project.Request.GetProtoFile() {
+		if protoFile.GetPackage() == packageName {
+			for _, msg := range protoFile.GetMessageType() {
+				if messageName == msg.GetName() {
+					return protoFile, nil
+				}
+			}
+		}
+	}
+	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
+}
+
+func getMessageForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.DescriptorProto, error) {
+	parts := strings.Split(strings.TrimPrefix(field.GetTypeName(), "."), ".")
+	messageName := parts[len(parts)-1]
+	var nestedMessageParent string
+	if strings.HasSuffix(parts[len(parts)-1], "Entry") {
+		parts = parts[:len(parts)-1]
+		nestedMessageParent = parts[len(parts)-1]
+	}
+	packageName := strings.Join(parts[:len(parts)-1], ".")
+	for _, protoFile := range project.Request.ProtoFile {
+		if protoFile.GetPackage() == packageName {
+			for _, msg := range protoFile.GetMessageType() {
+				if messageName == msg.GetName() {
+					return msg, nil
+				}
+				if nestedMessageParent == msg.GetName() {
+					for _, nestedMsg := range msg.GetNestedType() {
+						if messageName == nestedMsg.GetName() {
+							return nestedMsg, nil
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
+}
+
+//func linkForMap(project *model.Project, field *protokit.FieldDescriptor) string {
+//
+//	parts := strings.Split(strings.TrimPrefix(field.GetTypeName(), "."), ".")
+//	parts = parts[:len(parts)-1]
+//	messageName := parts[len(parts)-1]
+//	packageName := strings.Join(parts[:len(parts)-1], ".")
+//	for _, protoFile := range project.Request.GetProtoFile() {
+//		if protoFile.GetPackage() == packageName {
+//			for _, msg := range protoFile.GetMessageType() {
+//				if messageName == msg.GetName() {
+//					return protoFile, nil
+//				}
+//			}
+//		}
+//	}
+//	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
+//
+//	for _, protoFile := range project.Request.ProtoFile {
+//		messages := protoFile.MessageType
+//		// remove "entry" types, we are converting these back to map<string, string>
+//		for _, message := range messages {
+//			if strings.HasSuffix(message.Name, "Entry") {
+//				if len(message.Fields) != 2 {
+//					log.Fatalf("bad assumption: %#v is not a map entry, or doesn't have 2 fields", message)
+//				}
+//				mapEntriesToFix[message.Name] = mapEntry{key: message.Fields[0], value: message.Fields[1]}
+//			} else {
+//				protoFile.Messages = append(protoFile.Messages, message)
+//			}
+//		}
+//	}
+//	for _, protoFile := range protoDescriptor.Files {
+//		for _, message := range protoFile.Messages {
+//			for _, field := range message.Fields {
+//				if entry, ok := mapEntriesToFix[field.Type]; ok {
+//					field.Type = "map<" + entry.key.Type + "," + entry.value.Type + ">"
+//					field.FullType = "map<" + entry.key.FullType + "," + entry.value.FullType + ">"
+//					field.LongType = "map<" + entry.key.LongType + "," + entry.value.LongType + ">"
+//					field.Label = ""
+//					log.Printf("changed field %v", field.Name)
+//				}
+//			}
+//		}
+//	}
+//}
