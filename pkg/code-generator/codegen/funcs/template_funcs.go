@@ -199,6 +199,18 @@ func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*
 			}
 		}
 	}
+	for _, protoFile := range project.Request.ProtoFile {
+		// ilackarms: unlikely event of collision where the package name has the right prefix and a nested message type matches
+		if strings.HasPrefix(packageName, protoFile.GetPackage()) {
+			for _, msg := range protoFile.GetMessageType() {
+				for _, nestedMsg := range msg.GetNestedType() {
+					if messageName == nestedMsg.GetName() {
+						return protoFile, nil
+					}
+				}
+			}
+		}
+	}
 	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
 }
 
@@ -227,6 +239,20 @@ func getMessageForField(project *model.Project, field *protokit.FieldDescriptor)
 			}
 		}
 	}
+
+	for _, protoFile := range project.Request.ProtoFile {
+		// ilackarms: unlikely event of collision where the package name has the right prefix and a nested message type matches
+		if strings.HasPrefix(packageName, protoFile.GetPackage()) {
+			for _, msg := range protoFile.GetMessageType() {
+				for _, nestedMsg := range msg.GetNestedType() {
+					if messageName == nestedMsg.GetName() {
+						return nestedMsg, nil
+					}
+				}
+			}
+		}
+	}
+
 	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
 }
 
