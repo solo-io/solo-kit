@@ -62,9 +62,6 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 			Project:   project,
 			Resources: resources,
 		}
-		if !strings.HasSuffix(rg.Name, "."+project.GroupName) {
-			continue
-		}
 		for _, res := range resources {
 			res.Project = project
 			res.ResourceGroups = append(res.ResourceGroups, rg)

@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	"github.com/iancoleman/strcase"
@@ -21,7 +22,7 @@ type File struct {
 
 type Files []File
 
-func GenerateFiles(project *model.Project) (Files, error) {
+func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (Files, error) {
 	files, err := generateFilesForProject(project)
 	if err != nil {
 		return nil, err
@@ -40,6 +41,9 @@ func GenerateFiles(project *model.Project) (Files, error) {
 		files = append(files, fs...)
 	}
 	for _, grp := range project.ResourceGroups {
+		if skipOutOfPackageFiles && !strings.HasSuffix(grp.Name, "."+project.GroupName) {
+			continue
+		}
 		fs, err := generateFilesForResourceGroup(grp)
 		if err != nil {
 			return nil, err
@@ -48,6 +52,9 @@ func GenerateFiles(project *model.Project) (Files, error) {
 	}
 
 	for _, res := range project.XDSResources {
+		if skipOutOfPackageFiles && !strings.HasSuffix(res.GroupName, "."+project.GroupName) {
+			continue
+		}
 		fs, err := generateFilesForXdsResource(res)
 		if err != nil {
 			return nil, err
