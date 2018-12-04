@@ -60,7 +60,7 @@ func GenerateFiles(project *model.Project, protoFiles []*protokit.FileDescriptor
 func generateFilesForProject(project *model.Project) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
-		".project.sk.md": templates.ProjectTemplate,
+		".project.sk.md": templates.ProjectTemplate(project),
 	} {
 		content, err := generateProjectFile(project, tmpl)
 		if err != nil {
