@@ -33,7 +33,9 @@ import (
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+{{- if $needs_kube_client }}
 	"k8s.io/client-go/kubernetes"
+{{- end }}
 )
 
 var _ = Describe("{{ upper_camel .Project.Version }}Emitter", func() {

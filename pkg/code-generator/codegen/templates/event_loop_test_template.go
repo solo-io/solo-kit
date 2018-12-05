@@ -15,6 +15,7 @@ var ResourceGroupEventLoopTestTemplate = template.Must(template.New("resource_gr
 import (
 	"context"
 	"time"
+	"sync"
 
 	{{ .Imports }}
 	. "github.com/onsi/ginkgo"
@@ -52,16 +53,25 @@ var _ = Describe("{{ .GoName }}EventLoop", func() {
 		el := New{{ .GoName }}EventLoop(emitter, sync)
 		_, err := el.Run([]string{namespace}, clients.WatchOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(func() bool { return sync.synced }, time.Second).Should(BeTrue())
+		Eventually(sync.Synced, 5*time.Second).Should(BeTrue())
 	})
 })
 
 type mock{{ .GoName }}Syncer struct {
 	synced bool
+	mutex  sync.Mutex
+}
+
+func (s *mock{{ .GoName }}Syncer) Synced() bool {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.synced
 }
 
 func (s *mock{{ .GoName }}Syncer) Sync(ctx context.Context, snap *{{ .GoName }}Snapshot) error {
+	s.mutex.Lock()
 	s.synced = true
+	s.mutex.Unlock()
 	return nil
 }
 `))
