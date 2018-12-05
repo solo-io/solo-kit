@@ -151,8 +151,16 @@ func fieldType(project *model.Project) func(field *protokit.FieldDescriptor) (st
 	}
 }
 
-func linkForType(project *model.Project) func(field *protokit.FieldDescriptor) (string, error) {
-	return func(field *protokit.FieldDescriptor) (string, error) {
+func wellKnownProtoLink(typeName string) string {
+	wellKnown := strings.TrimPrefix(typeName, ".google.protobuf.")
+	wellKnown = strcase.ToSnake(wellKnown)
+	wellKnown = strings.Replace(wellKnown, "_", "-", -1)
+	wellKnown = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/" + wellKnown
+	return wellKnown
+}
+
+func linkForType(project *model.Project) func(forFile *protokit.FileDescriptor, field *protokit.FieldDescriptor) (string, error) {
+	return func(forFile *protokit.FileDescriptor, field *protokit.FieldDescriptor) (string, error) {
 		typeName, err := fieldType(project)(field)
 		if err != nil {
 			return "", err
@@ -168,19 +176,45 @@ func linkForType(project *model.Project) func(field *protokit.FieldDescriptor) (
 		if err != nil {
 			return "", err
 		}
-		link := filepath.Base(strcase.ToSnake(file.GetName())) + ".sk.md#" + msg.GetName()
-		if strings.Contains(typeName, "google.protobuf.Duration") {
-			link = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration"
-		}
-		if strings.Contains(typeName, "google.protobuf.Struct") {
-			link = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct"
-		}
-		if strings.Contains(typeName, "google.protobuf.StringValue") {
-			link = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value"
+		var link string
+		switch {
+		case strings.Contains(typeName, ".google.protobuf."):
+			link = wellKnownProtoLink(typeName)
+		case strings.Contains(typeName, "core.solo.io."):
+			filename := filepath.Base(file.GetName())
+			link = strcase.ToSnake(filename) + ".sk.md#" + msg.GetName()
+		default:
+			var filename string
+			for _, toGenerate := range project.Request.FileToGenerate {
+				if strings.HasSuffix(file.GetName(), toGenerate) {
+					filename = toGenerate
+					break
+				}
+			}
+			if filename == "" {
+				filename = filepath.Base(file.GetName())
+				//return "", errors.Errorf("failed to get generated file path for proto %v in list %v", file.GetName(), project.Request.FileToGenerate)
+			}
+			filename = relativeFilename(forFile.GetName(), filename)
+			link = strcase.ToSnake(filename) + ".sk.md#" + msg.GetName()
 		}
 		linkText := "[" + typeName + "](" + link + ")"
 		return linkText, nil
 	}
+}
+
+func relativeFilename(fileWithLink, fileLinkedTo string) string {
+	if fileLinkedTo == fileWithLink {
+		return filepath.Base(fileLinkedTo)
+	}
+	fileWithLinkSplit := strings.Split(fileWithLink, "/")
+	if len(fileWithLinkSplit) == 1 {
+		return fileLinkedTo
+	}
+	for i := 0; i < len(fileWithLinkSplit)-1; i++ {
+		fileLinkedTo = "../" + fileLinkedTo
+	}
+	return fileLinkedTo
 }
 
 func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, error) {
@@ -255,49 +289,3 @@ func getMessageForField(project *model.Project, field *protokit.FieldDescriptor)
 
 	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
 }
-
-//func linkForMap(project *model.Project, field *protokit.FieldDescriptor) string {
-//
-//	parts := strings.Split(strings.TrimPrefix(field.GetTypeName(), "."), ".")
-//	parts = parts[:len(parts)-1]
-//	messageName := parts[len(parts)-1]
-//	packageName := strings.Join(parts[:len(parts)-1], ".")
-//	for _, protoFile := range project.Request.GetProtoFile() {
-//		if protoFile.GetPackage() == packageName {
-//			for _, msg := range protoFile.GetMessageType() {
-//				if messageName == msg.GetName() {
-//					return protoFile, nil
-//				}
-//			}
-//		}
-//	}
-//	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
-//
-//	for _, protoFile := range project.Request.ProtoFile {
-//		messages := protoFile.MessageType
-//		// remove "entry" types, we are converting these back to map<string, string>
-//		for _, message := range messages {
-//			if strings.HasSuffix(message.Name, "Entry") {
-//				if len(message.Fields) != 2 {
-//					log.Fatalf("bad assumption: %#v is not a map entry, or doesn't have 2 fields", message)
-//				}
-//				mapEntriesToFix[message.Name] = mapEntry{key: message.Fields[0], value: message.Fields[1]}
-//			} else {
-//				protoFile.Messages = append(protoFile.Messages, message)
-//			}
-//		}
-//	}
-//	for _, protoFile := range protoDescriptor.Files {
-//		for _, message := range protoFile.Messages {
-//			for _, field := range message.Fields {
-//				if entry, ok := mapEntriesToFix[field.Type]; ok {
-//					field.Type = "map<" + entry.key.Type + "," + entry.value.Type + ">"
-//					field.FullType = "map<" + entry.key.FullType + "," + entry.value.FullType + ">"
-//					field.LongType = "map<" + entry.key.LongType + "," + entry.value.LongType + ">"
-//					field.Label = ""
-//					log.Printf("changed field %v", field.Name)
-//				}
-//			}
-//		}
-//	}
-//}

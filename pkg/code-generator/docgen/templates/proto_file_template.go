@@ -8,6 +8,8 @@ import (
 
 func ProtoFileTemplate(project *model.Project) *template.Template {
 	return template.Must(template.New("p").Funcs(funcs.TemplateFuncs(project)).Parse(`
+{{ $File := . -}}
+
 ## Package:
 {{ .Package }}
 
@@ -23,6 +25,9 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 - Messages:
 {{- range .Messages }}  
 	- [{{ printfptr "%v" .Name }}](#{{.Name}})
+{{- range .Messages }}  
+	- [{{ printfptr "%v" .Name }}](#{{.Name}})
+{{- end }}
 {{- end }}
 
 {{- if gt (len .Enums) 0 }} 
@@ -47,8 +52,27 @@ Description: {{ remove_magic_comments .Comments.Leading }}
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 {{range .Fields -}}
-| {{ printfptr "%v" .Name }} | {{linkForType . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+| {{ printfptr "%v" .Name }} | {{linkForType $File . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
+
+{{- range .Messages }}  
+### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
+
+Description: {{ remove_magic_comments .Comments.Leading }}
+
+` + "```" + `yaml
+{{range .Fields -}}
+"{{ printfptr "%v" .Name}}": {{ fieldType . }}
+{{end}}
+` + "```" + `
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+{{range .Fields -}}
+| {{ printfptr "%v" .Name }} | {{linkForType $File . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+{{end}}
+
+{{- end }}
 
 {{- end }}
 

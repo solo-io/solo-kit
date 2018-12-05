@@ -2,6 +2,8 @@ package docgen
 
 import (
 	"bytes"
+	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/iancoleman/strcase"
@@ -30,8 +32,13 @@ func generateFilesForProtoFiles(project *model.Project, protoFiles []*protokit.F
 			if err != nil {
 				return nil, err
 			}
+			fileName := strcase.ToSnake(protoFile.GetName()) + suffix
+			// core solo protos go in top level dir
+			if strings.Contains(protoFile.GetName(), "github.com/solo-io/solo-kit/api/") {
+				fileName = filepath.Base(protoFile.GetName()) + suffix
+			}
 			v = append(v, File{
-				Filename: strcase.ToSnake(protoFile.GetName()) + suffix,
+				Filename: fileName,
 				Content:  content,
 			})
 		}

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
@@ -15,6 +16,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
+
+const coreApiRoot = "github.com/solo-io/solo-kit/api/"
 
 // plugin is an implementation of protokit.Plugin
 type Plugin struct {
@@ -109,6 +112,22 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 		}
 	}
 
+	for _, file := range req.ProtoFile {
+	addDepToGenFiles:
+		for _, dep := range file.Dependency {
+			for _, genFile := range req.FileToGenerate {
+				if genFile == dep {
+					continue addDepToGenFiles
+				}
+			}
+			// TODO: make configurable? core root
+			if !strings.HasPrefix(dep, coreApiRoot) {
+				continue
+			}
+			req.FileToGenerate = append(req.FileToGenerate, dep)
+		}
+	}
+
 	project, err := parser.ParseRequest(projectFile, req)
 	if err != nil {
 		return nil, err
@@ -138,11 +157,13 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 		}
 
 		for _, file := range docs {
+			log.Printf("doc: %v", file.Filename)
 			resp.File = append(resp.File, &plugin_go.CodeGeneratorResponse_File{
 				Name:    proto.String(filepath.Join(project.DocsDir, file.Filename)),
 				Content: proto.String(file.Content),
 			})
 		}
+		log.Printf("%v", docs)
 	}
 
 	return resp, nil
