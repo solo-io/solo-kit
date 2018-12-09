@@ -1,65 +1,29 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"log"
-	"os"
-	"path/filepath"
-	"strings"
-
-	"github.com/solo-io/solo-kit/pkg/cli"
-	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/cmd/cli/generate"
+	"github.com/solo-io/solo-kit/cmd/cli/options"
+	"github.com/spf13/cobra"
 )
 
-type arrayFlags []string
-
-func (i *arrayFlags) String() string {
-	if i == nil {
-		return "nil"
-	}
-	return fmt.Sprintf("%v", *i)
-}
-
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
 
 func main() {
-	var (
-		projectName   string
-		resourceNames arrayFlags
-	)
-	flag.StringVar(&projectName, "name", "", "name of the project")
-	flag.Var(&resourceNames, "resource", "name of a resource")
-	flag.Parse()
-
-	projectGopath, err := getGopath()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	projectGopath = filepath.Join(projectGopath, projectName)
-
-	log.Printf("gopath: %v", projectGopath)
-
-	err = cli.InitProject(projectName, projectGopath, resourceNames...)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("success")
+	opts := &options.Options{}
+	root := RootCmd(opts)
+	root.Execute()
 }
 
-func getGopath() (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
+
+
+// rootCmd represents the base command when called without any subcommands
+func RootCmd (opts *options.Options) *cobra.Command {
+	//opts := &options.Options{}
+	cmd := &cobra.Command{
+		Use:   "solo-kit",
+		Short: "cli for solo-kit",
+		Aliases: []string{"sk"},
 	}
-	gopath := filepath.Join(os.Getenv("GOPATH"), "src")
-	i := strings.Index(wd, gopath)
-	if i == -1 {
-		return "", errors.Errorf("could not find gopath in %v", wd)
-	}
-	return wd[i+len(gopath)+1:], nil
+	cmd.AddCommand(generate.Cmd(opts))
+	return cmd
 }
+
