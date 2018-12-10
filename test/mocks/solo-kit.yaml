@@ -1,0 +1,10 @@
+projectname: test
+input: .
+output: v1
+docs: docs
+root: $GOPATH/src/github.com/solo-io/solo-kit/test/mocks
+gogoimports:
+  - $GOPATH/src
+  - $ROOT/../../api/external
+solokitimports:
+  - $ROOT/*.proto

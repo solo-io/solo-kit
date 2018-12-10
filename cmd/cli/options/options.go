@@ -1,13 +1,17 @@
 package options
 
 type Options struct {
-	Name   string
-	Config Config
+	Name       string
+	ConfigFile string
+	Config     Config
 }
 
 type Config struct {
-	Dir    string
-	Input  string
-	Output string
-	Root   string
+	Input          string
+	Output         string
+	Docs           string
+	Root           string
+	ProjectName    string
+	GogoImports    []string
+	SoloKitImports []string
 }
