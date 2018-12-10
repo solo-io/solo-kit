@@ -32,8 +32,8 @@ Description: Mock resources for goofin off
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| status | [.core.solo.io.Status](mock_resources.proto.sk.md#MockResource) |  |  |
-| metadata | [.core.solo.io.Metadata](mock_resources.proto.sk.md#MockResource) |  |  |
+| status | [.core.solo.io.Status](status.proto.sk.md#Status) |  |  |
+| metadata | [.core.solo.io.Metadata](metadata.proto.sk.md#Metadata) |  |  |
 | data | string |  |  |
 | oneof_one | string |  |  |
 | oneof_two | bool |  |  |
@@ -51,7 +51,7 @@ Description:
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | count | int |  |  |
-| metadata | [.core.solo.io.Metadata](mock_resources.proto.sk.md#FakeResource) |  |  |
+| metadata | [.core.solo.io.Metadata](metadata.proto.sk.md#Metadata) |  |  |
 
 
 <!-- Start of HubSpot Embed Code -->

@@ -1,9 +1,10 @@
 package templates
 
 import (
+	"text/template"
+
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/funcs"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
-	"text/template"
 )
 
 func ProtoFileTemplate(project *model.Project) *template.Template {

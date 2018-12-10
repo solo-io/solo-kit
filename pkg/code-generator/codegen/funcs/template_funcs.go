@@ -2,11 +2,12 @@ package funcs
 
 import (
 	"fmt"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
+
+	"github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 
