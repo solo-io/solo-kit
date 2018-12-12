@@ -32,6 +32,6 @@ func init() {
 }
 
 var SOLO_KIT_FLAG = func(cfg *options.Config) string {
-	return fmt.Sprintf("--plugin=protoc-gen-solo-kit=${GOPATH}/bin/protoc-gen-solo-kit --solo-kit_out=%s --solo-kit_opt=${PWD}/project.json,%s/doc/docs/v1", cfg.Output, cfg.Root)
+	return os.ExpandEnv(fmt.Sprintf("--plugin=protoc-gen-solo-kit=${GOPATH}/bin/protoc-gen-solo-kit --solo-kit_out=%s --solo-kit_opt=${PWD}/project.json,%s/doc/docs/v1", cfg.Output, cfg.Root))
 
 }

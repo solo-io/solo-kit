@@ -19,7 +19,7 @@ func EnsureConfigFile(opts *options.Options) error {
 	if opts.ConfigFile == "" {
 		// Check the current file tree
 
-		searchPath := (os.ExpandEnv("$GOPATH"))
+		searchPath := os.ExpandEnv("$GOPATH")
 		err := filepath.Walk(searchPath, func(dir string, info os.FileInfo, err error) error {
 			if info.IsDir() {
 				files, err := ioutil.ReadDir(dir)
@@ -28,7 +28,10 @@ func EnsureConfigFile(opts *options.Options) error {
 				}
 				for _, v := range files {
 					if v.Name() == SOLO_KIT_YAML {
-						opts.ConfigFile = path.Join(dir, v.Name())
+						configFilePath := path.Join(dir, v.Name())
+						opts.ConfigFile = configFilePath
+						// Set root as config file path to begin with, in case none is supplied
+						opts.Config.Root = configFilePath
 					}
 				}
 			}
@@ -52,8 +55,4 @@ func ReadConfigFile(opts *options.Options) error {
 		return err
 	}
 	return json.Unmarshal(jsn, &opts.Config)
-	if err != nil {
-		return err
-	}
-	return nil
 }
