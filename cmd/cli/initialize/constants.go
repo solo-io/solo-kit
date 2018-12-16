@@ -4,9 +4,7 @@ const generate_yaml = `projectname: {{.ProjectName}}
 input: {{.Input}}
 output: {{.Output}}
 docs: {{.Docs}}
-root: {{.Root}}
-resources:
-{{range $key, $value := .Resources}}  - {{$value}} {{end}}
+{{if .Root }}root: {{.Root}} {{end}}
 env:
 {{range $key, $value := .Env}}  - {{$value}} {{end}}
 `

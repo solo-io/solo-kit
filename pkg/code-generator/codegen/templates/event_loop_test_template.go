@@ -1,10 +1,11 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
 )
 
-var ResourceGroupEventLoopTestTemplate = template.Must(template.New("resource_group_event_loop_test").Funcs(Funcs).Parse(`package {{ .Project.Version }}
+var ResourceGroupEventLoopTestTemplate = template.Must(template.New("resource_group_event_loop_test").Funcs(templateutils.Funcs).Parse(`package {{ .Project.Version }}
 
 {{- $clients := new_str_slice }}
 {{- range .Resources}}

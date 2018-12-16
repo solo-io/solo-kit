@@ -2,6 +2,7 @@ package code_generator
 
 import (
 	"bytes"
+	"github.com/solo-io/solo-kit/pkg/code-generator/cligen"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -41,6 +42,10 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 	var docsDir string
 	if len(params) > 1 {
 		docsDir = params[1]
+	}
+	var cliDir string
+	if len(params) > 2 {
+		cliDir = params[2]
 	}
 
 	if projectFile == "" {
@@ -154,6 +159,23 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 				Content: proto.String(file.Content),
 			})
 		}
+	}
+
+	if cliDir != "" {
+		cli, err := cligen.GenerateFiles(project, cliDir, true)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, file := range cli {
+			resp.File = append(resp.File, &plugin_go.CodeGeneratorResponse_File{
+				Name:    proto.String(filepath.Join(cliDir, file.Filename)),
+				Content: proto.String(file.Content),
+			})
+		}
+
+		log.Printf("%v", project)
+		log.Printf("%v", cli)
 	}
 
 	return resp, nil

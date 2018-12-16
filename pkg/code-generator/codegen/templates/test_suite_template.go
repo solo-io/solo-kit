@@ -1,10 +1,11 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
 )
 
-var ProjectTestSuiteTemplate = template.Must(template.New("project_template").Funcs(Funcs).Parse(`package {{ .Version }}
+var ProjectTestSuiteTemplate = template.Must(template.New("project_template").Funcs(templateutils.Funcs).Parse(`package {{ .Version }}
 
 import (
 	"testing"

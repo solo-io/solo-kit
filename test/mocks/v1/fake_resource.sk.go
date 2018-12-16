@@ -44,12 +44,14 @@ func (list FakeResourceList) Find(namespace, name string) (*FakeResource, error)
 }
 
 func (list FakeResourceList) AsResources() resources.ResourceList {
-	var ress resources.ResourceList
+	var ress resources.ResourceList 
 	for _, fakeResource := range list {
 		ress = append(ress, fakeResource)
 	}
 	return ress
 }
+
+
 
 func (list FakeResourceList) Names() []string {
 	var names []string
@@ -62,7 +64,7 @@ func (list FakeResourceList) Names() []string {
 func (list FakeResourceList) NamespacesDotNames() []string {
 	var names []string
 	for _, fakeResource := range list {
-		names = append(names, fakeResource.Metadata.Namespace+"."+fakeResource.Metadata.Name)
+		names = append(names, fakeResource.Metadata.Namespace + "." + fakeResource.Metadata.Name)
 	}
 	return names
 }
@@ -79,7 +81,7 @@ func (list FakeResourceList) Clone() FakeResourceList {
 	for _, fakeResource := range list {
 		fakeResourceList = append(fakeResourceList, proto.Clone(fakeResource).(*FakeResource))
 	}
-	return fakeResourceList
+	return fakeResourceList 
 }
 
 func (list FakeResourceList) ByNamespace() FakesByNamespace {
@@ -90,7 +92,7 @@ func (list FakeResourceList) ByNamespace() FakesByNamespace {
 	return byNamespace
 }
 
-func (byNamespace FakesByNamespace) Add(fakeResource ...*FakeResource) {
+func (byNamespace FakesByNamespace) Add(fakeResource ... *FakeResource) {
 	for _, item := range fakeResource {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
 	}

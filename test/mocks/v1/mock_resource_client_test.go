@@ -7,11 +7,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/tests/typed"
 )
 
@@ -70,6 +71,8 @@ func MockResourceClientTest(namespace string, client MockResourceClient) {
 	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
 	Expect(r1.Status).To(Equal(input.Status))
 	Expect(r1.Data).To(Equal(input.Data))
+	Expect(r1.OneofOne).To(Equal(input.OneofOne))
+	Expect(r1.OneofTwo).To(Equal(input.OneofTwo))
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,

@@ -1,10 +1,11 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
 )
 
-var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`package {{ .Project.Version }}
+var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(templateutils.Funcs).Parse(`package {{ .Project.Version }}
 
 {{- $clients := new_str_slice }}
 {{- $needs_kube_client := false }}

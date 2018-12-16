@@ -45,6 +45,7 @@ func EnsureConfigFile(opts *options.Options) error {
 	return nil
 }
 
+
 func ReadConfigFile(opts *options.Options) error {
 	data, err := ioutil.ReadFile(opts.ConfigFile)
 	if err != nil {

@@ -1,10 +1,11 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
 )
 
-var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse(`package {{ .Project.Version }}
+var ResourceTemplate = template.Must(template.New("resource").Funcs(templateutils.Funcs).Parse(`package {{ .Project.Version }}
 
 import (
 	"sort"

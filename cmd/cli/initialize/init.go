@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -52,7 +51,7 @@ func initProject(opts *options.Options) error {
 		return err
 	}
 
-	err = genYamlFile(rootPath, util.SOLO_KIT_YAML, opts.Config)
+	err = genSoloKitYamlFile(rootPath, util.SOLO_KIT_YAML, &opts.Config)
 	if err != nil {
 		return err
 	}
@@ -138,12 +137,24 @@ func genFile(path, filename string, contents ...*bytes.Buffer) error {
 	return nil
 }
 
-func genYamlFile(oath, filename string, data interface{}) error {
+func genYamlFile(path, filename string, data interface{}) error {
 	cfgyml, err := yaml.Marshal(data)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path.Join(oath, filename), cfgyml, 0644)
+	err = ioutil.WriteFile(filepath.Join(path, filename), cfgyml, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func genSoloKitYamlFile(path, filename string, cfg *options.Config) error {
+	buf, err := genTemplateBuffer(filename, generate_yaml, *cfg)
+	if err != nil {
+		return err
+	}
+	err = genFile(path, filename, buf)
 	if err != nil {
 		return err
 	}

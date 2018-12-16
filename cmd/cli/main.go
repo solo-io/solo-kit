@@ -4,6 +4,7 @@ import (
 	"github.com/solo-io/solo-kit/cmd/cli/generate"
 	"github.com/solo-io/solo-kit/cmd/cli/initialize"
 	"github.com/solo-io/solo-kit/cmd/cli/options"
+	"github.com/solo-io/solo-kit/cmd/cli/validate"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +25,7 @@ func RootCmd(opts *options.Options) *cobra.Command {
 	cmd.AddCommand(
 		generate.Cmd(opts),
 		initialize.Cmd(opts),
+		validate.Cmd(opts),
 	)
 	return cmd
 }
