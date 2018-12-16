@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"bytes"
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"strings"
 	"text/template"
 
@@ -128,7 +129,7 @@ func generateFilesForResourceGroup(rg *model.ResourceGroup) (Files, error) {
 func generateFilesForProject(project *model.Project) (Files, error) {
 	var v Files
 	for suffix, tmpl := range map[string]*template.Template{
-		"_suite_test.go": templates.ProjectTestSuiteTemplate,
+		"_suite_test.go": templateutils.ProjectTestSuiteTemplate,
 	} {
 		content, err := generateProjectFile(project, tmpl)
 		if err != nil {

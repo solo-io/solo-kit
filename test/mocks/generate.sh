@@ -10,7 +10,7 @@ OUT=${SOLO_KIT}/test/mocks/v1
 DOCS_OUT=../../../
 PROJECT_IN=${PWD}/project.json
 DOCS_OUT=./doc/docs
-CLI_OUT=./cli
+CLI_OUT=../cli
 
 IMPORTS="-I=${TEST_IN} \
     -I=${SOLO_KIT}/api/external \

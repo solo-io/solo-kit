@@ -173,8 +173,6 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 				Content: proto.String(file.Content),
 			})
 		}
-
-		log.Printf("%v", project)
 		log.Printf("%v", cli)
 	}
 

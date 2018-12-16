@@ -20,9 +20,6 @@ Syntax Comments a
 ### <a name="MockResource">MockResource</a>
 
 Description: Mock resources for goofin off
-@solo-kit:resource.short_name=mk
-@solo-kit:resource.plural_name=mocks
-@solo-kit:resource.resource_groups=testing.solo.io
 
 ```yaml
 "status": .core.solo.io.Status
@@ -43,9 +40,7 @@ Description: Mock resources for goofin off
   
 ### <a name="FakeResource">FakeResource</a>
 
-Description: @solo-kit:resource.short_name=fk
-@solo-kit:resource.plural_name=fakes
-@solo-kit:resource.resource_groups=testing.solo.io
+Description: 
 
 ```yaml
 "count": int
@@ -59,3 +54,6 @@ Description: @solo-kit:resource.short_name=fk
 | metadata | [.core.solo.io.Metadata](mock_resources.proto.sk.md#FakeResource) |  |  |
 
 
+<!-- Start of HubSpot Embed Code -->
+<script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
+<!-- End of HubSpot Embed Code -->

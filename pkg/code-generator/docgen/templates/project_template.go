@@ -1,14 +1,14 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
 func ProjectTemplate(project *model.Project) *template.Template {
-	return template.Must(template.New("p").Funcs(templates.Funcs).Parse(`
+	return template.Must(template.New("p").Funcs(templateutils.Funcs).Parse(`
 ### {{ .Name }} {{.Version}} Top Level API Objects:
 {{- range .Resources}}
 - [{{ .ImportPrefix }}{{ .Name }}](./{{ .Filename }}.sk.md#{{ .Name }})

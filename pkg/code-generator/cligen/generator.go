@@ -2,12 +2,12 @@ package cligen
 
 import (
 	"bytes"
-	"path"
+	"fmt"
+	"github.com/spf13/cobra"
 	"strings"
 	"text/template"
 
-	"github.com/iancoleman/strcase"
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
+	"github.com/solo-io/solo-kit/pkg/code-generator/cligen/templates"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
@@ -24,20 +24,11 @@ type File struct {
 type Files []File
 
 func GenerateFiles(project *model.Project, cliDir string,  skipOutOfPackageFiles bool) (Files, error) {
+
 	files, err := generateFilesForProject(project)
 	if err != nil {
 		return nil, err
 	}
-	opt, err := generateOptions(project.Resources)
-	if err != nil {
-		return nil, err
-	}
-	files = append(files, opt)
-	root, err := generateRootCmd(project.Resources)
-	if err != nil {
-		return nil, err
-	}
-	files = append(files, root)
 	for _, res := range project.Resources {
 		// only generate files for the resources in our group, otherwise we import
 		if res.GroupName != project.GroupName {
@@ -51,16 +42,16 @@ func GenerateFiles(project *model.Project, cliDir string,  skipOutOfPackageFiles
 		}
 		files = append(files, fs...)
 	}
-	for _, grp := range project.ResourceGroups {
-		if skipOutOfPackageFiles && !strings.HasSuffix(grp.Name, "."+project.GroupName) {
-			continue
-		}
-		fs, err := generateFilesForResourceGroup(grp)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, fs...)
-	}
+	//for _, grp := range project.ResourceGroups {
+	//	if skipOutOfPackageFiles && !strings.HasSuffix(grp.Name, "."+project.GroupName) {
+	//		continue
+	//	}
+	//	fs, err := generateFilesForResourceGroup(grp)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	files = append(files, fs...)
+	//}
 	for i := range files {
 		files[i].Content = fileHeader + files[i].Content
 	}
@@ -69,107 +60,113 @@ func GenerateFiles(project *model.Project, cliDir string,  skipOutOfPackageFiles
 
 func generateFilesForResource(resource *model.Resource) (Files, error) {
 	var v Files
-	for suffix, tmpl := range map[string]*template.Template{
-		".sk.go":            templates.ResourceTemplate,
-		"_client.sk.go":     templates.ResourceClientTemplate,
-		"_client_test.go":   templates.ResourceClientTestTemplate,
-		"_reconciler.sk.go": templates.ResourceReconcilerTemplate,
-	} {
-		content, err := generateResourceFile(resource, tmpl)
-		if err != nil {
-			return nil, err
-		}
-		v = append(v, File{
-			Filename: strcase.ToSnake(resource.Name) + suffix,
-			Content:  content,
-		})
+	commandFileInfo := &model.CliCommandFile{
+		CliFile: model.CliFile{
+			Filename: fmt.Sprintf("cmd/%s/root.go", strings.ToLower(resource.Name)),
+		},
+		IsRoot: false,
+		Resource: resource,
+		Cmd: &cobra.Command{
+			Use: strings.ToLower(resource.Name),
+			Short: "short description",
+			Long: "long description",
+		},
 	}
+	err := commandFileInfo.AddImport("cli/options")
+	if err != nil {
+		return v, err
+	}
+	f, err := generateCommandFile(commandFileInfo, templates.CommandTemplate)
+	if err != nil {
+		return nil, err
+	}
+	v = append(v, f)
 	return v, nil
 }
 
-func generateFilesForResourceGroup(rg *model.ResourceGroup) (Files, error) {
-	var v Files
-	//for suffix, tmpl := range map[string]*template.Template{
-	//	"_snapshot.sk.go":           templates.ResourceGroupSnapshotTemplate,
-	//	"_snapshot_emitter.sk.go":   templates.ResourceGroupEmitterTemplate,
-	//	"_snapshot_emitter_test.go": templates.ResourceGroupEmitterTestTemplate,
-	//	"_event_loop.sk.go":         templates.ResourceGroupEventLoopTemplate,
-	//	"_event_loop_test.go":       templates.ResourceGroupEventLoopTestTemplate,
-	//} {
-	//	content, err := generateResourceGroupFile(rg, tmpl)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	v = append(v, File{
-	//		Filename: strcase.ToSnake(rg.GoName) + suffix,
-	//		Content:  content,
-	//	})
-	//}
-	return v, nil
-}
 
 func generateFilesForProject(project *model.Project) (Files, error) {
 	var v Files
-	for suffix, tmpl := range map[string]*template.Template{
-		"_suite_test.go": templates.ProjectTestSuiteTemplate,
+	optionsFileInfo := &model.CliFile{
+		Filename: "options/options.go",
+		Resources: project.Resources,
+	}
+	mainFileInfo := &model.CliFile{
+		Filename: "main.go",
+		Resources: project.Resources,
+	}
+	err := mainFileInfo.AddImport("cli/options", "cli/cmd")
+	if err != nil {
+		return nil, err
+	}
+	rootCommandFileInfo := &model.CliCommandFile{
+		CliFile: model.CliFile{
+			Filename: "cmd/root.go",
+			Resources: project.Resources,
+			PackageName: "cmd",
+		},
+		IsRoot: true,
+		Cmd: &cobra.Command{
+			Use: project.Name,
+			Short: "Short description for application",
+			Long: "Long description",
+		},
+	}
+	var cmdImports []string
+	cmdImports = append(cmdImports, "cli/options")
+	for _,v := range project.Resources {
+		cmdImports = append(cmdImports, "cli/cmd/"+v.Name)
+	}
+	err = rootCommandFileInfo.AddImport(cmdImports...)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("%v", rootCommandFileInfo)
+	for opt,tmpl := range map[*model.CliFile]*template.Template{
+		optionsFileInfo: templates.OptionsTemplate,
+		mainFileInfo: templates.MainTemplate,
 	} {
-		content, err := generateProjectFile(project, tmpl)
+		f, err := generateCliFile(opt, tmpl)
 		if err != nil {
 			return nil, err
 		}
-		v = append(v, File{
-			Filename: strcase.ToSnake(project.Name) + suffix,
-			Content:  content,
-		})
+		v = append(v, f)
+	}
+	for opt,tmpl := range map[*model.CliCommandFile]*template.Template{
+		rootCommandFileInfo: templates.CommandTemplate,
+	} {
+		f, err := generateCommandFile(opt, tmpl)
+		if err != nil {
+			return nil, err
+		}
+		v = append(v, f)
 	}
 	return v, nil
 }
 
 
-
-func generateResourceFile(resource *model.Resource, tmpl *template.Template) (string, error) {
+func generateCliFile(cfg *model.CliFile, tmpl *template.Template) (File, error) {
+	var file File
 	buf := &bytes.Buffer{}
-	if err := tmpl.Execute(buf, resource); err != nil {
-		return "", err
+	if err := tmpl.Execute(buf, cfg); err != nil {
+		return file, err
 	}
-	return buf.String(), nil
-}
-
-func generateResourceGroupFile(rg *model.ResourceGroup, tmpl *template.Template) (string, error) {
-	buf := &bytes.Buffer{}
-	if err := tmpl.Execute(buf, rg); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-func generateProjectFile(project *model.Project, tmpl *template.Template) (string, error) {
-	buf := &bytes.Buffer{}
-	if err := tmpl.Execute(buf, project); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-func generateOptions(resources []*model.Resource) (File, error) {
-	file := File{
-		Filename: path.Join(c)
-	}
-
-	return file, nil
-}
-
-func generateRootCmd(resources []*model.Resource) (File, error) {
-	file := File{
-		Filename: "root.go",
+	file = File{
+		Filename: cfg.Filename,
+		Content: buf.String(),
 	}
 	return file, nil
 }
 
-func generateMainFile() (File, error) {
-
-	file := File{
-		Filename: "main.go",
+func generateCommandFile(cfg *model.CliCommandFile, tmpl *template.Template) (File, error) {
+	var file File
+	buf := &bytes.Buffer{}
+	if err := tmpl.Execute(buf, cfg); err != nil {
+		return file, err
 	}
-	return File{}, nil
+	file = File{
+		Filename: cfg.Filename,
+		Content: buf.String(),
+	}
+	return file, nil
 }

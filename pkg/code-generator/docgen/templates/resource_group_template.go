@@ -1,12 +1,11 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
-
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 )
 
-var ResourceGroupTemplate = template.Must(template.New("rg").Funcs(templates.Funcs).Parse(`
+var ResourceGroupTemplate = template.Must(template.New("rg").Funcs(templateutils.Funcs).Parse(`
 {{ . }}
 
 <!-- Start of HubSpot Embed Code -->

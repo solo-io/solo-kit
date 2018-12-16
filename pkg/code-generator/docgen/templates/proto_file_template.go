@@ -1,12 +1,11 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
-
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 )
 
-var ProtoFileTemplate = template.Must(template.New("resource").Funcs(templates.Funcs).Parse(`
+var ProtoFileTemplate = template.Must(template.New("resource").Funcs(templateutils.Funcs).Parse(`
 ## Package:
 {{ .Package }}
 

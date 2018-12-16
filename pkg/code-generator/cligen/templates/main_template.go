@@ -6,11 +6,13 @@ import (
 )
 
 var MainTemplate = template.Must(template.New("p").Funcs(templateutils.Funcs).Parse(`
-package cli
+package main
 
+{{if .Imports }}
 import (
-{{.Imports}}
-)
+{{range .Imports}}	"{{.}}"
+{{end}})
+{{end}}
 
 
 func main() {

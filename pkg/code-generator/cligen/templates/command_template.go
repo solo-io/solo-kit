@@ -6,30 +6,34 @@ import (
 )
 
 var CommandTemplate = template.Must(template.New("p").Funcs(templateutils.Funcs).Parse(`
+package {{if .CliFile.PackageName}}{{.CliFile.PackageName}}{{else}}{{lowercase .Resource.Name}}{{end}}
 
 import (
-{{.Imports}}
+{{range .CliFile.Imports}}	"{{lowercase .}}"
+{{end}}
 	"github.com/spf13/cobra"
 )
 
-func {{.Name}}Cmd(opts *options.Options) *cobra.Command {
-	//opts := &options.Options{}
+func {{if .IsRoot}}Root{{else}}{{.CliFile.PackageName}}{{end}}Cmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "{{.Use}}",
-		Short:   "{{.Short}}",
-		Long: 	 "{{.Long}}"
-        Run: func(cmd *cobra.Command, args []string) {
+		Use:     "{{.Cmd.Use}}",
+		Short:   "{{.Cmd.Short}}",
+		Long: 	 "{{.Cmd.Long}}",
+        RunE: func(cmd *cobra.Command, args []string) error {
 			// TODO: Add application logic here
 			return nil
 		},
 	}
-
+{{if .IsRoot}}
 	cmd.AddCommand(
-	{{range $key, $value := .Resources}} 
-		{{$value.Name}}.Cmd(opts),
-	{{end}}
+		{{range .Resources}}{{lowercase .Name}}.Cmd(opts),
+		{{end}}
 	)
+{{end}}
 	return cmd
 }
 
 `))
+
+
+
