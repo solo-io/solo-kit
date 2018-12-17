@@ -38,7 +38,7 @@ func (file *CliFile) StrImports() string {
 	return strings.Join(file.Imports, "\n")
 }
 
-type CliCommandFile struct {
+type CliResourceFile struct {
 	CliFile
 	IsRoot   bool
 	Cmd      *cobra.Command

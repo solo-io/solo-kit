@@ -15,3 +15,8 @@
 *.out
 vendor/
 _output/
+
+# Output of test generation
+
+test/mocks/cli
+test/mocks/v1

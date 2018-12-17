@@ -10,7 +10,6 @@ import (
 )
 
 func Cmd(opts *options.Options) *cobra.Command {
-	//opts := &options.Options{}
 	cmd := &cobra.Command{
 		Use:     "mockresource",
 		Short:   "short description",

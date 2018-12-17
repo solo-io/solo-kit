@@ -1,8 +1,8 @@
 package templates
 
 import (
-"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
-"text/template"
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
+	"text/template"
 )
 
 var OptionsTemplate = template.Must(template.New("p").Funcs(templateutils.Funcs).Parse(`

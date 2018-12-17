@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/spf13/cobra"
+	"path"
 	"strings"
 	"text/template"
 
@@ -42,16 +43,16 @@ func GenerateFiles(project *model.Project, cliDir string,  skipOutOfPackageFiles
 		}
 		files = append(files, fs...)
 	}
-	//for _, grp := range project.ResourceGroups {
-	//	if skipOutOfPackageFiles && !strings.HasSuffix(grp.Name, "."+project.GroupName) {
-	//		continue
-	//	}
-	//	fs, err := generateFilesForResourceGroup(grp)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	files = append(files, fs...)
-	//}
+	clientHelpers, err := generateClientHelpers(project)
+	if err != nil {
+		return files, err
+	}
+	files = append(files, clientHelpers)
+	printers, err := generatePrinters(project)
+	if err != nil {
+		return files, err
+	}
+	files = append(files, printers...)
 	for i := range files {
 		files[i].Content = fileHeader + files[i].Content
 	}
@@ -59,29 +60,32 @@ func GenerateFiles(project *model.Project, cliDir string,  skipOutOfPackageFiles
 }
 
 func generateFilesForResource(resource *model.Resource) (Files, error) {
-	var v Files
-	commandFileInfo := &model.CliCommandFile{
-		CliFile: model.CliFile{
-			Filename: fmt.Sprintf("cmd/%s/root.go", strings.ToLower(resource.Name)),
-		},
-		IsRoot: false,
-		Resource: resource,
-		Cmd: &cobra.Command{
-			Use: strings.ToLower(resource.Name),
-			Short: "short description",
-			Long: "long description",
-		},
+	var files Files
+	for _, commandType := range []string{"root", "get"} {
+		commandFileInfo := &model.CliResourceFile{
+			CliFile: model.CliFile{
+				Filename: fmt.Sprintf("cmd/%s/%s.go", strings.ToLower(resource.Name), commandType),
+			},
+			IsRoot: false,
+			Resource: resource,
+			Cmd: &cobra.Command{
+				Use: strings.ToLower(resource.Name),
+				Short: commandType+" command short description",
+				Long: commandType+" command long description",
+			},
+		}
+		err := commandFileInfo.AddImport("cli/options")
+		if err != nil {
+			return files, err
+		}
+		f, err := generateCliResourceFile(commandFileInfo, templates.CommandTemplate)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, f)
 	}
-	err := commandFileInfo.AddImport("cli/options")
-	if err != nil {
-		return v, err
-	}
-	f, err := generateCommandFile(commandFileInfo, templates.CommandTemplate)
-	if err != nil {
-		return nil, err
-	}
-	v = append(v, f)
-	return v, nil
+
+	return files, nil
 }
 
 
@@ -99,7 +103,7 @@ func generateFilesForProject(project *model.Project) (Files, error) {
 	if err != nil {
 		return nil, err
 	}
-	rootCommandFileInfo := &model.CliCommandFile{
+	rootCommandFileInfo := &model.CliResourceFile{
 		CliFile: model.CliFile{
 			Filename: "cmd/root.go",
 			Resources: project.Resources,
@@ -121,7 +125,6 @@ func generateFilesForProject(project *model.Project) (Files, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("%v", rootCommandFileInfo)
 	for opt,tmpl := range map[*model.CliFile]*template.Template{
 		optionsFileInfo: templates.OptionsTemplate,
 		mainFileInfo: templates.MainTemplate,
@@ -132,10 +135,10 @@ func generateFilesForProject(project *model.Project) (Files, error) {
 		}
 		v = append(v, f)
 	}
-	for opt,tmpl := range map[*model.CliCommandFile]*template.Template{
+	for opt,tmpl := range map[*model.CliResourceFile]*template.Template{
 		rootCommandFileInfo: templates.CommandTemplate,
 	} {
-		f, err := generateCommandFile(opt, tmpl)
+		f, err := generateCliResourceFile(opt, tmpl)
 		if err != nil {
 			return nil, err
 		}
@@ -144,6 +147,48 @@ func generateFilesForProject(project *model.Project) (Files, error) {
 	return v, nil
 }
 
+func generateClientHelpers(project *model.Project) (File, error) {
+	var file File
+	var err error
+	clientHelpersInfo := &model.CliFile{
+		Resources: project.Resources,
+		PackageName: "helpers",
+		Filename: "helpers/client.go",
+	}
+	err = clientHelpersInfo.AddImport("v1")
+	if err != nil {
+		return file, err
+	}
+	file, err = generateCliFile(clientHelpersInfo, templates.ClientHelperTemplate)
+	if err != nil {
+		return file, nil
+	}
+	return file, nil
+}
+
+func generatePrinters(project *model.Project) (Files, error) {
+	var files Files
+	var err error
+	for _, res := range project.Resources {
+		printerFileInfo := &model.CliResourceFile{
+			CliFile: model.CliFile{
+				Filename: path.Join("cmd", strings.ToLower(res.Name), "printer.go"),
+			},
+			Resource: res,
+		}
+		err = printerFileInfo.AddImport("v1")
+		if err != nil {
+			return files, err
+		}
+		file, err := generateCliResourceFile(printerFileInfo, templates.PrinterTemplate)
+		if err != nil {
+			return files, err
+		}
+		files = append(files, file)
+	}
+
+	return files, nil
+}
 
 func generateCliFile(cfg *model.CliFile, tmpl *template.Template) (File, error) {
 	var file File
@@ -158,7 +203,7 @@ func generateCliFile(cfg *model.CliFile, tmpl *template.Template) (File, error) 
 	return file, nil
 }
 
-func generateCommandFile(cfg *model.CliCommandFile, tmpl *template.Template) (File, error) {
+func generateCliResourceFile(cfg *model.CliResourceFile, tmpl *template.Template) (File, error) {
 	var file File
 	buf := &bytes.Buffer{}
 	if err := tmpl.Execute(buf, cfg); err != nil {
