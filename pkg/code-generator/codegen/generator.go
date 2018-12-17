@@ -52,7 +52,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (Files, e
 	}
 
 	for _, res := range project.XDSResources {
-		if skipOutOfPackageFiles && !strings.HasSuffix(res.GroupName, "."+project.GroupName) {
+		if skipOutOfPackageFiles && res.GroupName != project.GroupName && !strings.HasSuffix(res.GroupName, "."+project.GroupName) {
 			continue
 		}
 		fs, err := generateFilesForXdsResource(res)
