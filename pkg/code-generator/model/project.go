@@ -1,7 +1,9 @@
 package model
 
 import (
+	"encoding/json"
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
+	"io/ioutil"
 )
 
 // SOLO-KIT Descriptors from which code can be generated
@@ -68,4 +70,14 @@ type XDSResource struct {
 	Project   *Project
 	GroupName string // eg. gloo.solo.io
 	Package   string // proto package for the message
+}
+
+func LoadProjectConfig(path string) (ProjectConfig, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return ProjectConfig{}, err
+	}
+	var pc ProjectConfig
+	err = json.Unmarshal(b, &pc)
+	return pc, err
 }

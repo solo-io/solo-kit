@@ -12,6 +12,7 @@ import (
 	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -80,68 +81,6 @@ func (p *Plugin) outputProtoRequest(outputPath string, req *plugin_go.CodeGenera
 	}, nil
 }
 
-//func foo() {
-//	// merge descriptors to a single file, useful for iterating over sets of protos across multiple commands
-//	log.Printf("merging descriptors to file %v", mergedRequestFilePath)
-//	old := len(req.ProtoFile)
-//	oldFileToGenerate := len(req.FileToGenerate)
-//	if _, err := os.Stat(mergedRequestFilePath); err == nil {
-//		originalRequestBytes, err := ioutil.ReadFile(p.MergeDescriptors)
-//		if err != nil {
-//			return nil, errors.Wrapf(err, "reading in merged descriptors file")
-//		}
-//		var originalRequest plugin_go.CodeGeneratorRequest
-//		if err := proto.Unmarshal(originalRequestBytes, &originalRequest); err != nil {
-//			return nil, errors.Wrapf(err, "parsing merged descriptors file")
-//		}
-//		for _, file := range originalRequest.ProtoFile {
-//			// conflicts are resolved by having the last file win
-//			// hopefully no files have the same name
-//			var skipFile bool
-//			for _, existing := range req.ProtoFile {
-//				if file.GetName() == existing.GetName() {
-//					//log.Fatalf("file.GetName() = %v "+
-//					//	"redefined in 2 packages: %v and %v", file.GetName(), file.GetPackage(), existing.GetPackage())
-//					skipFile = true
-//					break
-//				}
-//			}
-//			if skipFile {
-//				continue
-//			}
-//			req.ProtoFile = append(req.ProtoFile, file)
-//		}
-//		for _, fileToGen := range originalRequest.FileToGenerate {
-//			// conflicts are resolved by having the last file win
-//			// hopefully no files have the same name
-//			var skipFile bool
-//			for _, existing := range req.FileToGenerate {
-//				if fileToGen == existing {
-//					//log.Fatalf("file-to-generate redefined = %v "+
-//					//	"redefined in 2 requests: %v and %v", fileToGen, originalRequest.GetFileToGenerate(), req.GetFileToGenerate())
-//					skipFile = true
-//					break
-//				}
-//			}
-//			if skipFile {
-//				continue
-//			}
-//			req.FileToGenerate = append(req.FileToGenerate, fileToGen)
-//		}
-//	}
-//
-//	log.Printf("added %v ProtoFile, total: %v", len(req.ProtoFile)-old, len(req.ProtoFile))
-//	log.Printf("added %v FileToGenerate, total: %v", oldFileToGenerate, req.FileToGenerate)
-//
-//	collectedDescriptorsBytes, err := proto.Marshal(req)
-//	if err != nil {
-//		return nil, errors.Wrapf(err, "failed to marshal %+v", req)
-//	}
-//	if err := ioutil.WriteFile(p.MergeDescriptors, collectedDescriptorsBytes, 0644); err != nil {
-//		return nil, errors.Wrapf(err, "failed to write %v", param+".descriptors")
-//	}
-//}
-
 func (p *Plugin) generateCode(projectFilePath string, req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeGeneratorResponse, error) {
 	if projectFilePath == "" {
 		return nil, errors.Errorf("must provide parameter file via --solo-kit_opt=PARAM. " +
@@ -177,7 +116,12 @@ func (p *Plugin) generateCode(projectFilePath string, req *plugin_go.CodeGenerat
 		}
 	}
 
-	project, err := parser.ParseRequest(projectFilePath, req)
+	projectFile, err := model.LoadProjectConfig(projectFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	project, err := parser.ParseRequest(projectFile, req)
 	if err != nil {
 		return nil, err
 	}
