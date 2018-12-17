@@ -34,7 +34,7 @@ func main() {
 }
 
 func run() error {
-	relativeRoot := flag.String("r", "../solo-projects/projects/gloo", "path to project absoluteRoot")
+	relativeRoot := flag.String("r", "", "path to project absoluteRoot")
 	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
 	flag.Parse()
 
