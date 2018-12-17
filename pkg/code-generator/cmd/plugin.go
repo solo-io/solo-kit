@@ -1,4 +1,4 @@
-package code_generator
+package cmd
 
 import (
 	"bytes"
