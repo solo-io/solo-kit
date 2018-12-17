@@ -18,9 +18,6 @@ import (
 )
 
 const (
-	ParameterPrefix_OUTPUT   = "OUTPUT="
-	ParameterPrefix_Generate = "GENERATE="
-
 	coreApiRoot = "github.com/solo-io/solo-kit/api/"
 )
 
@@ -47,16 +44,6 @@ func (p *Plugin) generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 
 	log.Printf("received request files: %v | params: %v", req.FileToGenerate, req.GetParameter())
 	param := req.GetParameter()
-
-	switch {
-	case strings.HasPrefix(param, ParameterPrefix_OUTPUT):
-		param = strings.TrimPrefix(param, ParameterPrefix_OUTPUT)
-		return p.outputProtoRequest(param, req)
-	case strings.HasPrefix(param, ParameterPrefix_Generate):
-		param = strings.TrimPrefix(param, ParameterPrefix_Generate)
-	default:
-		// default does generate, but is backwards compatible with no GENERATE= prefix
-	}
 
 	return p.generateCode(param, req)
 }
