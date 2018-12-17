@@ -4,8 +4,13 @@ type Options struct {
 	Name       string
 	ConfigFile string
 	Config     Config
+	Generate   Generate
 	Init       Init
 	Vaidate    Validate
+}
+
+type Generate struct {
+	CompileProtos bool
 }
 
 type Config struct {

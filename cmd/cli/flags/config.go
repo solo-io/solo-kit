@@ -13,6 +13,8 @@ const (
 	docs = "docs"
 	docs_default = "doc/docs"
 	config = "config"
+	gogo = "gogo"
+	gogo_default = true
 )
 
 
@@ -22,4 +24,8 @@ func ConfigFlags(flags *pflag.FlagSet, opts *options.Options) {
 	flags.StringVarP(&opts.Config.Docs, docs, "d", docs_default, "output directory for docs, if different from normal.")
 
 	flags.StringVar(&opts.ConfigFile, config, "", "config file (default is $PROJECT_ROOT/solo-kit.yaml)")
+}
+
+func GenerateFlags(flags *pflag.FlagSet, opts *options.Options) {
+	flags.BoolVar(&opts.Generate.CompileProtos, gogo, gogo_default, "compile normal gogo protos")
 }

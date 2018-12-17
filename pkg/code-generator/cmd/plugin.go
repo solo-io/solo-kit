@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"github.com/solo-io/solo-kit/pkg/code-generator/cligen"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -146,41 +145,6 @@ func (p *Plugin) generateCode(projectFilePath string, req *plugin_go.CodeGenerat
 		log.Printf("%v", docs)
 	}
 
-
-	if project.CliDir != "" {
-		cli, err := cligen.GenerateFiles(project, project.CliDir, true)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, file := range cli {
-			resp.File = append(resp.File, &plugin_go.CodeGeneratorResponse_File{
-				Name:    proto.String(filepath.Join(project.CliDir, file.Filename)),
-				Content: proto.String(file.Content),
-			})
-		}
-		//gofmt := exec.Cmd{
-		//	Stderr: os.Stderr,
-		//	Stdout: os.Stdout,
-		//	Path: "gofmt",
-		//	Args: []string{"-w", project.CliDir},
-		//}
-		//err = gofmt.Run()
-		//if err != nil {
-		//	log.Fatalf("%s", err)
-		//	return nil, err
-		//}
-		//goimports := exec.Cmd{
-		//	Stderr: os.Stderr,
-		//	Stdout: os.Stdout,
-		//	Path: "goimports",
-		//	Args: []string{"-w", project.CliDir},
-		//}
-		//err = goimports.Run()
-		//if err != nil {
-		//	return nil, err
-		//}
-	}
 
 	return resp, nil
 }

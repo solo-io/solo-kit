@@ -1,7 +1,8 @@
-package main
+package solo_kit_gen
 
 import (
-	"flag"
+	"github.com/solo-io/solo-kit/cmd/cli/options"
+	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -15,7 +16,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
 func Gopath() string {
@@ -27,18 +27,10 @@ var commonImports = []string{
 	"-I" + Gopath() + "/src/github.com/solo-io/solo-kit/api/external",
 }
 
-func main() {
-	if err := run(); err != nil {
-		log.Fatalf("%v", err)
-	}
-}
+func Generate(cmd *cobra.Command, args []string, opts *options.Options) error {
 
-func run() error {
-	relativeRoot := flag.String("r", "", "path to project absoluteRoot")
-	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
-	flag.Parse()
-
-	absoluteRoot, err := filepath.Abs(*relativeRoot)
+	compileProtos := opts.Generate.CompileProtos
+	absoluteRoot, err := filepath.Abs(opts.Config.Root)
 	if err != nil {
 		return err
 	}
@@ -56,6 +48,7 @@ func run() error {
 		return err
 	}
 
+	var cliProjects []*model.Project
 	for _, inDir := range projectDirs {
 		outDir := strings.Replace(inDir, "api", "pkg/api", -1)
 
@@ -76,7 +69,7 @@ func run() error {
 			if !strings.HasSuffix(path, ".proto") {
 				return nil
 			}
-			if err := writeDescriptors(path, tmpFile.Name(), imports, *compileProtos); err != nil {
+			if err := writeDescriptors(path, tmpFile.Name(), imports, compileProtos); err != nil {
 				return err
 			}
 			desc, err := readDescriptors(tmpFile.Name())
@@ -121,6 +114,10 @@ func run() error {
 			}
 		}
 
+		if project.CliDir != "" {
+			cliProjects = append(cliProjects, project)
+		}
+
 		for _, file := range code {
 			path := filepath.Join(outDir, file.Filename)
 			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
@@ -137,6 +134,11 @@ func run() error {
 				return err
 			}
 		}
+	}
+
+	err = generateCli(cliProjects)
+	if err != nil {
+		return err
 	}
 
 	return nil
