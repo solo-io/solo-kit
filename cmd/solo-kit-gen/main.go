@@ -28,27 +28,12 @@ var commonImports = []string{
 }
 
 func main() {
-	if err := Main(); err != nil {
+	if err := run(); err != nil {
 		log.Fatalf("%v", err)
 	}
 }
 
-//
-//type arrayFlags []string
-//
-//func (i *arrayFlags) String() string {
-//	if i == nil {
-//		return "nil"
-//	}
-//	return fmt.Sprintf("%v", *i)
-//}
-//
-//func (i *arrayFlags) Set(value string) error {
-//	*i = append(*i, value)
-//	return nil
-//}
-
-func Main() error {
+func run() error {
 	relativeRoot := flag.String("r", "../solo-projects/projects/gloo", "path to project absoluteRoot")
 	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
 	flag.Parse()
