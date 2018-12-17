@@ -5,6 +5,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/cligen"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -173,8 +174,30 @@ func (p *Plugin) Generate(req *plugin_go.CodeGeneratorRequest) (*plugin_go.CodeG
 				Content: proto.String(file.Content),
 			})
 		}
-		log.Printf("%v", cli)
+		gofmt := exec.Cmd{
+			Stderr: os.Stderr,
+			Stdout: os.Stdout,
+			Path: "gofmt",
+			Args: []string{"-w", cliDir},
+		}
+		err = gofmt.Run()
+		if err != nil {
+			log.Fatalf("%s", err)
+			return nil, err
+		}
+		goimports := exec.Cmd{
+			Stderr: os.Stderr,
+			Stdout: os.Stdout,
+			Path: "goimports",
+			Args: []string{"-w", cliDir},
+		}
+		err = goimports.Run()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return resp, nil
 }
+
+

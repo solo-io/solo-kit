@@ -68,6 +68,7 @@ func generateFilesForResource(resource *model.Resource) (Files, error) {
 			},
 			IsRoot: false,
 			Resource: resource,
+			CmdName: strings.Title(commandType),
 			Cmd: &cobra.Command{
 				Use: strings.ToLower(resource.Name),
 				Short: commandType+" command short description",
@@ -110,6 +111,7 @@ func generateFilesForProject(project *model.Project) (Files, error) {
 			PackageName: "cmd",
 		},
 		IsRoot: true,
+		CmdName: "Root",
 		Cmd: &cobra.Command{
 			Use: project.Name,
 			Short: "Short description for application",

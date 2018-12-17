@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func {{if .IsRoot}}Root{{else}}{{.CliFile.PackageName}}{{end}}Cmd(opts *options.Options) *cobra.Command {
+func {{.CmdName}}Cmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "{{.Cmd.Use}}",
 		Short:   "{{.Cmd.Short}}",

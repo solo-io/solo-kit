@@ -17,9 +17,10 @@ type CliConfig struct {
 
 type CliFile struct {
 	Filename    string
-	Imports     []string
 	PackageName string
 	Resources   []*Resource
+
+	imports []string
 }
 
 func (file *CliFile) AddImport(imports ...string) error {
@@ -29,18 +30,23 @@ func (file *CliFile) AddImport(imports ...string) error {
 			return err
 		}
 		importPath := strings.Split(fullImportPath, "go/src/")[1]
-		file.Imports = append(file.Imports, fmt.Sprintf("%s", importPath))
+		file.imports = append(file.imports, fmt.Sprintf("%s", importPath))
 	}
 	return nil
 }
 
+func (file *CliFile) Imports() []string {
+	return file.imports
+}
+
 func (file *CliFile) StrImports() string {
-	return strings.Join(file.Imports, "\n")
+	return strings.Join(file.imports, "\n")
 }
 
 type CliResourceFile struct {
 	CliFile
 	IsRoot   bool
 	Cmd      *cobra.Command
+	CmdName  string
 	Resource *Resource
 }
