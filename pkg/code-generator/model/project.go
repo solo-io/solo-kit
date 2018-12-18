@@ -2,16 +2,20 @@ package model
 
 import (
 	"encoding/json"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
+	"github.com/pseudomuto/protokit"
 	"io/ioutil"
 )
 
 // SOLO-KIT Descriptors from which code can be generated
 
 type ProjectConfig struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-	DocsDir string `json:"docs_dir"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	DocsDir     string `json:"docs_dir"`
 	// set by load
 	ProjectRoot string
 }
@@ -47,12 +51,16 @@ type Resource struct {
 	Project        *Project
 
 	Filename string // the proto file where this resource is contained
+
+	// TODO (ilackarms): change to use descriptor.DescriptorProto
+	Original *protokit.Descriptor
 }
 
 type Field struct {
 	Name     string
 	TypeName string
 	IsOneof  bool // we ignore oneof fields in test generation
+	Original *descriptor.FieldDescriptorProto
 }
 
 type ResourceGroup struct {

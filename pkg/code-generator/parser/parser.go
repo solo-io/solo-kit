@@ -99,6 +99,7 @@ func collectFields(msg *protokit.Descriptor) []*model.Field {
 			Name:     f.GetName(),
 			TypeName: f.GetTypeName(),
 			IsOneof:  f.OneofIndex != nil,
+			Original: f,
 		})
 	}
 	log.Printf("%v", fields)
