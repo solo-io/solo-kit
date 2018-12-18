@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -16,15 +17,82 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 )
 
-func Gopath() string {
-	return os.Getenv("GOPATH")
+func GopathSrc() string {
+	return filepath.Join(os.Getenv("GOPATH"), "src")
 }
 
 var commonImports = []string{
-	"-I" + Gopath() + "/src",
-	"-I" + Gopath() + "/src/github.com/solo-io/solo-kit/api/external",
+	GopathSrc(),
+	GopathSrc() + "github.com/solo-io/solo-kit/api/external",
+}
+
+var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
+var goPackageStatementRegex = regexp.MustCompile(`option go_package = "(.*)";`)
+
+func detectImportsForFile(file string) ([]string, error) {
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(string(content), "\n")
+	var protoImports []string
+	for _, line := range lines {
+		importStatement := protoImportStatementRegex.FindStringSubmatch(line)
+		if len(importStatement) == 0 {
+			continue
+		}
+		if len(importStatement) != 2 {
+			return nil, errors.Errorf("parsing import line error: from %v found %v", line, importStatement)
+		}
+		protoImports = append(protoImports, importStatement[1])
+	}
+	return protoImports, nil
+}
+
+func detectGoPackageForFile(file string) (string, error) {
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		return "", err
+	}
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		goPackage := goPackageStatementRegex.FindStringSubmatch(line)
+		if len(goPackage) == 0 {
+			continue
+		}
+		if len(goPackage) != 2 {
+			return "", errors.Errorf("parsing go_package error: from %v found %v", line, goPackage)
+		}
+		return goPackage[1], nil
+	}
+	return "", errors.Errorf("no go_package statement found in file %v", file)
+}
+
+func findImportRelativeToRoot(absoluteRoot, importedProtoFile string) (string, error) {
+	var possibleImportPaths []string
+	if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, importedProtoFile) {
+			importPath := strings.TrimSuffix(path, importedProtoFile)
+			possibleImportPaths = append(possibleImportPaths, importPath)
+		}
+		return nil
+	}); err != nil {
+		return "", err
+	}
+	if len(possibleImportPaths) == 0 {
+		return "", errors.Errorf("found no possible import paths in root directory %v for import %v",
+			absoluteRoot, importedProtoFile)
+	}
+	if len(possibleImportPaths) != 1 {
+		errors.Errorf("found more than one possible import path in root directory for "+
+			"import %v: %v",
+			importedProtoFile, possibleImportPaths)
+	}
+	return possibleImportPaths[0], nil
+
 }
 
 func main() {
@@ -33,7 +101,27 @@ func main() {
 	}
 }
 
+func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
+	importStatements, err := detectImportsForFile(protoFile)
+	if err != nil {
+		return nil, err
+	}
+	var importsForProto []string
+	for _, importedProto := range importStatements {
+		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto)
+		if err != nil {
+			return nil, err
+		}
+		importsForProto = append(importsForProto, strings.TrimSuffix(importPath, "/"))
+	}
+	importsForProto = append(importsForProto, commonImports...)
+	importsForProto = stringutils.Unique(importsForProto)
+
+	return importsForProto, nil
+}
+
 func run() error {
+	//relativeRoot := flag.String("r", "../solo-projects/projects/gateway", "path to project absoluteRoot")
 	relativeRoot := flag.String("r", "", "path to project absoluteRoot")
 	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
 	flag.Parse()
@@ -57,9 +145,6 @@ func run() error {
 	}
 
 	for _, inDir := range projectDirs {
-		outDir := strings.Replace(inDir, "api", "pkg/api", -1)
-
-		imports := append(commonImports, "-I"+inDir)
 
 		tmpFile, err := ioutil.TempFile("", "solo-kit-gen-")
 		if err != nil {
@@ -72,11 +157,31 @@ func run() error {
 
 		var descriptors []*descriptor.FileDescriptorSet
 
-		if err := filepath.Walk(inDir, func(path string, info os.FileInfo, err error) error {
-			if !strings.HasSuffix(path, ".proto") {
+		var projectGoPackage string
+		if err := filepath.Walk(inDir, func(protoFile string, info os.FileInfo, err error) error {
+			if !strings.HasSuffix(protoFile, ".proto") {
 				return nil
 			}
-			if err := writeDescriptors(path, tmpFile.Name(), imports, *compileProtos); err != nil {
+			goPkg, err := detectGoPackageForFile(protoFile)
+			if err != nil {
+				return err
+			}
+			if projectGoPackage == "" {
+				projectGoPackage = goPkg
+			} else {
+				if projectGoPackage != goPkg {
+					return errors.Errorf("file %v does not contain "+
+						"expected go_package %v (%v instead)", projectGoPackage, goPkg)
+				}
+			}
+
+			imports, err := importsForProtoFile(absoluteRoot, protoFile)
+			if err != nil {
+				return err
+			}
+			imports = append([]string{inDir}, imports...)
+
+			if err := writeDescriptors(protoFile, tmpFile.Name(), imports, *compileProtos); err != nil {
 				return err
 			}
 			desc, err := readDescriptors(tmpFile.Name())
@@ -121,6 +226,8 @@ func run() error {
 			}
 		}
 
+		outDir := filepath.Join(GopathSrc(), projectGoPackage)
+
 		for _, file := range code {
 			path := filepath.Join(outDir, file.Filename)
 			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
@@ -144,6 +251,9 @@ func run() error {
 
 func writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
 	cmd := exec.Command("protoc")
+	for i := range imports {
+		imports[i] = "-I" + imports[i]
+	}
 	cmd.Args = append(cmd.Args, imports...)
 
 	if compileProtos {
@@ -151,7 +261,7 @@ func writeDescriptors(protoFile, toFile string, imports []string, compileProtos 
 			"--gogo_out="+
 				"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,"+
 				"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types"+
-				":"+Gopath()+"/src/")
+				":"+GopathSrc())
 	}
 
 	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",
