@@ -20,110 +20,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 )
 
-func GopathSrc() string {
-	return filepath.Join(os.Getenv("GOPATH"), "src")
-}
-
-var commonImports = []string{
-	GopathSrc(),
-	GopathSrc() + "/github.com/solo-io/solo-kit/api/external",
-}
-
-var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
-var goPackageStatementRegex = regexp.MustCompile(`option go_package = "(.*)";`)
-
-func detectImportsForFile(file string) ([]string, error) {
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-	lines := strings.Split(string(content), "\n")
-	var protoImports []string
-	for _, line := range lines {
-		importStatement := protoImportStatementRegex.FindStringSubmatch(line)
-		if len(importStatement) == 0 {
-			continue
-		}
-		if len(importStatement) != 2 {
-			return nil, errors.Errorf("parsing import line error: from %v found %v", line, importStatement)
-		}
-		protoImports = append(protoImports, importStatement[1])
-	}
-	return protoImports, nil
-}
-
-func detectGoPackageForFile(file string) (string, error) {
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		return "", err
-	}
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
-		goPackage := goPackageStatementRegex.FindStringSubmatch(line)
-		if len(goPackage) == 0 {
-			continue
-		}
-		if len(goPackage) != 2 {
-			return "", errors.Errorf("parsing go_package error: from %v found %v", line, goPackage)
-		}
-		return goPackage[1], nil
-	}
-	return "", errors.Errorf("no go_package statement found in file %v", file)
-}
-
-func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, existingImports []string) (string, error) {
-	// if the file is already imported, point to that import
-	for _, importPath := range existingImports {
-		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
-			return importPath, nil
-		}
-	}
-
-	var possibleImportPaths []string
-	if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(path, importedProtoFile) {
-			importPath := strings.TrimSuffix(path, importedProtoFile)
-			possibleImportPaths = append(possibleImportPaths, importPath)
-		}
-		return nil
-	}); err != nil {
-		return "", err
-	}
-	if len(possibleImportPaths) == 0 {
-		return "", errors.Errorf("found no possible import paths in root directory %v for import %v",
-			absoluteRoot, importedProtoFile)
-	}
-	if len(possibleImportPaths) != 1 {
-		log.Warnf("found more than one possible import path in root directory for "+
-			"import %v: %v",
-			importedProtoFile, possibleImportPaths)
-	}
-	return possibleImportPaths[0], nil
-
-}
-
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf("%v", err)
 	}
-}
-
-func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
-	importStatements, err := detectImportsForFile(protoFile)
-	if err != nil {
-		return nil, err
-	}
-	importsForProto := append([]string{}, commonImports...)
-	for _, importedProto := range importStatements {
-		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto, commonImports)
-		if err != nil {
-			return nil, err
-		}
-		importsForProto = append(importsForProto, strings.TrimSuffix(importPath, "/"))
-	}
-	importsForProto = stringutils.Unique(importsForProto)
-
-	return importsForProto, nil
 }
 
 func run() error {
@@ -253,6 +153,106 @@ func run() error {
 	}
 
 	return nil
+}
+
+func GopathSrc() string {
+	return filepath.Join(os.Getenv("GOPATH"), "src")
+}
+var commonImports = []string{
+	GopathSrc(),
+	GopathSrc() + "/github.com/solo-io/solo-kit/api/external",
+}
+
+var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
+
+var goPackageStatementRegex = regexp.MustCompile(`option go_package = "(.*)";`)
+
+func detectImportsForFile(file string) ([]string, error) {
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(string(content), "\n")
+	var protoImports []string
+	for _, line := range lines {
+		importStatement := protoImportStatementRegex.FindStringSubmatch(line)
+		if len(importStatement) == 0 {
+			continue
+		}
+		if len(importStatement) != 2 {
+			return nil, errors.Errorf("parsing import line error: from %v found %v", line, importStatement)
+		}
+		protoImports = append(protoImports, importStatement[1])
+	}
+	return protoImports, nil
+}
+
+func detectGoPackageForFile(file string) (string, error) {
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		return "", err
+	}
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		goPackage := goPackageStatementRegex.FindStringSubmatch(line)
+		if len(goPackage) == 0 {
+			continue
+		}
+		if len(goPackage) != 2 {
+			return "", errors.Errorf("parsing go_package error: from %v found %v", line, goPackage)
+		}
+		return goPackage[1], nil
+	}
+	return "", errors.Errorf("no go_package statement found in file %v", file)
+}
+
+func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, existingImports []string) (string, error) {
+	// if the file is already imported, point to that import
+	for _, importPath := range existingImports {
+		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
+			return importPath, nil
+		}
+	}
+
+	var possibleImportPaths []string
+	if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, importedProtoFile) {
+			importPath := strings.TrimSuffix(path, importedProtoFile)
+			possibleImportPaths = append(possibleImportPaths, importPath)
+		}
+		return nil
+	}); err != nil {
+		return "", err
+	}
+	if len(possibleImportPaths) == 0 {
+		return "", errors.Errorf("found no possible import paths in root directory %v for import %v",
+			absoluteRoot, importedProtoFile)
+	}
+	if len(possibleImportPaths) != 1 {
+		log.Warnf("found more than one possible import path in root directory for "+
+			"import %v: %v",
+			importedProtoFile, possibleImportPaths)
+	}
+	return possibleImportPaths[0], nil
+
+}
+
+func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
+	importStatements, err := detectImportsForFile(protoFile)
+	if err != nil {
+		return nil, err
+	}
+	importsForProto := append([]string{}, commonImports...)
+	for _, importedProto := range importStatements {
+		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto, commonImports)
+		if err != nil {
+			return nil, err
+		}
+		importsForProto = append(importsForProto, strings.TrimSuffix(importPath, "/"))
+	}
+	importsForProto = stringutils.Unique(importsForProto)
+
+	return importsForProto, nil
 }
 
 func writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {

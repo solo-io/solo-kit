@@ -193,7 +193,7 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 		case strings.Contains(typeName, ".google.protobuf."):
 			link = wellKnownProtoLink(typeName)
 		case strings.Contains(typeName, "core.solo.io."):
-			filename := filepath.Base(file.GetName())
+			filename := filepath.Join("core", filepath.Base(file.GetName()))
 			link = filename + ".sk.md#" + msg.GetName()
 		default:
 			var filename string
