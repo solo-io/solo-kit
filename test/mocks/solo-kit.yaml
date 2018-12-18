@@ -2,4 +2,3 @@ projectname: test
 input: .
 output: v1
 cli: cli
-root: $GOPATH/src/github.com/solo-io/solo-kit/test/mocks

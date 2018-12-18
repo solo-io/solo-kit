@@ -20,3 +20,4 @@ _output/
 
 test/mocks/cli
 test/mocks/v1
+test/mocks/pkg

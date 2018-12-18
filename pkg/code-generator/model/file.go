@@ -1,4 +1,4 @@
-package code_generator
+package model
 
 type File struct {
 	Filename string

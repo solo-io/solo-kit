@@ -17,10 +17,11 @@ type Config struct {
 	Input       string
 	Output      string
 	Docs        string
+	Cli         string
 	Root        string
 	ProjectName string
 	Env         []string
-	Imports     []string
+	ResourceRoots   []string
 }
 
 type Init struct {

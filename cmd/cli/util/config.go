@@ -31,7 +31,7 @@ func EnsureConfigFile(opts *options.Options) error {
 						configFilePath := path.Join(dir, v.Name())
 						opts.ConfigFile = configFilePath
 						// Set root as config file path to begin with, in case none is supplied
-						opts.Config.Root = configFilePath
+						opts.Config.Root = dir
 					}
 				}
 			}
@@ -39,6 +39,10 @@ func EnsureConfigFile(opts *options.Options) error {
 		})
 		if err != nil || opts.ConfigFile == "" {
 			return errors.Errorf("Unable to find config file in PATH")
+		}
+		err = ReadConfigFile(opts)
+		if err != nil {
+			return err
 		}
 
 	}

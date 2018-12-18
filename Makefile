@@ -112,7 +112,7 @@ install-gogo-proto: ${GOPATH}/bin/protoc-gen-solo-kit
 install-gen-tools: install-gogo-proto install-gqlgen install-plugin
 
 #----------------------------------------------------------------------------------
-# Repo init
+# CLI init
 #----------------------------------------------------------------------------------
 
 .PHONY: cli

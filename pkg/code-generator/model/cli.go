@@ -8,11 +8,15 @@ import (
 )
 
 type CliConfig struct {
-	Name string
-	Path string
-	// String representation of go package name for current project
-	// e.g. "github.com/solo-io/solo-kit/..."
-	ImportDir string
+	Name    string
+	Path    string
+	Version string
+}
+
+type CliProject struct {
+	CliConfig
+	Resources      []*Resource
+	ResourceGroups []*ResourceGroup
 }
 
 type CliFile struct {

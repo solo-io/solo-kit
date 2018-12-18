@@ -1,7 +1,9 @@
 package solo_kit_gen
 
 import (
+	"fmt"
 	"github.com/solo-io/solo-kit/cmd/cli/options"
+	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
@@ -29,6 +31,11 @@ var commonImports = []string{
 
 func Generate(cmd *cobra.Command, args []string, opts *options.Options) error {
 
+	err := ensureOpts(opts)
+	if err != nil {
+		return err
+	}
+
 	compileProtos := opts.Generate.CompileProtos
 	absoluteRoot, err := filepath.Abs(opts.Config.Root)
 	if err != nil {
@@ -38,15 +45,28 @@ func Generate(cmd *cobra.Command, args []string, opts *options.Options) error {
 	var projectDirs []string
 
 	// discover all project.json
-	if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(path, "project.json") {
-			return nil
+	if len(opts.Config.ResourceRoots) > 0 {
+		if invalidDirs :=  validResourceDirectories(opts.Config.ResourceRoots); len(invalidDirs) > 0 {
+			return fmt.Errorf("the following resource roots are invalid:\n %v", invalidDirs)
 		}
-		projectDirs = append(projectDirs, filepath.Dir(path))
-		return nil
-	}); err != nil {
-		return err
+		projectDirs = opts.Config.ResourceRoots
+	} else {
+		if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
+			fmt.Printf("path: %s\n", path)
+			if err != nil {
+				fmt.Printf("%s", err)
+				return err
+			}
+			if !strings.HasSuffix(path, "project.json") {
+				return nil
+			}
+			projectDirs = append(projectDirs, filepath.Dir(path))
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
+
 
 	var cliProjects []*model.Project
 	for _, inDir := range projectDirs {
@@ -98,6 +118,7 @@ func Generate(cmd *cobra.Command, args []string, opts *options.Options) error {
 		}
 
 		if project.DocsDir != "" {
+			log.Printf("generating docs for %s", project.Name)
 			docs, err := docgen.GenerateFiles(project)
 			if err != nil {
 				return err
@@ -118,25 +139,14 @@ func Generate(cmd *cobra.Command, args []string, opts *options.Options) error {
 			cliProjects = append(cliProjects, project)
 		}
 
-		for _, file := range code {
-			path := filepath.Join(outDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-				return err
-			}
-			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-				return err
-			}
-			if err := exec.Command("gofmt", "-w", path).Run(); err != nil {
-				return err
-			}
-
-			if err := exec.Command("goimports", "-w", path).Run(); err != nil {
-				return err
-			}
+		err = writeFormatCode(code, outDir)
+		if err != nil {
+			return err
 		}
+
 	}
 
-	err = generateCli(cliProjects)
+	err = generateCli(cliProjects, opts.Config.Cli)
 	if err != nil {
 		return err
 	}
@@ -176,4 +186,59 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 		return nil, err
 	}
 	return &desc, nil
+}
+
+func writeFormatCode(code model.Files, outDir string) error {
+	for _, file := range code {
+		path := filepath.Join(outDir, file.Filename)
+		if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+			return err
+		}
+		if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
+			return err
+		}
+		if err := exec.Command("gofmt", "-w", path).Run(); err != nil {
+			return err
+		}
+
+		if err := exec.Command("goimports", "-w", path).Run(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validResourceDirectories(dirs []string) []string {
+	var invalidDirs []string
+	for _, v := range dirs {
+		var err error
+		var dir string
+		dir, err = filepath.Abs(v)
+		if err != nil {
+			invalidDirs = append(invalidDirs, dir)
+			continue
+		}
+		dirInfo, err := ioutil.ReadDir(dir)
+		if err != nil {
+			invalidDirs = append(invalidDirs, dir)
+		}
+		validJson := false
+		for _, file := range dirInfo {
+			if file.Name() == "project.json" {
+				validJson = true
+				break
+			}
+		}
+		if !validJson{
+			invalidDirs = append(invalidDirs, dir)
+		}
+	}
+	return invalidDirs
+}
+
+func ensureOpts(opts *options.Options) error {
+	if opts.Config.Root == "" {
+		return fmt.Errorf("root directory cannot be empty")
+	}
+	return nil
 }
