@@ -71,7 +71,14 @@ func detectGoPackageForFile(file string) (string, error) {
 	return "", errors.Errorf("no go_package statement found in file %v", file)
 }
 
-func findImportRelativeToRoot(absoluteRoot, importedProtoFile string) (string, error) {
+func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, existingImports []string) (string, error) {
+	// if the file is already imported, point to that import
+	for _, importPath := range existingImports {
+		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
+			return importPath, nil
+		}
+	}
+
 	var possibleImportPaths []string
 	if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, importedProtoFile) {
@@ -87,7 +94,7 @@ func findImportRelativeToRoot(absoluteRoot, importedProtoFile string) (string, e
 			absoluteRoot, importedProtoFile)
 	}
 	if len(possibleImportPaths) != 1 {
-		errors.Errorf("found more than one possible import path in root directory for "+
+		log.Warnf("found more than one possible import path in root directory for "+
 			"import %v: %v",
 			importedProtoFile, possibleImportPaths)
 	}
@@ -108,7 +115,7 @@ func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
 	}
 	var importsForProto []string
 	for _, importedProto := range importStatements {
-		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto)
+		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto, commonImports)
 		if err != nil {
 			return nil, err
 		}
