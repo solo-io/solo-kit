@@ -2,9 +2,10 @@ package codegen
 
 import (
 	"bytes"
-	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"strings"
 	"text/template"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 
 	"github.com/iancoleman/strcase"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"

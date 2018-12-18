@@ -1,8 +1,9 @@
 package templates
 
 import (
-	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 )
 
 var ResourceClientTestTemplate = template.Must(template.New("resource_client_test").Funcs(templateutils.Funcs).Parse(`package {{ .Project.Version }}

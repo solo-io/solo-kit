@@ -11,7 +11,7 @@ func generateCli(projects []*model.Project, cliDir string) error {
 	}
 
 	cliProj := &model.CliProject{
-		Resources: []*model.Resource{},
+		Resources:      []*model.Resource{},
 		ResourceGroups: []*model.ResourceGroup{},
 		CliConfig: model.CliConfig{
 			Path: cliDir,
@@ -24,7 +24,6 @@ func generateCli(projects []*model.Project, cliDir string) error {
 		cliProj.ResourceGroups = append(cliProj.ResourceGroups, proj.ResourceGroups...)
 	}
 
-
 	code, err := cligen.GenerateFiles(cliProj, true)
 	if err != nil {
 		return err
@@ -34,7 +33,6 @@ func generateCli(projects []*model.Project, cliDir string) error {
 	if err != nil {
 		return err
 	}
-
 
 	return nil
 }

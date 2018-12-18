@@ -1,8 +1,9 @@
 package templates
 
 import (
-	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 )
 
 var XdsTemplate = template.Must(template.New("xds_template").Funcs(templateutils.Funcs).Parse(`package {{ .Project.Version }}

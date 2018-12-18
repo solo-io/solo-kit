@@ -14,18 +14,18 @@ type Generate struct {
 }
 
 type Config struct {
-	Input       string
-	Output      string
-	Docs        string
-	Cli         string
-	Root        string
-	ProjectName string
-	Env         []string
-	ResourceRoots   []string
+	Input         string
+	Output        string
+	Docs          string
+	Cli           string
+	Root          string
+	ProjectName   string
+	Env           []string
+	ResourceRoots []string
 }
 
 type Init struct {
-	Resources [] string
+	Resources []string
 }
 
 type Validate struct {

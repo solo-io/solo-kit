@@ -44,4 +44,3 @@ message {{ .ResourceName }}Spec {
 	// TODO: add fields
 }
 `
-

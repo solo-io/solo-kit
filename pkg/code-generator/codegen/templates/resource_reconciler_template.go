@@ -1,8 +1,9 @@
 package templates
 
 import (
-	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 )
 
 var ResourceReconcilerTemplate = template.Must(template.New("resource_client").Funcs(templateutils.Funcs).Parse(`package {{ .Project.Version }}

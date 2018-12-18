@@ -8,8 +8,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/solo-kit/test/mocks/v1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecretplain"

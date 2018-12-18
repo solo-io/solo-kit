@@ -2,13 +2,14 @@ package util
 
 import (
 	"encoding/json"
-	"github.com/ghodss/yaml"
-	"github.com/solo-io/solo-kit/cmd/cli/options"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/ghodss/yaml"
+	"github.com/solo-io/solo-kit/cmd/cli/options"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 const (
@@ -48,7 +49,6 @@ func EnsureConfigFile(opts *options.Options) error {
 	}
 	return nil
 }
-
 
 func ReadConfigFile(opts *options.Options) error {
 	data, err := ioutil.ReadFile(opts.ConfigFile)

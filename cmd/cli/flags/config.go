@@ -6,17 +6,16 @@ import (
 )
 
 const (
-	input = "input"
-	input_default = "api/v1/"
-	output = "output"
+	input          = "input"
+	input_default  = "api/v1/"
+	output         = "output"
 	output_default = "pkg/api/v1"
-	docs = "docs"
-	docs_default = "doc/docs"
-	config = "config"
-	gogo = "gogo"
-	gogo_default = true
+	docs           = "docs"
+	docs_default   = "doc/docs"
+	config         = "config"
+	gogo           = "gogo"
+	gogo_default   = true
 )
-
 
 func ConfigFlags(flags *pflag.FlagSet, opts *options.Options) {
 	flags.StringVarP(&opts.Config.Input, input, "i", input_default, "input protos")

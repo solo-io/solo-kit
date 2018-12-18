@@ -145,6 +145,5 @@ func (p *Plugin) generateCode(projectFilePath string, req *plugin_go.CodeGenerat
 		log.Printf("%v", docs)
 	}
 
-
 	return resp, nil
 }

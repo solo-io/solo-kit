@@ -2,10 +2,11 @@ package initialize
 
 import (
 	"fmt"
-	"github.com/solo-io/solo-kit/cmd/cli/options"
-	"gopkg.in/AlecAivazis/survey.v1"
 	"log"
 	"strings"
+
+	"github.com/solo-io/solo-kit/cmd/cli/options"
+	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 func basicInfoSurvey(cfg *options.Config) error {
@@ -14,21 +15,21 @@ func basicInfoSurvey(cfg *options.Config) error {
 			Prompt: &survey.Input{
 				Message: "Name for the project",
 			},
-			Name: "projectname",
+			Name:     "projectname",
 			Validate: survey.Required,
 		},
 		{
 			Prompt: &survey.Input{
 				Message: "Input directory",
 			},
-			Name: "input",
+			Name:     "input",
 			Validate: survey.Required,
 		},
 		{
 			Prompt: &survey.Input{
 				Message: "Output directory",
 			},
-			Name: "output",
+			Name:     "output",
 			Validate: survey.Required,
 		},
 		{
@@ -55,7 +56,7 @@ func resourceSurvey(cfg *options.Init) error {
 	return nil
 }
 
-func envSurvey(cfg *options.Config) ( error) {
+func envSurvey(cfg *options.Config) error {
 	var envString string
 	qst := &survey.Input{
 		Message: "Name(s) of env vars. (comma seperated list: var1=foo,var2=bar)",

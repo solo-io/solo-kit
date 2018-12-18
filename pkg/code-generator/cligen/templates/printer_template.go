@@ -1,7 +1,9 @@
 package templates
+
 import (
-"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
-"text/template"
+	"text/template"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 )
 
 var PrinterTemplate = template.Must(template.New("p").Funcs(templateutils.Funcs).Parse(`

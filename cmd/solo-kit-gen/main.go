@@ -2,14 +2,15 @@ package solo_kit_gen
 
 import (
 	"fmt"
-	"github.com/solo-io/solo-kit/cmd/cli/options"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/solo-io/solo-kit/cmd/cli/options"
+	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"github.com/spf13/cobra"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -46,7 +47,7 @@ func Generate(cmd *cobra.Command, args []string, opts *options.Options) error {
 
 	// discover all project.json
 	if len(opts.Config.ResourceRoots) > 0 {
-		if invalidDirs :=  validResourceDirectories(opts.Config.ResourceRoots); len(invalidDirs) > 0 {
+		if invalidDirs := validResourceDirectories(opts.Config.ResourceRoots); len(invalidDirs) > 0 {
 			return fmt.Errorf("the following resource roots are invalid:\n %v", invalidDirs)
 		}
 		projectDirs = opts.Config.ResourceRoots
@@ -66,7 +67,6 @@ func Generate(cmd *cobra.Command, args []string, opts *options.Options) error {
 			return err
 		}
 	}
-
 
 	var cliProjects []*model.Project
 	for _, inDir := range projectDirs {
@@ -229,7 +229,7 @@ func validResourceDirectories(dirs []string) []string {
 				break
 			}
 		}
-		if !validJson{
+		if !validJson {
 			invalidDirs = append(invalidDirs, dir)
 		}
 	}

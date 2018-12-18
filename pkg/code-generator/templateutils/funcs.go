@@ -1,18 +1,17 @@
-
 package templateutils
 
 import (
-"fmt"
-"regexp"
-"strings"
-"text/template"
+	"fmt"
+	"regexp"
+	"strings"
+	"text/template"
 
-htmltemplate "html/template"
+	htmltemplate "html/template"
 
-"github.com/golang/protobuf/protoc-gen-go/descriptor"
-"github.com/iancoleman/strcase"
-"github.com/ilackarms/protoc-gen-doc"
-"github.com/pseudomuto/protokit"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/iancoleman/strcase"
+	"github.com/ilackarms/protoc-gen-doc"
+	"github.com/pseudomuto/protokit"
 )
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{

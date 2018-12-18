@@ -2,8 +2,9 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/golang/protobuf/protoc-gen-go/plugin"
 	"io/ioutil"
+
+	"github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
 // SOLO-KIT Descriptors from which code can be generated

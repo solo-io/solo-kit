@@ -2,17 +2,18 @@ package validate
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/solo-io/solo-kit/cmd/cli/options"
 	"github.com/solo-io/solo-kit/cmd/cli/util"
 	"github.com/spf13/cobra"
-	"path/filepath"
 )
 
 var validFileTypes = []string{"proto", "protos"}
 
-func Cmd(opts *options.Options) *cobra.Command{
+func Cmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "validate",
+		Use:     "validate",
 		Aliases: []string{"v"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return Validate(opts, args)
@@ -51,4 +52,3 @@ func parseArgs(args []string, all bool) error {
 	}
 	return nil
 }
-

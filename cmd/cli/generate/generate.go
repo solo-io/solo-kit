@@ -10,9 +10,9 @@ import (
 
 func Cmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "generate",
+		Use:     "generate",
 		Aliases: []string{"g"},
-		Short: "generate solo-kit protos",
+		Short:   "generate solo-kit protos",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return util.EnsureConfigFile(opts)
 		},

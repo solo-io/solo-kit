@@ -3,8 +3,6 @@ package generic
 import (
 	"time"
 
-	"github.com/solo-io/solo-kit/test/mocks/v1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 

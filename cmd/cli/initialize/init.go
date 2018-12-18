@@ -2,15 +2,16 @@ package initialize
 
 import (
 	"bytes"
-	"github.com/ghodss/yaml"
-	"github.com/solo-io/solo-kit/cmd/cli/options"
-	"github.com/solo-io/solo-kit/cmd/cli/util"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/ghodss/yaml"
+	"github.com/solo-io/solo-kit/cmd/cli/options"
+	"github.com/solo-io/solo-kit/cmd/cli/util"
+	"github.com/spf13/cobra"
 
 	"github.com/iancoleman/strcase"
 	"github.com/solo-io/solo-kit/pkg/errors"

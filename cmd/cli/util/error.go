@@ -16,4 +16,3 @@ func (ew *ErrorWriter) Write(p []byte) (n int, err error) {
 func (ew *ErrorWriter) Error() string {
 	return ew.error
 }
-

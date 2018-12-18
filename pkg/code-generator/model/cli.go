@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 type CliConfig struct {

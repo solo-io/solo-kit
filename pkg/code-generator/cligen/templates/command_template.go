@@ -1,8 +1,9 @@
 package templates
 
 import (
-	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 	"text/template"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/templateutils"
 )
 
 var CommandTemplate = template.Must(template.New("p").Funcs(templateutils.Funcs).Parse(`
@@ -34,6 +35,3 @@ func {{.CmdName}}Cmd(opts *options.Options) *cobra.Command {
 }
 
 `))
-
-
-
