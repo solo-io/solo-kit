@@ -89,7 +89,7 @@ func GenerateFiles(project *model.Project) (code_generator.Files, error) {
 func generateFilesForProject(project *model.Project) (code_generator.Files, error) {
 	var v code_generator.Files
 	for suffix, tmpl := range map[string]*template.Template{
-		".project.sk.md": templates.ProjectTemplate(project),
+		".project.sk.md": templates.ProjectDocsRootTemplate(project),
 	} {
 		content, err := generateProjectFile(project, tmpl)
 		if err != nil {
