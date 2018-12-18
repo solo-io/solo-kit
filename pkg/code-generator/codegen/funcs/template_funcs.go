@@ -2,6 +2,7 @@ package funcs
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -18,6 +19,15 @@ import (
 	"github.com/ilackarms/protoc-gen-doc"
 	"github.com/pseudomuto/protokit"
 )
+
+// TODO: uncopy-paste from generator
+func trimProjectRoot(fileName, projectFile string) string {
+	fileDir := filepath.Dir(fileName)
+	projectRoot := strings.TrimPrefix(filepath.Dir(projectFile), os.Getenv("GOPATH")+"/src/")+"/"
+	trimmedFileDir := strings.TrimPrefix(fileDir, projectRoot)
+
+	return 	filepath.Join(trimmedFileDir, filepath.Base(fileName))
+}
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
 	descriptor.FieldDescriptorProto_TYPE_FLOAT:  "float",
@@ -183,7 +193,7 @@ func linkForType(project *model.Project) func(forFile *protokit.FileDescriptor, 
 			link = wellKnownProtoLink(typeName)
 		case strings.Contains(typeName, "core.solo.io."):
 			filename := filepath.Base(file.GetName())
-			link = strcase.ToSnake(filename) + ".sk.md#" + msg.GetName()
+			link = filename + ".sk.md#" + msg.GetName()
 		default:
 			var filename string
 			for _, toGenerate := range project.Request.FileToGenerate {
@@ -196,8 +206,10 @@ func linkForType(project *model.Project) func(forFile *protokit.FileDescriptor, 
 				filename = filepath.Base(file.GetName())
 				//return "", errors.Errorf("failed to get generated file path for proto %v in list %v", file.GetName(), project.Request.FileToGenerate)
 			}
-			filename = relativeFilename(forFile.GetName(), filename)
-			link = strcase.ToSnake(filename) + ".sk.md#" + msg.GetName()
+			filename = trimProjectRoot(filename, project.ProjectRoot)
+			forfileName := trimProjectRoot(forFile.GetName(), project.ProjectRoot)
+			filename = relativeFilename(forfileName, filename)
+			link = filename + ".sk.md#" + msg.GetName()
 		}
 		linkText := "[" + typeName + "](" + link + ")"
 		return linkText, nil
