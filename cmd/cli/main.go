@@ -14,9 +14,8 @@ func main() {
 	root.Execute()
 }
 
-// rootCmd represents the base command when called without any subcommands
+
 func RootCmd(opts *options.Options) *cobra.Command {
-	//opts := &options.Options{}
 	cmd := &cobra.Command{
 		Use:     "solo-kit",
 		Short:   "cli for solo-kit",

@@ -36,10 +36,6 @@ type Resource struct {
 }
 
 func InitProject(opts *options.Options) error {
-	return initProject(opts)
-}
-
-func initProject(opts *options.Options) error {
 
 	err := initSurvey(opts)
 	if err != nil {
