@@ -23,10 +23,10 @@ import (
 // TODO: uncopy-paste from generator
 func trimProjectRoot(fileName, projectFile string) string {
 	fileDir := filepath.Dir(fileName)
-	projectRoot := strings.TrimPrefix(filepath.Dir(projectFile), os.Getenv("GOPATH")+"/src/")+"/"
+	projectRoot := strings.TrimPrefix(filepath.Dir(projectFile), os.Getenv("GOPATH")+"/src/") + "/"
 	trimmedFileDir := strings.TrimPrefix(fileDir, projectRoot)
 
-	return 	filepath.Join(trimmedFileDir, filepath.Base(fileName))
+	return filepath.Join(trimmedFileDir, filepath.Base(fileName))
 }
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
@@ -46,19 +46,20 @@ var magicCommentRegex = regexp.MustCompile("@solo-kit:.*")
 
 func TemplateFuncs(project *model.Project) template.FuncMap {
 	return template.FuncMap{
-		"join":        strings.Join,
-		"lowercase":   strings.ToLower,
-		"lower_camel": strcase.ToLowerCamel,
-		"upper_camel": strcase.ToCamel,
-		"snake":       strcase.ToSnake,
-		"p":           gendoc.PFilter,
-		"para":        gendoc.ParaFilter,
-		"nobr":        gendoc.NoBrFilter,
-		"fieldType":   fieldType(project),
-		"yamlType":    yamlType,
-		"noescape":    noEscape,
-		"linkForType": linkForType(project),
-		"printfptr":   printPointer,
+		"join":            strings.Join,
+		"lowercase":       strings.ToLower,
+		"lower_camel":     strcase.ToLowerCamel,
+		"upper_camel":     strcase.ToCamel,
+		"snake":           strcase.ToSnake,
+		"p":               gendoc.PFilter,
+		"para":            gendoc.ParaFilter,
+		"nobr":            gendoc.NoBrFilter,
+		"fieldType":       fieldType(project),
+		"yamlType":        yamlType,
+		"noescape":        noEscape,
+		"linkForField":    linkForField(project),
+		"linkForResource": linkForResource(project),
+		"printfptr":       printPointer,
 		"remove_magic_comments": func(in string) string {
 			lines := strings.Split(in, "\n")
 			var linesWithoutMagicComments []string
@@ -170,7 +171,7 @@ func wellKnownProtoLink(typeName string) string {
 	return wellKnown
 }
 
-func linkForType(project *model.Project) func(forFile *protokit.FileDescriptor, field *protokit.FieldDescriptor) (string, error) {
+func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor, field *protokit.FieldDescriptor) (string, error) {
 	return func(forFile *protokit.FileDescriptor, field *protokit.FieldDescriptor) (string, error) {
 		typeName, err := fieldType(project)(field)
 		if err != nil {
@@ -213,6 +214,20 @@ func linkForType(project *model.Project) func(forFile *protokit.FileDescriptor, 
 		}
 		linkText := "[" + typeName + "](" + link + ")"
 		return linkText, nil
+	}
+}
+
+func linkForResource(project *model.Project) func(resource *model.Resource) (string, error) {
+	protoFiles := protokit.ParseCodeGenRequest(project.Request)
+	return func(resource *model.Resource) (s string, e error) {
+		for _, file := range protoFiles {
+			if file.GetName() == resource.Filename {
+				// TODO: turn this X.proto.sk.md convention into a function lest this linking break
+				return fmt.Sprintf("[%v](./%v.sk.md#%v)", resource.Name, resource.Filename, resource.Name), nil
+			}
+		}
+		return "", errors.Errorf("internal error: could not find file for resource %v in project %v",
+			resource.Filename, project.Name)
 	}
 }
 

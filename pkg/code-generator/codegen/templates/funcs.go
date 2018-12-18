@@ -41,7 +41,6 @@ var Funcs = template.FuncMap{
 	"fieldType":   fieldType,
 	"yamlType":    yamlType,
 	"noescape":    noEscape,
-	"linkForType": linkForType,
 	"printfptr":   printPointer,
 	"remove_magic_comments": func(in string) string {
 		lines := strings.Split(in, "\n")
@@ -123,20 +122,4 @@ func fieldType(field *protokit.FieldDescriptor) string {
 		fieldType = "[" + fieldType + "]"
 	}
 	return fieldType
-}
-
-func linkForType(field *protokit.FieldDescriptor) string {
-	typeName := fieldType(field)
-	if _, ok := primitiveTypes[field.GetType()]; ok {
-		return typeName
-	}
-	fileName := field.Message.GetFile().GetName()
-	link := strcase.ToSnake(fileName) + ".sk.md#" + field.Message.GetName()
-	if strings.Contains(typeName, "google.protobuf.Duration") {
-		link = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration"
-	}
-	if strings.Contains(typeName, "google.protobuf.Struct") {
-		link = "https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct"
-	}
-	return "[" + typeName + "](" + link + ")"
 }
