@@ -12,6 +12,8 @@ type ProjectConfig struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 	DocsDir string `json:"docs_dir"`
+	// set by load
+	ProjectRoot string
 }
 
 type Project struct {
@@ -79,5 +81,6 @@ func LoadProjectConfig(path string) (ProjectConfig, error) {
 	}
 	var pc ProjectConfig
 	err = json.Unmarshal(b, &pc)
+	pc.ProjectRoot = path
 	return pc, err
 }
