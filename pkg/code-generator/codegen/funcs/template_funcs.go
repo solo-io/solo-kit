@@ -192,9 +192,6 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 		switch {
 		case strings.Contains(typeName, ".google.protobuf."):
 			link = wellKnownProtoLink(typeName)
-		case strings.Contains(typeName, "core.solo.io."):
-			filename := filepath.Join("core", filepath.Base(file.GetName()))
-			link = filename + ".sk.md#" + msg.GetName()
 		default:
 			var filename string
 			for _, toGenerate := range project.Request.FileToGenerate {
@@ -231,9 +228,14 @@ func linkForResource(project *model.Project) func(resource *model.Resource) (str
 	}
 }
 
+const coreSoloApiPrefix = "github.com/solo-io/solo-kit/api/v1"
+
 func relativeFilename(fileWithLink, fileLinkedTo string) string {
 	if fileLinkedTo == fileWithLink {
 		return filepath.Base(fileLinkedTo)
+	}
+	if strings.HasPrefix(fileLinkedTo, coreSoloApiPrefix) {
+		fileLinkedTo = strings.Replace(fileLinkedTo, coreSoloApiPrefix, "core", -1)
 	}
 	fileWithLinkSplit := strings.Split(fileWithLink, "/")
 	if len(fileWithLinkSplit) == 1 {

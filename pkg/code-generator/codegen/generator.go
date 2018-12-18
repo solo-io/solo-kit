@@ -25,7 +25,8 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (code_gen
 		// only generate files for the resources in our group, otherwise we import
 		if res.GroupName != project.GroupName {
 			log.Printf("not generating solo-kit "+
-				"clients for resource %v, group name must match package name %v", res.GroupName, project.GroupName)
+				"clients for resource %v.%v, "+
+				"group name must match package name %v", res.GroupName, res.Name, project.GroupName)
 			continue
 		}
 		fs, err := generateFilesForResource(res)

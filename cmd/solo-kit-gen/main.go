@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -26,10 +27,26 @@ func main() {
 	}
 }
 
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("%v", *i)
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+var customImports arrayFlags
+
 func run() error {
-	//relativeRoot := flag.String("r", "../solo-projects/projects/gateway", "path to project absoluteRoot")
 	relativeRoot := flag.String("r", "", "path to project absoluteRoot")
 	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
+	flag.Var(&customImports, "i", "import additional directories as proto roots")
 	flag.Parse()
 
 	absoluteRoot, err := filepath.Abs(*relativeRoot)
@@ -158,6 +175,7 @@ func run() error {
 func GopathSrc() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src")
 }
+
 var commonImports = []string{
 	GopathSrc(),
 	GopathSrc() + "/github.com/solo-io/solo-kit/api/external",
@@ -206,23 +224,34 @@ func detectGoPackageForFile(file string) (string, error) {
 	return "", errors.Errorf("no go_package statement found in file %v", file)
 }
 
-func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, existingImports []string) (string, error) {
+func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImports, existingImports []string) (string, error) {
 	// if the file is already imported, point to that import
 	for _, importPath := range existingImports {
 		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
 			return importPath, nil
 		}
 	}
+	rootsToTry := []string{absoluteRoot}
+
+	for _, customImport := range customImports {
+		absoluteCustomImport, err := filepath.Abs(customImport)
+		if err != nil {
+			return "", err
+		}
+		rootsToTry = append(rootsToTry, absoluteCustomImport)
+	}
 
 	var possibleImportPaths []string
-	if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(path, importedProtoFile) {
-			importPath := strings.TrimSuffix(path, importedProtoFile)
-			possibleImportPaths = append(possibleImportPaths, importPath)
+	for _, root := range rootsToTry {
+		if err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if strings.HasSuffix(path, importedProtoFile) {
+				importPath := strings.TrimSuffix(path, importedProtoFile)
+				possibleImportPaths = append(possibleImportPaths, importPath)
+			}
+			return nil
+		}); err != nil {
+			return "", err
 		}
-		return nil
-	}); err != nil {
-		return "", err
 	}
 	if len(possibleImportPaths) == 0 {
 		return "", errors.Errorf("found no possible import paths in root directory %v for import %v",
@@ -244,7 +273,7 @@ func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
 	}
 	importsForProto := append([]string{}, commonImports...)
 	for _, importedProto := range importStatements {
-		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto, commonImports)
+		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto, customImports, importsForProto)
 		if err != nil {
 			return nil, err
 		}
