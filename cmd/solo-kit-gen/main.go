@@ -26,7 +26,7 @@ func GopathSrc() string {
 
 var commonImports = []string{
 	GopathSrc(),
-	GopathSrc() + "github.com/solo-io/solo-kit/api/external",
+	GopathSrc() + "/github.com/solo-io/solo-kit/api/external",
 }
 
 var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
@@ -113,7 +113,7 @@ func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var importsForProto []string
+	importsForProto := append([]string{}, commonImports...)
 	for _, importedProto := range importStatements {
 		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto, commonImports)
 		if err != nil {
@@ -121,7 +121,6 @@ func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
 		}
 		importsForProto = append(importsForProto, strings.TrimSuffix(importPath, "/"))
 	}
-	importsForProto = append(importsForProto, commonImports...)
 	importsForProto = stringutils.Unique(importsForProto)
 
 	return importsForProto, nil
@@ -177,8 +176,8 @@ func run() error {
 				projectGoPackage = goPkg
 			} else {
 				if projectGoPackage != goPkg {
-					return errors.Errorf("file %v does not contain "+
-						"expected go_package %v (%v instead)", projectGoPackage, goPkg)
+					log.Warnf("file %v does not contain "+
+						"expected go_package %v (%v instead)", protoFile, projectGoPackage, goPkg)
 				}
 			}
 
