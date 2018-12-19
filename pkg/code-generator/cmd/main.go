@@ -36,12 +36,14 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 var customImports arrayFlags
+var skipDirs arrayFlags
 
 func Run() error {
 	relativeRoot := flag.String("r", "", "path to project absoluteRoot")
 	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
 	genDocs := flag.Bool("docs", true, "generate docs as well")
 	flag.Var(&customImports, "i", "import additional directories as proto roots")
+	flag.Var(&skipDirs, "s", "skip generating for this directory")
 	flag.Parse()
 
 	absoluteRoot, err := filepath.Abs(*relativeRoot)
@@ -62,7 +64,18 @@ func Run() error {
 		return err
 	}
 
+generateForDir:
 	for _, inDir := range projectDirs {
+		for _, skip := range skipDirs {
+			skipRoot, err := filepath.Abs(skip)
+			if err != nil {
+				return err
+			}
+			if strings.HasPrefix(inDir, skipRoot) {
+				log.Warnf("skipping detected project %v", inDir)
+				continue generateForDir
+			}
+		}
 
 		tmpFile, err := ioutil.TempFile("", "solo-kit-gen-")
 		if err != nil {
