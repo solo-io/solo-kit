@@ -307,10 +307,11 @@ func writeDescriptors(protoFile, toFile string, imports []string, compileProtos 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
 			"--gogo_out="+
-				"Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,"+
 				"Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor,"+
+				"Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,"+
 				"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,"+
-				"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types"+
+				"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,"+
+				"Menvoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2"+
 				":"+gopathSrc())
 	}
 
