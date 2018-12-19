@@ -306,7 +306,7 @@ func writeDescriptors(protoFile, toFile string, imports []string, compileProtos 
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--gogo_out="+
+			"--gogo_out=plugins=grpc,"+
 				"Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor,"+
 				"Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,"+
 				"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,"+
