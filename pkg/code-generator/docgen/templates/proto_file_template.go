@@ -53,7 +53,7 @@ Description: {{ remove_magic_comments .Comments.Leading }}
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 {{range .Fields -}}
-| {{ printfptr "%v" .Name }} | {{linkForType $File . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+| {{ printfptr "%v" .Name }} | {{linkForField $File . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
 {{- range .Messages }}  
@@ -70,7 +70,7 @@ Description: {{ remove_magic_comments .Comments.Leading }}
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 {{range .Fields -}}
-| {{ printfptr "%v" .Name }} | {{linkForType $File . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+| {{ printfptr "%v" .Name }} | {{linkForField $File . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
 {{- end }}

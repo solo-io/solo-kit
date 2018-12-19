@@ -1,17 +1,25 @@
 package templates
 
 import (
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/funcs"
 	"text/template"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func ProjectTemplate(project *model.Project) *template.Template {
-	return template.Must(template.New("p").Funcs(templates.Funcs).Parse(`
-### {{ .Name }} {{.Version}} Top Level API Objects:
+func ProjectDocsRootTemplate(project *model.Project) *template.Template {
+	return template.Must(template.New("pf").Funcs(funcs.TemplateFuncs(project)).Parse(`
+{{ $Project := . -}}
+
+### API Reference for {{ .Title}}
+
+API Version: `+"`{{ .Name }}.{{ .Version }}`"+`
+
+{{ .Description }}
+
+### API Resources:
 {{- range .Resources}}
-- [{{ .ImportPrefix }}{{ .Name }}](./{{ .Filename }}.sk.md#{{ .Name }})
+- {{linkForResource . }}
 {{- end}}
 
 <!-- Start of HubSpot Embed Code -->

@@ -35,3 +35,15 @@ func KeysAndValues(m map[string]string) ([]string, []string) {
 	}
 	return keys, values
 }
+
+func Unique(stringSlice []string) []string {
+	keys := make(map[string]bool)
+	list := []string{}
+	for _, entry := range stringSlice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
