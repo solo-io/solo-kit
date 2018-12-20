@@ -143,9 +143,12 @@ func fieldType(project *model.Project) func(field *protokit.FieldDescriptor) (st
 			fieldTypeStr = "[]" + strings.TrimPrefix(fieldTypeStr, ".")
 		}
 		if strings.HasSuffix(fieldTypeStr, "Entry") {
-			msg, err := getMessageForField(project, field)
+			_, msg, enum, err := getFileAndTypeDefForField(project, field)
 			if err != nil {
 				return "", err
+			}
+			if enum != nil {
+				return "", errors.Errorf("unexpected enum %v for field type %v", enum.GetName(), fieldTypeStr)
 			}
 			if len(msg.Field) != 2 {
 				return "", errors.Errorf("message %v was Entry type, expected map", msg.GetName())
@@ -181,13 +184,15 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 		if _, ok := primitiveTypes[field.GetType()]; ok {
 			return typeName, nil
 		}
-		file, err := getFileForField(project, field)
+		file, msg, enum, err := getFileAndTypeDefForField(project, field)
 		if err != nil {
 			return "", err
 		}
-		msg, err := getMessageForField(project, field)
-		if err != nil {
-			return "", err
+		var declaredName string
+		if msg != nil {
+			declaredName = msg.GetName()
+		} else {
+			declaredName = enum.GetName()
 		}
 		var link string
 		switch {
@@ -208,7 +213,7 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 			filename = trimProjectRoot(filename, project.ProjectFile)
 			forfileName := trimProjectRoot(forFile.GetName(), project.ProjectFile)
 			filename = relativeFilename(forfileName, filename)
-			link = filename + ".sk.md#" + msg.GetName()
+			link = filename + ".sk.md#" + declaredName
 		}
 		linkText := "[" + typeName + "](" + link + ")"
 		return linkText, nil
@@ -279,48 +284,6 @@ func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*
 	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
 }
 
-func getMessageForField2(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.DescriptorProto, error) {
-	parts := strings.Split(strings.TrimPrefix(field.GetTypeName(), "."), ".")
-	messageName := parts[len(parts)-1]
-	var nestedMessageParent string
-	if strings.HasSuffix(parts[len(parts)-1], "Entry") {
-		parts = parts[:len(parts)-1]
-		nestedMessageParent = parts[len(parts)-1]
-	}
-	packageName := strings.Join(parts[:len(parts)-1], ".")
-	for _, protoFile := range project.Request.ProtoFile {
-		if protoFile.GetPackage() == packageName {
-			for _, msg := range protoFile.GetMessageType() {
-				if messageName == msg.GetName() {
-					return msg, nil
-				}
-				if nestedMessageParent == msg.GetName() {
-					for _, nestedMsg := range msg.GetNestedType() {
-						if messageName == nestedMsg.GetName() {
-							return nestedMsg, nil
-						}
-					}
-				}
-			}
-		}
-	}
-
-	for _, protoFile := range project.Request.ProtoFile {
-		// ilackarms: unlikely event of collision where the package name has the right prefix and a nested message type matches
-		if strings.HasPrefix(packageName, protoFile.GetPackage()) {
-			for _, msg := range protoFile.GetMessageType() {
-				for _, nestedMsg := range msg.GetNestedType() {
-					if messageName == nestedMsg.GetName() {
-						return nestedMsg, nil
-					}
-				}
-			}
-		}
-	}
-
-	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
-}
-
 func splitTypeName(typeName string) (string, []string) {
 	parts := strings.Split(strings.TrimPrefix(typeName, "."), ".")
 	var indexOfFirstUppercasePart int
@@ -339,37 +302,47 @@ func splitTypeName(typeName string) (string, []string) {
 	return packageName, parts[indexOfFirstUppercasePart:]
 }
 
-func getMessageForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.DescriptorProto, error) {
+func getFileAndTypeDefForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, *descriptor.DescriptorProto, *descriptor.EnumDescriptorProto, error) {
 	packageName, typeNameParts := splitTypeName(field.GetTypeName())
 	for _, protoFile := range project.Request.ProtoFile {
 		if protoFile.GetPackage() == packageName {
+			if len(typeNameParts) == 1 {
+				for _, enum := range protoFile.GetEnumType() {
+					if enum.GetName() == typeNameParts[0] {
+						return protoFile, nil, enum, nil
+					}
+				}
+			}
 			for _, msg := range protoFile.GetMessageType() {
-				match, err := searchMessageForNestedType(msg, typeNameParts)
+				matchMsg, matchEnum, err := searchMessageForNestedType(msg, typeNameParts)
 				if err == nil {
-					return match, nil
+					return protoFile,matchMsg, matchEnum, nil
 				}
 			}
 		}
 	}
 
-	return nil, errors.Errorf("message %v.%v not found", packageName, typeNameParts)
+	return nil, nil, nil, errors.Errorf("message %v.%v not found", packageName, typeNameParts)
 }
 
-func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts []string) (*descriptor.DescriptorProto, error) {
+func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts []string) (*descriptor.DescriptorProto,  *descriptor.EnumDescriptorProto, error) {
 	switch len(typeNameParts) {
 	case 0:
-		return nil, errors.Errorf("internal error: ran out of type name parts to try")
+		return nil, nil, errors.Errorf("internal error: ran out of type name parts to try")
 	case 1:
 		if msg.GetName() == typeNameParts[0] {
-			return msg, nil
+			return msg, nil, nil
+		}
+		for _, nestedEnum := range msg.GetEnumType() {
+			return nil, nestedEnum, nil
 		}
 	default:
-		for _, nested := range msg.GetNestedType() {
-			msg, err := searchMessageForNestedType(nested, typeNameParts[1:])
+		for _, nestedMsg := range msg.GetNestedType() {
+			msg, enum, err := searchMessageForNestedType(nestedMsg, typeNameParts[1:])
 			if err == nil {
-				return msg, nil
+				return msg, enum ,nil
 			}
 		}
 	}
-	return nil, errors.Errorf("msg %v does not match type name %v", msg.GetName(), typeNameParts)
+	return nil, nil, errors.Errorf("msg %v does not match type name %v", msg.GetName(), typeNameParts)
 }
