@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -21,32 +19,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 )
 
-type arrayFlags []string
-
-func (i *arrayFlags) String() string {
-	if i == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("%v", *i)
-}
-
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
-var customImports arrayFlags
-var skipDirs arrayFlags
-
-func Run() error {
-	relativeRoot := flag.String("r", "", "path to project absoluteRoot")
-	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
-	genDocs := flag.Bool("docs", true, "generate docs as well")
-	flag.Var(&customImports, "i", "import additional directories as proto roots")
-	flag.Var(&skipDirs, "s", "skip generating for this directory")
-	flag.Parse()
-
-	absoluteRoot, err := filepath.Abs(*relativeRoot)
+func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDirs []string) error {
+	absoluteRoot, err := filepath.Abs(relativeRoot)
 	if err != nil {
 		return err
 	}
@@ -86,7 +60,7 @@ generateForDir:
 		}
 		defer os.Remove(tmpFile.Name())
 
-		projectGoPackage, descriptors, err := collectProtosFromRoot(absoluteRoot, inDir, tmpFile.Name(), *compileProtos)
+		projectGoPackage, descriptors, err := collectProtosFromRoot(absoluteRoot, inDir, tmpFile.Name(), compileProtos, customImports)
 		if err != nil {
 			return err
 		}
@@ -106,7 +80,7 @@ generateForDir:
 			return err
 		}
 
-		if project.DocsDir != "" && *genDocs {
+		if project.DocsDir != "" && genDocs {
 			docs, err := docgen.GenerateFiles(project)
 			if err != nil {
 				return err
@@ -150,7 +124,7 @@ func gopathSrc() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src")
 }
 
-func collectProtosFromRoot(absoluteRoot, inDir, tmpFile string, compileProtos bool) (string, []*descriptor.FileDescriptorSet, error) {
+func collectProtosFromRoot(absoluteRoot, inDir, tmpFile string, compileProtos bool, customImports []string) (string, []*descriptor.FileDescriptorSet, error) {
 	var (
 		descriptors      []*descriptor.FileDescriptorSet
 		projectGoPackage string
@@ -168,11 +142,12 @@ func collectProtosFromRoot(absoluteRoot, inDir, tmpFile string, compileProtos bo
 			projectGoPackage = goPkg
 		}
 
-		imports, err := importsForProtoFile(absoluteRoot, protoFile)
+		imports, err := importsForProtoFile(absoluteRoot, protoFile, customImports)
 		if err != nil {
 			return err
 		}
 		imports = append([]string{inDir}, imports...)
+		imports = stringutils.Unique(imports)
 
 		if err := writeDescriptors(protoFile, tmpFile, imports, compileProtos); err != nil {
 			return err
@@ -237,7 +212,7 @@ var commonImports = []string{
 	filepath.Join(gopathSrc(), "github.com", "solo-io", "solo-kit", "api", "external"),
 }
 
-func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
+func importsForProtoFile(absoluteRoot, protoFile string, customImports []string) ([]string, error) {
 	importStatements, err := detectImportsForFile(protoFile)
 	if err != nil {
 		return nil, err
@@ -250,7 +225,6 @@ func importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
 		}
 		importsForProto = append(importsForProto, strings.TrimSuffix(importPath, "/"))
 	}
-	importsForProto = stringutils.Unique(importsForProto)
 
 	return importsForProto, nil
 }
