@@ -52,7 +52,7 @@ func generateFilesForProtoFiles(project *model.Project, protoFiles []*protokit.F
 				return nil, err
 			}
 			fileName := protoFile.GetName() + suffix
-			fileName = trimProjectRoot(fileName, project.ProjectRoot)
+			fileName = trimProjectRoot(fileName, project.ProjectFile)
 			// core solo protos go in top level dir
 			if strings.Contains(protoFile.GetName(), "github.com/solo-io/solo-kit/api/") {
 				fileName = "core/" + filepath.Base(protoFile.GetName()) + suffix

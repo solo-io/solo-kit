@@ -204,8 +204,8 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 				filename = filepath.Base(file.GetName())
 				//return "", errors.Errorf("failed to get generated file path for proto %v in list %v", file.GetName(), project.Request.FileToGenerate)
 			}
-			filename = trimProjectRoot(filename, project.ProjectRoot)
-			forfileName := trimProjectRoot(forFile.GetName(), project.ProjectRoot)
+			filename = trimProjectRoot(filename, project.ProjectFile)
+			forfileName := trimProjectRoot(forFile.GetName(), project.ProjectFile)
 			filename = relativeFilename(forfileName, filename)
 			link = filename + ".sk.md#" + msg.GetName()
 		}
