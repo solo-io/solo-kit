@@ -223,7 +223,13 @@ func importsForProtoFile(absoluteRoot, protoFile string, customImports []string)
 		if err != nil {
 			return nil, err
 		}
+		dependency := filepath.Join(importPath, importedProto)
+		dependencyImports, err := importsForProtoFile(absoluteRoot, dependency, customImports)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting imports for dependency")
+		}
 		importsForProto = append(importsForProto, strings.TrimSuffix(importPath, "/"))
+		importsForProto = append(importsForProto, dependencyImports...)
 	}
 
 	return importsForProto, nil
