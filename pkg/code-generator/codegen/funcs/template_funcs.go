@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
 
@@ -278,7 +279,7 @@ func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*
 	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
 }
 
-func getMessageForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.DescriptorProto, error) {
+func getMessageForField2(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.DescriptorProto, error) {
 	parts := strings.Split(strings.TrimPrefix(field.GetTypeName(), "."), ".")
 	messageName := parts[len(parts)-1]
 	var nestedMessageParent string
@@ -318,4 +319,57 @@ func getMessageForField(project *model.Project, field *protokit.FieldDescriptor)
 	}
 
 	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
+}
+
+func splitTypeName(typeName string) (string, []string) {
+	parts := strings.Split(strings.TrimPrefix(typeName, "."), ".")
+	var indexOfFirstUppercasePart int
+	for i, part := range parts {
+		// should never happen, consider panic?
+		if len(part) == 0 {
+			continue
+		}
+		// is the first character uppercase?
+		if part[0] == byte(unicode.ToUpper(rune(part[0]))) {
+			indexOfFirstUppercasePart = i
+			break
+		}
+	}
+	packageName := strings.Join(parts[:indexOfFirstUppercasePart], ".")
+	return packageName, parts[indexOfFirstUppercasePart:]
+}
+
+func getMessageForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.DescriptorProto, error) {
+	packageName, typeNameParts := splitTypeName(field.GetTypeName())
+	for _, protoFile := range project.Request.ProtoFile {
+		if protoFile.GetPackage() == packageName {
+			for _, msg := range protoFile.GetMessageType() {
+				match, err := searchMessageForNestedType(msg, typeNameParts)
+				if err == nil {
+					return match, nil
+				}
+			}
+		}
+	}
+
+	return nil, errors.Errorf("message %v.%v not found", packageName, typeNameParts)
+}
+
+func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts []string) (*descriptor.DescriptorProto, error) {
+	switch len(typeNameParts) {
+	case 0:
+		return nil, errors.Errorf("internal error: ran out of type name parts to try")
+	case 1:
+		if msg.GetName() == typeNameParts[0] {
+			return msg, nil
+		}
+	default:
+		for _, nested := range msg.GetNestedType() {
+			msg, err := searchMessageForNestedType(nested, typeNameParts[1:])
+			if err == nil {
+				return msg, nil
+			}
+		}
+	}
+	return nil, errors.Errorf("msg %v does not match type name %v", msg.GetName(), typeNameParts)
 }
