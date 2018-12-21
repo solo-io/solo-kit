@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -20,56 +21,66 @@ import (
 )
 
 func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDirs []string) error {
+	skipDirs = append(skipDirs, "vendor/")
 	absoluteRoot, err := filepath.Abs(relativeRoot)
 	if err != nil {
 		return err
 	}
 
-	var projectDirs []string
-
-	// discover all solo-kit.json
-	if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(path, model.ProjectConfigFilename) {
-			return nil
-		}
-		projectDirs = append(projectDirs, filepath.Dir(path))
-		return nil
-	}); err != nil {
+	// collect all projects
+	projects, err := collectProjectsFromRoot(absoluteRoot, skipDirs)
+	if err != nil {
 		return err
 	}
 
-generateForDir:
-	for _, inDir := range projectDirs {
-		for _, skip := range skipDirs {
-			skipRoot, err := filepath.Abs(skip)
-			if err != nil {
-				return err
+	log.Printf("collected projects: %v", func() []string {
+		var names []string
+		for _, project := range projects {
+			names = append(names, project.Name)
+		}
+		sort.Strings(names)
+		return names
+	}())
+
+	// collect all protos
+	tmpFile, err := ioutil.TempFile("", "solo-kit-gen-")
+	if err != nil {
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// whether or not to do a regular gogo-proto generate while collecting descriptors
+	compileProto := func(protoFile string) bool {
+		if !compileProtos {
+			return false
+		}
+		for _, proj := range projects {
+			if strings.HasPrefix(protoFile, filepath.Dir(proj.ProjectFile)) {
+				return true
 			}
-			if strings.HasPrefix(inDir, skipRoot) {
-				log.Warnf("skipping detected project %v", inDir)
-				continue generateForDir
-			}
 		}
+		return false
+	}
 
-		tmpFile, err := ioutil.TempFile("", "solo-kit-gen-")
-		if err != nil {
-			return err
-		}
-		if err := tmpFile.Close(); err != nil {
-			return err
-		}
-		defer os.Remove(tmpFile.Name())
+	descriptors, err := collectProtosFromRoot(absoluteRoot, tmpFile.Name(), customImports, skipDirs, compileProto)
+	if err != nil {
+		return err
+	}
 
-		projectGoPackage, descriptors, err := collectProtosFromRoot(absoluteRoot, inDir, tmpFile.Name(), compileProtos, customImports)
-		if err != nil {
-			return err
+	log.Printf("collected descriptors: %v", func() []string {
+		var names []string
+		for _, desc := range descriptors {
+			names = append(names, desc.GetName())
 		}
+		names = stringutils.Unique(names)
+		sort.Strings(names)
+		return names
+	}())
 
-		projectConfig, err := model.LoadProjectConfig(filepath.Join(inDir, model.ProjectConfigFilename))
-		if err != nil {
-			return err
-		}
-
+	for _, projectConfig := range projects {
 		project, err := parser.ProcessDescriptors(projectConfig, descriptors)
 		if err != nil {
 			return err
@@ -97,7 +108,7 @@ generateForDir:
 			}
 		}
 
-		outDir := filepath.Join(gopathSrc(), projectGoPackage)
+		outDir := filepath.Join(gopathSrc(), project.GoPackage)
 
 		for _, file := range code {
 			path := filepath.Join(outDir, file.Filename)
@@ -124,44 +135,92 @@ func gopathSrc() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src")
 }
 
-func collectProtosFromRoot(absoluteRoot, inDir, tmpFile string, compileProtos bool, customImports []string) (string, []*descriptor.FileDescriptorSet, error) {
+func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectConfig, error) {
+	var projects []model.ProjectConfig
+
+	if err := filepath.Walk(root, func(projectFile string, info os.FileInfo, err error) error {
+		if !strings.HasSuffix(projectFile, model.ProjectConfigFilename) {
+			return nil
+		}
+		for _, skip := range skipDirs {
+			skipRoot, err := filepath.Abs(skip)
+			if err != nil {
+				return err
+			}
+			if strings.HasPrefix(projectFile, skipRoot) {
+				log.Warnf("skipping detected project %v", projectFile)
+				return nil
+			}
+		}
+
+		project, err := model.LoadProjectConfig(projectFile)
+		if err != nil {
+			return err
+		}
+		projects = append(projects, project)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return projects, nil
+}
+
+func collectProtosFromRoot(root, tmpFile string, customImports, skipDirs []string, wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
 	var (
-		descriptors      []*descriptor.FileDescriptorSet
-		projectGoPackage string
+		descriptors []*descriptor.FileDescriptorProto
 	)
 
-	if err := filepath.Walk(inDir, func(protoFile string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(protoFile, ".proto") {
 			return nil
 		}
-		goPkg, err := detectGoPackageForFile(protoFile)
+		for _, skip := range skipDirs {
+			skipRoot, err := filepath.Abs(skip)
+			if err != nil {
+				return err
+			}
+			if strings.HasPrefix(protoFile, skipRoot) {
+				log.Warnf("skipping detected proto %v", protoFile)
+				return nil
+			}
+		}
+		imports, err := importsForProtoFile(root, protoFile, customImports)
 		if err != nil {
 			return err
 		}
-		if projectGoPackage == "" {
-			projectGoPackage = goPkg
-		}
-
-		imports, err := importsForProtoFile(absoluteRoot, protoFile, customImports)
-		if err != nil {
-			return err
-		}
-		imports = append([]string{inDir}, imports...)
 		imports = stringutils.Unique(imports)
 
-		if err := writeDescriptors(protoFile, tmpFile, imports, compileProtos); err != nil {
+		// don't generate protos for non-project files
+		compile := wantCompile(protoFile)
+
+		if err := writeDescriptors(protoFile, tmpFile, imports, compile); err != nil {
 			return err
 		}
 		desc, err := readDescriptors(tmpFile)
 		if err != nil {
 			return err
 		}
-		descriptors = append(descriptors, desc)
+	addFiles:
+		for _, f := range desc.File {
+			// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
+			// with different import paths
+			for _, existing := range descriptors {
+				if existing.GetName() == f.GetName() {
+					continue
+				}
+				existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
+				existingCopy.Name = f.Name
+				if proto.Equal(existingCopy, f) {
+					continue addFiles
+				}
+			}
+			descriptors = append(descriptors, f)
+		}
 		return nil
 	}); err != nil {
-		return "", nil, err
+		return nil, err
 	}
-	return projectGoPackage, descriptors, nil
+	return descriptors, nil
 }
 
 var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
@@ -184,27 +243,6 @@ func detectImportsForFile(file string) ([]string, error) {
 		protoImports = append(protoImports, importStatement[1])
 	}
 	return protoImports, nil
-}
-
-var goPackageStatementRegex = regexp.MustCompile(`option go_package = "(.*)";`)
-
-func detectGoPackageForFile(file string) (string, error) {
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		return "", err
-	}
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
-		goPackage := goPackageStatementRegex.FindStringSubmatch(line)
-		if len(goPackage) == 0 {
-			continue
-		}
-		if len(goPackage) != 2 {
-			return "", errors.Errorf("parsing go_package error: from %v found %v", line, goPackage)
-		}
-		return goPackage[1], nil
-	}
-	return "", errors.Errorf("no go_package statement found in file %v", file)
 }
 
 var commonImports = []string{

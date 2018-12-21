@@ -5,7 +5,12 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/errors"
 	"io/ioutil"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 const ProjectConfigFilename = "solo-kit.json"
@@ -19,7 +24,8 @@ type ProjectConfig struct {
 	Version     string `json:"version"`
 	DocsDir     string `json:"docs_dir"`
 	// set by load
-	ProjectRoot string
+	ProjectFile string
+	GoPackage   string
 }
 
 type Project struct {
@@ -91,6 +97,54 @@ func LoadProjectConfig(path string) (ProjectConfig, error) {
 	}
 	var pc ProjectConfig
 	err = json.Unmarshal(b, &pc)
-	pc.ProjectRoot = path
+	pc.ProjectFile = path
+	goPkg, err := detectGoPackageForProject(path)
+	if err != nil {
+		return ProjectConfig{}, err
+	}
+	pc.GoPackage = goPkg
 	return pc, err
+}
+
+var goPackageStatementRegex = regexp.MustCompile(`option go_package = "(.*)";`)
+
+func detectGoPackageForProject(projectFile string) (string, error) {
+	var goPkg string
+	projectDir := filepath.Dir(projectFile)
+	if err := filepath.Walk(projectDir, func(protoFile string, info os.FileInfo, err error) error {
+		// already set
+		if goPkg != "" {
+			return nil
+		}
+		if !strings.HasSuffix(protoFile, ".proto") {
+			return nil
+		}
+		// search for go_package on protos in the same dir as the project.json
+		if projectDir != filepath.Dir(protoFile) {
+			return nil
+		}
+		content, err := ioutil.ReadFile(protoFile)
+		if err != nil {
+			return err
+		}
+		lines := strings.Split(string(content), "\n")
+		for _, line := range lines {
+			goPackage := goPackageStatementRegex.FindStringSubmatch(line)
+			if len(goPackage) == 0 {
+				continue
+			}
+			if len(goPackage) != 2 {
+				return errors.Errorf("parsing go_package error: from %v found %v", line, goPackage)
+			}
+			goPkg = goPackage[1]
+			break
+		}
+		return nil
+	}); err != nil {
+		return "", err
+	}
+	if goPkg == "" {
+		return "", errors.Errorf("no go_package statement found in root dir of project %v", projectFile)
+	}
+	return goPkg, nil
 }

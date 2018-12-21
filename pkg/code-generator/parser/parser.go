@@ -14,10 +14,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
-func ProcessDescriptors(projectConfig model.ProjectConfig, descriptors []*descriptor.FileDescriptorSet) (*model.Project, error) {
+func ProcessDescriptors(projectConfig model.ProjectConfig, descriptors []*descriptor.FileDescriptorProto) (*model.Project, error) {
 	req := &plugin_go.CodeGeneratorRequest{}
-	for _, desc := range descriptors {
-		for _, file := range desc.File {
+	for _, file := range descriptors {
 			var added bool
 			for _, addedFile := range req.GetFileToGenerate() {
 				if addedFile == file.GetName() {
@@ -29,7 +28,6 @@ func ProcessDescriptors(projectConfig model.ProjectConfig, descriptors []*descri
 			}
 			req.FileToGenerate = append(req.FileToGenerate, file.GetName())
 			req.ProtoFile = append(req.ProtoFile, file)
-		}
 	}
 	return ParseRequest(projectConfig, req)
 }

@@ -2,32 +2,22 @@ package funcs
 
 import (
 	"fmt"
+	htmltemplate "html/template"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
-
-	"github.com/solo-io/solo-kit/pkg/errors"
-
-	"github.com/solo-io/solo-kit/pkg/code-generator/model"
-
-	htmltemplate "html/template"
+	"unicode"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protoc-gen-doc"
 	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
-
-// TODO: uncopy-paste from generator
-func trimProjectRoot(fileName, projectFile string) string {
-	fileDir := filepath.Dir(fileName)
-	projectRoot := strings.TrimPrefix(filepath.Dir(projectFile), os.Getenv("GOPATH")+"/src/") + "/"
-	trimmedFileDir := strings.TrimPrefix(fileDir, projectRoot)
-
-	return filepath.Join(trimmedFileDir, filepath.Base(fileName))
-}
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
 	descriptor.FieldDescriptorProto_TYPE_FLOAT:  "float",
@@ -142,9 +132,12 @@ func fieldType(project *model.Project) func(field *protokit.FieldDescriptor) (st
 			fieldTypeStr = "[]" + strings.TrimPrefix(fieldTypeStr, ".")
 		}
 		if strings.HasSuffix(fieldTypeStr, "Entry") {
-			msg, err := getMessageForField(project, field)
+			_, msg, enum, err := getFileAndTypeDefForField(project, field)
 			if err != nil {
 				return "", err
+			}
+			if enum != nil {
+				return "", errors.Errorf("unexpected enum %v for field type %v", enum.GetName(), fieldTypeStr)
 			}
 			if len(msg.Field) != 2 {
 				return "", errors.Errorf("message %v was Entry type, expected map", msg.GetName())
@@ -180,34 +173,34 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 		if _, ok := primitiveTypes[field.GetType()]; ok {
 			return typeName, nil
 		}
-		file, err := getFileForField(project, field)
+		file, msg, enum, err := getFileAndTypeDefForField(project, field)
 		if err != nil {
 			return "", err
 		}
-		msg, err := getMessageForField(project, field)
-		if err != nil {
-			return "", err
+		var declaredName string
+		if msg != nil {
+			declaredName = msg.GetName()
+		} else {
+			declaredName = enum.GetName()
 		}
 		var link string
 		switch {
 		case strings.Contains(typeName, ".google.protobuf."):
 			link = wellKnownProtoLink(typeName)
 		default:
-			var filename string
+			var linkedFile string
 			for _, toGenerate := range project.Request.FileToGenerate {
 				if strings.HasSuffix(file.GetName(), toGenerate) {
-					filename = toGenerate
+					linkedFile = toGenerate
 					break
 				}
 			}
-			if filename == "" {
-				filename = filepath.Base(file.GetName())
+			if linkedFile == "" {
+				linkedFile = filepath.Base(file.GetName())
 				//return "", errors.Errorf("failed to get generated file path for proto %v in list %v", file.GetName(), project.Request.FileToGenerate)
 			}
-			filename = trimProjectRoot(filename, project.ProjectRoot)
-			forfileName := trimProjectRoot(forFile.GetName(), project.ProjectRoot)
-			filename = relativeFilename(forfileName, filename)
-			link = filename + ".sk.md#" + msg.GetName()
+			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
+			link = linkedFile + ".sk.md#" + declaredName
 		}
 		linkText := "[" + typeName + "](" + link + ")"
 		return linkText, nil
@@ -228,23 +221,77 @@ func linkForResource(project *model.Project) func(resource *model.Resource) (str
 	}
 }
 
-const coreSoloApiPrefix = "github.com/solo-io/solo-kit/api/v1"
-
 func relativeFilename(fileWithLink, fileLinkedTo string) string {
 	if fileLinkedTo == fileWithLink {
 		return filepath.Base(fileLinkedTo)
 	}
-	if strings.HasPrefix(fileLinkedTo, coreSoloApiPrefix) {
-		fileLinkedTo = strings.Replace(fileLinkedTo, coreSoloApiPrefix, "core", -1)
-	}
-	fileWithLinkSplit := strings.Split(fileWithLink, "/")
+	prefix := commonPrefix(os.PathSeparator, fileWithLink, fileLinkedTo) + string(os.PathSeparator)
+	fileWithLink = strings.TrimPrefix(fileWithLink, prefix)
+	fileLinkedTo = strings.TrimPrefix(fileLinkedTo, prefix)
+	fileWithLinkSplit := strings.Split(fileWithLink, string(os.PathSeparator))
 	if len(fileWithLinkSplit) == 1 {
 		return fileLinkedTo
 	}
 	for i := 0; i < len(fileWithLinkSplit)-1; i++ {
-		fileLinkedTo = "../" + fileLinkedTo
+		fileLinkedTo = ".." + string(os.PathSeparator) + fileLinkedTo
 	}
 	return fileLinkedTo
+}
+
+// from https://www.rosettacode.org/wiki/Find_common_directory_path#Go
+func commonPrefix(sep byte, paths ...string) string {
+	// Handle special cases.
+	switch len(paths) {
+	case 0:
+		return ""
+	case 1:
+		return path.Clean(paths[0])
+	}
+
+	// Note, we treat string as []byte, not []rune as is often
+	// done in Go. (And sep as byte, not rune). This is because
+	// most/all supported OS' treat paths as string of non-zero
+	// bytes. A filename may be displayed as a sequence of Unicode
+	// runes (typically encoded as UTF-8) but paths are
+	// not required to be valid UTF-8 or in any normalized form
+	// (e.g. "é" (U+00C9) and "é" (U+0065,U+0301) are different
+	// file names.
+	c := []byte(path.Clean(paths[0]))
+
+	// We add a trailing sep to handle the case where the
+	// common prefix directory is included in the path list
+	// (e.g. /home/user1, /home/user1/foo, /home/user1/bar).
+	// path.Clean will have cleaned off trailing / separators with
+	// the exception of the root directory, "/" (in which case we
+	// make it "//", but this will get fixed up to "/" bellow).
+	c = append(c, sep)
+
+	// Ignore the first path since it's already in c
+	for _, v := range paths[1:] {
+		// Clean up each path before testing it
+		v = path.Clean(v) + string(sep)
+
+		// Find the first non-common byte and truncate c
+		if len(v) < len(c) {
+			c = c[:len(v)]
+		}
+		for i := 0; i < len(c); i++ {
+			if v[i] != c[i] {
+				c = c[:i]
+				break
+			}
+		}
+	}
+
+	// Remove trailing non-separator characters and the final separator
+	for i := len(c) - 1; i >= 0; i-- {
+		if c[i] == sep {
+			c = c[:i]
+			break
+		}
+	}
+
+	return string(c)
 }
 
 func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, error) {
@@ -278,44 +325,65 @@ func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*
 	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
 }
 
-func getMessageForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.DescriptorProto, error) {
-	parts := strings.Split(strings.TrimPrefix(field.GetTypeName(), "."), ".")
-	messageName := parts[len(parts)-1]
-	var nestedMessageParent string
-	if strings.HasSuffix(parts[len(parts)-1], "Entry") {
-		parts = parts[:len(parts)-1]
-		nestedMessageParent = parts[len(parts)-1]
+func splitTypeName(typeName string) (string, []string) {
+	parts := strings.Split(strings.TrimPrefix(typeName, "."), ".")
+	var indexOfFirstUppercasePart int
+	for i, part := range parts {
+		// should never happen, consider panic?
+		if len(part) == 0 {
+			continue
+		}
+		// is the first character uppercase?
+		if part[0] == byte(unicode.ToUpper(rune(part[0]))) {
+			indexOfFirstUppercasePart = i
+			break
+		}
 	}
-	packageName := strings.Join(parts[:len(parts)-1], ".")
+	packageName := strings.Join(parts[:indexOfFirstUppercasePart], ".")
+	return packageName, parts[indexOfFirstUppercasePart:]
+}
+
+func getFileAndTypeDefForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, *descriptor.DescriptorProto, *descriptor.EnumDescriptorProto, error) {
+	packageName, typeNameParts := splitTypeName(field.GetTypeName())
 	for _, protoFile := range project.Request.ProtoFile {
 		if protoFile.GetPackage() == packageName {
-			for _, msg := range protoFile.GetMessageType() {
-				if messageName == msg.GetName() {
-					return msg, nil
-				}
-				if nestedMessageParent == msg.GetName() {
-					for _, nestedMsg := range msg.GetNestedType() {
-						if messageName == nestedMsg.GetName() {
-							return nestedMsg, nil
-						}
+			if len(typeNameParts) == 1 {
+				for _, enum := range protoFile.GetEnumType() {
+					if enum.GetName() == typeNameParts[0] {
+						return protoFile, nil, enum, nil
 					}
+				}
+			}
+			for _, msg := range protoFile.GetMessageType() {
+				matchMsg, matchEnum, err := searchMessageForNestedType(msg, typeNameParts)
+				if err == nil {
+					return protoFile, matchMsg, matchEnum, nil
 				}
 			}
 		}
 	}
 
-	for _, protoFile := range project.Request.ProtoFile {
-		// ilackarms: unlikely event of collision where the package name has the right prefix and a nested message type matches
-		if strings.HasPrefix(packageName, protoFile.GetPackage()) {
-			for _, msg := range protoFile.GetMessageType() {
-				for _, nestedMsg := range msg.GetNestedType() {
-					if messageName == nestedMsg.GetName() {
-						return nestedMsg, nil
-					}
-				}
+	return nil, nil, nil, errors.Errorf("message %v.%v not found", packageName, typeNameParts)
+}
+
+func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts []string) (*descriptor.DescriptorProto, *descriptor.EnumDescriptorProto, error) {
+	switch len(typeNameParts) {
+	case 0:
+		return nil, nil, errors.Errorf("internal error: ran out of type name parts to try")
+	case 1:
+		if msg.GetName() == typeNameParts[0] {
+			return msg, nil, nil
+		}
+		for _, nestedEnum := range msg.GetEnumType() {
+			return nil, nestedEnum, nil
+		}
+	default:
+		for _, nestedMsg := range msg.GetNestedType() {
+			msg, enum, err := searchMessageForNestedType(nestedMsg, typeNameParts[1:])
+			if err == nil {
+				return msg, enum, nil
 			}
 		}
 	}
-
-	return nil, errors.Errorf("message %v.%v not found", packageName, messageName)
+	return nil, nil, errors.Errorf("msg %v does not match type name %v", msg.GetName(), typeNameParts)
 }
