@@ -244,14 +244,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f14364057165381ea296e49f8870a9ffce2b8a95e34d6ae06c759106aaef428c"
-  name = "github.com/hashicorp/go-uuid"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "4f571afc59f3043a65f8fe6bf46d887b10a01d43"
-
-[[projects]]
-  branch = "master"
   digest = "1:cf296baa185baae04a9a7004efee8511d08e2f5f51d4cbe5375da89722d681db"
   name = "github.com/hashicorp/golang-lru"
   packages = [
@@ -576,14 +568,6 @@
   pruneopts = "UT"
   revision = "e96b8261627ae550413094e59cf914a6ed0657c6"
   version = "v1"
-
-[[projects]]
-  digest = "1:d2631be1cb671b8a86338ecb2c194c3ad5be9b346e0b1a169beff38c8cdb1601"
-  name = "github.com/solo-io/go-checkpoint"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "bdea1405611a5bbc025564545ce100bb10b684b8"
-  version = "0.0.3"
 
 [[projects]]
   branch = "master"
@@ -1024,7 +1008,6 @@
     "github.com/pkg/errors",
     "github.com/pseudomuto/protokit",
     "github.com/radovskyb/watcher",
-    "github.com/solo-io/go-checkpoint",
     "github.com/solo-io/kubecontroller",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",

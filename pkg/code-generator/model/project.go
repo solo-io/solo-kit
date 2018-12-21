@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 )
 
+const ProjectConfigFilename = "solo-kit.json"
+
 // SOLO-KIT Descriptors from which code can be generated
 
 type ProjectConfig struct {

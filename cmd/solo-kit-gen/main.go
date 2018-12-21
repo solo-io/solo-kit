@@ -26,8 +26,10 @@ func main() {
 	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
 	genDocs := flag.Bool("docs", true, "generate docs as well")
 	var customImports, skipDirs arrayFlags
-	flag.Var(&customImports, "i", "import additional directories as proto roots")
-	flag.Var(&skipDirs, "s", "skip generating for this directory")
+	flag.Var(&customImports, "i", "import additional directories as proto roots " +
+		"(repeated flag, specify as many times as desired)")
+	flag.Var(&skipDirs, "s", "skip generating for this directory " +
+		"(repeated flag, specify as many times as desired)")
 	flag.Parse()
 
 	if err := cmd.Run(*relativeRoot, *compileProtos, *genDocs, customImports, skipDirs); err != nil {

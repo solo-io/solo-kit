@@ -24,9 +24,6 @@ init:
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
 
-.PHONY: all
-all: build
-
 .PHONY: proto
 proto: $(GENERATED_PROTO_FILES)
 
@@ -72,34 +69,13 @@ $(OUTPUT_DIR)/.generated-code:
 	touch $@
 
 #----------------------------------------------------------------------------------
-# protoc plugin binary
+# {gogo,golang}/protobuf dependencies
 #----------------------------------------------------------------------------------
-.PHONY: install-plugin
-install-plugin: ${GOPATH}/bin/protoc-gen-solo-kit
-
-.PHONY: install-gqlgen
-install-gqlgen: ${GOPATH}/bin/gqlgen
-${GOPATH}/bin/gqlgen: ${GOPATH}/src/github.com/99designs/gqlgen/
-	cd ${GOPATH}/src/github.com/99designs/gqlgen/ && \
-	dep ensure && \
-	go install
-
-${GOPATH}/src/github.com/99designs/gqlgen/:
-	mkdir -p ${GOPATH}/src/github.com/99designs && \
-	cd ${GOPATH}/src/github.com/99designs && \
-	git clone --branch v0.4.4 --depth 1 https://github.com/99designs/gqlgen/
-
-$(OUTPUT_DIR)/protoc-gen-solo-kit: $(SOURCES)
-	go build -o $@ cmd/protoc-gen-solo-kit/main.go
-
-${GOPATH}/bin/protoc-gen-solo-kit: $(OUTPUT_DIR)/protoc-gen-solo-kit
-	cp $(OUTPUT_DIR)/protoc-gen-solo-kit ${GOPATH}/bin/
-
 
 GOGO_PROTO_VERSION=v$(shell grep -C 1 github.com/gogo/protobuf  Gopkg.toml|grep version |cut -d'"' -f 2)
 GOLANG_PROTO_VERSION=v$(shell grep -C 1 github.com/golang/protobuf  Gopkg.toml|grep version |cut -d'"' -f 2)
 .PHONY: install-gen-tools
-install-gogo-proto: ${GOPATH}/bin/protoc-gen-solo-kit
+install-gogo-proto:
 	mkdir -p  ${GOPATH}/src/github.com/gogo/ 
 	mkdir -p  ${GOPATH}/src/github.com/golang/ 
 	cd  ${GOPATH}/src/github.com/gogo/ && if [ -d protobuf ]; then cd protobuf && git fetch && git checkout $(GOGO_PROTO_VERSION); \
@@ -109,4 +85,11 @@ install-gogo-proto: ${GOPATH}/bin/protoc-gen-solo-kit
 	go install github.com/gogo/protobuf/protoc-gen-gogo
 
 .PHONY: install-gen-tools
-install-gen-tools: install-gogo-proto install-gqlgen install-plugin
+install-gen-tools: install-gogo-proto
+
+#----------------------------------------------------------------------------------
+# solo-kit-gen
+#----------------------------------------------------------------------------------
+
+solo-kit-gen:
+	go build -o $@ cmd/solo-kit-gen/*.go
