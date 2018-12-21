@@ -4,6 +4,7 @@ import (
 	"fmt"
 	htmltemplate "html/template"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -13,20 +14,10 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protoc-gen-doc"
-	"github.com/jpillora/longestcommon"
 	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
-
-// TODO: uncopy-paste from generator
-func trimProjectRoot(fileName, projectFile string) string {
-	fileDir := filepath.Dir(fileName)
-	projectRoot := strings.TrimPrefix(filepath.Dir(projectFile), os.Getenv("GOPATH")+"/src/") + "/"
-	trimmedFileDir := strings.TrimPrefix(fileDir, projectRoot)
-
-	return filepath.Join(trimmedFileDir, filepath.Base(fileName))
-}
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
 	descriptor.FieldDescriptorProto_TYPE_FLOAT:  "float",
@@ -197,21 +188,19 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 		case strings.Contains(typeName, ".google.protobuf."):
 			link = wellKnownProtoLink(typeName)
 		default:
-			var filename string
+			var linkedFile string
 			for _, toGenerate := range project.Request.FileToGenerate {
 				if strings.HasSuffix(file.GetName(), toGenerate) {
-					filename = toGenerate
+					linkedFile = toGenerate
 					break
 				}
 			}
-			if filename == "" {
-				filename = filepath.Base(file.GetName())
+			if linkedFile == "" {
+				linkedFile = filepath.Base(file.GetName())
 				//return "", errors.Errorf("failed to get generated file path for proto %v in list %v", file.GetName(), project.Request.FileToGenerate)
 			}
-			filename = trimProjectRoot(filename, project.ProjectFile)
-			forfileName := trimProjectRoot(forFile.GetName(), project.ProjectFile)
-			filename = relativeFilename(forfileName, filename)
-			link = filename + ".sk.md#" + declaredName
+			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
+			link = linkedFile + ".sk.md#" + declaredName
 		}
 		linkText := "[" + typeName + "](" + link + ")"
 		return linkText, nil
@@ -232,26 +221,77 @@ func linkForResource(project *model.Project) func(resource *model.Resource) (str
 	}
 }
 
-const coreSoloApiPrefix = "github.com/solo-io/solo-kit/api/v1"
-
 func relativeFilename(fileWithLink, fileLinkedTo string) string {
 	if fileLinkedTo == fileWithLink {
 		return filepath.Base(fileLinkedTo)
 	}
-	if strings.HasPrefix(fileLinkedTo, coreSoloApiPrefix) {
-		fileLinkedTo = strings.Replace(fileLinkedTo, coreSoloApiPrefix, "core", -1)
-	}
-	trimmedFileNames := []string{fileWithLink, fileLinkedTo}
-	longestcommon.TrimPrefix(trimmedFileNames)
-	fileWithLink, fileLinkedTo = trimmedFileNames[0], trimmedFileNames[1]
-	fileWithLinkSplit := strings.Split(fileWithLink, "/")
+	prefix := commonPrefix(os.PathSeparator, fileWithLink, fileLinkedTo) + string(os.PathSeparator)
+	fileWithLink = strings.TrimPrefix(fileWithLink, prefix)
+	fileLinkedTo = strings.TrimPrefix(fileLinkedTo, prefix)
+	fileWithLinkSplit := strings.Split(fileWithLink, string(os.PathSeparator))
 	if len(fileWithLinkSplit) == 1 {
 		return fileLinkedTo
 	}
 	for i := 0; i < len(fileWithLinkSplit)-1; i++ {
-		fileLinkedTo = "../" + fileLinkedTo
+		fileLinkedTo = ".." + string(os.PathSeparator) + fileLinkedTo
 	}
 	return fileLinkedTo
+}
+
+// from https://www.rosettacode.org/wiki/Find_common_directory_path#Go
+func commonPrefix(sep byte, paths ...string) string {
+	// Handle special cases.
+	switch len(paths) {
+	case 0:
+		return ""
+	case 1:
+		return path.Clean(paths[0])
+	}
+
+	// Note, we treat string as []byte, not []rune as is often
+	// done in Go. (And sep as byte, not rune). This is because
+	// most/all supported OS' treat paths as string of non-zero
+	// bytes. A filename may be displayed as a sequence of Unicode
+	// runes (typically encoded as UTF-8) but paths are
+	// not required to be valid UTF-8 or in any normalized form
+	// (e.g. "é" (U+00C9) and "é" (U+0065,U+0301) are different
+	// file names.
+	c := []byte(path.Clean(paths[0]))
+
+	// We add a trailing sep to handle the case where the
+	// common prefix directory is included in the path list
+	// (e.g. /home/user1, /home/user1/foo, /home/user1/bar).
+	// path.Clean will have cleaned off trailing / separators with
+	// the exception of the root directory, "/" (in which case we
+	// make it "//", but this will get fixed up to "/" bellow).
+	c = append(c, sep)
+
+	// Ignore the first path since it's already in c
+	for _, v := range paths[1:] {
+		// Clean up each path before testing it
+		v = path.Clean(v) + string(sep)
+
+		// Find the first non-common byte and truncate c
+		if len(v) < len(c) {
+			c = c[:len(v)]
+		}
+		for i := 0; i < len(c); i++ {
+			if v[i] != c[i] {
+				c = c[:i]
+				break
+			}
+		}
+	}
+
+	// Remove trailing non-separator characters and the final separator
+	for i := len(c) - 1; i >= 0; i-- {
+		if c[i] == sep {
+			c = c[:i]
+			break
+		}
+	}
+
+	return string(c)
 }
 
 func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, error) {
