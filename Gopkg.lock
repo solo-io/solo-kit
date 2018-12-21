@@ -333,6 +333,14 @@
   version = "v0.3.5"
 
 [[projects]]
+  branch = "master"
+  digest = "1:0ed7694a4bcc8c3c0f7eba5225eb916aac2feeeadc8c7024d2d76878de158743"
+  name = "github.com/jpillora/longestcommon"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "adb9d91ee629dd8304c9f9d7c91977b9d7e61a35"
+
+[[projects]]
   digest = "1:eaefc85d32c03e5f0c2b88ea2f79fce3d993e2c78316d21319575dd4ea9153ca"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -1002,6 +1010,7 @@
     "github.com/hashicorp/vault/api",
     "github.com/iancoleman/strcase",
     "github.com/ilackarms/protoc-gen-doc",
+    "github.com/jpillora/longestcommon",
     "github.com/k0kubun/pp",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",

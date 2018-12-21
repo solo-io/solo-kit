@@ -2,6 +2,7 @@ package funcs
 
 import (
 	"fmt"
+	htmltemplate "html/template"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -9,16 +10,13 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/solo-io/solo-kit/pkg/errors"
-
-	"github.com/solo-io/solo-kit/pkg/code-generator/model"
-
-	htmltemplate "html/template"
-
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protoc-gen-doc"
+	"github.com/jpillora/longestcommon"
 	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 // TODO: uncopy-paste from generator
@@ -243,6 +241,9 @@ func relativeFilename(fileWithLink, fileLinkedTo string) string {
 	if strings.HasPrefix(fileLinkedTo, coreSoloApiPrefix) {
 		fileLinkedTo = strings.Replace(fileLinkedTo, coreSoloApiPrefix, "core", -1)
 	}
+	trimmedFileNames := []string{fileWithLink, fileLinkedTo}
+	longestcommon.TrimPrefix(trimmedFileNames)
+	fileWithLink, fileLinkedTo = trimmedFileNames[0], trimmedFileNames[1]
 	fileWithLinkSplit := strings.Split(fileWithLink, "/")
 	if len(fileWithLinkSplit) == 1 {
 		return fileLinkedTo
@@ -316,7 +317,7 @@ func getFileAndTypeDefForField(project *model.Project, field *protokit.FieldDesc
 			for _, msg := range protoFile.GetMessageType() {
 				matchMsg, matchEnum, err := searchMessageForNestedType(msg, typeNameParts)
 				if err == nil {
-					return protoFile,matchMsg, matchEnum, nil
+					return protoFile, matchMsg, matchEnum, nil
 				}
 			}
 		}
@@ -325,7 +326,7 @@ func getFileAndTypeDefForField(project *model.Project, field *protokit.FieldDesc
 	return nil, nil, nil, errors.Errorf("message %v.%v not found", packageName, typeNameParts)
 }
 
-func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts []string) (*descriptor.DescriptorProto,  *descriptor.EnumDescriptorProto, error) {
+func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts []string) (*descriptor.DescriptorProto, *descriptor.EnumDescriptorProto, error) {
 	switch len(typeNameParts) {
 	case 0:
 		return nil, nil, errors.Errorf("internal error: ran out of type name parts to try")
@@ -340,7 +341,7 @@ func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts [
 		for _, nestedMsg := range msg.GetNestedType() {
 			msg, enum, err := searchMessageForNestedType(nestedMsg, typeNameParts[1:])
 			if err == nil {
-				return msg, enum ,nil
+				return msg, enum, nil
 			}
 		}
 	}
