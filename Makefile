@@ -24,9 +24,6 @@ init:
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
 
-.PHONY: all
-all: build
-
 .PHONY: proto
 proto: $(GENERATED_PROTO_FILES)
 
