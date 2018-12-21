@@ -27,9 +27,9 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 
 	var projectDirs []string
 
-	// discover all project.json
+	// discover all solo-kit.json
 	if err := filepath.Walk(absoluteRoot, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(path, "project.json") {
+		if !strings.HasSuffix(path, model.ProjectConfigFilename) {
 			return nil
 		}
 		projectDirs = append(projectDirs, filepath.Dir(path))
@@ -65,7 +65,7 @@ generateForDir:
 			return err
 		}
 
-		projectConfig, err := model.LoadProjectConfig(inDir + "/project.json")
+		projectConfig, err := model.LoadProjectConfig(filepath.Join(inDir, model.ProjectConfigFilename))
 		if err != nil {
 			return err
 		}

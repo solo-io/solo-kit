@@ -20,7 +20,7 @@ See `test/mock_resources.proto` and `test/generate.go` for an example of how to 
 ## Usage
 - re-run whenever you change or add an api (.proto file)
 - api objects generated from messages defined in protobuf files with magic comments prefixed with `@solo-kit`
-- run `solo-kit-gen` recursively at the root of an `api` directory containing one or more `project.json` files
+- run `solo-kit-gen` recursively at the root of an `api` directory containing one or more `solo-kit.json` files
 - generated files have the `.sk.go` suffix (generated test files do not include this suffix)
 
 ## `solo-kit-gen`
