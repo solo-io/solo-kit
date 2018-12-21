@@ -87,3 +87,9 @@ install-gogo-proto:
 .PHONY: install-gen-tools
 install-gen-tools: install-gogo-proto
 
+#----------------------------------------------------------------------------------
+# solo-kit-gen
+#----------------------------------------------------------------------------------
+
+solo-kit-gen:
+	go build -o $@ cmd/solo-kit-gen/*.go
