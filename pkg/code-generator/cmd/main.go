@@ -205,6 +205,9 @@ func collectProtosFromRoot(root, tmpFile string, customImports, skipDirs []strin
 			// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
 			// with different import paths
 			for _, existing := range descriptors {
+				if existing.GetName() == f.GetName() {
+					continue
+				}
 				existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
 				existingCopy.Name = f.Name
 				if proto.Equal(existingCopy, f) {
