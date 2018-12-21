@@ -15,4 +15,4 @@
 *.out
 vendor/
 _output/
-solo-kit-gen
+/solo-kit-gen

@@ -139,7 +139,7 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectCon
 	var projects []model.ProjectConfig
 
 	if err := filepath.Walk(root, func(projectFile string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(projectFile, "project.json") {
+		if !strings.HasSuffix(projectFile, model.ProjectConfigFilename) {
 			return nil
 		}
 		for _, skip := range skipDirs {
