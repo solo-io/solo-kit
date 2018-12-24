@@ -56,7 +56,10 @@ func TemplateFuncs(project *model.Project) template.FuncMap {
 		"linkForField":    linkForField(project),
 		"linkForResource": linkForResource(project),
 		"forEachMessage":  funcs.forEachMessage,
-		"printfptr":       printPointer,
+		"getFileForMessage": func(msg *protokit.Descriptor) *protokit.FileDescriptor {
+			return msg.GetFile()
+		},
+		"printfptr": printPointer,
 		"remove_magic_comments": func(in string) string {
 			lines := strings.Split(in, "\n")
 			var linesWithoutMagicComments []string
@@ -86,6 +89,9 @@ func TemplateFuncs(project *model.Project) template.FuncMap {
 		"set_bool": func(v *bool, val bool) *bool {
 			*v = val
 			return v
+		},
+		"backtick": func() string {
+			return "`"
 		},
 	}
 	funcs.Funcs = funcMap
@@ -401,20 +407,24 @@ func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts [
 	return nil, nil, errors.Errorf("msg %v does not match type name %v", msg.GetName(), typeNameParts)
 }
 
-func (c *templateFunctions) forEachMessage(messages []*protokit.Descriptor, rawTemplateString string) (string, error) {
-	tmpl, err := template.New("p").Funcs(c.Funcs).Parse(rawTemplateString)
+func (c *templateFunctions) forEachMessage(messages []*protokit.Descriptor, messageTemplate, enumTemplate string) (string, error) {
+	msgTmpl, err := template.New("msgtmpl").Funcs(c.Funcs).Parse(messageTemplate)
+	if err != nil {
+		return "", err
+	}
+	enumTmpl, err := template.New("enumtpml").Funcs(c.Funcs).Parse(enumTemplate)
 	if err != nil {
 		return "", err
 	}
 	str := ""
 	for _, msg := range messages {
 		buf := &bytes.Buffer{}
-		if err := tmpl.Execute(buf, msg); err != nil {
+		if err := msgTmpl.Execute(buf, msg); err != nil {
 			return "", err
 		}
 		str += buf.String() + "\n"
 		if len(msg.GetNestedType()) > 0 {
-			nested, err := c.forEachMessage(msg.GetMessages(), rawTemplateString)
+			nested, err := c.forEachMessage(msg.GetMessages(), messageTemplate, enumTemplate)
 			if err != nil {
 				return "", err
 			}
@@ -422,12 +432,13 @@ func (c *templateFunctions) forEachMessage(messages []*protokit.Descriptor, rawT
 		}
 		// TODO: ilackarms: this might get weird for templates that rely on specifiy enum or msg data
 		// for now it works because we only need the name of the type
-		for _, enum := range msg.GetEnumType() {
-			if err := tmpl.Execute(buf, enum); err != nil {
+		for _, enum := range msg.GetEnums() {
+			if err := enumTmpl.Execute(buf, enum); err != nil {
 				return "", err
 			}
 			str += buf.String() + "\n"
 		}
 	}
+	str = strings.TrimSuffix(str, "\n")
 	return str, nil
 }
