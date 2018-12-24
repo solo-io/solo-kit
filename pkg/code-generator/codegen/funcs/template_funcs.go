@@ -418,6 +418,13 @@ func (c *templateFunctions) forEachMessage(messages []*protokit.Descriptor, mess
 	}
 	str := ""
 	for _, msg := range messages {
+		// todo: add parameter to disable this
+		if strings.HasSuffix(msg.GetName(), "Entry") &&
+			len(msg.GetField()) == 2 &&
+			msg.GetField()[0].GetName() == "key" &&
+			msg.GetField()[1].GetName() == "value" {
+			continue
+		}
 		buf := &bytes.Buffer{}
 		if err := msgTmpl.Execute(buf, msg); err != nil {
 			return "", err
