@@ -407,7 +407,7 @@ func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts [
 	return nil, nil, errors.Errorf("msg %v does not match type name %v", msg.GetName(), typeNameParts)
 }
 
-func (c *templateFunctions) forEachMessage(messages []*protokit.Descriptor, messageTemplate, enumTemplate string) (string, error) {
+func (c *templateFunctions) forEachMessage(inFile *protokit.FileDescriptor, messages []*protokit.Descriptor, messageTemplate, enumTemplate string) (string, error) {
 	msgTmpl, err := template.New("msgtmpl").Funcs(c.Funcs).Parse(messageTemplate)
 	if err != nil {
 		return "", err
@@ -419,6 +419,8 @@ func (c *templateFunctions) forEachMessage(messages []*protokit.Descriptor, mess
 	str := ""
 	for _, msg := range messages {
 		// todo: add parameter to disable this
+		// ilackarms: the purpose of this block is to skip
+		// messages in the descriptor that are used by proto to represent map types
 		if strings.HasSuffix(msg.GetName(), "Entry") &&
 			len(msg.GetField()) == 2 &&
 			msg.GetField()[0].GetName() == "key" &&
@@ -431,7 +433,7 @@ func (c *templateFunctions) forEachMessage(messages []*protokit.Descriptor, mess
 		}
 		str += buf.String() + "\n"
 		if len(msg.GetNestedType()) > 0 {
-			nested, err := c.forEachMessage(msg.GetMessages(), messageTemplate, enumTemplate)
+			nested, err := c.forEachMessage(inFile, msg.GetMessages(), messageTemplate, enumTemplate)
 			if err != nil {
 				return "", err
 			}

@@ -25,19 +25,19 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 
 {{- if gt (len .Messages) 0 }} 
 ### Types:
-{{ $msgLinkItem :=  "- [{{ printfptr \"%v\" .Name }}](#{{.Name}}) " }}
-{{- forEachMessage .Messages $msgLinkItem "" }}  
+{{ $msgLinkItem :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) " }}
+{{ $enumLinkItem :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) " }}
+{{- forEachMessage $File .Messages $msgLinkItem $enumLinkItem }}  
 {{- end}}
 
 {{- if gt (len .Enums) 0 }} 
 ### Enums:
 {{- range .Enums}}
-	- [{{ printfptr "%v" .Name }}](#{{.Name}})
+	- [{{ printfptr "%v" .Name }}](#{{ printfptr "%v" .Name }})
 {{- end}}
 {{- end}}
 
-{{ $msgLongInfo :=  `+"`"+ // start of the message template
-		`
+{{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}
 ---
 ### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
@@ -59,10 +59,10 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 | {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
-`+"`"+` }}
+` + "`" + ` }}
 
 
-{{ $enumLongInfo :=  `+"`"+ // start of the enum template
+{{ $enumLongInfo :=  ` + "`" +
 		`
 {{ $Enum := . -}}
 ---
@@ -79,9 +79,9 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 | {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{ remove_magic_comments (nobr .Comments.Leading) }} |
 {{end}}
 
-`+"`"+` }}
+` + "`" + ` }}
 
-{{- forEachMessage .Messages $msgLongInfo $enumLongInfo }}  
+{{- forEachMessage $File .Messages $msgLongInfo $enumLongInfo }}  
 
 {{- range .Enums }}  
 ### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
