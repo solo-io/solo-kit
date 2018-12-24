@@ -11,25 +11,23 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 	return template.Must(template.New("p").Funcs(funcs.TemplateFuncs(project)).Parse(`
 {{ $File := . -}}
 
-## Package:
-{{ .Package }}
+## Package: {{ .Package }}
 
-## Source File:
-{{ .Name }} 
+## Source File: {{ .Name }} 
 
 ## Description:
 {{- range .SyntaxComments.Detached }}  
-{{ remove_magic_comments (printf "%v" .) }}
+    {{ remove_magic_comments (printf "%v" .) }}
 {{- end }}  
 
 ## Contents:
-- Messages:
-{{- range .Messages }}  
-	- [{{ printfptr "%v" .Name }}](#{{.Name}})
-{{- range .Messages }}  
-	- [{{ printfptr "%v" .Name }}](#{{.Name}})
-{{- end }}
-{{- end }}
+{{ $msgLinkItem :=  "- [{{ printfptr \"%v\" .Name }}](#{{.Name}}) " }}
+
+{{- forEachMessage .Messages $msgLinkItem }}  
+
+{{ $msgLongInfo :=  `+"`"+`
+
+`+"`"+` }}
 
 {{- if gt (len .Enums) 0 }} 
 - Enums:
