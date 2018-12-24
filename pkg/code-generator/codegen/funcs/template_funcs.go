@@ -1,6 +1,7 @@
 package funcs
 
 import (
+	"bytes"
 	"fmt"
 	htmltemplate "html/template"
 	"os"
@@ -31,10 +32,16 @@ var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
 	descriptor.FieldDescriptorProto_TYPE_BYTES:  "bytes",
 }
 
+// container for the funcmap, allows functions to utilize each other more easily
+type templateFunctions struct {
+	Funcs template.FuncMap
+}
+
 var magicCommentRegex = regexp.MustCompile("@solo-kit:.*")
 
 func TemplateFuncs(project *model.Project) template.FuncMap {
-	return template.FuncMap{
+	funcs := &templateFunctions{}
+	funcMap := template.FuncMap{
 		"join":            strings.Join,
 		"lowercase":       strings.ToLower,
 		"lower_camel":     strcase.ToLowerCamel,
@@ -48,6 +55,7 @@ func TemplateFuncs(project *model.Project) template.FuncMap {
 		"noescape":        noEscape,
 		"linkForField":    linkForField(project),
 		"linkForResource": linkForResource(project),
+		"forEachMessage":  funcs.forEachMessage,
 		"printfptr":       printPointer,
 		"remove_magic_comments": func(in string) string {
 			lines := strings.Split(in, "\n")
@@ -80,6 +88,8 @@ func TemplateFuncs(project *model.Project) template.FuncMap {
 			return v
 		},
 	}
+	funcs.Funcs = funcMap
+	return funcMap
 }
 
 func printPointer(format string, p *string) string {
@@ -389,4 +399,35 @@ func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts [
 		}
 	}
 	return nil, nil, errors.Errorf("msg %v does not match type name %v", msg.GetName(), typeNameParts)
+}
+
+func (c *templateFunctions) forEachMessage(messages []*protokit.Descriptor, rawTemplateString string) (string, error) {
+	tmpl, err := template.New("p").Funcs(c.Funcs).Parse(rawTemplateString)
+	if err != nil {
+		return "", err
+	}
+	str := ""
+	for _, msg := range messages {
+		buf := &bytes.Buffer{}
+		if err := tmpl.Execute(buf, msg); err != nil {
+			return "", err
+		}
+		str += buf.String() + "\n"
+		if len(msg.GetNestedType()) > 0 {
+			nested, err := c.forEachMessage(msg.GetMessages(), rawTemplateString)
+			if err != nil {
+				return "", err
+			}
+			str += nested + "\n"
+		}
+		// TODO: ilackarms: this might get weird for templates that rely on specifiy enum or msg data
+		// for now it works because we only need the name of the type
+		for _, enum := range msg.GetEnumType() {
+			if err := tmpl.Execute(buf, enum); err != nil {
+				return "", err
+			}
+			str += buf.String() + "\n"
+		}
+	}
+	return str, nil
 }
