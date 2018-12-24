@@ -11,39 +11,46 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 	str := `
 {{ $File := . -}}
 
-## Package: {{ .Package }}
+### Package: {{ backtick }}{{ .Package }}{{ backtick }}
 
-## Source File: {{ .Name }} 
+{{- if gt (len .SyntaxComments.Detached) 0 }}
 
-{{- if gt (len .SyntaxComments.Detached) 0 }} 
-## Description:
 {{- range .SyntaxComments.Detached }}  
 {{ remove_magic_comments (printf "%v" .) }}
 
-{{- end }}  
 {{- end }}
 
+
+{{ end }}
+
 {{- if gt (len .Messages) 0 }} 
-### Types:
-{{ $msgLinkItem :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) " }}
-{{ $enumLinkItem :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) " }}
-{{- forEachMessage $File .Messages $msgLinkItem $enumLinkItem }}  
-{{- end}}
+##### Types:
+
+{{ $linkItem :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) " }}
+{{- forEachMessage $File .Messages $linkItem $linkItem }}  
+
+{{ end}}
 
 {{- if gt (len .Enums) 0 }} 
-### Enums:
-{{- range .Enums}}
+
+##### Enums:
+
+{{ range .Enums}}
 	- [{{ printfptr "%v" .Name }}](#{{ printfptr "%v" .Name }})
+
 {{- end}}
-{{- end}}
+
+{{ end}}
+
+##### Source File: {{ githubLinkForFile "master" .Name }}
 
 {{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}
 ---
 ### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
+{{- printf "%v" resourceForMessage . }}
 
-{{- if gt (len .Comments.Leading) 0 }} 
-## Description:
+{{ if gt (len .Comments.Leading) 0 }} 
 {{ remove_magic_comments .Comments.Leading }}
 {{- end }}
 
@@ -68,8 +75,7 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 ---
 ### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
 
-{{- if gt (len .Comments.Leading) 0 }} 
-## Description:
+{{ if gt (len .Comments.Leading) 0 }} 
 {{ remove_magic_comments .Comments.Leading }}
 {{- end }}
 

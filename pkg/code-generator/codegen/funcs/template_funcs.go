@@ -441,27 +441,28 @@ func (c *templateFunctions) forEachMessage(inFile *protokit.FileDescriptor, mess
 			msg.GetField()[1].GetName() == "value" {
 			continue
 		}
-		buf := &bytes.Buffer{}
-		if err := msgTmpl.Execute(buf, msg); err != nil {
+		renderedMsgString := &bytes.Buffer{}
+		if err := msgTmpl.Execute(renderedMsgString, msg); err != nil {
 			return "", err
 		}
-		str += buf.String() + "\n"
-		if len(msg.GetNestedType()) > 0 {
+		str += renderedMsgString.String() + "\n"
+		if len(msg.GetMessages()) > 0 {
 			nested, err := c.forEachMessage(inFile, msg.GetMessages(), messageTemplate, enumTemplate)
 			if err != nil {
 				return "", err
 			}
-			str += nested + "\n"
+			str += nested
 		}
 		// TODO: ilackarms: this might get weird for templates that rely on specifiy enum or msg data
 		// for now it works because we only need the name of the type
 		for _, enum := range msg.GetEnums() {
-			if err := enumTmpl.Execute(buf, enum); err != nil {
+			renderedEnumString := &bytes.Buffer{}
+			if err := enumTmpl.Execute(renderedEnumString, enum); err != nil {
 				return "", err
 			}
-			str += buf.String() + "\n"
+			str += renderedEnumString.String() + "\n"
 		}
 	}
-	str = strings.TrimSuffix(str, "\n")
+	//str = strings.TrimSuffix(str, "\n")
 	return str, nil
 }
