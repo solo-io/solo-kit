@@ -43,20 +43,21 @@ var githubProjectFileRegex = regexp.MustCompile(".*github.com/([^/]*)/([^/]*)/(.
 func TemplateFuncs(project *model.Project) template.FuncMap {
 	funcs := &templateFunctions{}
 	funcMap := template.FuncMap{
-		"join":            strings.Join,
-		"lowercase":       strings.ToLower,
-		"lower_camel":     strcase.ToLowerCamel,
-		"upper_camel":     strcase.ToCamel,
-		"snake":           strcase.ToSnake,
-		"p":               gendoc.PFilter,
-		"para":            gendoc.ParaFilter,
-		"nobr":            gendoc.NoBrFilter,
-		"fieldType":       fieldType(project),
-		"yamlType":        yamlType,
-		"noescape":        noEscape,
-		"linkForField":    linkForField(project),
-		"linkForResource": linkForResource(project),
-		"forEachMessage":  funcs.forEachMessage,
+		"join":               strings.Join,
+		"lowercase":          strings.ToLower,
+		"lower_camel":        strcase.ToLowerCamel,
+		"upper_camel":        strcase.ToCamel,
+		"snake":              strcase.ToSnake,
+		"p":                  gendoc.PFilter,
+		"para":               gendoc.ParaFilter,
+		"nobr":               gendoc.NoBrFilter,
+		"fieldType":          fieldType(project),
+		"yamlType":           yamlType,
+		"noescape":           noEscape,
+		"linkForField":       linkForField(project),
+		"linkForResource":    linkForResource(project),
+		"forEachMessage":     funcs.forEachMessage,
+		"resourceForMessage": resourceForMessage(project),
 		"getFileForMessage": func(msg *protokit.Descriptor) *protokit.FileDescriptor {
 			return msg.GetFile()
 		},
@@ -255,10 +256,11 @@ func linkForResource(project *model.Project) func(resource *model.Resource) (str
 func resourceForMessage(project *model.Project) func(msg *protokit.Descriptor) (*model.Resource, error) {
 	return func(msg *protokit.Descriptor) (*model.Resource, error) {
 		for _, res := range project.Resources {
-			if res.Original == msg {
+			if res.Original.GetName() == msg.GetName() && res.Original.GetFile().GetName() == msg.GetFile().GetName(){
 				return res, nil
 			}
 		}
+		return nil, nil
 		return nil, errors.Errorf("internal error: could not find file for resource for msg %v in project %v",
 			msg.GetName(), project.Name)
 	}

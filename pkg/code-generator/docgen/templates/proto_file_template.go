@@ -26,8 +26,9 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 {{- if gt (len .Messages) 0 }} 
 ##### Types:
 
-{{ $linkItem :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) " }}
-{{- forEachMessage $File .Messages $linkItem $linkItem }}  
+{{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }}** Top-Level Resource**{{ end }}" }}
+{{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }})" }}
+{{- forEachMessage $File .Messages $linkMessage $linkEnum }}  
 
 {{ end}}
 
@@ -48,7 +49,6 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 {{ $Message := . -}}
 ---
 ### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
-{{- printf "%v" resourceForMessage . }}
 
 {{ if gt (len .Comments.Leading) 0 }} 
 {{ remove_magic_comments .Comments.Leading }}
