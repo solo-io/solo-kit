@@ -252,6 +252,18 @@ func linkForResource(project *model.Project) func(resource *model.Resource) (str
 	}
 }
 
+func resourceForMessage(project *model.Project) func(msg *protokit.Descriptor) (*model.Resource, error) {
+	return func(msg *protokit.Descriptor) (*model.Resource, error) {
+		for _, res := range project.Resources {
+			if res.Original == msg {
+				return res, nil
+			}
+		}
+		return nil, errors.Errorf("internal error: could not find file for resource for msg %v in project %v",
+			msg.GetName(), project.Name)
+	}
+}
+
 func relativeFilename(fileWithLink, fileLinkedTo string) string {
 	if fileLinkedTo == fileWithLink {
 		return filepath.Base(fileLinkedTo)
