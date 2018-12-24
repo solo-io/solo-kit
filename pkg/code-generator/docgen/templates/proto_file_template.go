@@ -54,24 +54,16 @@ Description: {{ remove_magic_comments .Comments.Leading }}
 | {{ printfptr "%v" .Name }} | {{linkForField $File . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
-{{- range .Messages }}  
+{{- range .Enums }}  
 ### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
 
 Description: {{ remove_magic_comments .Comments.Leading }}
 
-` + "```" + `yaml
-{{range .Fields -}}
-"{{ printfptr "%v" .Name}}": {{ fieldType . }}
+| Name | Description |
+| ----- | ----------- | 
+{{range .Values -}}
+| {{ printfptr "%v" .Name }} | {{ remove_magic_comments (nobr .Comments.Leading) }} |
 {{end}}
-` + "```" + `
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-{{range .Fields -}}
-| {{ printfptr "%v" .Name }} | {{linkForField $File . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
-{{end}}
-
-{{- end }}
 
 {{- end }}
 
