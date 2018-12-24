@@ -28,8 +28,7 @@ var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
 	descriptor.FieldDescriptorProto_TYPE_UINT64: "int",
 	descriptor.FieldDescriptorProto_TYPE_INT32:  "int",
 	descriptor.FieldDescriptorProto_TYPE_INT64:  "int",
-	descriptor.FieldDescriptorProto_TYPE_ENUM:   "***TODO ENUMS***!",
-	descriptor.FieldDescriptorProto_TYPE_BYTES:  "***TODO BYTES***!",
+	descriptor.FieldDescriptorProto_TYPE_BYTES:  "bytes",
 }
 
 var magicCommentRegex = regexp.MustCompile("@solo-kit:.*")
@@ -121,6 +120,8 @@ func fieldType(project *model.Project) func(field *protokit.FieldDescriptor) (st
 		fieldTypeStr := func() string {
 			switch field.GetType() {
 			case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+				return field.GetTypeName()
+			case descriptor.FieldDescriptorProto_TYPE_ENUM:
 				return field.GetTypeName()
 			}
 			if typeName, ok := primitiveTypes[field.GetType()]; ok {
@@ -374,14 +375,16 @@ func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts [
 		if msg.GetName() == typeNameParts[0] {
 			return msg, nil, nil
 		}
-		for _, nestedEnum := range msg.GetEnumType() {
-			return nil, nestedEnum, nil
-		}
 	default:
 		for _, nestedMsg := range msg.GetNestedType() {
 			msg, enum, err := searchMessageForNestedType(nestedMsg, typeNameParts[1:])
 			if err == nil {
 				return msg, enum, nil
+			}
+		}
+		for _, nestedEnum := range msg.GetEnumType() {
+			if nestedEnum.GetName() == typeNameParts[1] {
+				return nil, nestedEnum, nil
 			}
 		}
 	}
