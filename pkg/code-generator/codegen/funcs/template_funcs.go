@@ -187,8 +187,8 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 		if err != nil {
 			return "", err
 		}
-		if _, ok := primitiveTypes[field.GetType()]; ok {
-			return typeName, nil
+		if _, ok := primitiveTypes[field.GetType()]; ok || strings.HasPrefix(typeName, "map<") {
+			return "`"+typeName+"`", nil
 		}
 		file, msg, enum, err := getFileAndTypeDefForField(project, field)
 		if err != nil {
