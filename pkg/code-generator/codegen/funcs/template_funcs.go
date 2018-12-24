@@ -38,6 +38,7 @@ type templateFunctions struct {
 }
 
 var magicCommentRegex = regexp.MustCompile("@solo-kit:.*")
+var githubProjectFileRegex = regexp.MustCompile(".*github.com/([^/]*)/([^/]*)/(.*)")
 
 func TemplateFuncs(project *model.Project) template.FuncMap {
 	funcs := &templateFunctions{}
@@ -58,6 +59,19 @@ func TemplateFuncs(project *model.Project) template.FuncMap {
 		"forEachMessage":  funcs.forEachMessage,
 		"getFileForMessage": func(msg *protokit.Descriptor) *protokit.FileDescriptor {
 			return msg.GetFile()
+		},
+		// assumes the file lives in a github-hosted repo
+		"githubLinkForFile": func(branch, path string) (string, error) {
+			githubFile := githubProjectFileRegex.FindStringSubmatch(path)
+			if len(githubFile) != 4 {
+				return "`" + path + "`", nil
+				//return "", errors.Errorf("invalid path provided, must contain github.com/ in path: %v", path)
+			}
+			org := githubFile[1]
+			project := githubFile[2]
+			suffix := githubFile[3]
+			return fmt.Sprintf("[%v](https://github.com/%v/%v/blob/%v/%v)",
+				path, org, project, branch, suffix), nil
 		},
 		"printfptr": printPointer,
 		"remove_magic_comments": func(in string) string {
@@ -188,7 +202,7 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 			return "", err
 		}
 		if _, ok := primitiveTypes[field.GetType()]; ok || strings.HasPrefix(typeName, "map<") {
-			return "`"+typeName+"`", nil
+			return "`" + typeName + "`", nil
 		}
 		file, msg, enum, err := getFileAndTypeDefForField(project, field)
 		if err != nil {
@@ -226,7 +240,7 @@ func linkForField(project *model.Project) func(forFile *protokit.FileDescriptor,
 
 func linkForResource(project *model.Project) func(resource *model.Resource) (string, error) {
 	protoFiles := protokit.ParseCodeGenRequest(project.Request)
-	return func(resource *model.Resource) (s string, e error) {
+	return func(resource *model.Resource) (string, error) {
 		for _, file := range protoFiles {
 			if file.GetName() == resource.Filename {
 				// TODO: turn this X.proto.sk.md convention into a function lest this linking break
