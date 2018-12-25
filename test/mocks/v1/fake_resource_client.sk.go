@@ -35,9 +35,13 @@ func NewFakeResourceClientWithToken(rcFactory factory.ResourceClientFactory, tok
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating base FakeResource resource client")
 	}
+	return NewFakeResourceClientWithBase(rc), nil
+}
+
+func NewFakeResourceClientWithBase(rc clients.ResourceClient) FakeResourceClient {
 	return &fakeResourceClient{
 		rc: rc,
-	}, nil
+	}
 }
 
 func (client *fakeResourceClient) BaseClient() clients.ResourceClient {

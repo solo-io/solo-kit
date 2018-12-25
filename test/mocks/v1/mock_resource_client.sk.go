@@ -35,9 +35,13 @@ func NewMockResourceClientWithToken(rcFactory factory.ResourceClientFactory, tok
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating base MockResource resource client")
 	}
+	return NewMockResourceClientWithBase(rc), nil
+}
+
+func NewMockResourceClientWithBase(rc clients.ResourceClient) MockResourceClient {
 	return &mockResourceClient{
 		rc: rc,
-	}, nil
+	}
 }
 
 func (client *mockResourceClient) BaseClient() clients.ResourceClient {
