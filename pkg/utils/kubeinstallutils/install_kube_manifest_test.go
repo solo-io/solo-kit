@@ -24,7 +24,7 @@ var _ = Describe("InstallKubeManifest", func() {
 		setup.TeardownKube(namespace)
 	})
 	It("installs arbitrary kube manifests", func() {
-		err := deployBookinfo(namespace)
+		err := deployNginx(namespace)
 		Expect(err).NotTo(HaveOccurred())
 
 		cfg, err := kubeutils.GetConfig("", "")
@@ -37,12 +37,12 @@ var _ = Describe("InstallKubeManifest", func() {
 		deployments, err := kube.ExtensionsV1beta1().Deployments(namespace).List(v1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(svcs.Items).To(HaveLen(1))
-		Expect(deployments.Items).To(HaveLen(6))
+		Expect(deployments.Items).To(HaveLen(1))
 
 	})
 })
 
-func deployBookinfo(namespace string) error {
+func deployNginx(namespace string) error {
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func deployBookinfo(namespace string) error {
 
 	installer := kubeinstallutils.NewKubeInstaller(kube, apiext, namespace)
 
-	kubeObjs, err := kubeinstallutils.ParseKubeManifest(testutils.TestRunnerYaml)
+	kubeObjs, err := kubeinstallutils.ParseKubeManifest(testutils.NginxYaml)
 	if err != nil {
 		return err
 	}
