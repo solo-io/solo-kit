@@ -93,3 +93,11 @@ install-gen-tools: install-gogo-proto
 
 solo-kit-gen:
 	go build -o $@ cmd/solo-kit-gen/*.go
+
+#----------------------------------------------------------------------------------
+# solo-kit-cli
+#----------------------------------------------------------------------------------
+
+solo-kit-cli:
+	go build -o $@ cmd/cli/*.go
+

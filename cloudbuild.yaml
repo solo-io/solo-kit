@@ -2,3 +2,11 @@ steps:
   - name: 'soloio/dep'
     args: ['ensure']
     env: ['PROJECT_ROOT=github.com/solo-io/solo-kit']
+
+  - name: 'gcr.io/cloud-builders/go'
+    args: ['build', '-o', 'solo-kit-gen', 'github.com/solo-io/solo-kit/cmd/cli']
+    env: ['PROJECT_ROOT=github.com/solo-io/solo-kit']
+
+  - name: 'gcr.io/cloud-builders/go'
+    args: ['build', '-o', 'solo-kit-cli', 'github.com/solo-io/solo-kit/cmd/solo-kit-gen']
+    env: ['PROJECT_ROOT=github.com/solo-io/solo-kit']
