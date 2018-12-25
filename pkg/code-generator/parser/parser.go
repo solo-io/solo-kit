@@ -38,7 +38,8 @@ func ParseRequest(projectConfig model.ProjectConfig, req *plugin_go.CodeGenerato
 	var messages []ProtoMessageWrapper
 	for _, file := range descriptors {
 		if file.Options == nil || file.Options.GoPackage == nil {
-			return nil, errors.Errorf("file %v must provide proto option go_package", file.GetName())
+			log.Warnf("skipppig file %v must provide proto option go_package", file.GetName())
+			continue
 		}
 		for _, msg := range file.GetMessages() {
 			messages = append(messages, ProtoMessageWrapper{
