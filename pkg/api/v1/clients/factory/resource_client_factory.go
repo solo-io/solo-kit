@@ -53,7 +53,7 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		if opts.Cfg == nil {
 			return nil, errors.Errorf("must provide a resclient.Config for the kube resource client")
 		}
-		return kube.NewResourceClient(opts.Crd, opts.Cfg, opts.SharedCache, inputResource)
+		return kube.NewResourceClient(opts.Crd, opts.Cfg, opts.SharedCache, inputResource, opts.SkipCrdCreation)
 	case *ConsulResourceClientFactory:
 		return consul.NewResourceClient(opts.Consul, opts.RootKey, resourceType), nil
 	case *FileResourceClientFactory:
@@ -78,10 +78,14 @@ type ResourceClientFactory interface {
 	NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error)
 }
 
+// If SkipCrdCreation is set to 'true', the clients built with this factory will not attempt to create the given CRD
+// during registration. This allows us to create and register resource clients in cases where the given configuration
+// contains a token associated with a user that is not authorized to create CRDs.
 type KubeResourceClientFactory struct {
-	Crd         crd.Crd
-	Cfg         *rest.Config
-	SharedCache *kube.KubeCache
+	Crd             crd.Crd
+	Cfg             *rest.Config
+	SharedCache     *kube.KubeCache
+	SkipCrdCreation bool
 }
 
 func (f *KubeResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {

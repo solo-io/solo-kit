@@ -153,17 +153,18 @@ func (kc *KubeCache) updatedOccured() {
 // register informers in register
 
 type ResourceClient struct {
-	crd          crd.Crd
-	apiexts      apiexts.Interface
-	kube         versioned.Interface
-	kubeClient   kubernetes.Interface
-	ownerLabel   string
-	resourceName string
-	resourceType resources.InputResource
-	sharedCache  *KubeCache
+	crd             crd.Crd
+	apiexts         apiexts.Interface
+	kube            versioned.Interface
+	kubeClient      kubernetes.Interface
+	ownerLabel      string
+	resourceName    string
+	resourceType    resources.InputResource
+	sharedCache     *KubeCache
+	skipCrdCreation bool
 }
 
-func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, resourceType resources.InputResource) (*ResourceClient, error) {
+func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, resourceType resources.InputResource, skipCrdCreation bool) (*ResourceClient, error) {
 	apiExts, err := apiexts.NewForConfig(cfg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating api extensions client")
@@ -183,13 +184,14 @@ func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, re
 	resourceName = strings.Replace(resourceName, ".", "", -1)
 
 	return &ResourceClient{
-		crd:          crd,
-		apiexts:      apiExts,
-		kube:         crdClient,
-		kubeClient:   kubeClient,
-		resourceName: resourceName,
-		resourceType: resourceType,
-		sharedCache:  sharedCache,
+		crd:             crd,
+		apiexts:         apiExts,
+		kube:            crdClient,
+		kubeClient:      kubeClient,
+		resourceName:    resourceName,
+		resourceType:    resourceType,
+		sharedCache:     sharedCache,
+		skipCrdCreation: skipCrdCreation,
 	}, nil
 }
 
@@ -207,10 +209,13 @@ func (rc *ResourceClient) Register() error {
 	/*
 		shared informer factory for all namespaces; and then filter desired namespace in list and watch!
 		zbam!
-
 	*/
 	rc.sharedCache.sharedInformerFactory.Register(rc)
-	return rc.crd.Register(rc.apiexts)
+
+	if !rc.skipCrdCreation {
+		return rc.crd.Register(rc.apiexts)
+	}
+	return nil
 }
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {

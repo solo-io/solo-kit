@@ -19,6 +19,7 @@ func DefaultNamespaceIfEmpty(namespace string) string {
 	return namespace
 }
 
+// TODO(marco): the 'register' method is implemented only by the kube resource client. Maybe we should remove it from the interface
 type ResourceClient interface {
 	Kind() string
 	NewResource() resources.Resource
