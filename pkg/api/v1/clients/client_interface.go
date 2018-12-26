@@ -19,10 +19,10 @@ func DefaultNamespaceIfEmpty(namespace string) string {
 	return namespace
 }
 
-// TODO(marco): the 'register' method is implemented only by the kube resource client. Maybe we should remove it from the interface
 type ResourceClient interface {
 	Kind() string
 	NewResource() resources.Resource
+	// Deprecated: implemented only by the kubernetes resource client. Will be removed from the interface.
 	Register() error
 	Read(namespace, name string, opts ReadOpts) (resources.Resource, error)
 	Write(resource resources.Resource, opts WriteOpts) (resources.Resource, error)
