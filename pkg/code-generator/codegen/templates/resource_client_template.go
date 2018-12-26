@@ -39,9 +39,13 @@ func New{{ .Name }}ClientWithToken(rcFactory factory.ResourceClientFactory, toke
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating base {{ .Name }} resource client")
 	}
+	return New{{ .Name }}ClientWithBase(rc), nil
+}
+
+func New{{ .Name }}ClientWithBase(rc clients.ResourceClient) {{ .Name }}Client {
 	return &{{ lower_camel .Name }}Client{
 		rc: rc,
-	}, nil
+	}
 }
 
 func (client *{{ lower_camel .Name }}Client) BaseClient() clients.ResourceClient {

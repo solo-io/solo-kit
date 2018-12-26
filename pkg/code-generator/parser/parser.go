@@ -10,24 +10,23 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
 func ProcessDescriptors(projectConfig model.ProjectConfig, descriptors []*descriptor.FileDescriptorProto) (*model.Project, error) {
 	req := &plugin_go.CodeGeneratorRequest{}
 	for _, file := range descriptors {
-			var added bool
-			for _, addedFile := range req.GetFileToGenerate() {
-				if addedFile == file.GetName() {
-					added = true
-				}
+		var added bool
+		for _, addedFile := range req.GetFileToGenerate() {
+			if addedFile == file.GetName() {
+				added = true
 			}
-			if added {
-				continue
-			}
-			req.FileToGenerate = append(req.FileToGenerate, file.GetName())
-			req.ProtoFile = append(req.ProtoFile, file)
+		}
+		if added {
+			continue
+		}
+		req.FileToGenerate = append(req.FileToGenerate, file.GetName())
+		req.ProtoFile = append(req.ProtoFile, file)
 	}
 	return ParseRequest(projectConfig, req)
 }
@@ -39,7 +38,8 @@ func ParseRequest(projectConfig model.ProjectConfig, req *plugin_go.CodeGenerato
 	var messages []ProtoMessageWrapper
 	for _, file := range descriptors {
 		if file.Options == nil || file.Options.GoPackage == nil {
-			return nil, errors.Errorf("file %v must provide proto option go_package", file.GetName())
+			log.Warnf("skipppig file %v must provide proto option go_package", file.GetName())
+			continue
 		}
 		for _, msg := range file.GetMessages() {
 			messages = append(messages, ProtoMessageWrapper{
