@@ -6,10 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 
-	"github.com/solo-io/kubecontroller"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -170,8 +171,8 @@ func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, kubeCli
 		f.started = true
 	}()
 
-	kubeController := kubecontroller.NewController("solo-resource-controller", kubeClient,
-		kubecontroller.NewLockingSyncHandler(updatecallback),
+	kubeController := controller.NewController("solo-resource-controller", kubeClient,
+		controller.NewLockingSyncHandler(updatecallback),
 		sharedInformers...)
 	go kubeController.Run(2, stop)
 
