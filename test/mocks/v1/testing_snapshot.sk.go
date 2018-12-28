@@ -5,7 +5,6 @@ package v1
 import (
 	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 )
 
@@ -21,36 +20,35 @@ func (s TestingSnapshot) Clone() TestingSnapshot {
 	}
 }
 
-func (s TestingSnapshot) snapshotToHash() TestingSnapshot {
-	snapshotForHashing := s.Clone()
-	for _, mockResource := range snapshotForHashing.Mocks.List() {
-		resources.UpdateMetadata(mockResource, func(meta *core.Metadata) {
-			meta.ResourceVersion = ""
-		})
-		mockResource.SetStatus(core.Status{})
-	}
-	for _, fakeResource := range snapshotForHashing.Fakes.List() {
-		resources.UpdateMetadata(fakeResource, func(meta *core.Metadata) {
-			meta.ResourceVersion = ""
-		})
-	}
-
-	return snapshotForHashing
+func (s TestingSnapshot) Hash() uint64 {
+	return s.hashStruct([]uint64{
+		s.hashMocks(),
+		s.hashFakes(),
+	})
 }
 
-func (s TestingSnapshot) Hash() uint64 {
-	return s.hashStruct(s.snapshotToHash())
+func (s TestingSnapshot) hashMocks() uint64 {
+	var hashes []uint64
+	for _, res := range s.Mocks.List() {
+		hashes = append(hashes, resources.HashResource(res))
+	}
+	return s.hashStruct(hashes)
+}
+
+func (s TestingSnapshot) hashFakes() uint64 {
+	var hashes []uint64
+	for _, res := range s.Fakes.List() {
+		hashes = append(hashes, resources.HashResource(res))
+	}
+	return s.hashStruct(hashes)
 }
 
 func (s TestingSnapshot) HashFields() []zap.Field {
-	snapshotForHashing := s.snapshotToHash()
 	var fields []zap.Field
-	mocks := s.hashStruct(snapshotForHashing.Mocks.List())
-	fields = append(fields, zap.Uint64("mocks", mocks))
-	fakes := s.hashStruct(snapshotForHashing.Fakes.List())
-	fields = append(fields, zap.Uint64("fakes", fakes))
+	fields = append(fields, zap.Uint64("mocks", s.hashMocks()))
+	fields = append(fields, zap.Uint64("fakes", s.hashFakes()))
 
-	return append(fields, zap.Uint64("snapshotHash", s.hashStruct(snapshotForHashing)))
+	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
 }
 
 func (s TestingSnapshot) hashStruct(v interface{}) uint64 {
