@@ -3,8 +3,8 @@
 package v1
 
 import (
-	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
 
@@ -21,10 +21,10 @@ func (s TestingSnapshot) Clone() TestingSnapshot {
 }
 
 func (s TestingSnapshot) Hash() uint64 {
-	return s.hashStruct([]uint64{
+	return hashutils.HashAll(
 		s.hashMocks(),
 		s.hashFakes(),
-	})
+	)
 }
 
 func (s TestingSnapshot) hashMocks() uint64 {
@@ -32,7 +32,7 @@ func (s TestingSnapshot) hashMocks() uint64 {
 	for _, res := range s.Mocks.List() {
 		hashes = append(hashes, resources.HashResource(res))
 	}
-	return s.hashStruct(hashes)
+	return hashutils.HashAll(hashes)
 }
 
 func (s TestingSnapshot) hashFakes() uint64 {
@@ -40,7 +40,7 @@ func (s TestingSnapshot) hashFakes() uint64 {
 	for _, res := range s.Fakes.List() {
 		hashes = append(hashes, resources.HashResource(res))
 	}
-	return s.hashStruct(hashes)
+	return hashutils.HashAll(hashes)
 }
 
 func (s TestingSnapshot) HashFields() []zap.Field {
@@ -49,12 +49,4 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	fields = append(fields, zap.Uint64("fakes", s.hashFakes()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
-}
-
-func (s TestingSnapshot) hashStruct(v interface{}) uint64 {
-	h, err := hashstructure.Hash(v, nil)
-	if err != nil {
-		panic(err)
-	}
-	return h
 }

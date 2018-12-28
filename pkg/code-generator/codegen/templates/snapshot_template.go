@@ -9,8 +9,8 @@ var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_s
 
 import (
 	{{ .Imports }}
-	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
 
@@ -29,11 +29,11 @@ func (s {{ .GoName }}Snapshot) Clone() {{ .GoName }}Snapshot {
 }
 
 func (s {{ .GoName }}Snapshot) Hash() uint64 {
-	return s.hashStruct([]uint64{
+	return hashutils.HashAll(
 {{- range .Resources}}
 		s.hash{{ upper_camel .PluralName }}(),
 {{- end}}
-	})
+	)
 }
 
 {{- $ResourceGroup := . }}
@@ -44,7 +44,7 @@ func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}()
 	for _, res := range s.{{ upper_camel .PluralName }}.List() {
 		hashes = append(hashes, resources.HashResource(res))
 	}
-	return s.hashStruct(hashes)
+	return hashutils.HashAll(hashes)
 }
 {{- end}}
 
@@ -57,14 +57,5 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 
 	return append(fields, zap.Uint64("snapshotHash",  s.Hash()))
 }
- 
-func (s {{ .GoName }}Snapshot) hashStruct(v interface{}) uint64 {
-	h, err := hashstructure.Hash(v, nil)
-	 if err != nil {
-		 panic(err)
-	 }
-	 return h
-}
-
 
 `))
