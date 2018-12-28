@@ -5,8 +5,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
-//go:generate ./generate.sh
-
 //go:generate go run generate.go
 
 func main() {

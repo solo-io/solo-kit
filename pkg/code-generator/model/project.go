@@ -2,15 +2,16 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/golang/protobuf/protoc-gen-go/plugin"
-	"github.com/pseudomuto/protokit"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/golang/protobuf/protoc-gen-go/plugin"
+	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 const ProjectConfigFilename = "solo-kit.json"

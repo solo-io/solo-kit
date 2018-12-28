@@ -256,7 +256,7 @@ func linkForResource(project *model.Project) func(resource *model.Resource) (str
 func resourceForMessage(project *model.Project) func(msg *protokit.Descriptor) (*model.Resource, error) {
 	return func(msg *protokit.Descriptor) (*model.Resource, error) {
 		for _, res := range project.Resources {
-			if res.Original.GetName() == msg.GetName() && res.Original.GetFile().GetName() == msg.GetFile().GetName(){
+			if res.Original.GetName() == msg.GetName() && res.Original.GetFile().GetName() == msg.GetFile().GetName() {
 				return res, nil
 			}
 		}
