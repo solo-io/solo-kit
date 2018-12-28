@@ -4,9 +4,9 @@ import (
 	"text/template"
 )
 
-var ResourceClientTestTemplate = template.Must(template.New("resource_client_test").Funcs(Funcs).Parse(`package {{ .Project.Version }}
+var ResourceClientTestTemplate = template.Must(template.New("resource_client_test").Funcs(Funcs).Parse(`// +build solokit
 
-// +build solokit
+package {{ .Project.Version }}
 
 import (
 	"time"
