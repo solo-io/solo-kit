@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -75,6 +77,7 @@ var (
 		TagKeys: []tag.Key{
 			KeyOpKind,
 			KeyKind,
+			KeyNamespaceKind,
 		},
 	}
 
@@ -93,10 +96,8 @@ func init() {
 
 type KubeCache struct {
 	sharedInformerFactory     *ResourceClientSharedInformerFactory
-	cacheUpdatedWatchers      []chan struct{}
+	cacheUpdatedWatchers      []chan v1.Resource
 	cacheUpdatedWatchersMutex sync.Mutex
-
-	factoryStarter sync.Once
 }
 
 func NewKubeCache() *KubeCache {
@@ -105,15 +106,15 @@ func NewKubeCache() *KubeCache {
 	}
 }
 
-func (kc *KubeCache) addWatch() <-chan struct{} {
+func (kc *KubeCache) addWatch() <-chan v1.Resource {
 	kc.cacheUpdatedWatchersMutex.Lock()
 	defer kc.cacheUpdatedWatchersMutex.Unlock()
-	c := make(chan struct{}, 1)
+	c := make(chan v1.Resource, 1)
 	kc.cacheUpdatedWatchers = append(kc.cacheUpdatedWatchers, c)
 	return c
 }
 
-func (kc *KubeCache) removeWatch(c <-chan struct{}) {
+func (kc *KubeCache) removeWatch(c <-chan v1.Resource) {
 	kc.cacheUpdatedWatchersMutex.Lock()
 	defer kc.cacheUpdatedWatchersMutex.Unlock()
 	for i, cacheUpdated := range kc.cacheUpdatedWatchers {
@@ -125,25 +126,22 @@ func (kc *KubeCache) removeWatch(c <-chan struct{}) {
 }
 
 func (kc *KubeCache) startFactory(ctx context.Context, client kubernetes.Interface) {
-	kc.factoryStarter.Do(func() {
-		kc.sharedInformerFactory.Start(ctx, client, kc.updatedOccured)
-	})
+	kc.sharedInformerFactory.Start(ctx, client, kc.updatedOccurred)
 
 	// we want to panic here because the initial bootstrap of the cache failed
 	// this should be a rare error, and if we are restarted should not happen again
 	if err := kc.sharedInformerFactory.InitErr(); err != nil {
-		contextutils.LoggerFrom(ctx).Panicf("failed to intiialize kube shared informer factory: %v", err)
+		contextutils.LoggerFrom(ctx).Panicf("failed to initialize kube shared informer factory: %v", err)
 	}
 }
 
-// TODO(yuval-k): See if we can get more fine grained updates here, about which resources was udpated
-func (kc *KubeCache) updatedOccured() {
+func (kc *KubeCache) updatedOccurred(resource v1.Resource) {
 	stats.Record(context.TODO(), MEvents.M(1))
 	kc.cacheUpdatedWatchersMutex.Lock()
 	defer kc.cacheUpdatedWatchersMutex.Unlock()
 	for _, cacheUpdated := range kc.cacheUpdatedWatchers {
 		select {
-		case cacheUpdated <- struct{}{}:
+		case cacheUpdated <- resource:
 		default:
 		}
 	}
@@ -151,7 +149,6 @@ func (kc *KubeCache) updatedOccured() {
 
 // lazy start in list & watch
 // register informers in register
-
 type ResourceClient struct {
 	crd             crd.Crd
 	apiexts         apiexts.Interface
@@ -162,13 +159,18 @@ type ResourceClient struct {
 	resourceType    resources.InputResource
 	sharedCache     *KubeCache
 	skipCrdCreation bool
+	namespaces      []string
+	resyncPeriod    time.Duration
 }
 
-func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, resourceType resources.InputResource, skipCrdCreation bool) (*ResourceClient, error) {
+func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, resourceType resources.InputResource,
+	skipCrdCreation bool, namespaces []string, resyncPeriod time.Duration) (*ResourceClient, error) {
+
 	apiExts, err := apiexts.NewForConfig(cfg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating api extensions client")
 	}
+	//
 	crdClient, err := versioned.NewForConfig(cfg, crd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating crd client")
@@ -192,6 +194,8 @@ func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, re
 		resourceType:    resourceType,
 		sharedCache:     sharedCache,
 		skipCrdCreation: skipCrdCreation,
+		namespaces:      namespaces,
+		resyncPeriod:    resyncPeriod,
 	}, nil
 }
 
@@ -210,7 +214,9 @@ func (rc *ResourceClient) Register() error {
 		shared informer factory for all namespaces; and then filter desired namespace in list and watch!
 		zbam!
 	*/
-	rc.sharedCache.sharedInformerFactory.Register(rc)
+	if err := rc.sharedCache.sharedInformerFactory.Register(rc); err != nil {
+		return err
+	}
 
 	if !rc.skipCrdCreation {
 		return rc.crd.Register(rc.apiexts)
@@ -224,6 +230,11 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 	opts = opts.WithDefaults()
 	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+
+	if err := rc.validateNamespace(namespace); err != nil {
+		return nil, err
+	}
+
 	ctx := opts.Ctx
 
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName), tag.Insert(KeyOpKind, "read")); err == nil {
@@ -254,6 +265,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	meta := resource.GetMetadata()
 	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 
+	if err := rc.validateNamespace(meta.Namespace); err != nil {
+		return nil, err
+	}
+
 	// mutate and return clone
 	clone := proto.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
@@ -270,12 +285,12 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		}
 		stats.Record(ctx, MUpdates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, updateerr := rc.kube.ResourcesV1().Resources(meta.Namespace).Update(resourceCrd); updateerr != nil {
+		if _, updateErr := rc.kube.ResourcesV1().Resources(meta.Namespace).Update(resourceCrd); updateErr != nil {
 			original, err := rc.kube.ResourcesV1().Resources(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			if err == nil {
-				return nil, errors.Wrapf(updateerr, "updating kube resource %v:%v (want %v)", resourceCrd.Name, resourceCrd.ResourceVersion, original.ResourceVersion)
+				return nil, errors.Wrapf(updateErr, "updating kube resource %v:%v (want %v)", resourceCrd.Name, resourceCrd.ResourceVersion, original.ResourceVersion)
 			}
-			return nil, errors.Wrapf(updateerr, "updating kube resource %v", resourceCrd.Name)
+			return nil, errors.Wrapf(updateErr, "updating kube resource %v", resourceCrd.Name)
 		}
 	} else {
 		stats.Record(ctx, MCreates.M(1), MInFlight.M(1))
@@ -293,6 +308,12 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+
+	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+	if err := rc.validateNamespace(namespace); err != nil {
+		return err
+	}
+
 	opts = opts.WithDefaults()
 
 	ctx := opts.Ctx
@@ -318,9 +339,16 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 }
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+
+	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+	if err := rc.validateNamespace(namespace); err != nil {
+		return nil, err
+	}
+
+	// Will have no effect if the factory is already running
 	rc.sharedCache.startFactory(context.TODO(), rc.kubeClient)
 
-	lister, err := rc.sharedCache.sharedInformerFactory.GetLister(rc.crd.Type)
+	lister, err := rc.sharedCache.sharedInformerFactory.GetLister(namespace, rc.crd.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -356,10 +384,15 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
+
+	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+	if err := rc.validateNamespace(namespace); err != nil {
+		return nil, nil, err
+	}
+
 	rc.sharedCache.startFactory(context.TODO(), rc.kubeClient)
 
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	resourcesChan := make(chan resources.ResourceList)
 	errs := make(chan error)
 	ctx := opts.Ctx
@@ -378,27 +411,41 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	// watch should open up with an initial read
 	cacheUpdated := rc.sharedCache.addWatch()
 
-	go func() {
+	go func(watchedNamespace string) {
 		defer rc.sharedCache.removeWatch(cacheUpdated)
 		defer close(resourcesChan)
 		defer close(errs)
 
+		// Perform an initial list operation
 		updateResourceList()
 
 		for {
 			select {
+			// The factory
 			case <-time.After(opts.RefreshRate): // TODO(yuval-k): can we remove this? is the factory takes care of that...
 				updateResourceList()
-			case <-cacheUpdated:
-				updateResourceList()
+			case resource := <-cacheUpdated:
+
+				// Only notify watchers if the updated resource is in the watched
+				// namespace and its kind matches the one of the resource client
+				if resource.ObjectMeta.Namespace == watchedNamespace && rc.matchesClientKind(resource) {
+					updateResourceList()
+				}
 			case <-ctx.Done():
 				return
 			}
 		}
 
-	}()
+	}(namespace)
 
 	return resourcesChan, errs, nil
+}
+
+// Checks whether the type of the given resource matches the one of the client's underlying CRD:
+// 1. the kind name must match that of CRD
+// 2. the version must match the CRD GroupVersion (in the form <GROUP_NAME>/<VERSION>)
+func (rc *ResourceClient) matchesClientKind(resource v1.Resource) bool {
+	return resource.Kind == rc.crd.KindName && resource.APIVersion == rc.crd.SchemeGroupVersion().String()
 }
 
 func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {
@@ -429,4 +476,13 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 		})
 	}
 	return resource, nil
+}
+
+// Check whether the given namespace is in the whitelist or we allow all namespaces
+func (rc *ResourceClient) validateNamespace(namespace string) error {
+	if !stringutils.ContainsAny([]string{namespace, metav1.NamespaceAll}, rc.namespaces) {
+		return errors.Errorf("this client was not configured to access resources in the [%v] namespace. "+
+			"Allowed namespaces are [%v]", namespace, rc.namespaces)
+	}
+	return nil
 }
