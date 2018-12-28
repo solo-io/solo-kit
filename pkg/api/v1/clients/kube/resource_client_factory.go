@@ -26,9 +26,10 @@ import (
 
 var (
 	MLists   = stats.Int64("kube/lists", "The number of lists", "1")
-	MWatches = stats.Int64("kube/lists", "The  number of watches", "1")
+	MWatches = stats.Int64("kube/lists", "The number of watches", "1")
 
-	KeyKind, _ = tag.NewKey("kind")
+	KeyKind, _          = tag.NewKey("kind")
+	KeyNamespaceKind, _ = tag.NewKey("ns")
 
 	ListCountView = &view.View{
 		Name:        "kube/lists-count",
@@ -37,6 +38,7 @@ var (
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
+			KeyNamespaceKind,
 		},
 	}
 	WatchCountView = &view.View{
@@ -46,6 +48,7 @@ var (
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
+			KeyNamespaceKind,
 		},
 	}
 )
@@ -64,135 +67,158 @@ type ResourceClientSharedInformerFactory struct {
 	lock          sync.Mutex
 	defaultResync time.Duration
 
-	informers map[reflect.Type]cache.SharedIndexInformer
-	// startedInformers is used for tracking which informers have been started.
+	informers map[reflect.Type]map[string]cache.SharedIndexInformer
+
+	started bool
+
 	// This allows Start() to be called multiple times safely.
-	startedInformers map[reflect.Type]bool
-	started          bool
+	factoryStarter sync.Once
 }
 
 func NewResourceClientSharedInformerFactory() *ResourceClientSharedInformerFactory {
 	return &ResourceClientSharedInformerFactory{
-		defaultResync:    12 * time.Hour,
-		informers:        make(map[reflect.Type]cache.SharedIndexInformer),
-		startedInformers: make(map[reflect.Type]bool),
+		defaultResync: 12 * time.Hour,
+		informers:     make(map[reflect.Type]map[string]cache.SharedIndexInformer),
 	}
 }
 func (f *ResourceClientSharedInformerFactory) InitErr() error {
 	return f.initError
 }
 
-func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) {
+// Creates a new SharedIndexInformer and adds it to the factory's informer registry.
+// NOTE: Currently we cannot share informers between resource clients, because the listWatch functions are configured
+// with the client's specific token. Hence, we must enforce a one-to-one relationship between informers and clients.
+func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error {
 	ctx := context.TODO()
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
 		ctx = ctxWithTags
 	}
 
-	list := rc.kube.ResourcesV1().Resources(metav1.NamespaceAll).List
-	watch := rc.kube.ResourcesV1().Resources(metav1.NamespaceAll).Watch
-	sharedInformer := cache.NewSharedIndexInformer(
-		&cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				//if tweakListOptions != nil {
-				//	tweakListOptions(&options)
-				//}
+	informerType := reflect.TypeOf(rc.crd.Type)
+	namespaces := rc.namespaces // will always contain at least one element
 
-				if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyOpKind, "list")); err == nil {
-					ctx = ctxWithTags
-				}
-				stats.Record(ctx, MLists.M(1), MInFlight.M(1))
-				defer stats.Record(ctx, MInFlight.M(-1))
-				return list(options)
+	resyncPeriod := f.defaultResync
+	if rc.resyncPeriod != 0 {
+		resyncPeriod = rc.resyncPeriod
+	}
+
+	// Create a shared informer for each of the given namespaces.
+	// NOTE: We do not distinguish between the value "" (all namespaces) and a regular namespace here.
+	for _, ns := range namespaces {
+
+		// To nip configuration errors in the bud, error if the registry already contains an informer for the given resource/namespace.
+		if forResourceType, exists := f.informers[informerType]; exists {
+			if _, exists := forResourceType[ns]; exists {
+				return errors.Errorf("Shared cache already contains informer for resource [%v] and namespace [%v]", informerType, ns)
+			}
+		}
+
+		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyNamespaceKind, ns)); err == nil {
+			ctx = ctxWithTags
+		}
+
+		list := rc.kube.ResourcesV1().Resources(ns).List
+		watch := rc.kube.ResourcesV1().Resources(ns).Watch
+		sharedInformer := cache.NewSharedIndexInformer(
+			&cache.ListWatch{
+				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+					if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyOpKind, "list")); err == nil {
+						ctx = ctxWithTags
+					}
+					stats.Record(ctx, MLists.M(1), MInFlight.M(1))
+					defer stats.Record(ctx, MInFlight.M(-1))
+					return list(options)
+				},
+				WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
+					if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyOpKind, "watch")); err == nil {
+						ctx = ctxWithTags
+					}
+
+					stats.Record(ctx, MWatches.M(1), MInFlight.M(1))
+					defer stats.Record(ctx, MInFlight.M(-1))
+					return watch(options)
+				},
 			},
-			WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
-				// if tweakListOptions != nil {
-				// 	tweakListOptions(&options)
-				// }
+			&v1.Resource{}, // TODO(yuval-k): can we make this rc.crd.Type ?
+			resyncPeriod,
+			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+		)
 
-				if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyOpKind, "watch")); err == nil {
-					ctx = ctxWithTags
-				}
-
-				stats.Record(ctx, MWatches.M(1), MInFlight.M(1))
-				defer stats.Record(ctx, MInFlight.M(-1))
-				return watch(options)
-			},
-		},
-		&v1.Resource{},  // TODO(yuval-k): can we make this rc.crd.Type ?
-		f.defaultResync, // TODO(yuval-k): make this configurable!
-		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-	)
-
-	f.RegisterInformer(ctx, rc.crd.Type, sharedInformer)
+		f.registerInformer(ctx, ns, informerType, sharedInformer)
+	}
+	return nil
 }
 
-func (f *ResourceClientSharedInformerFactory) RegisterInformer(ctx context.Context, obj runtime.Object, newInformer cache.SharedIndexInformer) cache.SharedIndexInformer {
+// Add the given informer to the factory's internal informer registry
+func (f *ResourceClientSharedInformerFactory) registerInformer(ctx context.Context, namespace string, informerType reflect.Type, newInformer cache.SharedIndexInformer) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
 	if f.started {
-		contextutils.LoggerFrom(ctx).DPanic("can't register informer after factory has started. this may change in the future")
+		contextutils.LoggerFrom(ctx).DPanic("can't register informer after factory has started. This may change in the future.")
 	}
 
-	informerType := reflect.TypeOf(obj)
-	informer, exists := f.informers[informerType]
-	if exists {
-		return informer
+	// Initialize nested map if it does not already exist
+	if _, exists := f.informers[informerType]; !exists {
+		f.informers[informerType] = make(map[string]cache.SharedIndexInformer)
 	}
-	informer = newInformer
-	f.informers[informerType] = informer
 
-	return informer
-}
-func (f *ResourceClientSharedInformerFactory) GetInformer(obj runtime.Object) cache.SharedIndexInformer {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	informerType := reflect.TypeOf(obj)
-	return f.informers[informerType]
+	f.informers[informerType][namespace] = newInformer
+	return
 }
 
-func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, kubeClient kubernetes.Interface, updatecallback func()) {
-	stop := ctx.Done()
-	var sharedInformers []cache.SharedInformer
-	func() {
+// Starts all informers in the factory's registry (if they have not yet been started) and configures the factory to call
+// the given updateCallback function whenever any of the resources associated with the informers changes.
+func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, kubeClient kubernetes.Interface, updateCallback func(v1.Resource)) {
 
-		f.lock.Lock()
-		defer f.lock.Unlock()
+	// Guarantees that the factory will be started at most once
+	f.factoryStarter.Do(func() {
 
-		for informerType, informer := range f.informers {
-			if !f.startedInformers[informerType] {
-				go informer.Run(stop)
-				f.startedInformers[informerType] = true
+		// Collect all registered informers
+		var sharedInformers []cache.SharedInformer
+		for _, informersByNamespace := range f.informers {
+			for _, informer := range informersByNamespace {
 				sharedInformers = append(sharedInformers, informer)
 			}
 		}
 
-		f.started = true
-	}()
+		// Initialize a new kubernetes controller
+		kubeController := controller.NewController("solo-resource-controller", kubeClient,
+			controller.NewLockingCallbackHandler(updateCallback), sharedInformers...)
 
-	kubeController := controller.NewController("solo-resource-controller", kubeClient,
-		controller.NewLockingSyncHandler(updatecallback),
-		sharedInformers...)
-	go kubeController.Run(2, stop)
-
-	for _, informer := range sharedInformers {
-		ok := cache.WaitForCacheSync(stop, informer.HasSynced)
-		if !ok {
-			// if initError is non-nil, the kube resource client will panic
-			f.initError = errors.Errorf("waiting for initial cache sync failed")
-			return
+		// Start the controller
+		if err := kubeController.Run(2, ctx.Done()); err != nil {
+			// If initError is non-nil, the kube resource client will panic
+			f.initError = errors.Errorf("fained to start kuberenetes controller")
 		}
-	}
+
+		// Mark the factory as started
+		f.started = true
+	})
 }
 
-func (f *ResourceClientSharedInformerFactory) GetLister(obj runtime.Object) (ResourceLister, error) {
-	informer := f.GetInformer(obj)
+func (f *ResourceClientSharedInformerFactory) GetLister(namespace string, obj runtime.Object) (ResourceLister, error) {
+	informer := f.getInformer(namespace, obj)
 	if informer == nil {
+		// TODO: improve error message
 		return nil, errors.Errorf("no lister has been registered for ObjectKind %v", obj.GetObjectKind())
 	}
 	return &resourceLister{indexer: informer.GetIndexer()}, nil
 
+}
+
+// Retrieve the informer for the given resourceType/namespace pair from the factory's registry
+func (f *ResourceClientSharedInformerFactory) getInformer(namespace string, obj runtime.Object) cache.SharedIndexInformer {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	informerType := reflect.TypeOf(obj)
+
+	// Look up by resource type
+	if forResourceType, exists := f.informers[informerType]; exists {
+		return forResourceType[namespace]
+	}
+	return nil
 }
 
 type resourceLister struct {

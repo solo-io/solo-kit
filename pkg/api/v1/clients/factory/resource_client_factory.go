@@ -1,8 +1,13 @@
 package factory
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
+	"time"
+
+	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecretplain"
 
@@ -37,8 +42,12 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 	resourceType := params.ResourceType
 	switch opts := factory.(type) {
 	case *KubeResourceClientFactory:
+		kubeCfg := opts.Cfg
+		if kubeCfg == nil {
+			return nil, errors.Errorf("must provide a rest.Config for the kube resource client")
+		}
 		if params.Token != "" {
-			opts.Cfg.BearerToken = strings.TrimPrefix(params.Token, "Bearer ")
+			kubeCfg.BearerToken = strings.TrimPrefix(params.Token, "Bearer ")
 		}
 		inputResource, ok := params.ResourceType.(resources.InputResource)
 		if !ok {
@@ -50,10 +59,19 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		if opts.SharedCache == nil {
 			return nil, errors.Errorf("must provide a shared cache for the kube resource client")
 		}
-		if opts.Cfg == nil {
-			return nil, errors.Errorf("must provide a resclient.Config for the kube resource client")
+
+		// Validate namespace list:
+		// 1. If no namespace list was provided, default to all namespaces
+		// 2. Error if namespace list contains the empty string plus other values
+		namespaces := opts.Namespaces
+		if namespaces == nil || len(namespaces) == 0 {
+			namespaces = []string{metaV1.NamespaceAll}
+		} else if stringutils.ContainsString(metaV1.NamespaceAll, namespaces) && len(namespaces) > 1 {
+			return nil, fmt.Errorf("the kube resource client namespace list must contain either "+
+				"the empty string (all namespaces) or multiple non-empty strings. Found both: %v", namespaces)
 		}
-		return kube.NewResourceClient(opts.Crd, opts.Cfg, opts.SharedCache, inputResource, opts.SkipCrdCreation)
+
+		return kube.NewResourceClient(opts.Crd, kubeCfg, opts.SharedCache, inputResource, opts.SkipCrdCreation, namespaces, opts.ResyncPeriod)
 	case *ConsulResourceClientFactory:
 		return consul.NewResourceClient(opts.Consul, opts.RootKey, resourceType), nil
 	case *FileResourceClientFactory:
@@ -81,11 +99,15 @@ type ResourceClientFactory interface {
 // If SkipCrdCreation is set to 'true', the clients built with this factory will not attempt to create the given CRD
 // during registration. This allows us to create and register resource clients in cases where the given configuration
 // contains a token associated with a user that is not authorized to create CRDs.
+// Clients built with this factory will be able to access only resources the given namespace list. If no value is provided,
+// clients will be able to access resources in all namespaces.
 type KubeResourceClientFactory struct {
 	Crd             crd.Crd
 	Cfg             *rest.Config
 	SharedCache     *kube.KubeCache
 	SkipCrdCreation bool
+	Namespaces      []string
+	ResyncPeriod    time.Duration
 }
 
 func (f *KubeResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {

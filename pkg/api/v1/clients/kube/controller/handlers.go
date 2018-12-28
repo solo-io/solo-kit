@@ -1,7 +1,11 @@
 package controller
 
 import (
+	"fmt"
+	"log"
 	"sync"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 
 	"k8s.io/client-go/tools/cache"
 )
@@ -43,5 +47,43 @@ func NewLockingSyncHandler(f func()) cache.ResourceEventHandler {
 			f()
 			mu.Unlock()
 		},
+	}
+}
+
+// Returns a handler that runs the given function every time an update occurs, passing in the updated resource.
+// Ensures that only one f() can run at a time.
+func NewLockingCallbackHandler(callback func(v1.Resource)) cache.ResourceEventHandler {
+	var mu sync.Mutex
+	return &cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			mu.Lock()
+			callback(toResource(obj))
+			mu.Unlock()
+		},
+		// Disregard  the old version of the resource
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			mu.Lock()
+			callback(toResource(newObj))
+			mu.Unlock()
+		},
+		DeleteFunc: func(obj interface{}) {
+			mu.Lock()
+			callback(toResource(obj))
+			mu.Unlock()
+		},
+	}
+}
+
+func toResource(obj interface{}) v1.Resource {
+	switch object := obj.(type) {
+	case *v1.Resource:
+		// Pointer should never be nil
+		if object == nil {
+			log.Panicf("unexpected nil resource received from kube controller: %v", object)
+		}
+		return *object
+	default:
+		// Should never happen, since our controller currently only handles informers for our resources
+		panic(fmt.Sprintf("unsupported resource type received from kube controller: %v", obj))
 	}
 }
