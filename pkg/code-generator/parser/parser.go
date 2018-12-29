@@ -1,14 +1,14 @@
 package parser
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"github.com/gogo/protobuf/proto"
 	"strings"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/golang/protobuf/protoc-gen-go/plugin"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 	"github.com/iancoleman/strcase"
 	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
@@ -74,16 +74,6 @@ func ParseRequest(projectConfig model.ProjectConfig, req *plugin_go.CodeGenerato
 	project.XDSResources = xdsResources
 
 	return project, nil
-}
-
-func loadProjectConfig(path string) (model.ProjectConfig, error) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return model.ProjectConfig{}, err
-	}
-	var pc model.ProjectConfig
-	err = json.Unmarshal(b, &pc)
-	return pc, err
 }
 
 func goName(n string) string {

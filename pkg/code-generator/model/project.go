@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/golang/protobuf/protoc-gen-go/plugin"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )

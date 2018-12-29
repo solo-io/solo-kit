@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
