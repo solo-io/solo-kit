@@ -66,10 +66,11 @@ type Resource struct {
 }
 
 type Field struct {
-	Name     string
-	TypeName string
-	IsOneof  bool // we ignore oneof fields in test generation
-	Original *descriptor.FieldDescriptorProto
+	Name        string
+	TypeName    string
+	IsOneof     bool // we ignore oneof fields in test generation
+	SkipHashing bool // skip this field when hashing the resource
+	Original    *descriptor.FieldDescriptorProto
 }
 
 type ResourceGroup struct {

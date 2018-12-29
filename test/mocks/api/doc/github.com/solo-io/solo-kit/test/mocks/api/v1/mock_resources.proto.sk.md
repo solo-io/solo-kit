@@ -31,6 +31,7 @@ Mock resources for goofin off
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
 "data": string
+"some_dumb_field": string
 "oneof_one": string
 "oneof_two": bool
 
@@ -41,6 +42,7 @@ Mock resources for goofin off
 | `status` | [.core.solo.io.Status](../../../../api/v1/status.proto.sk.md#Status) |  |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../api/v1/metadata.proto.sk.md#Metadata) |  |  |
 | `data` | `string` |  |  |
+| `some_dumb_field` | `string` |  |  |
 | `oneof_one` | `string` |  |  |
 | `oneof_two` | `bool` |  |  |
 

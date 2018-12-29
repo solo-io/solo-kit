@@ -83,11 +83,13 @@ func goName(n string) string {
 func collectFields(msg *protokit.Descriptor) []*model.Field {
 	var fields []*model.Field
 	for _, f := range msg.GetField() {
+		skipHashing := proto.GetBoolExtension(f.Options, core.E_SkipHashing, false)
 		fields = append(fields, &model.Field{
-			Name:     f.GetName(),
-			TypeName: f.GetTypeName(),
-			IsOneof:  f.OneofIndex != nil,
-			Original: f,
+			Name:        f.GetName(),
+			TypeName:    f.GetTypeName(),
+			IsOneof:     f.OneofIndex != nil,
+			SkipHashing: skipHashing,
+			Original:    f,
 		})
 	}
 	log.Printf("%v", fields)
