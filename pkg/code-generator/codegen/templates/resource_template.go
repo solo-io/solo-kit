@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -37,6 +38,22 @@ func (r *{{ .Name }}) SetStatus(status core.Status) {
 
 func (r *{{ .Name }}) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *{{ .Name }}) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+{{- range .Fields }}
+	{{- if not ( or (eq .Name "metadata") (eq .Name "status") .IsOneof .SkipHashing ) }}
+		r.{{ upper_camel .Name }},
+	{{- end }}
+{{- end}}
+{{- range .Oneofs }}
+		r.{{ upper_camel .Name }},
+{{- end}}
+	)
 }
 
 type {{ .Name }}List []*{{ .Name }}
