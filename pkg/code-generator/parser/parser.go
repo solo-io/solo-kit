@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"github.com/gogo/protobuf/proto"
 	"strings"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 	"github.com/iancoleman/strcase"
