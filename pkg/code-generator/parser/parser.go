@@ -96,6 +96,16 @@ func collectFields(msg *protokit.Descriptor) []*model.Field {
 	return fields
 }
 
+func collectOneofs(msg *protokit.Descriptor) []*model.Oneof {
+	var oneofs []*model.Oneof
+	for _, f := range msg.GetOneofDecl() {
+		oneofs = append(oneofs, &model.Oneof{
+			Name: f.GetName(),
+		})
+	}
+	return oneofs
+}
+
 func hasField(msg *protokit.Descriptor, fieldName, fieldType string) bool {
 	for _, field := range msg.Fields {
 		if field.GetName() == fieldName && field.GetTypeName() == fieldType {
