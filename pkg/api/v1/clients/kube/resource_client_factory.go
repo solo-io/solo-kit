@@ -187,9 +187,24 @@ func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, kubeCli
 			controller.NewLockingCallbackHandler(updateCallback), sharedInformers...)
 
 		// Start the controller
-		if err := kubeController.Run(2, ctx.Done()); err != nil {
-			// If initError is non-nil, the kube resource client will panic
-			f.initError = errors.Errorf("fained to start kuberenetes controller")
+		runResult := make(chan error, 1)
+		go func() {
+			// If there is a problem with the ListWatch, the Run method might wait indefinitely for the informer caches
+			// to sync, so we start it in a goroutine to be able to timeout.
+			runResult <- kubeController.Run(2, ctx.Done())
+		}()
+
+		// Fail if the caches have not synchronized after 10 seconds. This prevents the controller from hanging forever.
+		var err error
+		select {
+		case err = <-runResult:
+		case <-time.After(10 * time.Second):
+			err = errors.Errorf("timed out while waiting for informer caches to sync")
+		}
+
+		// If initError is non-nil, the kube resource client will panic
+		if err != nil {
+			f.initError = errors.Wrapf(err, "failed to start kuberenetes controller")
 		}
 
 		// Mark the factory as started
