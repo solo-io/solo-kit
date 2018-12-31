@@ -10,7 +10,7 @@ import (
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/mocks"
+	mocksv1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/setup"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,7 +41,7 @@ var _ = Describe("Clientset", func() {
 	It("registers, creates, deletes resource implementations", func() {
 		apiextsClient, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		err = mocks.MockResourceCrd.Register(apiextsClient)
+		err = mocksv1.MockResourceCrd.Register(apiextsClient)
 		Expect(err).NotTo(HaveOccurred())
 
 		c, err := apiextsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(v1.ListOptions{})
@@ -49,19 +49,19 @@ var _ = Describe("Clientset", func() {
 		Expect(len(c.Items)).To(BeNumerically(">=", 1))
 		var found bool
 		for _, i := range c.Items {
-			if i.Name == mocks.MockResourceCrd.FullName() {
+			if i.Name == mocksv1.MockResourceCrd.FullName() {
 				found = true
 				break
 			}
 		}
 		Expect(found).To(BeTrue())
 
-		mockCrdClient, err := NewForConfig(cfg, mocks.MockResourceCrd)
+		mockCrdClient, err := NewForConfig(cfg, mocksv1.MockResourceCrd)
 		Expect(err).NotTo(HaveOccurred())
 		name := "foo"
-		input := mocks.NewMockResource(namespace, name)
+		input := mocksv1.NewMockResource(namespace, name)
 		input.Data = name
-		inputCrd := mocks.MockResourceCrd.KubeResource(input)
+		inputCrd := mocksv1.MockResourceCrd.KubeResource(input)
 		created, err := mockCrdClient.ResourcesV1().Resources(namespace).Create(inputCrd)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(created).NotTo(BeNil())

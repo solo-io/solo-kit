@@ -106,14 +106,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:3fb07f8e222402962fa190eb060608b34eddfb64562a18e2167df2de0ece85d8"
-  name = "github.com/golang/groupcache"
-  packages = ["lru"]
-  pruneopts = "UT"
-  revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
-
-[[projects]]
   digest = "1:98d8bcc9b013ef48532bd746254dbd0bd2fb94d2c7dc5b4961f08c23908d214a"
   name = "github.com/golang/protobuf"
   packages = [
@@ -963,7 +955,7 @@
   revision = "0cd393178e09f379032a493f73993dc600e1959d"
 
 [[projects]]
-  digest = "1:5ae9a61d8d3842d1fd96dcf2034ea9deed097585946fb61eadddd6555ae4db94"
+  digest = "1:62bdc5d6e44115bb63ac0729352d96e62db3ce63de143a44f942962c1dc19ece"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1020,7 +1012,6 @@
     "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
-    "tools/record",
     "tools/reference",
     "transport",
     "util/buffer",
@@ -1165,15 +1156,12 @@
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
     "k8s.io/client-go/kubernetes",
-    "k8s.io/client-go/kubernetes/scheme",
-    "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/clientcmd/api",
-    "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/workqueue",
     "k8s.io/code-generator/cmd/client-gen",

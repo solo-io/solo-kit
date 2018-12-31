@@ -2,7 +2,6 @@ package kube
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -29,7 +28,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -125,8 +123,8 @@ func (kc *KubeCache) removeWatch(c <-chan v1.Resource) {
 	}
 }
 
-func (kc *KubeCache) startFactory(ctx context.Context, client kubernetes.Interface) {
-	kc.sharedInformerFactory.Start(ctx, client, kc.updatedOccurred)
+func (kc *KubeCache) startFactory(ctx context.Context) {
+	kc.sharedInformerFactory.Start(ctx, kc.updatedOccurred)
 
 	// we want to panic here because the initial bootstrap of the cache failed
 	// this should be a rare error, and if we are restarted should not happen again
@@ -135,6 +133,9 @@ func (kc *KubeCache) startFactory(ctx context.Context, client kubernetes.Interfa
 	}
 }
 
+// This function will be called when an event occurred for the given resource.
+// NOTE: as described in the doc for SharedInformer, we should NOT depend on the contents of the cache exactly matching
+// the resource in the notification we received in handler functions. The cache might be MORE fresh than the notification.
 func (kc *KubeCache) updatedOccurred(resource v1.Resource) {
 	stats.Record(context.TODO(), MEvents.M(1))
 	kc.cacheUpdatedWatchersMutex.Lock()
@@ -150,35 +151,28 @@ func (kc *KubeCache) updatedOccurred(resource v1.Resource) {
 // lazy start in list & watch
 // register informers in register
 type ResourceClient struct {
-	crd             crd.Crd
-	apiexts         apiexts.Interface
-	kube            versioned.Interface
-	kubeClient      kubernetes.Interface
-	ownerLabel      string
-	resourceName    string
-	resourceType    resources.InputResource
-	sharedCache     *KubeCache
-	skipCrdCreation bool
-	namespaces      []string
-	resyncPeriod    time.Duration
+	crd                crd.Crd
+	apiexts            apiexts.Interface
+	kube               versioned.Interface
+	resourceName       string
+	resourceType       resources.InputResource
+	sharedCache        *KubeCache
+	skipCrdCreation    bool
+	namespaceWhitelist []string
+	resyncPeriod       time.Duration
 }
 
 func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, resourceType resources.InputResource,
-	skipCrdCreation bool, namespaces []string, resyncPeriod time.Duration) (*ResourceClient, error) {
+	skipCrdCreation bool, namespaceWhitelist []string, resyncPeriod time.Duration) (*ResourceClient, error) {
 
 	apiExts, err := apiexts.NewForConfig(cfg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating api extensions client")
 	}
-	//
+
 	crdClient, err := versioned.NewForConfig(cfg, crd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating crd client")
-	}
-
-	kubeClient, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create kube clientset: %v", err)
 	}
 
 	typeof := reflect.TypeOf(resourceType)
@@ -186,16 +180,15 @@ func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, re
 	resourceName = strings.Replace(resourceName, ".", "", -1)
 
 	return &ResourceClient{
-		crd:             crd,
-		apiexts:         apiExts,
-		kube:            crdClient,
-		kubeClient:      kubeClient,
-		resourceName:    resourceName,
-		resourceType:    resourceType,
-		sharedCache:     sharedCache,
-		skipCrdCreation: skipCrdCreation,
-		namespaces:      namespaces,
-		resyncPeriod:    resyncPeriod,
+		crd:                crd,
+		apiexts:            apiExts,
+		kube:               crdClient,
+		resourceName:       resourceName,
+		resourceType:       resourceType,
+		sharedCache:        sharedCache,
+		skipCrdCreation:    skipCrdCreation,
+		namespaceWhitelist: namespaceWhitelist,
+		resyncPeriod:       resyncPeriod,
 	}, nil
 }
 
@@ -210,14 +203,14 @@ func (rc *ResourceClient) NewResource() resources.Resource {
 }
 
 func (rc *ResourceClient) Register() error {
-	/*
-		shared informer factory for all namespaces; and then filter desired namespace in list and watch!
-		zbam!
-	*/
+
+	// Register the client with the shared cache. The cache will create a dedicated informer to list and
+	// watch resources of kind rc.Kind() in the namespaces given in rc.namespaceWhitelist.
 	if err := rc.sharedCache.sharedInformerFactory.Register(rc); err != nil {
 		return err
 	}
 
+	// If the flag is true, this will call the k8s apiext API to create a new CRD for resource managed by this client.
 	if !rc.skipCrdCreation {
 		return rc.crd.Register(rc.apiexts)
 	}
@@ -346,7 +339,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 
 	// Will have no effect if the factory is already running
-	rc.sharedCache.startFactory(context.TODO(), rc.kubeClient)
+	rc.sharedCache.startFactory(context.TODO())
 
 	lister, err := rc.sharedCache.sharedInformerFactory.GetLister(namespace, rc.crd.Type)
 	if err != nil {
@@ -390,7 +383,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		return nil, nil, err
 	}
 
-	rc.sharedCache.startFactory(context.TODO(), rc.kubeClient)
+	rc.sharedCache.startFactory(context.TODO())
 
 	opts = opts.WithDefaults()
 	resourcesChan := make(chan resources.ResourceList)
@@ -421,8 +414,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 
 		for {
 			select {
-			case <-time.After(opts.RefreshRate): // TODO(yuval-k): can we remove this? is the factory takes care of that...
-				updateResourceList()
 			case resource := <-cacheUpdated:
 
 				// Only notify watchers if the updated resource is in the watched
@@ -479,9 +470,9 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 
 // Check whether the given namespace is in the whitelist or we allow all namespaces
 func (rc *ResourceClient) validateNamespace(namespace string) error {
-	if !stringutils.ContainsAny([]string{namespace, metav1.NamespaceAll}, rc.namespaces) {
+	if !stringutils.ContainsAny([]string{namespace, metav1.NamespaceAll}, rc.namespaceWhitelist) {
 		return errors.Errorf("this client was not configured to access resources in the [%v] namespace. "+
-			"Allowed namespaces are %v", namespace, rc.namespaces)
+			"Allowed namespaces are %v", namespace, rc.namespaceWhitelist)
 	}
 	return nil
 }

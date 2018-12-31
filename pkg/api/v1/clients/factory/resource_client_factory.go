@@ -63,10 +63,11 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		// Validate namespace list:
 		// 1. If no namespace list was provided, default to all namespaces
 		// 2. Error if namespace list contains the empty string plus other values
-		namespaces := opts.Namespaces
-		if namespaces == nil || len(namespaces) == 0 {
+		namespaces := opts.NamespaceWhitelist
+		if len(namespaces) == 0 {
 			namespaces = []string{metaV1.NamespaceAll}
-		} else if stringutils.ContainsString(metaV1.NamespaceAll, namespaces) && len(namespaces) > 1 {
+		}
+		if len(namespaces) > 1 && stringutils.ContainsString(metaV1.NamespaceAll, namespaces) {
 			return nil, fmt.Errorf("the kube resource client namespace list must contain either "+
 				"the empty string (all namespaces) or multiple non-empty strings. Found both: %v", namespaces)
 		}
@@ -102,12 +103,12 @@ type ResourceClientFactory interface {
 // Clients built with this factory will be able to access only resources the given namespace list. If no value is provided,
 // clients will be able to access resources in all namespaces.
 type KubeResourceClientFactory struct {
-	Crd             crd.Crd
-	Cfg             *rest.Config
-	SharedCache     *kube.KubeCache
-	SkipCrdCreation bool
-	Namespaces      []string
-	ResyncPeriod    time.Duration
+	Crd                crd.Crd
+	Cfg                *rest.Config
+	SharedCache        *kube.KubeCache
+	SkipCrdCreation    bool
+	NamespaceWhitelist []string
+	ResyncPeriod       time.Duration
 }
 
 func (f *KubeResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {

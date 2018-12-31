@@ -5,12 +5,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/solo-kit/test/mocks/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/mocks"
 	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/rest"
@@ -34,7 +35,7 @@ var _ = Describe("Base", func() {
 		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		Expect(err).NotTo(HaveOccurred())
-		client, err = NewResourceClient(mocks.MockResourceCrd, cfg, &mocks.MockResource{})
+		client, err = NewResourceClient(v1.MockResourceCrd, cfg, NewKubeCache(), &v1.MockResource{}, true, nil, 0)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
