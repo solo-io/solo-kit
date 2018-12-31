@@ -1,0 +1,11 @@
+syntax = "proto3";
+package core.solo.io;
+option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
+
+// This file contains Options for Proto Messages/Fields/Enums for use with Solo-Kit
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+    bool skip_hashing = 10000;
+}
