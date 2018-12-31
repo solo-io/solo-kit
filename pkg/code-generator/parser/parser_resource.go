@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"github.com/pseudomuto/protokit"
+	"github.com/ilackarms/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"

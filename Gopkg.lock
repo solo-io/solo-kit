@@ -334,6 +334,13 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:99bafffd60368afd17d11302671600e044137f5c6ba9babb950a47c84ed5a71d"
+  name = "github.com/ilackarms/protokit"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ee2393f3bbf04700fc5d611077496c47ec1937ed"
+
+[[projects]]
   digest = "1:3e260afa138eab6492b531a3b3d10ab4cb70512d423faa78b8949dec76e66a21"
   name = "github.com/imdario/mergo"
   packages = ["."]
@@ -553,15 +560,6 @@
   pruneopts = "UT"
   revision = "728a624b38e5ae90bb3e5da5f406e05138f1517c"
   version = "v1.0.0"
-
-[[projects]]
-  branch = "switch-to-gogo"
-  digest = "1:cc234d93acf845c2abff6bf4ed3af8d29a21ffe366128daa829ee9416904306d"
-  name = "github.com/pseudomuto/protokit"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "5771174811e795f5862a0d8fc55f22b1bb27abc2"
-  source = "https://github.com/ilackarms/protokit"
 
 [[projects]]
   digest = "1:0665976cc6d8c2e60dafca32820b6b7eca70f37ded0bcccc103388e1c0d05c53"
@@ -1040,12 +1038,12 @@
     "github.com/hashicorp/vault/api",
     "github.com/iancoleman/strcase",
     "github.com/ilackarms/protoc-gen-doc",
+    "github.com/ilackarms/protokit",
     "github.com/k0kubun/pp",
     "github.com/mitchellh/hashstructure",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
-    "github.com/pseudomuto/protokit",
     "github.com/radovskyb/watcher",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",
