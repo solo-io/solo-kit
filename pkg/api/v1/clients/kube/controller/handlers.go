@@ -51,7 +51,7 @@ func NewLockingSyncHandler(f func()) cache.ResourceEventHandler {
 }
 
 // Returns a handler that runs the given function every time an update occurs, passing in the updated resource.
-// Ensures that only one f() can run at a time.
+// Ensures that only one callback can run at a time.
 func NewLockingCallbackHandler(callback func(v1.Resource)) cache.ResourceEventHandler {
 	var mu sync.Mutex
 	return &cache.ResourceEventHandlerFuncs{

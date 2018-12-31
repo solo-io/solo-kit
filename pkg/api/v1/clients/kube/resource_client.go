@@ -421,7 +421,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 
 		for {
 			select {
-			// The factory
 			case <-time.After(opts.RefreshRate): // TODO(yuval-k): can we remove this? is the factory takes care of that...
 				updateResourceList()
 			case resource := <-cacheUpdated:
@@ -482,7 +481,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 func (rc *ResourceClient) validateNamespace(namespace string) error {
 	if !stringutils.ContainsAny([]string{namespace, metav1.NamespaceAll}, rc.namespaces) {
 		return errors.Errorf("this client was not configured to access resources in the [%v] namespace. "+
-			"Allowed namespaces are [%v]", namespace, rc.namespaces)
+			"Allowed namespaces are %v", namespace, rc.namespaces)
 	}
 	return nil
 }
