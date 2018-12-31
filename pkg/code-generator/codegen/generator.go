@@ -36,7 +36,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (code_gen
 		files = append(files, fs...)
 	}
 	for _, grp := range project.ResourceGroups {
-		if skipOutOfPackageFiles && !strings.HasSuffix(grp.Name, "."+project.GroupName) {
+		if skipOutOfPackageFiles && !(strings.HasSuffix(grp.Name, "."+project.GroupName) || grp.Name == project.GroupName) {
 			continue
 		}
 		fs, err := generateFilesForResourceGroup(grp)
