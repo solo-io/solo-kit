@@ -6,7 +6,7 @@ package core // import "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
+import descriptor "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

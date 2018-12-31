@@ -2,15 +2,16 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/golang/protobuf/protoc-gen-go/plugin"
-	"github.com/pseudomuto/protokit"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/gogo/protobuf/protoc-gen-gogo/plugin"
+	"github.com/pseudomuto/protokit"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 const ProjectConfigFilename = "solo-kit.json"
@@ -54,6 +55,7 @@ type Resource struct {
 
 	HasStatus bool
 	Fields    []*Field
+	Oneofs    []*Oneof
 
 	ResourceGroups []*ResourceGroup
 	Project        *Project
@@ -65,10 +67,15 @@ type Resource struct {
 }
 
 type Field struct {
-	Name     string
-	TypeName string
-	IsOneof  bool // we ignore oneof fields in test generation
-	Original *descriptor.FieldDescriptorProto
+	Name        string
+	TypeName    string
+	IsOneof     bool // we ignore oneof fields in test generation
+	SkipHashing bool // skip this field when hashing the resource
+	Original    *descriptor.FieldDescriptorProto
+}
+
+type Oneof struct {
+	Name string
 }
 
 type ResourceGroup struct {

@@ -1,8 +1,9 @@
 package templates
 
 import (
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/funcs"
 	"text/template"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/funcs"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
@@ -13,7 +14,7 @@ func ProjectDocsRootTemplate(project *model.Project) *template.Template {
 
 ### API Reference for {{ .Title}}
 
-API Version: `+"`{{ .Name }}.{{ .Version }}`"+`
+API Version: ` + "`{{ .Name }}.{{ .Version }}`" + `
 
 {{ .Description }}
 

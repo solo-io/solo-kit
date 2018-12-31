@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -30,6 +31,16 @@ func (r *MockResource) SetStatus(status core.Status) {
 
 func (r *MockResource) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *MockResource) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.Data,
+		r.TestOneofFields,
+	)
 }
 
 type MockResourceList []*MockResource
@@ -92,6 +103,20 @@ func (list MockResourceList) Clone() MockResourceList {
 		mockResourceList = append(mockResourceList, proto.Clone(mockResource).(*MockResource))
 	}
 	return mockResourceList
+}
+
+func (list MockResourceList) Each(f func(element *MockResource)) {
+	for _, mockResource := range list {
+		f(mockResource)
+	}
+}
+
+func (list MockResourceList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *MockResource) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list MockResourceList) ByNamespace() MocksByNamespace {
