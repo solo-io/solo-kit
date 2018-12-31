@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubewatch "k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -57,17 +56,17 @@ func init() {
 	view.Register(ListCountView)
 }
 
-type ResourceLister interface {
-	List(selector labels.Selector) (ret []*v1.Resource, err error)
-}
-
+// The ResourceClientSharedInformerFactory creates a SharedIndexInformer for each of the clients that register with it
+// and, when started, creates a kubernetes controller that distributes notifications for changes to the relevant clients.
+// All direct operations on the ResourceClientSharedInformerFactory are synchronized.
 type ResourceClientSharedInformerFactory struct {
 	initError error
 
 	lock          sync.Mutex
 	defaultResync time.Duration
 
-	informers map[reflect.Type]map[string]cache.SharedIndexInformer
+	// Contains all the informers managed by this factory
+	registry *informerRegistry
 
 	started bool
 
@@ -78,10 +77,13 @@ type ResourceClientSharedInformerFactory struct {
 func NewResourceClientSharedInformerFactory() *ResourceClientSharedInformerFactory {
 	return &ResourceClientSharedInformerFactory{
 		defaultResync: 12 * time.Hour,
-		informers:     make(map[reflect.Type]map[string]cache.SharedIndexInformer),
+		registry:      newInformerRegistry(),
 	}
 }
+
 func (f *ResourceClientSharedInformerFactory) InitErr() error {
+	f.lock.Lock()
+	defer f.lock.Unlock()
 	return f.initError
 }
 
@@ -89,13 +91,20 @@ func (f *ResourceClientSharedInformerFactory) InitErr() error {
 // NOTE: Currently we cannot share informers between resource clients, because the listWatch functions are configured
 // with the client's specific token. Hence, we must enforce a one-to-one relationship between informers and clients.
 func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	ctx := context.TODO()
+	if f.started {
+		contextutils.LoggerFrom(ctx).DPanic("can't register informer after factory has started. This may change in the future.")
+	}
+
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
 		ctx = ctxWithTags
 	}
 
-	informerType := reflect.TypeOf(rc.crd.Type)
-	namespaces := rc.namespaces // will always contain at least one element
+	resourceType := reflect.TypeOf(rc.crd.Type)
+	namespaces := rc.namespaceWhitelist // will always contain at least one element
 
 	resyncPeriod := f.defaultResync
 	if rc.resyncPeriod != 0 {
@@ -107,10 +116,9 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 	for _, ns := range namespaces {
 
 		// To nip configuration errors in the bud, error if the registry already contains an informer for the given resource/namespace.
-		if forResourceType, exists := f.informers[informerType]; exists {
-			if _, exists := forResourceType[ns]; exists {
-				return errors.Errorf("Shared cache already contains informer for resource [%v] and namespace [%v]", informerType, ns)
-			}
+		if f.registry.get(resourceType, ns) != nil {
+			return errors.Errorf("Shared cache already contains informer for resource [%v] and namespace [%v]", resourceType, ns)
+
 		}
 
 		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyNamespaceKind, ns)); err == nil {
@@ -139,51 +147,31 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 					return watch(options)
 				},
 			},
-			&v1.Resource{}, // TODO(yuval-k): can we make this rc.crd.Type ?
+			&v1.Resource{},
 			resyncPeriod,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 		)
 
-		f.registerInformer(ctx, ns, informerType, sharedInformer)
+		f.registry.add(resourceType, ns, sharedInformer)
 	}
+
 	return nil
-}
-
-// Add the given informer to the factory's internal informer registry
-func (f *ResourceClientSharedInformerFactory) registerInformer(ctx context.Context, namespace string, informerType reflect.Type, newInformer cache.SharedIndexInformer) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
-	if f.started {
-		contextutils.LoggerFrom(ctx).DPanic("can't register informer after factory has started. This may change in the future.")
-	}
-
-	// Initialize nested map if it does not already exist
-	if _, exists := f.informers[informerType]; !exists {
-		f.informers[informerType] = make(map[string]cache.SharedIndexInformer)
-	}
-
-	f.informers[informerType][namespace] = newInformer
-	return
 }
 
 // Starts all informers in the factory's registry (if they have not yet been started) and configures the factory to call
 // the given updateCallback function whenever any of the resources associated with the informers changes.
-func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, kubeClient kubernetes.Interface, updateCallback func(v1.Resource)) {
+func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, updateCallback func(v1.Resource)) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
 
 	// Guarantees that the factory will be started at most once
 	f.factoryStarter.Do(func() {
 
 		// Collect all registered informers
-		var sharedInformers []cache.SharedInformer
-		for _, informersByNamespace := range f.informers {
-			for _, informer := range informersByNamespace {
-				sharedInformers = append(sharedInformers, informer)
-			}
-		}
+		sharedInformers := f.registry.list()
 
 		// Initialize a new kubernetes controller
-		kubeController := controller.NewController("solo-resource-controller", kubeClient,
+		kubeController := controller.NewController("solo-resource-controller",
 			controller.NewLockingCallbackHandler(updateCallback), sharedInformers...)
 
 		// Start the controller
@@ -213,27 +201,25 @@ func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, kubeCli
 }
 
 func (f *ResourceClientSharedInformerFactory) GetLister(namespace string, obj runtime.Object) (ResourceLister, error) {
-	informer := f.getInformer(namespace, obj)
-	if informer == nil {
-		// TODO: improve error message
-		return nil, errors.Errorf("no lister has been registered for ObjectKind %v", obj.GetObjectKind())
-	}
-	return &resourceLister{indexer: informer.GetIndexer()}, nil
-
-}
-
-// Retrieve the informer for the given resourceType/namespace pair from the factory's registry
-func (f *ResourceClientSharedInformerFactory) getInformer(namespace string, obj runtime.Object) cache.SharedIndexInformer {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	informerType := reflect.TypeOf(obj)
-
-	// Look up by resource type
-	if forResourceType, exists := f.informers[informerType]; exists {
-		return forResourceType[namespace]
+	// If the factory (and hence the informers) have not been started, the list operations will be meaningless.
+	// Will not happen in our current use of this, but since this method is public it's worth having this check.
+	if !f.started {
+		return nil, errors.Errorf("cannot get lister for non-running informer")
 	}
-	return nil
+
+	informer := f.registry.get(reflect.TypeOf(obj), namespace)
+
+	if informer == nil {
+		return nil, errors.Errorf("no informer has been registered for ObjectKind %v. Make sure that you called Register() on your ResourceClient.", obj.GetObjectKind())
+	}
+	return &resourceLister{indexer: informer.GetIndexer()}, nil
+}
+
+type ResourceLister interface {
+	List(selector labels.Selector) (ret []*v1.Resource, err error)
 }
 
 type resourceLister struct {
@@ -245,5 +231,46 @@ func (s *resourceLister) List(selector labels.Selector) (ret []*v1.Resource, err
 		ret = append(ret, m.(*v1.Resource))
 	})
 	return ret, err
+}
 
+// Provides convenience methods to add and get elements from the underlying map of maps.
+// Operations are NOT thread-safe.
+type informerRegistry struct {
+	informers map[reflect.Type]map[string]cache.SharedIndexInformer
+}
+
+func newInformerRegistry() *informerRegistry {
+	return &informerRegistry{
+		informers: make(map[reflect.Type]map[string]cache.SharedIndexInformer, 1),
+	}
+}
+
+// Adds the given informer to the registry. Overwrites existing entries matching the given resourceType and namespace.
+func (r *informerRegistry) add(resourceType reflect.Type, namespace string, informer cache.SharedIndexInformer) {
+
+	// Initialize nested map if it does not already exist
+	if _, exists := r.informers[resourceType]; !exists {
+		r.informers[resourceType] = make(map[string]cache.SharedIndexInformer)
+	}
+
+	r.informers[resourceType][namespace] = informer
+}
+
+// Retrieve the informer for the given resourceType and namespace.
+func (r *informerRegistry) get(resourceType reflect.Type, namespace string) cache.SharedIndexInformer {
+	if forResourceType, exists := r.informers[resourceType]; exists {
+		return forResourceType[namespace]
+	}
+	return nil
+}
+
+// Returns all the informers contained in the registry.
+func (r *informerRegistry) list() []cache.SharedIndexInformer {
+	var sharedInformers []cache.SharedIndexInformer
+	for _, forResourceType := range r.informers {
+		for _, informer := range forResourceType {
+			sharedInformers = append(sharedInformers, informer)
+		}
+	}
+	return sharedInformers
 }

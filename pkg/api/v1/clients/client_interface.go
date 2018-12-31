@@ -98,6 +98,9 @@ func (o ListOpts) WithDefaults() ListOpts {
 	return o
 }
 
+// RefreshRate is currently ignored by the Kubernetes ResourceClient implementation.
+// To achieve a similar behavior you can use the KubeResourceClientFactory.ResyncPeriod field. The difference is that it
+// will apply to all the watches started by clients built with the factory.
 type WatchOpts struct {
 	Ctx         context.Context
 	Selector    map[string]string

@@ -6,14 +6,9 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -21,7 +16,7 @@ import (
 type Controller struct {
 	name string
 
-	informers []cache.SharedInformer
+	informers []cache.SharedIndexInformer
 
 	// WorkQueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -30,32 +25,20 @@ type Controller struct {
 	// simultaneously in two different workers.
 	workQueue workqueue.RateLimitingInterface
 
-	// recorder is an event recorder for recording Event resources to the Kubernetes API
-	recorder record.EventRecorder
-
 	// handler to call
 	handler cache.ResourceEventHandler
 }
 
-// Returns a new kubernetes controller without starting it. The given event handler is registered with each of the
-// given informers. The controller also collects the HasSynced functions of each of the informers.
+// Returns a new kubernetes controller without starting it.
 func NewController(
 	controllerName string,
-	kubeClient kubernetes.Interface,
 	handler cache.ResourceEventHandler,
-	informers ...cache.SharedInformer) *Controller {
-
-	// TODO: how will this work with unauthorized users?
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Printf)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerName})
+	informers ...cache.SharedIndexInformer) *Controller {
 
 	return &Controller{
 		name:      controllerName,
 		informers: informers,
 		workQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName),
-		recorder:  recorder,
 		handler:   handler,
 	}
 }
@@ -99,7 +82,7 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 		defer c.workQueue.ShutDown()
 		log.Debugf("Starting workers")
 
-		// Launch two workers to process resources
+		// Launch parallel workers to process resources
 		for i := 0; i < parallelism; i++ {
 
 			// WaitUntil internally defers a HandleCrash() before invoking runWorker()
