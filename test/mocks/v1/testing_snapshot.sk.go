@@ -3,7 +3,6 @@
 package v1
 
 import (
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -28,19 +27,11 @@ func (s TestingSnapshot) Hash() uint64 {
 }
 
 func (s TestingSnapshot) hashMocks() uint64 {
-	var hashes []uint64
-	for _, res := range s.Mocks.List() {
-		hashes = append(hashes, resources.HashResource(res))
-	}
-	return hashutils.HashAll(hashes)
+	return hashutils.HashAll(s.Mocks.List()...)
 }
 
 func (s TestingSnapshot) hashFakes() uint64 {
-	var hashes []uint64
-	for _, res := range s.Fakes.List() {
-		hashes = append(hashes, resources.HashResource(res))
-	}
-	return hashutils.HashAll(hashes)
+	return hashutils.HashAll(s.Fakes.List()...)
 }
 
 func (s TestingSnapshot) HashFields() []zap.Field {
