@@ -27,11 +27,11 @@ func (s TestingSnapshot) Hash() uint64 {
 }
 
 func (s TestingSnapshot) hashMocks() uint64 {
-	return hashutils.HashAll(s.Mocks.List()...)
+	return hashutils.HashAll(s.Mocks.List().AsInterfaces()...)
 }
 
 func (s TestingSnapshot) hashFakes() uint64 {
-	return hashutils.HashAll(s.Fakes.List()...)
+	return hashutils.HashAll(s.Fakes.List().AsInterfaces()...)
 }
 
 func (s TestingSnapshot) HashFields() []zap.Field {

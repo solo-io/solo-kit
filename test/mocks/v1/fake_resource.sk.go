@@ -92,6 +92,20 @@ func (list FakeResourceList) Clone() FakeResourceList {
 	return fakeResourceList
 }
 
+func (list FakeResourceList) Each(f func(element *FakeResource)) {
+	for _, fakeResource := range list {
+		f(fakeResource)
+	}
+}
+
+func (list FakeResourceList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *FakeResource) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
+}
+
 func (list FakeResourceList) ByNamespace() FakesByNamespace {
 	byNamespace := make(FakesByNamespace)
 	for _, fakeResource := range list {

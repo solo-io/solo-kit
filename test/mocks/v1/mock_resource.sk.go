@@ -105,6 +105,20 @@ func (list MockResourceList) Clone() MockResourceList {
 	return mockResourceList
 }
 
+func (list MockResourceList) Each(f func(element *MockResource)) {
+	for _, mockResource := range list {
+		f(mockResource)
+	}
+}
+
+func (list MockResourceList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *MockResource) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
+}
+
 func (list MockResourceList) ByNamespace() MocksByNamespace {
 	byNamespace := make(MocksByNamespace)
 	for _, mockResource := range list {
