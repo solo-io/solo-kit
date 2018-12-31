@@ -40,7 +40,7 @@ func (s {{ .GoName }}Snapshot) Hash() uint64 {
 {{- range .Resources }}
 
 func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}() uint64 {
-	return hashutils.HashAll(s.{{ upper_camel .PluralName }}.List()...)
+	return hashutils.HashAll(s.{{ upper_camel .PluralName }}.List().AsInterfaces()...)
 }
 {{- end}}
 

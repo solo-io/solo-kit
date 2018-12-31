@@ -120,6 +120,20 @@ func (list {{ .Name }}List) Clone() {{ .Name }}List {
 	return {{ lower_camel .Name }}List 
 }
 
+func (list {{ .Name }}List) Each(f func(element *{{ .Name }})) {
+	for _, {{ lower_camel .Name }} := range list {
+		f({{ lower_camel .Name }})
+	}
+}
+
+func (list {{ .Name }}List) AsInterfaces() []interface{}{
+	var asInterfaces []interface{}
+	list.Each(func(element *{{ .Name }}) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
+}
+
 func (list {{ .Name }}List) ByNamespace() {{ .PluralName }}ByNamespace {
 	byNamespace := make({{ .PluralName }}ByNamespace)
 	for _, {{ lower_camel .Name }} := range list {
