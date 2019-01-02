@@ -330,7 +330,6 @@ func writeDescriptors(protoFile, toFile string, imports []string, compileProtos 
 				"Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,"+
 				"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,"+
 				"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,"+
-				"Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,"+
 				"Menvoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2"+
 				":"+gopathSrc())
 	}
