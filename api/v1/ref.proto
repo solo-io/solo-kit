@@ -8,6 +8,10 @@ option (gogoproto.equal_all) = true;
 // A way to reference resources across namespaces
 // TODO(ilackarms): make upstreamname and secretref into ResourceRefs
 message ResourceRef {
+    option (gogoproto.goproto_sizecache) = false;
+    option (gogoproto.goproto_unkeyed) = false;
+    option (gogoproto.goproto_unrecognized) = false;
+
     string name = 1;
     string namespace = 2;
 }
