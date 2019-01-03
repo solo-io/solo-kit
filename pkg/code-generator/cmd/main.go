@@ -214,7 +214,7 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 		descriptors = append(descriptors, f)
 	}
 	wg := sync.WaitGroup{}
-	errs := make(chan error)
+	errs := make(chan error, 1)
 	walkErr := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(protoFile, ".proto") {
 			return nil
@@ -229,11 +229,14 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 		wg.Add(1)
 		// parallelize parsing the descriptors as each one requires file i/o and is slow
 		go func() {
+			defer wg.Done()
 			err := addDescriptorsForFile(addDescriptor, root, protoFile, customImports, wantCompile)
-			wg.Done()
 			if err != nil {
 				log.Warnf("adding descriptors for file %v: %s", protoFile, err)
-				errs <- errors.Wrapf(err, "adding descriptors for file %v", protoFile)
+				select {
+				case errs <- errors.Wrapf(err, "adding descriptors for file %v", protoFile):
+				default:
+				}
 			}
 		}()
 		return nil
@@ -242,10 +245,9 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 		return nil, walkErr
 	}
 	wg.Wait()
-	select {
-	case err := <-errs:
+	close(errs)
+	if err := <-errs; err != nil {
 		return nil, err
-	default:
 	}
 	sort.SliceStable(descriptors, func(i, j int) bool {
 		return descriptors[i].GetName() < descriptors[j].GetName()
