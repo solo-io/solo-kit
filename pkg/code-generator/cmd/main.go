@@ -156,7 +156,7 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectCon
 	return projects, nil
 }
 
-func addDescriptorsForFile(descriptors *[]*descriptor.FileDescriptorProto, root, protoFile string, customImports []string, wantCompile func(string) bool) error {
+func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto), root, protoFile string, customImports []string, wantCompile func(string) bool) error {
 	log.Printf("processing proto file input %v", protoFile)
 	imports, err := importsForProtoFile(root, protoFile, customImports)
 	if err != nil {
@@ -186,21 +186,8 @@ func addDescriptorsForFile(descriptors *[]*descriptor.FileDescriptorProto, root,
 		return errors.Wrapf(err, "reading descriptors")
 	}
 
-addFiles:
 	for _, f := range desc.File {
-		// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
-		// with different import paths
-		for _, existing := range *descriptors {
-			if existing.GetName() == f.GetName() {
-				continue
-			}
-			existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
-			existingCopy.Name = f.Name
-			if proto.Equal(existingCopy, f) {
-				continue addFiles
-			}
-		}
-		*descriptors = append(*descriptors, f)
+		addDescriptor(f)
 	}
 
 	return nil
@@ -208,10 +195,27 @@ addFiles:
 
 func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
 	var descriptors []*descriptor.FileDescriptorProto
-
+	var mutex sync.Mutex
+	addDescriptor := func(f *descriptor.FileDescriptorProto) {
+		mutex.Lock()
+		defer mutex.Unlock()
+		// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
+		// with different import paths
+		for _, existing := range descriptors {
+			if existing.GetName() == f.GetName() {
+				return
+			}
+			existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
+			existingCopy.Name = f.Name
+			if proto.Equal(existingCopy, f) {
+				return
+			}
+		}
+		descriptors = append(descriptors, f)
+	}
 	wg := sync.WaitGroup{}
 	errs := make(chan error)
-	err := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
+	walkErr := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(protoFile, ".proto") {
 			return nil
 		}
@@ -225,7 +229,7 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 		wg.Add(1)
 		// parallelize parsing the descriptors as each one requires file i/o and is slow
 		go func() {
-			err := addDescriptorsForFile(&descriptors, root, protoFile, customImports, wantCompile)
+			err := addDescriptorsForFile(addDescriptor, root, protoFile, customImports, wantCompile)
 			wg.Done()
 			if err != nil {
 				log.Warnf("adding descriptors for file %v: %s", protoFile, err)
@@ -234,8 +238,8 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 		}()
 		return nil
 	})
-	if err != nil {
-		return nil, err
+	if walkErr != nil {
+		return nil, walkErr
 	}
 	wg.Wait()
 	select {

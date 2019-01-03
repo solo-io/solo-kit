@@ -51,7 +51,7 @@ func (m *MockResource) Reset()         { *m = MockResource{} }
 func (m *MockResource) String() string { return proto.CompactTextString(m) }
 func (*MockResource) ProtoMessage()    {}
 func (*MockResource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_mock_resources_ef209a983641cdad, []int{0}
+	return fileDescriptor_mock_resources_2aaea320c9da9d33, []int{0}
 }
 func (m *MockResource) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MockResource.Unmarshal(m, b)
@@ -220,7 +220,7 @@ func (m *FakeResource) Reset()         { *m = FakeResource{} }
 func (m *FakeResource) String() string { return proto.CompactTextString(m) }
 func (*FakeResource) ProtoMessage()    {}
 func (*FakeResource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_mock_resources_ef209a983641cdad, []int{1}
+	return fileDescriptor_mock_resources_2aaea320c9da9d33, []int{1}
 }
 func (m *FakeResource) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FakeResource.Unmarshal(m, b)
@@ -383,10 +383,10 @@ func (this *FakeResource) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto", fileDescriptor_mock_resources_ef209a983641cdad)
+	proto.RegisterFile("github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto", fileDescriptor_mock_resources_2aaea320c9da9d33)
 }
 
-var fileDescriptor_mock_resources_ef209a983641cdad = []byte{
+var fileDescriptor_mock_resources_2aaea320c9da9d33 = []byte{
 	// 364 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0xcb, 0x4e, 0xc2, 0x40,
 	0x14, 0x86, 0x29, 0x56, 0x84, 0x11, 0x42, 0xac, 0xc4, 0x34, 0x24, 0x0a, 0x61, 0x61, 0x30, 0xd1,
