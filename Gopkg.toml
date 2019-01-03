@@ -17,10 +17,6 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
       name = "k8s.io/gengo"
       unused-packages = false
 
-#  [[prune.project]]
-#      name = "k8s.io/apimachinery"
-#      unused-packages = false
-
 [[constraint]]
   branch = "master"
   name = "github.com/bxcodec/faker"
@@ -34,29 +30,9 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
   name = "github.com/gogo/protobuf"
 
 [[override]]
-  branch = "master"
-  name = "k8s.io/api"
-
-[[override]]
   version = "1.2.0"
   name = "github.com/golang/protobuf"
 
 [[constraint]]
   revision = "ee2393f3bbf04700fc5d611077496c47ec1937ed"
   name = "github.com/ilackarms/protokit"
-
-#[[constraint]]
-#  revision = "e9c5d9645c437ab1b204cff969a2c0fb16cd4276"
-#  name = "github.com/grpc-ecosystem/go-grpc-middleware"
-#
-#[[constraint]]
-#  branch = "master"
-#  name = "k8s.io/apiextensions-apiserver"
-#
-#[[constraint]]
-#  branch = "master"
-#  name = "k8s.io/apimachinery"
-#
-#[[constraint]]
-#  name = "k8s.io/client-go"
-#  branch = "master"
