@@ -56,7 +56,7 @@ func ParseRequest(projectConfig model.ProjectConfig, req *plugin_go.CodeGenerato
 
 	project := &model.Project{
 		ProjectConfig: projectConfig,
-		GroupName:     projectConfig.Name,
+		ProtoPackage:  projectConfig.Name,
 		Request:       req,
 	}
 	resources, resourceGroups, err := getResources(project, messages)

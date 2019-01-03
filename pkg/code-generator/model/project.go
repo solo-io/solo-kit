@@ -19,19 +19,30 @@ const ProjectConfigFilename = "solo-kit.json"
 // SOLO-KIT Descriptors from which code can be generated
 
 type ProjectConfig struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Name        string `json:"name"`
-	Version     string `json:"version"`
-	DocsDir     string `json:"docs_dir"`
+	Title          string                `json:"title"`
+	Description    string                `json:"description"`
+	Name           string                `json:"name"`
+	Version        string                `json:"version"`
+	DocsDir        string                `json:"docs_dir"`
+	ResourceGroups []ResourceGroupConfig `json:"resource_groups"`
 	// set by load
 	ProjectFile string
 	GoPackage   string
 }
 
+type ResourceGroupConfig struct {
+	Name      string           `json:"name"`
+	Resources []ResourceConfig `json:"resources"`
+}
+
+type ResourceConfig struct {
+	MessageName    string
+	MessagePackage string
+}
+
 type Project struct {
 	ProjectConfig
-	GroupName string
+	ProtoPackage string
 
 	Resources      []*Resource
 	ResourceGroups []*ResourceGroup
@@ -42,11 +53,11 @@ type Project struct {
 }
 
 type Resource struct {
-	Name       string
-	PluralName string
-	ShortName  string
-	GroupName  string // eg. gloo.solo.io
-	// ImportPrefix will equal GroupName+"." if the resource does not belong to the project
+	Name         string
+	PluralName   string
+	ShortName    string
+	ProtoPackage string // eg. gloo.solo.io
+	// ImportPrefix will equal ProtoPackage+"." if the resource does not belong to the project
 	// else it will be empty string. used in event loop files
 	ImportPrefix string
 	// empty unless resource is external
@@ -92,9 +103,8 @@ type XDSResource struct {
 	NameField    string
 	NoReferences bool
 
-	Project   *Project
-	GroupName string // eg. gloo.solo.io
-	Package   string // proto package for the message
+	Project      *Project
+	ProtoPackage string // eg. gloo.solo.io
 }
 
 func LoadProjectConfig(path string) (ProjectConfig, error) {

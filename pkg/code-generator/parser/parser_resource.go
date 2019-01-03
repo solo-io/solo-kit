@@ -43,8 +43,8 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 		}
 		resource.Project = project
 		for _, group := range groups {
-			if resource.GroupName != project.GroupName {
-				importPrefix := strings.Replace(resource.GroupName, ".", "_", -1) + "."
+			if resource.ProtoPackage != project.ProtoPackage {
+				importPrefix := strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
 				resource.ImportPrefix = importPrefix
 			}
 			resourcesByGroup[group] = append(resourcesByGroup[group], resource)
@@ -70,7 +70,7 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 		imports := make(map[string]string)
 		for _, res := range rg.Resources {
 			// only generate files for the resources in our group, otherwise we import
-			if res.GroupName != rg.Project.GroupName {
+			if res.ProtoPackage != rg.Project.ProtoPackage {
 				// add import
 				imports[strings.TrimSuffix(res.ImportPrefix, ".")] = res.GoPackage
 			}
@@ -130,15 +130,15 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, []st
 	oneofs := collectOneofs(msg)
 
 	return &model.Resource{
-		Name:       name,
-		GroupName:  msg.GetPackage(),
-		GoPackage:  messageWrapper.GoPackage,
-		ShortName:  shortName,
-		PluralName: pluralName,
-		HasStatus:  hasStatus,
-		Fields:     fields,
-		Oneofs:     oneofs,
-		Filename:   msg.GetFile().GetName(),
-		Original:   msg,
+		Name:         name,
+		ProtoPackage: msg.GetPackage(),
+		GoPackage:    messageWrapper.GoPackage,
+		ShortName:    shortName,
+		PluralName:   pluralName,
+		HasStatus:    hasStatus,
+		Fields:       fields,
+		Oneofs:       oneofs,
+		Filename:     msg.GetFile().GetName(),
+		Original:     msg,
 	}, resourceGroups, nil
 }
