@@ -30,7 +30,7 @@ func (m *ResourceRef) Reset()         { *m = ResourceRef{} }
 func (m *ResourceRef) String() string { return proto.CompactTextString(m) }
 func (*ResourceRef) ProtoMessage()    {}
 func (*ResourceRef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ref_3f2eefd228313e10, []int{0}
+	return fileDescriptor_ref_1500aee6cac2e9a9, []int{0}
 }
 func (m *ResourceRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResourceRef.Unmarshal(m, b)
@@ -95,9 +95,9 @@ func (this *ResourceRef) Equal(that interface{}) bool {
 	return true
 }
 
-func init() { proto.RegisterFile("ref.proto", fileDescriptor_ref_3f2eefd228313e10) }
+func init() { proto.RegisterFile("ref.proto", fileDescriptor_ref_1500aee6cac2e9a9) }
 
-var fileDescriptor_ref_3f2eefd228313e10 = []byte{
+var fileDescriptor_ref_1500aee6cac2e9a9 = []byte{
 	// 178 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2c, 0x4a, 0x4d, 0xd3,
 	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x49, 0xce, 0x2f, 0x4a, 0xd5, 0x2b, 0xce, 0xcf, 0xc9,
