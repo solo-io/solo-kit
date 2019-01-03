@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
@@ -170,56 +171,74 @@ func collectProtosFromRoot(root, tmpFile string, customImports, skipDirs []strin
 		descriptors []*descriptor.FileDescriptorProto
 	)
 
+	wg := sync.WaitGroup{}
+	errs := make(chan error)
 	if err := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(protoFile, ".proto") {
 			return nil
 		}
 		for _, skip := range skipDirs {
-			skipRoot, err := filepath.Abs(skip)
-			if err != nil {
-				return err
-			}
+			skipRoot := filepath.Join(root, skip)
 			if strings.HasPrefix(protoFile, skipRoot) {
 				log.Warnf("skipping detected proto %v", protoFile)
 				return nil
 			}
 		}
-		imports, err := importsForProtoFile(root, protoFile, customImports)
-		if err != nil {
-			return err
-		}
-		imports = stringutils.Unique(imports)
-
-		// don't generate protos for non-project files
-		compile := wantCompile(protoFile)
-
-		if err := writeDescriptors(protoFile, tmpFile, imports, compile); err != nil {
-			return err
-		}
-		desc, err := readDescriptors(tmpFile)
-		if err != nil {
-			return err
-		}
-	addFiles:
-		for _, f := range desc.File {
-			// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
-			// with different import paths
-			for _, existing := range descriptors {
-				if existing.GetName() == f.GetName() {
-					continue
+		wg.Add(1)
+		go func() {
+			if err := func() error {
+				defer wg.Done()
+				log.Printf("processing proto file input %v", protoFile)
+				imports, err := importsForProtoFile(root, protoFile, customImports)
+				if err != nil {
+					return errors.Wrapf(err, "reading imports for proto file")
 				}
-				existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
-				existingCopy.Name = f.Name
-				if proto.Equal(existingCopy, f) {
-					continue addFiles
+				imports = stringutils.Unique(imports)
+
+				// don't generate protos for non-project files
+				compile := wantCompile(protoFile)
+
+				if err := writeDescriptors(protoFile, tmpFile, imports, compile); err != nil {
+					return errors.Wrapf(err, "writing descriptors")
 				}
+				desc, err := readDescriptors(tmpFile)
+				if err != nil {
+					return errors.Wrapf(err, "reading descriptors")
+				}
+			addFiles:
+				for _, f := range desc.File {
+					// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
+					// with different import paths
+					for _, existing := range descriptors {
+						if existing.GetName() == f.GetName() {
+							continue
+						}
+						existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
+						existingCopy.Name = f.Name
+						if proto.Equal(existingCopy, f) {
+							continue addFiles
+						}
+					}
+					descriptors = append(descriptors, f)
+				}
+				return nil
+			}(); err != nil {
+				errs <- err
 			}
-			descriptors = append(descriptors, f)
-		}
+		}()
 		return nil
 	}); err != nil {
 		return nil, err
 	}
+	wg.Wait()
+	select {
+	case err := <-errs:
+		return nil, err
+	default:
+	}
+	sort.SliceStable(descriptors, func(i, j int) bool {
+		return descriptors[i].GetName() < descriptors[j].GetName()
+	})
 	return descriptors, nil
 }
 
@@ -348,10 +367,10 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 	var desc descriptor.FileDescriptorSet
 	protoBytes, err := ioutil.ReadFile(fromFile)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "reading file")
 	}
 	if err := proto.Unmarshal(protoBytes, &desc); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unmarshalling tmp file as descriptors")
 	}
 	return &desc, nil
 }
