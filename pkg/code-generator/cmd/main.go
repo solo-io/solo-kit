@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
@@ -213,8 +215,7 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 		}
 		descriptors = append(descriptors, f)
 	}
-	wg := sync.WaitGroup{}
-	errs := make(chan error, 1)
+	var g errgroup.Group
 	walkErr := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(protoFile, ".proto") {
 			return nil
@@ -226,27 +227,19 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 				return nil
 			}
 		}
-		wg.Add(1)
+
 		// parallelize parsing the descriptors as each one requires file i/o and is slow
-		go func() {
-			defer wg.Done()
-			err := addDescriptorsForFile(addDescriptor, root, protoFile, customImports, wantCompile)
-			if err != nil {
-				log.Warnf("adding descriptors for file %v: %s", protoFile, err)
-				select {
-				case errs <- errors.Wrapf(err, "adding descriptors for file %v", protoFile):
-				default:
-				}
-			}
-		}()
+		g.Go(func() error {
+			return addDescriptorsForFile(addDescriptor, root, protoFile, customImports, wantCompile)
+		})
 		return nil
 	})
 	if walkErr != nil {
 		return nil, walkErr
 	}
-	wg.Wait()
-	close(errs)
-	if err := <-errs; err != nil {
+
+	// Wait for all descriptor parsing to complete.
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 	sort.SliceStable(descriptors, func(i, j int) bool {
