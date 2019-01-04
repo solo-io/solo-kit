@@ -24,19 +24,15 @@ type ProjectConfig struct {
 	Name           string                         `json:"name"`
 	Version        string                         `json:"version"`
 	DocsDir        string                         `json:"docs_dir"`
-	ResourceGroups map[string]ResourceGroupConfig `json:"resource_groups"`
+	ResourceGroups map[string][]ResourceConfig `json:"resource_groups"`
 	// set by load
 	ProjectFile string
 	GoPackage   string
 }
 
-type ResourceGroupConfig struct {
-	Resources []ResourceConfig `json:"resources"`
-}
-
 type ResourceConfig struct {
-	MessageName    string
-	MessagePackage string
+	MessageName    string `json:"name"`
+	MessagePackage string `json:"package"`
 }
 
 type Project struct {

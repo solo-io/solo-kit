@@ -41,8 +41,8 @@ func findMessage(messages []ProtoMessageWrapper, name, protoPackage string) (Pro
 
 // note (ilackarms): this function supports the deprecated method of using magic comments to declare resource groups.
 // this will be removed in a future release of solo kit
-func resourceGroupsFromMessages(messages []ProtoMessageWrapper) map[string]model.ResourceGroupConfig {
-	resourceGroupsCfg := make(map[string]model.ResourceGroupConfig)
+func resourceGroupsFromMessages(messages []ProtoMessageWrapper) map[string][]model.ResourceConfig {
+	resourceGroupsCfg := make(map[string][]model.ResourceConfig)
 	for _, msg := range messages {
 		comments := strings.Split(msg.Message.GetComments().Leading, "\n")
 		// optional flags
@@ -52,11 +52,10 @@ func resourceGroupsFromMessages(messages []ProtoMessageWrapper) map[string]model
 			if rgName == "" {
 				continue
 			}
-			resourcesForGroup := append(resourceGroupsCfg[rgName].Resources, model.ResourceConfig{
+			resourceGroupsCfg[rgName] = append(resourceGroupsCfg[rgName], model.ResourceConfig{
 				MessageName:    msg.Message.GetName(),
 				MessagePackage: msg.Message.GetPackage(),
 			})
-			resourceGroupsCfg[rgName] = model.ResourceGroupConfig{Resources: resourcesForGroup}
 		}
 	}
 	return resourceGroupsCfg
@@ -68,13 +67,13 @@ func getResource(resources []*model.Resource, cfg model.ResourceConfig) (*model.
 			return res, nil
 		}
 	}
-	return nil, errors.Errorf("message %v not found", cfg)
+	return nil, errors.Errorf("getting resource: message %v not found", cfg)
 }
 
 func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*model.Resource, []*model.ResourceGroup, error) {
 	// legacy behavior (deprecated): if resource groups are not specified, search through protos for
 	// resourceGroupsDeclaration
-	if len(project.ProjectConfig.ResourceGroups) > 0 {
+	if len(project.ProjectConfig.ResourceGroups) == 0 {
 		project.ProjectConfig.ResourceGroups = resourceGroupsFromMessages(messages)
 	}
 	var (
@@ -99,7 +98,7 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 
 	for groupName, resourcesCfg := range project.ProjectConfig.ResourceGroups {
 		var resourcesForGroup []*model.Resource
-		for _, resourceCfg := range resourcesCfg.Resources {
+		for _, resourceCfg := range resourcesCfg {
 			resource, err := getResource(resources, resourceCfg)
 			if err != nil {
 				return nil, nil, err
