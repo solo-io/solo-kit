@@ -10,8 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
@@ -21,6 +19,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
+	"golang.org/x/sync/errgroup"
 )
 
 func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDirs []string) error {
@@ -84,14 +83,14 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 			return err
 		}
 
-		if project.DocsDir != "" && genDocs {
+		if project.ProjectConfig.DocsDir != "" && genDocs {
 			docs, err := docgen.GenerateFiles(project)
 			if err != nil {
 				return err
 			}
 
 			for _, file := range docs {
-				path := filepath.Join(absoluteRoot, project.DocsDir, file.Filename)
+				path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
 				if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
 					return err
 				}
@@ -101,7 +100,7 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 			}
 		}
 
-		outDir := filepath.Join(gopathSrc(), project.GoPackage)
+		outDir := filepath.Join(gopathSrc(), project.ProjectConfig.GoPackage)
 
 		for _, file := range code {
 			path := filepath.Join(outDir, file.Filename)

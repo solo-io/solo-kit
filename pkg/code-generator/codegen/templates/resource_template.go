@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse(`package {{ .Project.Version }}
+var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
 
 import (
 	"sort"
@@ -180,7 +180,7 @@ func (o *{{ .Name }}) DeepCopyObject() runtime.Object {
 var {{ .Name }}Crd = crd.NewCrd("{{ .Project.ProtoPackage }}",
 	"{{ lowercase (upper_camel .PluralName) }}",
 	"{{ .Project.ProtoPackage }}",
-	"{{ .Project.Version }}",
+	"{{ .Project.ProjectConfig.Version }}",
 	"{{ .Name }}",
 	"{{ .ShortName }}",
 	&{{ .Name }}{})

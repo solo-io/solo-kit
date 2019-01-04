@@ -81,7 +81,7 @@ func generateFilesForProject(project *model.Project) (code_generator.Files, erro
 			return nil, err
 		}
 		v = append(v, code_generator.File{
-			Filename: strcase.ToSnake(project.Name) + suffix,
+			Filename: strcase.ToSnake(project.ProjectConfig.Name) + suffix,
 			Content:  content,
 		})
 	}

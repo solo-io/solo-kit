@@ -5,6 +5,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/solo-io/solo-kit/pkg/errors"
+
 	"github.com/iancoleman/strcase"
 	"github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
@@ -89,7 +91,7 @@ func generateFilesForResource(resource *model.Resource) (code_generator.Files, e
 	} {
 		content, err := generateResourceFile(resource, tmpl)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource %v failed", tmpl.ParseName, resource.Name)
 		}
 		v = append(v, code_generator.File{
 			Filename: strcase.ToSnake(resource.Name) + suffix,
@@ -110,7 +112,7 @@ func generateFilesForResourceGroup(rg *model.ResourceGroup) (code_generator.File
 	} {
 		content, err := generateResourceGroupFile(rg, tmpl)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "internal error: processing %template '%v' for resource group %v failed", tmpl.ParseName, rg.Name)
 		}
 		v = append(v, code_generator.File{
 			Filename: strcase.ToSnake(rg.GoName) + suffix,
@@ -127,10 +129,10 @@ func generateFilesForProject(project *model.Project) (code_generator.Files, erro
 	} {
 		content, err := generateProjectFile(project, tmpl)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for project %v failed", tmpl.ParseName, project.ProjectConfig.Name)
 		}
 		v = append(v, code_generator.File{
-			Filename: strcase.ToSnake(project.Name) + suffix,
+			Filename: strcase.ToSnake(project.ProjectConfig.Name) + suffix,
 			Content:  content,
 		})
 	}

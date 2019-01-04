@@ -19,19 +19,18 @@ const ProjectConfigFilename = "solo-kit.json"
 // SOLO-KIT Descriptors from which code can be generated
 
 type ProjectConfig struct {
-	Title          string                `json:"title"`
-	Description    string                `json:"description"`
-	Name           string                `json:"name"`
-	Version        string                `json:"version"`
-	DocsDir        string                `json:"docs_dir"`
-	ResourceGroups []ResourceGroupConfig `json:"resource_groups"`
+	Title          string                         `json:"title"`
+	Description    string                         `json:"description"`
+	Name           string                         `json:"name"`
+	Version        string                         `json:"version"`
+	DocsDir        string                         `json:"docs_dir"`
+	ResourceGroups map[string]ResourceGroupConfig `json:"resource_groups"`
 	// set by load
 	ProjectFile string
 	GoPackage   string
 }
 
 type ResourceGroupConfig struct {
-	Name      string           `json:"name"`
 	Resources []ResourceConfig `json:"resources"`
 }
 
@@ -41,13 +40,11 @@ type ResourceConfig struct {
 }
 
 type Project struct {
-	ProjectConfig
-	ProtoPackage string
-
+	ProjectConfig  ProjectConfig
+	ProtoPackage   string
 	Resources      []*Resource
 	ResourceGroups []*ResourceGroup
-
-	XDSResources []*XDSResource
+	XDSResources   []*XDSResource
 
 	Request *plugin_go.CodeGeneratorRequest
 }
@@ -68,8 +65,10 @@ type Resource struct {
 	Fields    []*Field
 	Oneofs    []*Oneof
 
+	// resource groups i belong to
 	ResourceGroups []*ResourceGroup
-	Project        *Project
+	// project i belong to
+	Project *Project
 
 	Filename string // the proto file where this resource is contained
 

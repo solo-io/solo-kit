@@ -18,8 +18,9 @@ const (
 	statusTypeName   = ".core.solo.io.Status"
 
 	// magic comments
-	shortNameDeclaration      = "@solo-kit:resource.short_name="
-	pluralNameDeclaration     = "@solo-kit:resource.plural_name="
+	shortNameDeclaration  = "@solo-kit:resource.short_name="
+	pluralNameDeclaration = "@solo-kit:resource.plural_name="
+	// Deprecated, use projectConfig.ResourceGroups
 	resourceGroupsDeclaration = "@solo-kit:resource.resource_groups="
 )
 
@@ -29,41 +30,91 @@ type ProtoMessageWrapper struct {
 	Message   *protokit.Descriptor
 }
 
-func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*model.Resource, []*model.ResourceGroup, error) {
-	resourcesByGroup := make(map[string][]*model.Resource)
-	var resources []*model.Resource
+func findMessage(messages []ProtoMessageWrapper, name, protoPackage string) (ProtoMessageWrapper, error) {
 	for _, msg := range messages {
-		resource, groups, err := describeResource(msg)
+		if msg.Message.GetName() == name && msg.Message.GetPackage() == protoPackage {
+			return msg, nil
+		}
+	}
+	return ProtoMessageWrapper{}, errors.Errorf("message %v.%v not found", name, protoPackage)
+}
+
+// note (ilackarms): this function supports the deprecated method of using magic comments to declare resource groups.
+// this will be removed in a future release of solo kit
+func resourceGroupsFromMessages(messages []ProtoMessageWrapper) map[string]model.ResourceGroupConfig {
+	resourceGroupsCfg := make(map[string]model.ResourceGroupConfig)
+	for _, msg := range messages {
+		comments := strings.Split(msg.Message.GetComments().Leading, "\n")
+		// optional flags
+		joinedResourceGroups, _ := getCommentValue(comments, resourceGroupsDeclaration)
+		resourceGroups := strings.Split(joinedResourceGroups, ",")
+		for _, rgName := range resourceGroups {
+			if rgName == "" {
+				continue
+			}
+			resourcesForGroup := append(resourceGroupsCfg[rgName].Resources, model.ResourceConfig{
+				MessageName:    msg.Message.GetName(),
+				MessagePackage: msg.Message.GetPackage(),
+			})
+			resourceGroupsCfg[rgName] = model.ResourceGroupConfig{Resources: resourcesForGroup}
+		}
+	}
+	return resourceGroupsCfg
+}
+
+func getResource(resources []*model.Resource, cfg model.ResourceConfig) (*model.Resource, error) {
+	for _, res := range resources {
+		if res.Name == cfg.MessageName && res.ProtoPackage == cfg.MessagePackage {
+			return res, nil
+		}
+	}
+	return nil, errors.Errorf("message %v not found", cfg)
+}
+
+func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*model.Resource, []*model.ResourceGroup, error) {
+	// legacy behavior (deprecated): if resource groups are not specified, search through protos for
+	// resourceGroupsDeclaration
+	if len(project.ProjectConfig.ResourceGroups) > 0 {
+		project.ProjectConfig.ResourceGroups = resourceGroupsFromMessages(messages)
+	}
+	var (
+		resources []*model.Resource
+	)
+	for _, msg := range messages {
+		resource, err := describeResource(msg)
 		if err != nil {
 			return nil, nil, err
 		}
 		if resource == nil {
-			// message is not a resource
+			// not a solo-kit resource, ignore
 			continue
 		}
 		resource.Project = project
-		for _, group := range groups {
-			if resource.ProtoPackage != project.ProtoPackage {
-				importPrefix := strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
-				resource.ImportPrefix = importPrefix
-			}
-			resourcesByGroup[group] = append(resourcesByGroup[group], resource)
-		}
 		resources = append(resources, resource)
 	}
 
-	var resourceGroups []*model.ResourceGroup
+	var (
+		resourceGroups []*model.ResourceGroup
+	)
 
-	for group, resources := range resourcesByGroup {
-		log.Printf("group: %v", group)
-		rg := &model.ResourceGroup{
-			Name:      group,
-			GoName:    goName(group),
-			Project:   project,
-			Resources: resources,
+	for groupName, resourcesCfg := range project.ProjectConfig.ResourceGroups {
+		var resourcesForGroup []*model.Resource
+		for _, resourceCfg := range resourcesCfg.Resources {
+			resource, err := getResource(resources, resourceCfg)
+			if err != nil {
+				return nil, nil, err
+			}
+			resourcesForGroup = append(resourcesForGroup, resource)
 		}
-		for _, res := range resources {
-			res.Project = project
+
+		log.Printf("creating resource group: %v", groupName)
+		rg := &model.ResourceGroup{
+			Name:      groupName,
+			GoName:    goName(groupName),
+			Project:   project,
+			Resources: resourcesForGroup,
+		}
+		for _, res := range resourcesForGroup {
 			res.ResourceGroups = append(res.ResourceGroups, rg)
 		}
 
@@ -86,20 +137,27 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 
 		resourceGroups = append(resourceGroups, rg)
 	}
+
+	// sort for stability
 	for _, res := range resources {
-		// sort for stability
 		sort.SliceStable(res.ResourceGroups, func(i, j int) bool {
 			return res.ResourceGroups[i].Name < res.ResourceGroups[j].Name
 		})
 	}
+	sort.SliceStable(resources, func(i, j int) bool {
+		return resources[i].Name < resources[j].Name
+	})
+	sort.SliceStable(resourceGroups, func(i, j int) bool {
+		return resourceGroups[i].Name < resourceGroups[j].Name
+	})
 	return resources, resourceGroups, nil
 }
 
-func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, []string, error) {
+func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, error) {
 	msg := messageWrapper.Message
 	// not a solo kit resource, or you messed up!
 	if !hasField(msg, "metadata", metadataTypeName) {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	comments := strings.Split(msg.GetComments().Leading, "\n")
@@ -108,21 +166,14 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, []st
 	// required flags
 	shortName, ok := getCommentValue(comments, shortNameDeclaration)
 	if !ok {
-		return nil, nil, errors.Errorf("must provide %s", shortNameDeclaration)
+		return nil, errors.Errorf("must provide %s", shortNameDeclaration)
 	}
 	pluralName, ok := getCommentValue(comments, pluralNameDeclaration)
 	if !ok {
-		return nil, nil, errors.Errorf("must provide %s", pluralNameDeclaration)
+		return nil, errors.Errorf("must provide %s", pluralNameDeclaration)
 	}
 	// always make it upper camel
 	pluralName = strcase.ToCamel(pluralName)
-
-	// optional flags
-	joinedResourceGroups, _ := getCommentValue(comments, resourceGroupsDeclaration)
-	resourceGroups := strings.Split(joinedResourceGroups, ",")
-	if resourceGroups[0] == "" {
-		resourceGroups = nil
-	}
 
 	hasStatus := hasField(msg, "status", statusTypeName)
 
@@ -140,5 +191,5 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, []st
 		Oneofs:       oneofs,
 		Filename:     msg.GetFile().GetName(),
 		Original:     msg,
-	}, resourceGroups, nil
+	}, nil
 }

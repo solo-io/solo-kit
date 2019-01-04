@@ -249,7 +249,7 @@ func linkForResource(project *model.Project) func(resource *model.Resource) (str
 			}
 		}
 		return "", errors.Errorf("internal error: could not find file for resource %v in project %v",
-			resource.Filename, project.Name)
+			resource.Filename, project.ProjectConfig.Name)
 	}
 }
 
@@ -262,7 +262,7 @@ func resourceForMessage(project *model.Project) func(msg *protokit.Descriptor) (
 		}
 		return nil, nil
 		return nil, errors.Errorf("internal error: could not find file for resource for msg %v in project %v",
-			msg.GetName(), project.Name)
+			msg.GetName(), project.ProjectConfig.Name)
 	}
 }
 
