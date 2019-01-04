@@ -67,7 +67,7 @@ func (el *{{ lower_camel .GoName }}EventLoop) Run(namespaces []string, opts clie
 	go func() {
 		// create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
-		defer func() { cancel() }()
+		defer cancel()
 		for {
 			select {
 			case snapshot, ok := <-watch:
