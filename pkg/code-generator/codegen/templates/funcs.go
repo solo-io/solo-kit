@@ -8,10 +8,10 @@ import (
 
 	htmltemplate "html/template"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protoc-gen-doc"
-	"github.com/pseudomuto/protokit"
+	"github.com/ilackarms/protokit"
 )
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{

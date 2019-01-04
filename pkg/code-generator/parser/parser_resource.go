@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"github.com/pseudomuto/protokit"
+	"github.com/ilackarms/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -127,6 +127,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, []st
 	hasStatus := hasField(msg, "status", statusTypeName)
 
 	fields := collectFields(msg)
+	oneofs := collectOneofs(msg)
 
 	return &model.Resource{
 		Name:       name,
@@ -136,6 +137,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, []st
 		PluralName: pluralName,
 		HasStatus:  hasStatus,
 		Fields:     fields,
+		Oneofs:     oneofs,
 		Filename:   msg.GetFile().GetName(),
 		Original:   msg,
 	}, resourceGroups, nil

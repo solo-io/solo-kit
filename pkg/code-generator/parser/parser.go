@@ -1,14 +1,14 @@
 package parser
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"strings"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/golang/protobuf/protoc-gen-go/plugin"
+	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 	"github.com/iancoleman/strcase"
-	"github.com/pseudomuto/protokit"
+	"github.com/ilackarms/protokit"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
@@ -76,16 +76,6 @@ func ParseRequest(projectConfig model.ProjectConfig, req *plugin_go.CodeGenerato
 	return project, nil
 }
 
-func loadProjectConfig(path string) (model.ProjectConfig, error) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return model.ProjectConfig{}, err
-	}
-	var pc model.ProjectConfig
-	err = json.Unmarshal(b, &pc)
-	return pc, err
-}
-
 func goName(n string) string {
 	return strcase.ToCamel(strings.Split(n, ".")[0])
 }
@@ -93,15 +83,27 @@ func goName(n string) string {
 func collectFields(msg *protokit.Descriptor) []*model.Field {
 	var fields []*model.Field
 	for _, f := range msg.GetField() {
+		skipHashing := proto.GetBoolExtension(f.Options, core.E_SkipHashing, false)
 		fields = append(fields, &model.Field{
-			Name:     f.GetName(),
-			TypeName: f.GetTypeName(),
-			IsOneof:  f.OneofIndex != nil,
-			Original: f,
+			Name:        f.GetName(),
+			TypeName:    f.GetTypeName(),
+			IsOneof:     f.OneofIndex != nil,
+			SkipHashing: skipHashing,
+			Original:    f,
 		})
 	}
 	log.Printf("%v", fields)
 	return fields
+}
+
+func collectOneofs(msg *protokit.Descriptor) []*model.Oneof {
+	var oneofs []*model.Oneof
+	for _, f := range msg.GetOneofDecl() {
+		oneofs = append(oneofs, &model.Oneof{
+			Name: f.GetName(),
+		})
+	}
+	return oneofs
 }
 
 func hasField(msg *protokit.Descriptor, fieldName, fieldType string) bool {

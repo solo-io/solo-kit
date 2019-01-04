@@ -9,10 +9,9 @@ var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_s
 
 import (
 	{{ .Imports }}
-	"go.uber.org/zap"
-	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
+	"go.uber.org/zap"
 )
 
 type {{ .GoName }}Snapshot struct {
@@ -29,46 +28,30 @@ func (s {{ .GoName }}Snapshot) Clone() {{ .GoName }}Snapshot {
 	}
 }
 
-func (s {{ .GoName }}Snapshot) snapshotToHash() {{ .GoName }}Snapshot {
-	snapshotForHashing := s.Clone()
+func (s {{ .GoName }}Snapshot) Hash() uint64 {
+	return hashutils.HashAll(
 {{- range .Resources}}
-	for _, {{ lower_camel .Name }} := range snapshotForHashing.{{ upper_camel .PluralName }}.List() {
-		resources.UpdateMetadata({{ lower_camel .Name }}, func(meta *core.Metadata) {
-			meta.ResourceVersion = ""
-		})
-{{- if .HasStatus }}
-		{{ lower_camel .Name }}.SetStatus(core.Status{})
-{{- end }}
-	}
+		s.hash{{ upper_camel .PluralName }}(),
 {{- end}}
-
-	return snapshotForHashing
+	)
 }
 
-func (s {{ .GoName }}Snapshot) Hash() uint64 {
-	return s.hashStruct(s.snapshotToHash())
- }
+{{- $ResourceGroup := . }}
+{{- range .Resources }}
 
- func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
-	snapshotForHashing := s.snapshotToHash()
-	var fields []zap.Field
-
-
-{{- range .Resources}}
-	{{ lower_camel .PluralName }} := s.hashStruct(snapshotForHashing.{{ upper_camel .PluralName }}.List())
-	fields = append(fields, zap.Uint64("{{ lower_camel .PluralName }}", {{ lower_camel .PluralName }} ))
+func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}() uint64 {
+	return hashutils.HashAll(s.{{ upper_camel .PluralName }}.List().AsInterfaces()...)
+}
 {{- end}}
 
-	return append(fields, zap.Uint64("snapshotHash",  s.hashStruct(snapshotForHashing)))
- }
- 
-func (s {{ .GoName }}Snapshot) hashStruct(v interface{}) uint64 {
-	h, err := hashstructure.Hash(v, nil)
-	 if err != nil {
-		 panic(err)
-	 }
-	 return h
- }
+func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
+	var fields []zap.Field
 
+{{- range .Resources}}
+	fields = append(fields, zap.Uint64("{{ lower_camel .PluralName }}", s.hash{{ upper_camel .PluralName }}() ))
+{{- end}}
+
+	return append(fields, zap.Uint64("snapshotHash",  s.Hash()))
+}
 
 `))

@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -26,6 +27,15 @@ func NewFakeResource(namespace, name string) *FakeResource {
 
 func (r *FakeResource) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *FakeResource) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.Count,
+	)
 }
 
 type FakeResourceList []*FakeResource
@@ -80,6 +90,20 @@ func (list FakeResourceList) Clone() FakeResourceList {
 		fakeResourceList = append(fakeResourceList, proto.Clone(fakeResource).(*FakeResource))
 	}
 	return fakeResourceList
+}
+
+func (list FakeResourceList) Each(f func(element *FakeResource)) {
+	for _, fakeResource := range list {
+		f(fakeResource)
+	}
+}
+
+func (list FakeResourceList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *FakeResource) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list FakeResourceList) ByNamespace() FakesByNamespace {
