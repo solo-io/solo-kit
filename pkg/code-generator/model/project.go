@@ -19,11 +19,11 @@ const ProjectConfigFilename = "solo-kit.json"
 // SOLO-KIT Descriptors from which code can be generated
 
 type ProjectConfig struct {
-	Title          string                         `json:"title"`
-	Description    string                         `json:"description"`
-	Name           string                         `json:"name"`
-	Version        string                         `json:"version"`
-	DocsDir        string                         `json:"docs_dir"`
+	Title          string                      `json:"title"`
+	Description    string                      `json:"description"`
+	Name           string                      `json:"name"`
+	Version        string                      `json:"version"`
+	DocsDir        string                      `json:"docs_dir"`
 	ResourceGroups map[string][]ResourceConfig `json:"resource_groups"`
 	// set by load
 	ProjectFile string
