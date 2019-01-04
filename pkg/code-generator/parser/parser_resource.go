@@ -30,15 +30,6 @@ type ProtoMessageWrapper struct {
 	Message   *protokit.Descriptor
 }
 
-func findMessage(messages []ProtoMessageWrapper, name, protoPackage string) (ProtoMessageWrapper, error) {
-	for _, msg := range messages {
-		if msg.Message.GetName() == name && msg.Message.GetPackage() == protoPackage {
-			return msg, nil
-		}
-	}
-	return ProtoMessageWrapper{}, errors.Errorf("message %v.%v not found", name, protoPackage)
-}
-
 // note (ilackarms): this function supports the deprecated method of using magic comments to declare resource groups.
 // this will be removed in a future release of solo kit
 func resourceGroupsFromMessages(messages []ProtoMessageWrapper) map[string][]model.ResourceConfig {
@@ -102,6 +93,10 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 			resource, err := getResource(resources, resourceCfg)
 			if err != nil {
 				return nil, nil, err
+			}
+			if resource.ProtoPackage != project.ProtoPackage {
+				importPrefix := strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
+				resource.ImportPrefix = importPrefix
 			}
 			resourcesForGroup = append(resourcesForGroup, resource)
 		}
