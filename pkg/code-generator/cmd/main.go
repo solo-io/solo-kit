@@ -218,31 +218,37 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 		descriptors = append(descriptors, f)
 	}
 	var g errgroup.Group
-	walkErr := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(protoFile, ".proto") {
-			return nil
+	for _, dir := range append([]string{root}, customImports...) {
+		absoluteDir, err := filepath.Abs(dir)
+		if err != nil {
+			return nil, err
 		}
-		for _, skip := range skipDirs {
-			skipRoot := filepath.Join(root, skip)
-			if strings.HasPrefix(protoFile, skipRoot) {
-				log.Warnf("skipping proto %v because it is %v is a skipped directory", protoFile, skipRoot)
+		walkErr := filepath.Walk(absoluteDir, func(protoFile string, info os.FileInfo, err error) error {
+			if !strings.HasSuffix(protoFile, ".proto") {
 				return nil
 			}
+			for _, skip := range skipDirs {
+				skipRoot := filepath.Join(absoluteDir, skip)
+				if strings.HasPrefix(protoFile, skipRoot) {
+					log.Warnf("skipping proto %v because it is %v is a skipped directory", protoFile, skipRoot)
+					return nil
+				}
+			}
+
+			// parallelize parsing the descriptors as each one requires file i/o and is slow
+			g.Go(func() error {
+				return addDescriptorsForFile(addDescriptor, absoluteDir, protoFile, customImports, wantCompile)
+			})
+			return nil
+		})
+		if walkErr != nil {
+			return nil, walkErr
 		}
 
-		// parallelize parsing the descriptors as each one requires file i/o and is slow
-		g.Go(func() error {
-			return addDescriptorsForFile(addDescriptor, root, protoFile, customImports, wantCompile)
-		})
-		return nil
-	})
-	if walkErr != nil {
-		return nil, walkErr
-	}
-
-	// Wait for all descriptor parsing to complete.
-	if err := g.Wait(); err != nil {
-		return nil, err
+		// Wait for all descriptor parsing to complete.
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
 	}
 	sort.SliceStable(descriptors, func(i, j int) bool {
 		return descriptors[i].GetName() < descriptors[j].GetName()
