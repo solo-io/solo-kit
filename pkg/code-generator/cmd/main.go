@@ -8,6 +8,9 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
@@ -42,16 +45,6 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 		return names
 	}())
 
-	// collect all protos
-	tmpFile, err := ioutil.TempFile("", "solo-kit-gen-")
-	if err != nil {
-		return err
-	}
-	if err := tmpFile.Close(); err != nil {
-		return err
-	}
-	defer os.Remove(tmpFile.Name())
-
 	// whether or not to do a regular gogo-proto generate while collecting descriptors
 	compileProto := func(protoFile string) bool {
 		if !compileProtos {
@@ -65,7 +58,7 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 		return false
 	}
 
-	descriptors, err := collectProtosFromRoot(absoluteRoot, tmpFile.Name(), customImports, skipDirs, compileProto)
+	descriptors, err := collectDescriptorsFromRoot(absoluteRoot, customImports, skipDirs, compileProto)
 	if err != nil {
 		return err
 	}
@@ -139,6 +132,9 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectCon
 	var projects []model.ProjectConfig
 
 	if err := filepath.Walk(root, func(projectFile string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if !strings.HasSuffix(projectFile, model.ProjectConfigFilename) {
 			return nil
 		}
@@ -165,61 +161,93 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectCon
 	return projects, nil
 }
 
-func collectProtosFromRoot(root, tmpFile string, customImports, skipDirs []string, wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
-	var (
-		descriptors []*descriptor.FileDescriptorProto
-	)
+func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto), root, protoFile string, customImports []string, wantCompile func(string) bool) error {
+	log.Printf("processing proto file input %v", protoFile)
+	imports, err := importsForProtoFile(root, protoFile, customImports)
+	if err != nil {
+		return errors.Wrapf(err, "reading imports for proto file")
+	}
+	imports = stringutils.Unique(imports)
 
-	if err := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
+	// don't generate protos for non-project files
+	compile := wantCompile(protoFile)
+
+	// use a temp file to store the output from protoc, then parse it right back in
+	// this is how we "wrap" protoc
+	tmpFile, err := ioutil.TempFile("", "solo-kit-gen-")
+	if err != nil {
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if err := writeDescriptors(protoFile, tmpFile.Name(), imports, compile); err != nil {
+		return errors.Wrapf(err, "writing descriptors")
+	}
+	desc, err := readDescriptors(tmpFile.Name())
+	if err != nil {
+		return errors.Wrapf(err, "reading descriptors")
+	}
+
+	for _, f := range desc.File {
+		addDescriptor(f)
+	}
+
+	return nil
+}
+
+func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
+	var descriptors []*descriptor.FileDescriptorProto
+	var mutex sync.Mutex
+	addDescriptor := func(f *descriptor.FileDescriptorProto) {
+		mutex.Lock()
+		defer mutex.Unlock()
+		// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
+		// with different import paths
+		for _, existing := range descriptors {
+			if existing.GetName() == f.GetName() {
+				return
+			}
+			existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
+			existingCopy.Name = f.Name
+			if proto.Equal(existingCopy, f) {
+				return
+			}
+		}
+		descriptors = append(descriptors, f)
+	}
+	var g errgroup.Group
+	walkErr := filepath.Walk(root, func(protoFile string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(protoFile, ".proto") {
 			return nil
 		}
 		for _, skip := range skipDirs {
-			skipRoot, err := filepath.Abs(skip)
-			if err != nil {
-				return err
-			}
+			skipRoot := filepath.Join(root, skip)
 			if strings.HasPrefix(protoFile, skipRoot) {
-				log.Warnf("skipping detected proto %v", protoFile)
+				log.Warnf("skipping proto %v because it is %v is a skipped directory", protoFile, skipRoot)
 				return nil
 			}
 		}
-		imports, err := importsForProtoFile(root, protoFile, customImports)
-		if err != nil {
-			return err
-		}
-		imports = stringutils.Unique(imports)
 
-		// don't generate protos for non-project files
-		compile := wantCompile(protoFile)
-
-		if err := writeDescriptors(protoFile, tmpFile, imports, compile); err != nil {
-			return err
-		}
-		desc, err := readDescriptors(tmpFile)
-		if err != nil {
-			return err
-		}
-	addFiles:
-		for _, f := range desc.File {
-			// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
-			// with different import paths
-			for _, existing := range descriptors {
-				if existing.GetName() == f.GetName() {
-					continue
-				}
-				existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
-				existingCopy.Name = f.Name
-				if proto.Equal(existingCopy, f) {
-					continue addFiles
-				}
-			}
-			descriptors = append(descriptors, f)
-		}
+		// parallelize parsing the descriptors as each one requires file i/o and is slow
+		g.Go(func() error {
+			return addDescriptorsForFile(addDescriptor, root, protoFile, customImports, wantCompile)
+		})
 		return nil
-	}); err != nil {
+	})
+	if walkErr != nil {
+		return nil, walkErr
+	}
+
+	// Wait for all descriptor parsing to complete.
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
+	sort.SliceStable(descriptors, func(i, j int) bool {
+		return descriptors[i].GetName() < descriptors[j].GetName()
+	})
 	return descriptors, nil
 }
 
@@ -348,10 +376,10 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 	var desc descriptor.FileDescriptorSet
 	protoBytes, err := ioutil.ReadFile(fromFile)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "reading file")
 	}
 	if err := proto.Unmarshal(protoBytes, &desc); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unmarshalling tmp file as descriptors")
 	}
 	return &desc, nil
 }

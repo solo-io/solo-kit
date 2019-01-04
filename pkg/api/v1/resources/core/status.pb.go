@@ -48,7 +48,7 @@ func (x Status_State) String() string {
 	return proto.EnumName(Status_State_name, int32(x))
 }
 func (Status_State) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_status_cdc7b37c21bfabc5, []int{0, 0}
+	return fileDescriptor_status_0c7d7c069d2343ab, []int{0, 0}
 }
 
 // *
@@ -72,7 +72,7 @@ func (m *Status) Reset()         { *m = Status{} }
 func (m *Status) String() string { return proto.CompactTextString(m) }
 func (*Status) ProtoMessage()    {}
 func (*Status) Descriptor() ([]byte, []int) {
-	return fileDescriptor_status_cdc7b37c21bfabc5, []int{0}
+	return fileDescriptor_status_0c7d7c069d2343ab, []int{0}
 }
 func (m *Status) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Status.Unmarshal(m, b)
@@ -167,9 +167,9 @@ func (this *Status) Equal(that interface{}) bool {
 	return true
 }
 
-func init() { proto.RegisterFile("status.proto", fileDescriptor_status_cdc7b37c21bfabc5) }
+func init() { proto.RegisterFile("status.proto", fileDescriptor_status_0c7d7c069d2343ab) }
 
-var fileDescriptor_status_cdc7b37c21bfabc5 = []byte{
+var fileDescriptor_status_0c7d7c069d2343ab = []byte{
 	// 315 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x51, 0x51, 0x4b, 0xf3, 0x30,
 	0x14, 0xfd, 0xda, 0x7d, 0x9b, 0xee, 0x76, 0xc8, 0x88, 0x43, 0xca, 0x1e, 0x74, 0xec, 0x69, 0x08,
