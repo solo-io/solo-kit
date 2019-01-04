@@ -6,6 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -60,19 +63,44 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 			return nil, errors.Errorf("must provide a shared cache for the kube resource client")
 		}
 
-		// Validate namespace list:
+		// Validate namespace whitelist:
 		// 1. If no namespace list was provided, default to all namespaces
 		// 2. Error if namespace list contains the empty string plus other values
-		namespaces := opts.NamespaceWhitelist
-		if len(namespaces) == 0 {
-			namespaces = []string{metaV1.NamespaceAll}
+		namespaceWhitelist := opts.NamespaceWhitelist
+		if len(namespaceWhitelist) == 0 {
+			namespaceWhitelist = []string{metaV1.NamespaceAll}
 		}
-		if len(namespaces) > 1 && stringutils.ContainsString(metaV1.NamespaceAll, namespaces) {
+		if len(namespaceWhitelist) > 1 && stringutils.ContainsString(metaV1.NamespaceAll, namespaceWhitelist) {
 			return nil, fmt.Errorf("the kube resource client namespace list must contain either "+
-				"the empty string (all namespaces) or multiple non-empty strings. Found both: %v", namespaces)
+				"the empty string (all namespaces) or multiple non-empty strings. Found both: %v", namespaceWhitelist)
 		}
 
-		return kube.NewResourceClient(opts.Crd, kubeCfg, opts.SharedCache, inputResource, opts.SkipCrdCreation, namespaces, opts.ResyncPeriod)
+		// If the flag is false, call the k8s apiext API to create the given CRD.
+		if !opts.SkipCrdCreation {
+			apiExts, err := clientset.NewForConfig(kubeCfg)
+			if err != nil {
+				return nil, errors.Wrapf(err, "creating api extensions client")
+			}
+			if err := opts.Crd.Register(apiExts); err != nil {
+				return nil, err
+			}
+		}
+
+		// Create clientset for solo resources
+		crdClient, err := versioned.NewForConfig(kubeCfg, opts.Crd)
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating crd client")
+		}
+
+		return kube.NewResourceClient(
+			opts.Crd,
+			crdClient,
+			opts.SharedCache,
+			inputResource,
+			namespaceWhitelist,
+			opts.ResyncPeriod,
+		), nil
+
 	case *ConsulResourceClientFactory:
 		return consul.NewResourceClient(opts.Consul, opts.RootKey, resourceType), nil
 	case *FileResourceClientFactory:

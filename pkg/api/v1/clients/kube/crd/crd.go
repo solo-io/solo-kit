@@ -2,6 +2,7 @@ package crd
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
@@ -45,7 +46,9 @@ func NewCrd(GroupName string,
 		ShortName: ShortName,
 		Type:      Type,
 	}
-	c.AddToScheme(scheme.Scheme)
+	if err := c.AddToScheme(scheme.Scheme); err != nil {
+		log.Panicf("error while adding [%v] CRD to scheme: %v", c.FullName(), err)
+	}
 	return c
 }
 
