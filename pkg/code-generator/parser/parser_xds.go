@@ -20,7 +20,7 @@ const (
 type xdsService struct {
 	name            string
 	messageTypeName string
-	groupName       string
+	protoPackage    string
 }
 
 type xdsMessage struct {
@@ -28,7 +28,6 @@ type xdsMessage struct {
 	serviceTypeName string
 	nameField       string
 	noReferences    bool
-	groupName       string
 	protoPackage    string
 }
 
@@ -45,7 +44,7 @@ func getXdsResources(project *model.Project, messages []ProtoMessageWrapper, ser
 			// message is not a resource
 			continue
 		}
-		if msg.groupName != project.GroupName {
+		if msg.protoPackage != project.ProtoPackage {
 			continue
 		}
 		msgs = append(msgs, msg)
@@ -59,7 +58,7 @@ func getXdsResources(project *model.Project, messages []ProtoMessageWrapper, ser
 			// message is not a resource
 			continue
 		}
-		if service.groupName != project.GroupName {
+		if service.protoPackage != project.ProtoPackage {
 			continue
 		}
 		svcs = append(svcs, service)
@@ -90,8 +89,7 @@ func processMessagesAndServices(project *model.Project, msgs []*xdsMessage, svcs
 			Name:         svc.name,
 			NameField:    message.nameField,
 			NoReferences: message.noReferences,
-			GroupName:    message.groupName,
-			Package:      message.protoPackage,
+			ProtoPackage: message.protoPackage,
 			Project:      project,
 		})
 	}
@@ -149,7 +147,6 @@ func describeXdsResource(msg *protokit.Descriptor) (*xdsMessage, error) {
 		serviceTypeName: service,
 		nameField:       name,
 		noReferences:    noRefs,
-		groupName:       msg.GetPackage(),
 		protoPackage:    msg.GetPackage(),
 	}, nil
 }
@@ -185,6 +182,6 @@ func describeXdsService(service *protokit.ServiceDescriptor) (*xdsService, error
 	return &xdsService{
 		name:            service.GetName(),
 		messageTypeName: msgConfig,
-		groupName:       service.GetPackage(),
+		protoPackage:    service.GetPackage(),
 	}, nil
 }

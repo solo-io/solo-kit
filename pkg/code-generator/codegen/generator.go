@@ -5,6 +5,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/solo-io/solo-kit/pkg/errors"
+
 	"github.com/iancoleman/strcase"
 	"github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
@@ -23,10 +25,10 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (code_gen
 	}
 	for _, res := range project.Resources {
 		// only generate files for the resources in our group, otherwise we import
-		if res.GroupName != project.GroupName {
+		if res.ProtoPackage != project.ProtoPackage {
 			log.Printf("not generating solo-kit "+
 				"clients for resource %v.%v, "+
-				"group name must match package name %v", res.GroupName, res.Name, project.GroupName)
+				"resource proto package must match project proto package %v", res.ProtoPackage, res.Name, project.ProtoPackage)
 			continue
 		}
 		fs, err := generateFilesForResource(res)
@@ -36,7 +38,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (code_gen
 		files = append(files, fs...)
 	}
 	for _, grp := range project.ResourceGroups {
-		if skipOutOfPackageFiles && !(strings.HasSuffix(grp.Name, "."+project.GroupName) || grp.Name == project.GroupName) {
+		if skipOutOfPackageFiles && !(strings.HasSuffix(grp.Name, "."+project.ProtoPackage) || grp.Name == project.ProtoPackage) {
 			continue
 		}
 		fs, err := generateFilesForResourceGroup(grp)
@@ -47,7 +49,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (code_gen
 	}
 
 	for _, res := range project.XDSResources {
-		if skipOutOfPackageFiles && res.GroupName != project.GroupName && !strings.HasSuffix(res.GroupName, "."+project.GroupName) {
+		if skipOutOfPackageFiles && res.ProtoPackage != project.ProtoPackage && !strings.HasSuffix(res.ProtoPackage, "."+project.ProtoPackage) {
 			continue
 		}
 		fs, err := generateFilesForXdsResource(res)
@@ -89,7 +91,7 @@ func generateFilesForResource(resource *model.Resource) (code_generator.Files, e
 	} {
 		content, err := generateResourceFile(resource, tmpl)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource %v failed", tmpl.ParseName, resource.Name)
 		}
 		v = append(v, code_generator.File{
 			Filename: strcase.ToSnake(resource.Name) + suffix,
@@ -110,7 +112,7 @@ func generateFilesForResourceGroup(rg *model.ResourceGroup) (code_generator.File
 	} {
 		content, err := generateResourceGroupFile(rg, tmpl)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "internal error: processing %template '%v' for resource group %v failed", tmpl.ParseName, rg.Name)
 		}
 		v = append(v, code_generator.File{
 			Filename: strcase.ToSnake(rg.GoName) + suffix,
@@ -127,10 +129,10 @@ func generateFilesForProject(project *model.Project) (code_generator.Files, erro
 	} {
 		content, err := generateProjectFile(project, tmpl)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for project %v failed", tmpl.ParseName, project.ProjectConfig.Name)
 		}
 		v = append(v, code_generator.File{
-			Filename: strcase.ToSnake(project.Name) + suffix,
+			Filename: strcase.ToSnake(project.ProjectConfig.Name) + suffix,
 			Content:  content,
 		})
 	}

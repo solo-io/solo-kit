@@ -28,10 +28,10 @@ func ProcessDescriptors(projectConfig model.ProjectConfig, descriptors []*descri
 		req.FileToGenerate = append(req.FileToGenerate, file.GetName())
 		req.ProtoFile = append(req.ProtoFile, file)
 	}
-	return ParseRequest(projectConfig, req)
+	return parseRequest(projectConfig, req)
 }
 
-func ParseRequest(projectConfig model.ProjectConfig, req *plugin_go.CodeGeneratorRequest) (*model.Project, error) {
+func parseRequest(projectConfig model.ProjectConfig, req *plugin_go.CodeGeneratorRequest) (*model.Project, error) {
 	log.Printf("project config: %v", projectConfig)
 
 	descriptors := protokit.ParseCodeGenRequest(req)
@@ -56,7 +56,7 @@ func ParseRequest(projectConfig model.ProjectConfig, req *plugin_go.CodeGenerato
 
 	project := &model.Project{
 		ProjectConfig: projectConfig,
-		GroupName:     projectConfig.Name,
+		ProtoPackage:  projectConfig.Name,
 		Request:       req,
 	}
 	resources, resourceGroups, err := getResources(project, messages)

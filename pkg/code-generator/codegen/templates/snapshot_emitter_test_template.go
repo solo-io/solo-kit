@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`package {{ .Project.Version }}
+var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
 
 {{- $clients := new_str_slice }}
 {{- $needs_kube_client := false }}
@@ -42,7 +42,7 @@ import (
 {{- end }}
 )
 
-var _ = Describe("{{ upper_camel .Project.Version }}Emitter", func() {
+var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func() {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return

@@ -6,7 +6,7 @@ import (
 
 var ResourceClientTestTemplate = template.Must(template.New("resource_client_test").Funcs(Funcs).Parse(`// +build solokit
 
-package {{ .Project.Version }}
+package {{ .Project.ProjectConfig.Version }}
 
 import (
 	"time"
