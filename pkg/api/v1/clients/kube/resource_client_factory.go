@@ -60,14 +60,18 @@ func init() {
 // and, when started, creates a kubernetes controller that distributes notifications for changes to the relevant clients.
 // All direct operations on the ResourceClientSharedInformerFactory are synchronized.
 type ResourceClientSharedInformerFactory struct {
+	lock sync.Mutex
+
+	// Will be non-nil if an error occurred while starting the factory
 	initError error
 
-	lock          sync.Mutex
+	// Default value for how often the informers will resync their caches
 	defaultResync time.Duration
 
 	// Contains all the informers managed by this factory
 	registry *informerRegistry
 
+	// Indicates whether the factory is started
 	started bool
 
 	// This allows Start() to be called multiple times safely.
@@ -125,8 +129,8 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 			ctx = ctxWithTags
 		}
 
-		list := rc.kube.ResourcesV1().Resources(ns).List
-		watch := rc.kube.ResourcesV1().Resources(ns).Watch
+		list := rc.crdClientset.ResourcesV1().Resources(ns).List
+		watch := rc.crdClientset.ResourcesV1().Resources(ns).Watch
 		sharedInformer := cache.NewSharedIndexInformer(
 			&cache.ListWatch{
 				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {

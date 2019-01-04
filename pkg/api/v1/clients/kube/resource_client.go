@@ -24,11 +24,9 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/rest"
 )
 
 var (
@@ -152,28 +150,22 @@ func (kc *KubeCache) updatedOccurred(resource v1.Resource) {
 // register informers in register
 type ResourceClient struct {
 	crd                crd.Crd
-	apiexts            apiexts.Interface
-	kube               versioned.Interface
+	crdClientset       versioned.Interface
 	resourceName       string
 	resourceType       resources.InputResource
 	sharedCache        *KubeCache
-	skipCrdCreation    bool
 	namespaceWhitelist []string
 	resyncPeriod       time.Duration
 }
 
-func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, resourceType resources.InputResource,
-	skipCrdCreation bool, namespaceWhitelist []string, resyncPeriod time.Duration) (*ResourceClient, error) {
-
-	apiExts, err := apiexts.NewForConfig(cfg)
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating api extensions client")
-	}
-
-	crdClient, err := versioned.NewForConfig(cfg, crd)
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating crd client")
-	}
+func NewResourceClient(
+	crd crd.Crd,
+	clientset versioned.Interface,
+	sharedCache *KubeCache,
+	resourceType resources.InputResource,
+	namespaceWhitelist []string,
+	resyncPeriod time.Duration,
+) *ResourceClient {
 
 	typeof := reflect.TypeOf(resourceType)
 	resourceName := strings.Replace(typeof.String(), "*", "", -1)
@@ -181,15 +173,13 @@ func NewResourceClient(crd crd.Crd, cfg *rest.Config, sharedCache *KubeCache, re
 
 	return &ResourceClient{
 		crd:                crd,
-		apiexts:            apiExts,
-		kube:               crdClient,
+		crdClientset:       clientset,
 		resourceName:       resourceName,
 		resourceType:       resourceType,
 		sharedCache:        sharedCache,
-		skipCrdCreation:    skipCrdCreation,
 		namespaceWhitelist: namespaceWhitelist,
 		resyncPeriod:       resyncPeriod,
-	}, nil
+	}
 }
 
 var _ clients.ResourceClient = &ResourceClient{}
@@ -202,19 +192,10 @@ func (rc *ResourceClient) NewResource() resources.Resource {
 	return resources.Clone(rc.resourceType)
 }
 
+// Registers the client with the shared cache. The cache will create a dedicated informer to list and
+// watch resources of kind rc.Kind() in the namespaces given in rc.namespaceWhitelist.
 func (rc *ResourceClient) Register() error {
-
-	// Register the client with the shared cache. The cache will create a dedicated informer to list and
-	// watch resources of kind rc.Kind() in the namespaces given in rc.namespaceWhitelist.
-	if err := rc.sharedCache.sharedInformerFactory.Register(rc); err != nil {
-		return err
-	}
-
-	// If the flag is true, this will call the k8s apiext API to create a new CRD for resource managed by this client.
-	if !rc.skipCrdCreation {
-		return rc.crd.Register(rc.apiexts)
-	}
-	return nil
+	return rc.sharedCache.sharedInformerFactory.Register(rc)
 }
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
@@ -235,7 +216,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 
 	stats.Record(ctx, MInFlight.M(1))
-	resourceCrd, err := rc.kube.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{})
+	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{})
 	stats.Record(ctx, MInFlight.M(-1))
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -278,8 +259,8 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		}
 		stats.Record(ctx, MUpdates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, updateErr := rc.kube.ResourcesV1().Resources(meta.Namespace).Update(resourceCrd); updateErr != nil {
-			original, err := rc.kube.ResourcesV1().Resources(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+		if _, updateErr := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Update(resourceCrd); updateErr != nil {
+			original, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			if err == nil {
 				return nil, errors.Wrapf(updateErr, "updating kube resource %v:%v (want %v)", resourceCrd.Name, resourceCrd.ResourceVersion, original.ResourceVersion)
 			}
@@ -288,7 +269,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	} else {
 		stats.Record(ctx, MCreates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, err := rc.kube.ResourcesV1().Resources(meta.Namespace).Create(resourceCrd); err != nil {
+		if _, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Create(resourceCrd); err != nil {
 			if apierrors.IsAlreadyExists(err) {
 				return nil, errors.NewExistErr(meta)
 			}
@@ -325,7 +306,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 
 	stats.Record(ctx, MInFlight.M(1))
 	defer stats.Record(ctx, MInFlight.M(-1))
-	if err := rc.kube.ResourcesV1().Resources(namespace).Delete(name, nil); err != nil {
+	if err := rc.crdClientset.ResourcesV1().Resources(namespace).Delete(name, nil); err != nil {
 		return errors.Wrapf(err, "deleting resource %v", name)
 	}
 	return nil
@@ -447,7 +428,7 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 	stats.Record(ctx, MInFlight.M(1))
 	defer stats.Record(ctx, MInFlight.M(-1))
 
-	_, err := rc.kube.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{}) // TODO(yuval-k): check error for real
+	_, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{}) // TODO(yuval-k): check error for real
 	return err == nil
 
 }
