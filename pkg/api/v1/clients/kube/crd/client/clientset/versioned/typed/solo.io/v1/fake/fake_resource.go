@@ -20,12 +20,11 @@ package fake
 
 import (
 	soloiov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/testing"
 )
 
 // FakeResources implements ResourceInterface
@@ -34,14 +33,19 @@ type FakeResources struct {
 	ns   string
 }
 
-var resourcesResource = schema.GroupVersionResource{Group: "resources.solo.io", Version: "v1", Resource: "resources"}
-
-var resourcesKind = schema.GroupVersionKind{Group: "resources.solo.io", Version: "v1", Kind: "Resource"}
+//
+// NOTE(marco): the occurrences of these two variables have been replaced respectively with
+//	c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural) and
+//	c.Fake.SchemeGroupVersion().WithKind(c.Fake.KindName)
+// to allow for the fake clientset to work with our CRD registration logic.
+//
+//var resourcesResource = schema.GroupVersionResource{Group: "resources.solo.io", Version: "v1", Resource: "resources"}
+//var resourcesKind = schema.GroupVersionKind{Group: "resources.solo.io", Version: "v1", Kind: "Resource"}
 
 // Get takes name of the resource, and returns the corresponding resource object, and an error if there is any.
 func (c *FakeResources) Get(name string, options v1.GetOptions) (result *soloiov1.Resource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(resourcesResource, c.ns, name), &soloiov1.Resource{})
+		Invokes(testing.NewGetAction(c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural), c.ns, name), &soloiov1.Resource{})
 
 	if obj == nil {
 		return nil, err
@@ -51,8 +55,13 @@ func (c *FakeResources) Get(name string, options v1.GetOptions) (result *soloiov
 
 // List takes label and field selectors, and returns the list of Resources that match those selectors.
 func (c *FakeResources) List(opts v1.ListOptions) (result *soloiov1.ResourceList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(resourcesResource, resourcesKind, c.ns, opts), &soloiov1.ResourceList{})
+	obj, err := c.Fake.Invokes(
+		testing.NewListAction(
+			c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural),
+			c.Fake.SchemeGroupVersion().WithKind(c.Fake.KindName),
+			c.ns, opts,
+		), &soloiov1.ResourceList{},
+	)
 
 	if obj == nil {
 		return nil, err
@@ -74,14 +83,14 @@ func (c *FakeResources) List(opts v1.ListOptions) (result *soloiov1.ResourceList
 // Watch returns a watch.Interface that watches the requested resources.
 func (c *FakeResources) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(resourcesResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchAction(c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural), c.ns, opts))
 
 }
 
 // Create takes the representation of a resource and creates it.  Returns the server's representation of the resource, and an error, if there is any.
 func (c *FakeResources) Create(resource *soloiov1.Resource) (result *soloiov1.Resource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(resourcesResource, c.ns, resource), &soloiov1.Resource{})
+		Invokes(testing.NewCreateAction(c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural), c.ns, resource), &soloiov1.Resource{})
 
 	if obj == nil {
 		return nil, err
@@ -92,7 +101,7 @@ func (c *FakeResources) Create(resource *soloiov1.Resource) (result *soloiov1.Re
 // Update takes the representation of a resource and updates it. Returns the server's representation of the resource, and an error, if there is any.
 func (c *FakeResources) Update(resource *soloiov1.Resource) (result *soloiov1.Resource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(resourcesResource, c.ns, resource), &soloiov1.Resource{})
+		Invokes(testing.NewUpdateAction(c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural), c.ns, resource), &soloiov1.Resource{})
 
 	if obj == nil {
 		return nil, err
@@ -103,14 +112,14 @@ func (c *FakeResources) Update(resource *soloiov1.Resource) (result *soloiov1.Re
 // Delete takes name of the resource and deletes it. Returns an error if one occurs.
 func (c *FakeResources) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(resourcesResource, c.ns, name), &soloiov1.Resource{})
+		Invokes(testing.NewDeleteAction(c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural), c.ns, name), &soloiov1.Resource{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeResources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(resourcesResource, c.ns, listOptions)
+	action := testing.NewDeleteCollectionAction(c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural), c.ns, listOptions)
 
 	_, err := c.Fake.Invokes(action, &soloiov1.ResourceList{})
 	return err
@@ -119,7 +128,7 @@ func (c *FakeResources) DeleteCollection(options *v1.DeleteOptions, listOptions 
 // Patch applies the patch and returns the patched resource.
 func (c *FakeResources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *soloiov1.Resource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(resourcesResource, c.ns, name, pt, data, subresources...), &soloiov1.Resource{})
+		Invokes(testing.NewPatchSubresourceAction(c.Fake.SchemeGroupVersion().WithResource(c.Fake.Plural), c.ns, name, pt, data, subresources...), &soloiov1.Resource{})
 
 	if obj == nil {
 		return nil, err
