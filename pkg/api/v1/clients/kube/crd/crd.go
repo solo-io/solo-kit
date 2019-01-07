@@ -121,6 +121,7 @@ func (d Crd) Resource(resource string) schema.GroupResource {
 func (d Crd) SchemeBuilder() runtime.SchemeBuilder {
 	return runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypeWithName(d.SchemeGroupVersion().WithKind(d.KindName), &v1.Resource{})
+		scheme.AddKnownTypeWithName(d.SchemeGroupVersion().WithKind(d.KindName+"List"), &v1.ResourceList{})
 
 		metav1.AddToGroupVersion(scheme, d.SchemeGroupVersion())
 		return nil
