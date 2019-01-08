@@ -6,12 +6,16 @@ import (
 
 var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
 
+{{- /* we need to know if the tests require a crd client or a regular clientset */ -}}
 {{- $clients := new_str_slice }}
-{{- $needs_kube_client := false }}
+{{- $needs_crd_client := false }}
+{{- $needs_standard_client := false }}
 {{- range .Resources}}
 {{- $clients := (append_str_slice $clients (printf "%vClient"  (lower_camel .Name))) }}
-{{- if not .HasStatus }}
-{{- $needs_kube_client = true }}
+{{- if .HasStatus }}
+{{- $needs_crd_client = true }}
+{{- else}}
+{{- $needs_standard_client = true }}
 {{- end}}
 {{- end}}
 {{- $clients := (join_str_slice $clients ", ") }}
@@ -39,8 +43,7 @@ import (
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-{{- if $needs_kube_client }}
+{{- if $needs_standard_client }}
 	"k8s.io/client-go/kubernetes"
 {{- end }}
 )
@@ -70,13 +73,14 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		Expect(err).NotTo(HaveOccurred())
 
-{{- if $needs_kube_client }}
+{{- if $needs_crd_client }}
+
 		cache := kuberc.NewKubeCache()
 {{- end}}
 
-{{- if $needs_kube_client }}
-var kube kubernetes.Interface
-{{- end }}
+{{- if $needs_standard_client }}
+		var kube kubernetes.Interface
+{{- end}}
 
 
 {{- range .Resources }}
