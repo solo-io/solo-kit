@@ -229,10 +229,17 @@ func (f *ResourceClientSharedInformerFactory) GetLister(namespace string, obj ru
 		return nil, errors.Errorf("cannot get lister for non-running informer")
 	}
 
+	// Check if we have informer for this particular namespace
 	informer := f.registry.get(reflect.TypeOf(obj), namespace)
 
+	// Check if we have an informer for all namespaces
 	if informer == nil {
-		return nil, errors.Errorf("no informer has been registered for ObjectKind %v. Make sure that you called Register() on your ResourceClient.", obj.GetObjectKind())
+		informer = f.registry.get(reflect.TypeOf(obj), metav1.NamespaceAll)
+	}
+
+	if informer == nil {
+		return nil, errors.Errorf("no informer has been registered for ObjectKind %v and namespace %v. "+
+			"Make sure that you called Register() on your ResourceClient.", obj.GetObjectKind(), namespace)
 	}
 	return &resourceLister{indexer: informer.GetIndexer()}, nil
 }

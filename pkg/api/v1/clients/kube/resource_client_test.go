@@ -20,12 +20,16 @@ import (
 	"github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
+	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/clientcmd"
+
+	// Needed to run tests in GKE
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var _ = Describe("Test Kube ResourceClient", func() {
@@ -78,7 +82,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			clientset, err := versioned.NewForConfig(cfg, v1.MockResourceCrd)
 			Expect(err).NotTo(HaveOccurred())
 
-			client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(), &v1.MockResource{}, nil, 0)
+			// Create the CRD in the cluster
+			apiExts, err := apiext.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = v1.MockResourceCrd.Register(apiExts)
+			Expect(err).NotTo(HaveOccurred())
+
+			client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

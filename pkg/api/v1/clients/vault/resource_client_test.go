@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/vault"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/mocks"
+	"github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 )
 
@@ -27,7 +27,7 @@ var _ = Describe("Base", func() {
 		c.SetToken(vaultInstance.Token())
 		Expect(err).NotTo(HaveOccurred())
 		vault = c
-		secrets = NewResourceClient(vault, rootKey, &mocks.MockResource{})
+		secrets = NewResourceClient(vault, rootKey, &v1.MockResource{})
 	})
 	AfterEach(func() {
 		vault.Logical().Delete(rootKey)
