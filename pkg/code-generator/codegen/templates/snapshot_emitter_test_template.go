@@ -70,7 +70,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		Expect(err).NotTo(HaveOccurred())
 
+{{- if $needs_kube_client }}
 		cache := kuberc.NewKubeCache()
+{{- end}}
 
 {{- if $needs_kube_client }}
 var kube kubernetes.Interface
