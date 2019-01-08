@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
@@ -18,7 +17,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"go.opencensus.io/stats"
@@ -90,62 +88,6 @@ func init() {
 	view.Register(CreateCountView, UpdateCountView, DeleteCountView, InFlightSumView, EventsCountView)
 }
 
-type KubeCache struct {
-	sharedInformerFactory     *ResourceClientSharedInformerFactory
-	cacheUpdatedWatchers      []chan v1.Resource
-	cacheUpdatedWatchersMutex sync.Mutex
-}
-
-func NewKubeCache() *KubeCache {
-	return &KubeCache{
-		sharedInformerFactory: NewResourceClientSharedInformerFactory(),
-	}
-}
-
-func (kc *KubeCache) addWatch() <-chan v1.Resource {
-	kc.cacheUpdatedWatchersMutex.Lock()
-	defer kc.cacheUpdatedWatchersMutex.Unlock()
-	c := make(chan v1.Resource, 1)
-	kc.cacheUpdatedWatchers = append(kc.cacheUpdatedWatchers, c)
-	return c
-}
-
-func (kc *KubeCache) removeWatch(c <-chan v1.Resource) {
-	kc.cacheUpdatedWatchersMutex.Lock()
-	defer kc.cacheUpdatedWatchersMutex.Unlock()
-	for i, cacheUpdated := range kc.cacheUpdatedWatchers {
-		if cacheUpdated == c {
-			kc.cacheUpdatedWatchers = append(kc.cacheUpdatedWatchers[:i], kc.cacheUpdatedWatchers[i+1:]...)
-			return
-		}
-	}
-}
-
-func (kc *KubeCache) startFactory(ctx context.Context) {
-	kc.sharedInformerFactory.Start(ctx, kc.updatedOccurred)
-
-	// we want to panic here because the initial bootstrap of the cache failed
-	// this should be a rare error, and if we are restarted should not happen again
-	if err := kc.sharedInformerFactory.InitErr(); err != nil {
-		contextutils.LoggerFrom(ctx).Panicf("failed to initialize kube shared informer factory: %v", err)
-	}
-}
-
-// This function will be called when an event occurred for the given resource.
-// NOTE: as described in the doc for SharedInformer, we should NOT depend on the contents of the cache exactly matching
-// the resource in the notification we received in handler functions. The cache might be MORE fresh than the notification.
-func (kc *KubeCache) updatedOccurred(resource v1.Resource) {
-	stats.Record(context.TODO(), MEvents.M(1))
-	kc.cacheUpdatedWatchersMutex.Lock()
-	defer kc.cacheUpdatedWatchersMutex.Unlock()
-	for _, cacheUpdated := range kc.cacheUpdatedWatchers {
-		select {
-		case cacheUpdated <- resource:
-		default:
-		}
-	}
-}
-
 // lazy start in list & watch
 // register informers in register
 type ResourceClient struct {
@@ -153,15 +95,15 @@ type ResourceClient struct {
 	crdClientset       versioned.Interface
 	resourceName       string
 	resourceType       resources.InputResource
-	sharedCache        *KubeCache
-	namespaceWhitelist []string
+	sharedCache        SharedCache
+	namespaceWhitelist []string // Will contain at least metaV1.NamespaceAll ("")
 	resyncPeriod       time.Duration
 }
 
 func NewResourceClient(
 	crd crd.Crd,
 	clientset versioned.Interface,
-	sharedCache *KubeCache,
+	sharedCache SharedCache,
 	resourceType resources.InputResource,
 	namespaceWhitelist []string,
 	resyncPeriod time.Duration,
@@ -195,7 +137,7 @@ func (rc *ResourceClient) NewResource() resources.Resource {
 // Registers the client with the shared cache. The cache will create a dedicated informer to list and
 // watch resources of kind rc.Kind() in the namespaces given in rc.namespaceWhitelist.
 func (rc *ResourceClient) Register() error {
-	return rc.sharedCache.sharedInformerFactory.Register(rc)
+	return rc.sharedCache.Register(rc)
 }
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
@@ -320,9 +262,9 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 
 	// Will have no effect if the factory is already running
-	rc.sharedCache.startFactory(context.TODO())
+	rc.sharedCache.Start(context.TODO())
 
-	lister, err := rc.sharedCache.sharedInformerFactory.GetLister(namespace, rc.crd.Type)
+	lister, err := rc.sharedCache.GetLister(namespace, rc.crd.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +306,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		return nil, nil, err
 	}
 
-	rc.sharedCache.startFactory(context.TODO())
+	rc.sharedCache.Start(context.TODO())
 
 	opts = opts.WithDefaults()
 	resourcesChan := make(chan resources.ResourceList)
@@ -383,10 +325,10 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		resourcesChan <- list
 	}
 	// watch should open up with an initial read
-	cacheUpdated := rc.sharedCache.addWatch()
+	cacheUpdated := rc.sharedCache.AddWatch(10)
 
 	go func(watchedNamespace string) {
-		defer rc.sharedCache.removeWatch(cacheUpdated)
+		defer rc.sharedCache.RemoveWatch(cacheUpdated)
 		defer close(resourcesChan)
 		defer close(errs)
 
