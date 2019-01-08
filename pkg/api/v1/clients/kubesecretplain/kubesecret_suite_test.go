@@ -9,5 +9,5 @@ import (
 
 func TestKubesecret(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Kubesecret Suite")
+	RunSpecs(t, "Kubesecretplain Suite")
 }

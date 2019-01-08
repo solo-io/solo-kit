@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/test/mocks"
+	"github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 )
 
@@ -14,7 +14,7 @@ var _ = Describe("Base", func() {
 		client *ResourceClient
 	)
 	BeforeEach(func() {
-		client = NewResourceClient(NewInMemoryResourceCache(), &mocks.MockResource{})
+		client = NewResourceClient(NewInMemoryResourceCache(), &v1.MockResource{})
 	})
 	AfterEach(func() {
 	})

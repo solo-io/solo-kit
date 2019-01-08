@@ -10,7 +10,7 @@ import (
 	"os"
 
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/file"
-	"github.com/solo-io/solo-kit/test/mocks"
+	"github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 )
 
@@ -23,7 +23,7 @@ var _ = Describe("Base", func() {
 		var err error
 		tmpDir, err = ioutil.TempDir("", "base_test")
 		Expect(err).NotTo(HaveOccurred())
-		client = NewResourceClient(tmpDir, &mocks.MockResource{})
+		client = NewResourceClient(tmpDir, &v1.MockResource{})
 	})
 	AfterEach(func() {
 		os.RemoveAll(tmpDir)

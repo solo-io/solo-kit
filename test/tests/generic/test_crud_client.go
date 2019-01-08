@@ -17,7 +17,6 @@ import (
 
 // Call within "It"
 func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Duration) {
-	client.Register()
 	foo := "foo"
 	input := v1.NewMockResource(namespace, foo)
 	data := "hello: goodbye"
