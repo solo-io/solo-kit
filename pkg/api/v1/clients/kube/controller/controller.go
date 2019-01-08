@@ -50,7 +50,7 @@ func NewController(
 // 3. Wait for the informer caches to sync
 // 4. Starting a number of parallel workers equal to the "parallelism" parameter
 //
-// When a message is received on the given stopCh, the controller will stop the informers, shutdown the work queue and
+// When stopCh is closed, the controller will stop the informers, shutdown the work queue and
 // wait for workers to finish processing their current work items.
 func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 	defer runtime.HandleCrash()
@@ -91,6 +91,7 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 		log.Debugf("Started workers")
 
 		<-stopCh
+		log.Debugf("Stopping workers")
 	}()
 
 	return nil

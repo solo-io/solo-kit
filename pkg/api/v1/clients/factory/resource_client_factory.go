@@ -133,7 +133,7 @@ type ResourceClientFactory interface {
 type KubeResourceClientFactory struct {
 	Crd                crd.Crd
 	Cfg                *rest.Config
-	SharedCache        *kube.KubeCache
+	SharedCache        kube.SharedCache
 	SkipCrdCreation    bool
 	NamespaceWhitelist []string
 	ResyncPeriod       time.Duration

@@ -56,39 +56,56 @@ func init() {
 	view.Register(ListCountView)
 }
 
+type SharedCache interface {
+	// Registers the client with the shared cache
+	Register(rc *ResourceClient) error
+	// Starts all informers in the factory's registry. Must be idempotent.
+	Start(ctx context.Context)
+	// Returns a lister for resources of the given type in the given namespace.
+	GetLister(namespace string, obj runtime.Object) (ResourceLister, error)
+	// Returns a channel that will receive notifications on changes to resources
+	// managed by clients that have registered with the factory.
+	// Clients must specify a size for the buffer of the channel they will
+	// receive notifications on.
+	AddWatch(bufferSize uint) <-chan v1.Resource
+	// Removed the given channel from the watches added to the cache
+	RemoveWatch(c <-chan v1.Resource)
+}
+
+func NewKubeCache() SharedCache {
+	return &ResourceClientSharedInformerFactory{
+		defaultResync: 12 * time.Hour,
+		registry:      newInformerRegistry(),
+		watchTimeout:  time.Second,
+	}
+}
+
 // The ResourceClientSharedInformerFactory creates a SharedIndexInformer for each of the clients that register with it
-// and, when started, creates a kubernetes controller that distributes notifications for changes to the relevant clients.
+// and, when started, creates a kubernetes controller that distributes notifications for changes to the watches that
+// have been added to the factory.
 // All direct operations on the ResourceClientSharedInformerFactory are synchronized.
 type ResourceClientSharedInformerFactory struct {
-	lock sync.Mutex
-
-	// Will be non-nil if an error occurred while starting the factory
-	initError error
+	// Contains all the informers managed by this factory
+	registry *informerRegistry
 
 	// Default value for how often the informers will resync their caches
 	defaultResync time.Duration
-
-	// Contains all the informers managed by this factory
-	registry *informerRegistry
 
 	// Indicates whether the factory is started
 	started bool
 
 	// This allows Start() to be called multiple times safely.
 	factoryStarter sync.Once
-}
 
-func NewResourceClientSharedInformerFactory() *ResourceClientSharedInformerFactory {
-	return &ResourceClientSharedInformerFactory{
-		defaultResync: 12 * time.Hour,
-		registry:      newInformerRegistry(),
-	}
-}
+	// Listeners that need to be notified when a res
+	cacheUpdatedWatchers []chan v1.Resource
 
-func (f *ResourceClientSharedInformerFactory) InitErr() error {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	return f.initError
+	// Determines how long the controller will wait for a watch channel to accept an event before aborting the delivery
+	watchTimeout time.Duration
+
+	// Mutexes
+	lock                      sync.Mutex
+	cacheUpdatedWatchersMutex sync.Mutex
 }
 
 // Creates a new SharedIndexInformer and adds it to the factory's informer registry.
@@ -100,7 +117,7 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 	ctx := context.TODO()
 	if f.started {
-		contextutils.LoggerFrom(ctx).DPanic("can't register informer after factory has started. This may change in the future.")
+		contextutils.LoggerFrom(ctx).Panic("can't register informer after factory has started. This may change in the future.")
 	}
 
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
@@ -163,10 +180,8 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 }
 
 // Starts all informers in the factory's registry (if they have not yet been started) and configures the factory to call
-// the given updateCallback function whenever any of the resources associated with the informers changes.
-func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, updateCallback func(v1.Resource)) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
+// the updateCallback function whenever any of the resources associated with the informers changes.
+func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context) {
 
 	// Guarantees that the factory will be started at most once
 	f.factoryStarter.Do(func() {
@@ -176,7 +191,7 @@ func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, updateC
 
 		// Initialize a new kubernetes controller
 		kubeController := controller.NewController("solo-resource-controller",
-			controller.NewLockingCallbackHandler(updateCallback), sharedInformers...)
+			controller.NewLockingCallbackHandler(f.updatedOccurred), sharedInformers...)
 
 		// Start the controller
 		runResult := make(chan error, 1)
@@ -196,7 +211,7 @@ func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context, updateC
 
 		// If initError is non-nil, the kube resource client will panic
 		if err != nil {
-			f.initError = errors.Wrapf(err, "failed to start kuberenetes controller")
+			contextutils.LoggerFrom(ctx).Panicf("failed to start kube shared informer factory: %v", err)
 		}
 
 		// Mark the factory as started
@@ -220,6 +235,58 @@ func (f *ResourceClientSharedInformerFactory) GetLister(namespace string, obj ru
 		return nil, errors.Errorf("no informer has been registered for ObjectKind %v. Make sure that you called Register() on your ResourceClient.", obj.GetObjectKind())
 	}
 	return &resourceLister{indexer: informer.GetIndexer()}, nil
+}
+
+// Adds a watch with the given buffer size to the factory.
+func (f *ResourceClientSharedInformerFactory) AddWatch(bufferSize uint) <-chan v1.Resource {
+	f.cacheUpdatedWatchersMutex.Lock()
+	defer f.cacheUpdatedWatchersMutex.Unlock()
+	c := make(chan v1.Resource, bufferSize)
+	f.cacheUpdatedWatchers = append(f.cacheUpdatedWatchers, c)
+	return c
+}
+
+// Removes the given watch to the factory.
+// A call to this method should be deferred passing the channel returned by AddWatch wherever a watch is added.
+func (f *ResourceClientSharedInformerFactory) RemoveWatch(c <-chan v1.Resource) {
+	f.cacheUpdatedWatchersMutex.Lock()
+	defer f.cacheUpdatedWatchersMutex.Unlock()
+	for i, cacheUpdated := range f.cacheUpdatedWatchers {
+		if cacheUpdated == c {
+			f.cacheUpdatedWatchers = append(f.cacheUpdatedWatchers[:i], f.cacheUpdatedWatchers[i+1:]...)
+			return
+		}
+	}
+}
+
+// Not part of the interface (used for testing)
+func (f *ResourceClientSharedInformerFactory) Informers() []cache.SharedIndexInformer {
+	return f.registry.list()
+}
+
+// Not part of the interface (used for testing)
+func (f *ResourceClientSharedInformerFactory) IsRunning() bool {
+	return f.started
+}
+
+// This function will be called when an event occurred for the given resource.
+// NOTE: as described in the doc for SharedInformer, we should NOT depend on the contents of the cache exactly matching
+// the resource in the notification we received in handler functions. The cache might be MORE fresh than the notification.
+func (f *ResourceClientSharedInformerFactory) updatedOccurred(resource v1.Resource) {
+	stats.Record(context.TODO(), MEvents.M(1))
+	f.cacheUpdatedWatchersMutex.Lock()
+	defer f.cacheUpdatedWatchersMutex.Unlock()
+	for _, watcher := range f.cacheUpdatedWatchers {
+		// Attempt delivery asynchronously
+		go func(watchChan chan v1.Resource, res v1.Resource) {
+			select {
+			case watchChan <- resource:
+			case <-time.After(f.watchTimeout):
+				contextutils.LoggerFrom(context.TODO()).Errorf("timed out after waiting for %v"+
+					"for watch to receive event on resource %v", f.watchTimeout, resource)
+			}
+		}(watcher, resource)
+	}
 }
 
 type ResourceLister interface {
