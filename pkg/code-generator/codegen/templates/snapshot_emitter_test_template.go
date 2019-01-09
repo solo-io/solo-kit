@@ -8,13 +8,10 @@ var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_grou
 
 {{- /* we need to know if the tests require a crd client or a regular clientset */ -}}
 {{- $clients := new_str_slice }}
-{{- $needs_crd_client := false }}
 {{- $needs_standard_client := false }}
 {{- range .Resources}}
 {{- $clients := (append_str_slice $clients (printf "%vClient"  (lower_camel .Name))) }}
-{{- if .HasStatus }}
-{{- $needs_crd_client = true }}
-{{- else}}
+{{- if (not .HasStatus) }}
 {{- $needs_standard_client = true }}
 {{- end}}
 {{- end}}
@@ -73,10 +70,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		Expect(err).NotTo(HaveOccurred())
 
-{{- if $needs_crd_client }}
-
-		cache := kuberc.NewKubeCache()
-{{- end}}
 
 {{- if $needs_standard_client }}
 		var kube kubernetes.Interface
@@ -89,7 +82,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		{{ lower_camel .Name }}ClientFactory := &factory.KubeResourceClientFactory{
 			Crd: {{ .ImportPrefix }}{{ .Name }}Crd,
 			Cfg: cfg,
-		    SharedCache: cache,
+		    SharedCache: kuberc.NewKubeCache(),
 		}
 {{- else }}
 		kube, err = kubernetes.NewForConfig(cfg)
