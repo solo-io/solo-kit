@@ -180,7 +180,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 	} else {
 		res, ok := resourceOpts.(*core.Resource)
 		if !ok {
-			panic("huh")
+			return nil, errors.Errorf("internal error: message options were not type *core.Resource: %+v", resourceOpts)
 		}
 		shortName = res.ShortName
 		pluralName = res.PluralName
