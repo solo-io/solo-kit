@@ -33,12 +33,13 @@ var _ = Describe("V1Emitter", func() {
 		return
 	}
 	var (
-		namespace1         string
-		namespace2         string
-		cfg                *rest.Config
-		emitter            TestingEmitter
-		mockResourceClient MockResourceClient
-		fakeResourceClient FakeResourceClient
+		namespace1                string
+		namespace2                string
+		cfg                       *rest.Config
+		emitter                   TestingEmitter
+		mockResourceClient        MockResourceClient
+		fakeResourceClient        FakeResourceClient
+		anotherMockResourceClient AnotherMockResourceClient
 	)
 
 	BeforeEach(func() {
@@ -68,7 +69,15 @@ var _ = Describe("V1Emitter", func() {
 		}
 		fakeResourceClient, err = NewFakeResourceClient(fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient)
+		// AnotherMockResource Constructor
+		anotherMockResourceClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         AnotherMockResourceCrd,
+			Cfg:         cfg,
+			SharedCache: kuberc.NewKubeCache(),
+		}
+		anotherMockResourceClient, err = NewAnotherMockResourceClient(anotherMockResourceClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient)
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace1)
@@ -206,5 +215,65 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotFakes(nil, FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
+
+		/*
+			AnotherMockResource
+		*/
+
+		assertSnapshotAnothermockresources := func(expectAnothermockresources AnotherMockResourceList, unexpectAnothermockresources AnotherMockResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectAnothermockresources {
+						if _, err := snap.Anothermockresources.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectAnothermockresources {
+						if _, err := snap.Anothermockresources.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := anotherMockResourceClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := anotherMockResourceClient.List(namespace2, clients.ListOpts{})
+					combined := nsList1.ByNamespace()
+					combined.Add(nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+
+		anotherMockResource1a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, nil)
+
+		anotherMockResource2a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		anotherMockResource2b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b}, nil)
+
+		err = anotherMockResourceClient.Delete(anotherMockResource2a.Metadata.Namespace, anotherMockResource2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = anotherMockResourceClient.Delete(anotherMockResource2b.Metadata.Namespace, anotherMockResource2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, AnotherMockResourceList{anotherMockResource2a, anotherMockResource2b})
+
+		err = anotherMockResourceClient.Delete(anotherMockResource1a.Metadata.Namespace, anotherMockResource1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = anotherMockResourceClient.Delete(anotherMockResource1b.Metadata.Namespace, anotherMockResource1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotAnothermockresources(nil, AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b})
 	})
 })

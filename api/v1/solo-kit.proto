@@ -6,6 +6,18 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
 
 import "google/protobuf/descriptor.proto";
 
+extend google.protobuf.MessageOptions {
+    // options for a message that's intended to become a solo-kit resource
+    Resource resource = 10000;
+}
+
+message Resource {
+    // becomes the kubernetes short name for the generated crd
+    string short_name = 1;
+    // becomes the kubernetes plural name for the generated crd
+    string plural_name = 2;
+}
+
 extend google.protobuf.FieldOptions {
     bool skip_hashing = 10000;
 }
