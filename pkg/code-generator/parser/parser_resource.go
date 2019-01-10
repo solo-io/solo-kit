@@ -4,8 +4,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protokit"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -18,7 +20,9 @@ const (
 	statusTypeName   = ".core.solo.io.Status"
 
 	// magic comments
-	shortNameDeclaration  = "@solo-kit:resource.short_name="
+	// Deprecated, use Message Option (core.solo.io.resource).short_name
+	shortNameDeclaration = "@solo-kit:resource.short_name="
+	// Deprecated, use Message Option (core.solo.io.resource).plural_name
 	pluralNameDeclaration = "@solo-kit:resource.plural_name="
 	// Deprecated, use projectConfig.ResourceGroups
 	resourceGroupsDeclaration = "@solo-kit:resource.resource_groups="
@@ -157,15 +161,31 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 	comments := strings.Split(msg.GetComments().Leading, "\n")
 
 	name := msg.GetName()
-	// required flags
-	shortName, ok := getCommentValue(comments, shortNameDeclaration)
-	if !ok {
-		return nil, errors.Errorf("must provide %s", shortNameDeclaration)
+	var shortName, pluralName string
+	resourceOpts, err := proto.GetExtension(msg.Options, core.E_Resource)
+	if err != nil {
+		log.Warnf("failed to get solo-kit message options for resource %v: %v", msg.GetName(), err)
+		log.Warnf("use of magic comments is deprecated, use Message Option (core.solo.io.resource)")
+		// required flags
+		sn, ok := getCommentValue(comments, shortNameDeclaration)
+		if !ok {
+			return nil, errors.Errorf("must provide %s", shortNameDeclaration)
+		}
+		shortName = sn
+		pn, ok := getCommentValue(comments, pluralNameDeclaration)
+		if !ok {
+			return nil, errors.Errorf("must provide %s", pluralNameDeclaration)
+		}
+		pluralName = pn
+	} else {
+		res, ok := resourceOpts.(*core.Resource)
+		if !ok {
+			panic("huh")
+		}
+		shortName = res.ShortName
+		pluralName = res.PluralName
 	}
-	pluralName, ok := getCommentValue(comments, pluralNameDeclaration)
-	if !ok {
-		return nil, errors.Errorf("must provide %s", pluralNameDeclaration)
-	}
+
 	// always make it upper camel
 	pluralName = strcase.ToCamel(pluralName)
 
