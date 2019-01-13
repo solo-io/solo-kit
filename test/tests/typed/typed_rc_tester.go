@@ -3,18 +3,17 @@ package typed
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/setup"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -57,8 +56,7 @@ func (rct *KubeRcTester) Skip() bool {
 func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	err := setup.SetupKubeForTest(namespace)
 	Expect(err).NotTo(HaveOccurred())
-	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	cfg, err = kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.KubeResourceClientFactory{
 		Crd: rct.Crd,
@@ -190,8 +188,7 @@ func (rct *KubeConfigMapRcTester) Skip() bool {
 func (rct *KubeConfigMapRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	err := setup.SetupKubeForTest(namespace)
 	Expect(err).NotTo(HaveOccurred())
-	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	cfg, err = kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	kube, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
@@ -222,8 +219,7 @@ func (rct *KubeSecretRcTester) Skip() bool {
 func (rct *KubeSecretRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	err := setup.SetupKubeForTest(namespace)
 	Expect(err).NotTo(HaveOccurred())
-	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	cfg, err = kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	kube, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
