@@ -570,6 +570,14 @@
   version = "v0.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:c4f5e25cc8582ee64fc188ee0b0b2151743c406d23f835d4e3322065207c2f69"
+  name = "github.com/solo-io/go-utils"
+  packages = ["kubeutils"]
+  pruneopts = "UT"
+  revision = "67428b92743fd710ab708665d5fff86e06ff1612"
+
+[[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
   name = "github.com/spf13/pflag"
   packages = ["."]
@@ -1119,6 +1127,7 @@
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
     "github.com/radovskyb/watcher",
+    "github.com/solo-io/go-utils/kubeutils",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
