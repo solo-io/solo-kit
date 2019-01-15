@@ -12,10 +12,17 @@ package Comments a
 import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 import _ "github.com/gogo/protobuf/gogoproto"
 import core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+import _ "google.golang.org/genproto/googleapis/api/annotations"
 
 import bytes "bytes"
+
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -51,7 +58,7 @@ func (m *MockResource) Reset()         { *m = MockResource{} }
 func (m *MockResource) String() string { return proto.CompactTextString(m) }
 func (*MockResource) ProtoMessage()    {}
 func (*MockResource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_mock_resources_2aaea320c9da9d33, []int{0}
+	return fileDescriptor_mock_resources_d7c973d5bbb5ae4c, []int{0}
 }
 func (m *MockResource) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MockResource.Unmarshal(m, b)
@@ -220,7 +227,7 @@ func (m *FakeResource) Reset()         { *m = FakeResource{} }
 func (m *FakeResource) String() string { return proto.CompactTextString(m) }
 func (*FakeResource) ProtoMessage()    {}
 func (*FakeResource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_mock_resources_2aaea320c9da9d33, []int{1}
+	return fileDescriptor_mock_resources_d7c973d5bbb5ae4c, []int{1}
 }
 func (m *FakeResource) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FakeResource.Unmarshal(m, b)
@@ -254,9 +261,52 @@ func (m *FakeResource) GetMetadata() core.Metadata {
 	return core.Metadata{}
 }
 
+//
+// @solo-kit:xds-service=MockXdsResourceDiscoveryService
+// @solo-kit:resource.no_references
+type MockXdsResourceConfig struct {
+	// @solo-kit:resource.name
+	Domain               string   `protobuf:"bytes,1,opt,name=domain,proto3" json:"domain,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *MockXdsResourceConfig) Reset()         { *m = MockXdsResourceConfig{} }
+func (m *MockXdsResourceConfig) String() string { return proto.CompactTextString(m) }
+func (*MockXdsResourceConfig) ProtoMessage()    {}
+func (*MockXdsResourceConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_mock_resources_d7c973d5bbb5ae4c, []int{2}
+}
+func (m *MockXdsResourceConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_MockXdsResourceConfig.Unmarshal(m, b)
+}
+func (m *MockXdsResourceConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_MockXdsResourceConfig.Marshal(b, m, deterministic)
+}
+func (dst *MockXdsResourceConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MockXdsResourceConfig.Merge(dst, src)
+}
+func (m *MockXdsResourceConfig) XXX_Size() int {
+	return xxx_messageInfo_MockXdsResourceConfig.Size(m)
+}
+func (m *MockXdsResourceConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_MockXdsResourceConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MockXdsResourceConfig proto.InternalMessageInfo
+
+func (m *MockXdsResourceConfig) GetDomain() string {
+	if m != nil {
+		return m.Domain
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*MockResource)(nil), "testing.solo.io.MockResource")
 	proto.RegisterType((*FakeResource)(nil), "testing.solo.io.FakeResource")
+	proto.RegisterType((*MockXdsResourceConfig)(nil), "testing.solo.io.MockXdsResourceConfig")
 }
 func (this *MockResource) Equal(that interface{}) bool {
 	if that == nil {
@@ -381,34 +431,276 @@ func (this *FakeResource) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *MockXdsResourceConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
 
-func init() {
-	proto.RegisterFile("github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto", fileDescriptor_mock_resources_2aaea320c9da9d33)
+	that1, ok := that.(*MockXdsResourceConfig)
+	if !ok {
+		that2, ok := that.(MockXdsResourceConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Domain != that1.Domain {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
 }
 
-var fileDescriptor_mock_resources_2aaea320c9da9d33 = []byte{
-	// 364 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0xcb, 0x4e, 0xc2, 0x40,
-	0x14, 0x86, 0x29, 0x56, 0x84, 0x11, 0x42, 0xac, 0xc4, 0x34, 0x24, 0x0a, 0x61, 0x61, 0x30, 0xd1,
-	0x4e, 0xc0, 0x8d, 0xeb, 0xc6, 0x10, 0x37, 0xc4, 0xa4, 0xba, 0x72, 0x61, 0xd3, 0xcb, 0x50, 0xc7,
-	0xd2, 0x1e, 0xd2, 0x99, 0xc2, 0xd6, 0x97, 0x31, 0xf1, 0x51, 0x7c, 0x0a, 0x16, 0x2e, 0xdd, 0xf9,
-	0x06, 0x66, 0xa6, 0x17, 0xe2, 0xc6, 0xa0, 0xab, 0xce, 0xe9, 0xff, 0x7f, 0x73, 0x6e, 0x83, 0xcc,
-	0x80, 0xf2, 0xa7, 0xd4, 0x35, 0x3c, 0x88, 0x30, 0x83, 0x39, 0x5c, 0x50, 0xc8, 0xbe, 0x21, 0xe5,
-	0x98, 0x13, 0xc6, 0x71, 0x04, 0x5e, 0xc8, 0xb0, 0xb3, 0xa0, 0x78, 0x39, 0x92, 0x81, 0x9d, 0x10,
-	0x06, 0x69, 0xe2, 0x11, 0x66, 0x2c, 0x12, 0xe0, 0xa0, 0xb5, 0x85, 0x8f, 0xc6, 0x81, 0x21, 0x40,
-	0x83, 0x42, 0xb7, 0x13, 0x40, 0x00, 0x52, 0xc3, 0xe2, 0x94, 0xd9, 0xba, 0xa3, 0xdf, 0x52, 0x15,
-	0xf7, 0x13, 0xee, 0xf8, 0x0e, 0x77, 0x72, 0x04, 0x6f, 0x81, 0x30, 0xee, 0xf0, 0x94, 0xfd, 0x21,
-	0x47, 0x11, 0x67, 0xc8, 0xe0, 0xb5, 0x8a, 0x9a, 0x53, 0xf0, 0x42, 0x2b, 0xef, 0x4a, 0x1b, 0xa3,
-	0x5a, 0x76, 0xa7, 0x5e, 0xeb, 0x2b, 0xc3, 0xfd, 0x71, 0xc7, 0xf0, 0x20, 0x21, 0x45, 0x73, 0xc6,
-	0x9d, 0xd4, 0x4c, 0xf5, 0x7d, 0xdd, 0xab, 0x58, 0xb9, 0x53, 0xbb, 0x42, 0xf5, 0xa2, 0x74, 0x7d,
-	0x4f, 0x52, 0x47, 0x3f, 0xa9, 0x69, 0xae, 0xe6, 0x5c, 0xe9, 0xd6, 0x4e, 0x91, 0x2a, 0x29, 0xa5,
-	0xaf, 0x0c, 0x1b, 0x66, 0xeb, 0x73, 0xdd, 0x6b, 0xc8, 0x01, 0x3c, 0x33, 0x88, 0xad, 0xcd, 0x51,
-	0x3b, 0x47, 0x6d, 0x06, 0x11, 0xb1, 0xfd, 0x34, 0x72, 0xed, 0x19, 0x25, 0x73, 0x5f, 0xf7, 0x25,
-	0xa2, 0xbe, 0x7c, 0xa9, 0x8a, 0xd5, 0x12, 0xe2, 0x75, 0x1a, 0xb9, 0x13, 0x21, 0x69, 0xc7, 0xa8,
-	0x01, 0x31, 0x81, 0x99, 0x0d, 0x31, 0xd1, 0x77, 0x84, 0xef, 0xa6, 0x62, 0xd5, 0xe5, 0xaf, 0xdb,
-	0x98, 0x6c, 0x64, 0xbe, 0x02, 0xbd, 0xda, 0x57, 0x86, 0xf5, 0x52, 0xbe, 0x5f, 0x81, 0x79, 0x88,
-	0x0e, 0xc4, 0x4a, 0xed, 0xcc, 0x23, 0x93, 0xb1, 0xc1, 0x23, 0x6a, 0x4e, 0x9c, 0x90, 0x94, 0x63,
-	0xea, 0xa0, 0x5d, 0x0f, 0xd2, 0x98, 0xcb, 0xca, 0x5b, 0x56, 0x16, 0xfc, 0x7f, 0x10, 0x26, 0x7e,
-	0xfb, 0x38, 0x51, 0x1e, 0xce, 0xb6, 0x7c, 0x8f, 0xcb, 0x91, 0x5b, 0x93, 0xfb, 0xbb, 0xfc, 0x0e,
-	0x00, 0x00, 0xff, 0xff, 0x6f, 0xc7, 0x4c, 0xb4, 0xc3, 0x02, 0x00, 0x00,
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// MockXdsResourceDiscoveryServiceClient is the client API for MockXdsResourceDiscoveryService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type MockXdsResourceDiscoveryServiceClient interface {
+	StreamMockXdsResourceConfig(ctx context.Context, opts ...grpc.CallOption) (MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigClient, error)
+	IncrementalMockXdsResourceConfig(ctx context.Context, opts ...grpc.CallOption) (MockXdsResourceDiscoveryService_IncrementalMockXdsResourceConfigClient, error)
+	FetchMockXdsResourceConfig(ctx context.Context, in *v2.DiscoveryRequest, opts ...grpc.CallOption) (*v2.DiscoveryResponse, error)
+}
+
+type mockXdsResourceDiscoveryServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewMockXdsResourceDiscoveryServiceClient(cc *grpc.ClientConn) MockXdsResourceDiscoveryServiceClient {
+	return &mockXdsResourceDiscoveryServiceClient{cc}
+}
+
+func (c *mockXdsResourceDiscoveryServiceClient) StreamMockXdsResourceConfig(ctx context.Context, opts ...grpc.CallOption) (MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_MockXdsResourceDiscoveryService_serviceDesc.Streams[0], "/testing.solo.io.MockXdsResourceDiscoveryService/StreamMockXdsResourceConfig", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &mockXdsResourceDiscoveryServiceStreamMockXdsResourceConfigClient{stream}
+	return x, nil
+}
+
+type MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigClient interface {
+	Send(*v2.DiscoveryRequest) error
+	Recv() (*v2.DiscoveryResponse, error)
+	grpc.ClientStream
+}
+
+type mockXdsResourceDiscoveryServiceStreamMockXdsResourceConfigClient struct {
+	grpc.ClientStream
+}
+
+func (x *mockXdsResourceDiscoveryServiceStreamMockXdsResourceConfigClient) Send(m *v2.DiscoveryRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *mockXdsResourceDiscoveryServiceStreamMockXdsResourceConfigClient) Recv() (*v2.DiscoveryResponse, error) {
+	m := new(v2.DiscoveryResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *mockXdsResourceDiscoveryServiceClient) IncrementalMockXdsResourceConfig(ctx context.Context, opts ...grpc.CallOption) (MockXdsResourceDiscoveryService_IncrementalMockXdsResourceConfigClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_MockXdsResourceDiscoveryService_serviceDesc.Streams[1], "/testing.solo.io.MockXdsResourceDiscoveryService/IncrementalMockXdsResourceConfig", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &mockXdsResourceDiscoveryServiceIncrementalMockXdsResourceConfigClient{stream}
+	return x, nil
+}
+
+type MockXdsResourceDiscoveryService_IncrementalMockXdsResourceConfigClient interface {
+	Send(*v2.IncrementalDiscoveryRequest) error
+	Recv() (*v2.IncrementalDiscoveryResponse, error)
+	grpc.ClientStream
+}
+
+type mockXdsResourceDiscoveryServiceIncrementalMockXdsResourceConfigClient struct {
+	grpc.ClientStream
+}
+
+func (x *mockXdsResourceDiscoveryServiceIncrementalMockXdsResourceConfigClient) Send(m *v2.IncrementalDiscoveryRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *mockXdsResourceDiscoveryServiceIncrementalMockXdsResourceConfigClient) Recv() (*v2.IncrementalDiscoveryResponse, error) {
+	m := new(v2.IncrementalDiscoveryResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *mockXdsResourceDiscoveryServiceClient) FetchMockXdsResourceConfig(ctx context.Context, in *v2.DiscoveryRequest, opts ...grpc.CallOption) (*v2.DiscoveryResponse, error) {
+	out := new(v2.DiscoveryResponse)
+	err := c.cc.Invoke(ctx, "/testing.solo.io.MockXdsResourceDiscoveryService/FetchMockXdsResourceConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MockXdsResourceDiscoveryServiceServer is the server API for MockXdsResourceDiscoveryService service.
+type MockXdsResourceDiscoveryServiceServer interface {
+	StreamMockXdsResourceConfig(MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigServer) error
+	IncrementalMockXdsResourceConfig(MockXdsResourceDiscoveryService_IncrementalMockXdsResourceConfigServer) error
+	FetchMockXdsResourceConfig(context.Context, *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error)
+}
+
+func RegisterMockXdsResourceDiscoveryServiceServer(s *grpc.Server, srv MockXdsResourceDiscoveryServiceServer) {
+	s.RegisterService(&_MockXdsResourceDiscoveryService_serviceDesc, srv)
+}
+
+func _MockXdsResourceDiscoveryService_StreamMockXdsResourceConfig_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MockXdsResourceDiscoveryServiceServer).StreamMockXdsResourceConfig(&mockXdsResourceDiscoveryServiceStreamMockXdsResourceConfigServer{stream})
+}
+
+type MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigServer interface {
+	Send(*v2.DiscoveryResponse) error
+	Recv() (*v2.DiscoveryRequest, error)
+	grpc.ServerStream
+}
+
+type mockXdsResourceDiscoveryServiceStreamMockXdsResourceConfigServer struct {
+	grpc.ServerStream
+}
+
+func (x *mockXdsResourceDiscoveryServiceStreamMockXdsResourceConfigServer) Send(m *v2.DiscoveryResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *mockXdsResourceDiscoveryServiceStreamMockXdsResourceConfigServer) Recv() (*v2.DiscoveryRequest, error) {
+	m := new(v2.DiscoveryRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _MockXdsResourceDiscoveryService_IncrementalMockXdsResourceConfig_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MockXdsResourceDiscoveryServiceServer).IncrementalMockXdsResourceConfig(&mockXdsResourceDiscoveryServiceIncrementalMockXdsResourceConfigServer{stream})
+}
+
+type MockXdsResourceDiscoveryService_IncrementalMockXdsResourceConfigServer interface {
+	Send(*v2.IncrementalDiscoveryResponse) error
+	Recv() (*v2.IncrementalDiscoveryRequest, error)
+	grpc.ServerStream
+}
+
+type mockXdsResourceDiscoveryServiceIncrementalMockXdsResourceConfigServer struct {
+	grpc.ServerStream
+}
+
+func (x *mockXdsResourceDiscoveryServiceIncrementalMockXdsResourceConfigServer) Send(m *v2.IncrementalDiscoveryResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *mockXdsResourceDiscoveryServiceIncrementalMockXdsResourceConfigServer) Recv() (*v2.IncrementalDiscoveryRequest, error) {
+	m := new(v2.IncrementalDiscoveryRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _MockXdsResourceDiscoveryService_FetchMockXdsResourceConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(v2.DiscoveryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MockXdsResourceDiscoveryServiceServer).FetchMockXdsResourceConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/testing.solo.io.MockXdsResourceDiscoveryService/FetchMockXdsResourceConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MockXdsResourceDiscoveryServiceServer).FetchMockXdsResourceConfig(ctx, req.(*v2.DiscoveryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _MockXdsResourceDiscoveryService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "testing.solo.io.MockXdsResourceDiscoveryService",
+	HandlerType: (*MockXdsResourceDiscoveryServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "FetchMockXdsResourceConfig",
+			Handler:    _MockXdsResourceDiscoveryService_FetchMockXdsResourceConfig_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamMockXdsResourceConfig",
+			Handler:       _MockXdsResourceDiscoveryService_StreamMockXdsResourceConfig_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "IncrementalMockXdsResourceConfig",
+			Handler:       _MockXdsResourceDiscoveryService_IncrementalMockXdsResourceConfig_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto",
+}
+
+func init() {
+	proto.RegisterFile("github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto", fileDescriptor_mock_resources_d7c973d5bbb5ae4c)
+}
+
+var fileDescriptor_mock_resources_d7c973d5bbb5ae4c = []byte{
+	// 558 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0x41, 0x6f, 0xd3, 0x4c,
+	0x10, 0xad, 0xd3, 0x7c, 0xf9, 0x92, 0xa5, 0x51, 0x85, 0x09, 0x55, 0x14, 0x4a, 0x13, 0x05, 0x09,
+	0xa5, 0x15, 0xac, 0x49, 0xb8, 0xa0, 0x1e, 0x43, 0x15, 0xc1, 0xa1, 0x42, 0x72, 0x38, 0x20, 0x0e,
+	0x44, 0x9b, 0xf5, 0xc4, 0x5d, 0x12, 0xef, 0x04, 0xef, 0xda, 0xa5, 0x27, 0x10, 0x77, 0x4e, 0x5c,
+	0xf8, 0x03, 0x48, 0xfc, 0x14, 0xee, 0xdc, 0x7b, 0x40, 0x9c, 0xb8, 0xf1, 0x0f, 0x90, 0xd7, 0x76,
+	0x4a, 0xa0, 0xa0, 0x80, 0xc4, 0xc9, 0x3b, 0xfb, 0xde, 0x9b, 0x19, 0x3f, 0x8f, 0x87, 0xf4, 0x7d,
+	0xa1, 0x8f, 0xa2, 0x31, 0xe5, 0x18, 0x38, 0x0a, 0x67, 0x78, 0x53, 0x60, 0xfa, 0x9c, 0x0a, 0xed,
+	0x68, 0x50, 0xda, 0x09, 0x90, 0x4f, 0x95, 0xc3, 0xe6, 0xc2, 0x89, 0xbb, 0x26, 0x18, 0x85, 0xa0,
+	0x30, 0x0a, 0x39, 0x28, 0x3a, 0x0f, 0x51, 0xa3, 0xbd, 0x99, 0xf0, 0x84, 0xf4, 0x69, 0x22, 0xa4,
+	0x02, 0x1b, 0xdb, 0x20, 0x63, 0x3c, 0x49, 0x35, 0x3d, 0xc7, 0x13, 0x8a, 0x63, 0x0c, 0xe1, 0x49,
+	0x4a, 0x6f, 0x6c, 0xfb, 0x88, 0xfe, 0x0c, 0x0c, 0xcc, 0xa4, 0x44, 0xcd, 0xb4, 0x40, 0x99, 0x25,
+	0x6b, 0xd4, 0x7c, 0xf4, 0xd1, 0x1c, 0x9d, 0xe4, 0x94, 0xdd, 0x76, 0x7f, 0xd7, 0x66, 0xde, 0x1b,
+	0x68, 0xe6, 0x31, 0xcd, 0x32, 0x89, 0xb3, 0x82, 0x44, 0x69, 0xa6, 0x23, 0xf5, 0x07, 0x35, 0xf2,
+	0x38, 0x95, 0xb4, 0xdf, 0x15, 0xc8, 0xc6, 0x21, 0xf2, 0xa9, 0x9b, 0x39, 0x62, 0xf7, 0x48, 0x29,
+	0xcd, 0x59, 0x2f, 0xb5, 0xac, 0xce, 0x85, 0x5e, 0x8d, 0x72, 0x0c, 0x21, 0x37, 0x86, 0x0e, 0x0d,
+	0xd6, 0x2f, 0x7e, 0x38, 0x6d, 0xae, 0xb9, 0x19, 0xd3, 0xbe, 0x43, 0xca, 0x79, 0xeb, 0xf5, 0xff,
+	0x8d, 0x6a, 0x6b, 0x59, 0x75, 0x98, 0xa1, 0x99, 0x6e, 0xc1, 0xb6, 0xaf, 0x93, 0xa2, 0x51, 0x59,
+	0x2d, 0xab, 0x53, 0xe9, 0x57, 0xbf, 0x9c, 0x36, 0x2b, 0xc6, 0x80, 0xa7, 0x0a, 0xa5, 0x7b, 0x76,
+	0xb4, 0x6f, 0x90, 0x4d, 0x85, 0x01, 0x8c, 0xbc, 0x28, 0x18, 0x8f, 0x26, 0x02, 0x66, 0x5e, 0xdd,
+	0x33, 0x92, 0xe2, 0xcb, 0xaf, 0x45, 0xcb, 0xad, 0x26, 0xe0, 0x41, 0x14, 0x8c, 0x07, 0x09, 0x64,
+	0x5f, 0x25, 0x15, 0x94, 0x80, 0x93, 0x11, 0x4a, 0xa8, 0xaf, 0x27, 0xbc, 0x7b, 0x6b, 0x6e, 0xd9,
+	0x5c, 0x3d, 0x90, 0x70, 0x06, 0xeb, 0x63, 0xac, 0x17, 0x5a, 0x56, 0xa7, 0xbc, 0x80, 0x1f, 0x1e,
+	0x63, 0xff, 0x12, 0xb9, 0x98, 0x8c, 0xc3, 0x28, 0xe5, 0x98, 0x62, 0xaa, 0xfd, 0x84, 0x6c, 0x0c,
+	0xd8, 0x14, 0x16, 0x36, 0xd5, 0xc8, 0x7f, 0x1c, 0x23, 0xa9, 0x4d, 0xe7, 0x55, 0x37, 0x0d, 0xfe,
+	0xde, 0x88, 0xb6, 0x43, 0x2e, 0x27, 0x9f, 0xe1, 0x91, 0xa7, 0xf2, 0x12, 0x77, 0x51, 0x4e, 0x84,
+	0x6f, 0x6f, 0x91, 0x92, 0x87, 0x01, 0x13, 0x32, 0xf5, 0xc8, 0xcd, 0xa2, 0xde, 0xdb, 0x75, 0xd2,
+	0xfc, 0x41, 0x71, 0x90, 0x8f, 0xe9, 0x10, 0xc2, 0x58, 0x70, 0xb0, 0x3d, 0x72, 0x65, 0xa8, 0x43,
+	0x60, 0xc1, 0xf9, 0xa9, 0x77, 0xa8, 0x99, 0x72, 0xca, 0xe6, 0x82, 0xc6, 0x3d, 0xba, 0x90, 0xbb,
+	0xf0, 0x2c, 0x02, 0xa5, 0x1b, 0xcd, 0x5f, 0xe2, 0x6a, 0x8e, 0x52, 0x41, 0x7b, 0xad, 0x63, 0xdd,
+	0xb2, 0xec, 0x17, 0xa4, 0x75, 0x5f, 0xf2, 0x10, 0x02, 0x90, 0x9a, 0xcd, 0xce, 0x2f, 0xb5, 0xbb,
+	0x9c, 0xea, 0x3b, 0xfe, 0x4f, 0x55, 0xf7, 0x56, 0xa1, 0x2e, 0x35, 0xf0, 0xda, 0x22, 0x8d, 0x01,
+	0x68, 0x7e, 0xf4, 0x8f, 0x5e, 0x93, 0xbe, 0xfa, 0xf8, 0xf9, 0x4d, 0xa1, 0xd3, 0xbe, 0xb6, 0xb4,
+	0x0b, 0xf6, 0x93, 0x4d, 0xf2, 0xdc, 0x53, 0xf9, 0x2e, 0xe1, 0xa6, 0xda, 0xbe, 0xb5, 0xd7, 0x77,
+	0xde, 0x7f, 0xda, 0xb1, 0x1e, 0xef, 0xae, 0xb8, 0x97, 0xe2, 0xee, 0xb8, 0x64, 0xfe, 0xc5, 0xdb,
+	0xdf, 0x02, 0x00, 0x00, 0xff, 0xff, 0xf9, 0x4f, 0x8f, 0xd0, 0xcb, 0x04, 0x00, 0x00,
 }

@@ -16,6 +16,9 @@ go_package Comments a
 */
 option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
+import "envoy/api/v2/discovery.proto";
+import "google/api/annotations.proto";
+
 /*
 go_package Comments
 go_package Comments a
@@ -60,4 +63,32 @@ message MockResource {
 message FakeResource {
     uint32 count = 1;
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+}
+
+/*
+@solo-kit:xds-service=MockXdsResourceDiscoveryService
+@solo-kit:resource.no_references
+*/
+message MockXdsResourceConfig {
+    // @solo-kit:resource.name
+    string domain = 1;
+}
+
+/*
+@solo-kit:resource.xds-enabled
+*/
+service MockXdsResourceDiscoveryService {
+    rpc StreamMockXdsResourceConfig(stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+    }
+
+    rpc IncrementalMockXdsResourceConfig(stream envoy.api.v2.IncrementalDiscoveryRequest)
+        returns (stream envoy.api.v2.IncrementalDiscoveryResponse) {
+    }
+
+    rpc FetchMockXdsResourceConfig(envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
+        option (google.api.http) = {
+        post: "/v2/discovery:mockxdsresourceconfig"
+        body: "*"
+        };
+    }
 }
