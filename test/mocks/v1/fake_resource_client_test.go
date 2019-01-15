@@ -46,7 +46,7 @@ var _ = Describe("FakeResourceClient", func() {
 			AfterEach(func() {
 				test.Teardown(namespace)
 			})
-			It("CRUDs FakeResources", func() {
+			It("CRUDs FakeResources "+test.Description(), func() {
 				FakeResourceClientTest(namespace, client, name1, name2, name3)
 			})
 		})
@@ -114,10 +114,17 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 	Expect(err).NotTo(HaveOccurred())
 	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
-	list, err = client.List(namespace, clients.ListOpts{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
-	Expect(list).NotTo(ContainElement(r2))
+
+	Eventually(func() FakeResourceList {
+		list, err = client.List(namespace, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		return list
+	}, time.Second*10).Should(ContainElement(r1))
+	Eventually(func() FakeResourceList {
+		list, err = client.List(namespace, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		return list
+	}, time.Second*10).ShouldNot(ContainElement(r2))
 	w, errs, err := client.Watch(namespace, clients.WatchOpts{
 		RefreshRate: time.Hour,
 	})

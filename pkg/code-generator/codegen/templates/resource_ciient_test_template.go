@@ -60,7 +60,7 @@ var _ = Describe("{{ .Name }}Client", func() {
 				client.Delete(name2, clients.DeleteOpts{})
 				client.Delete(name3, clients.DeleteOpts{})
 			})
-			It("CRUDs {{ .Name }}s", func() {
+			It("CRUDs {{ .Name }}s "+test.Description(), func() {
 				{{ .Name }}ClientTest(client, name1, name2, name3)
 			})
 {{- else }}
@@ -74,7 +74,7 @@ var _ = Describe("{{ .Name }}Client", func() {
 			AfterEach(func() {
 				test.Teardown(namespace)
 			})
-			It("CRUDs {{ .Name }}s", func() {
+			It("CRUDs {{ .Name }}s "+test.Description(), func() {
 				{{ .Name }}ClientTest(namespace, client, name1, name2, name3)
 			})
 {{- end }}
@@ -205,12 +205,16 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- end }}
 		Expect(err).NotTo(HaveOccurred())
 		return list
-	}).Should(ContainElement(r1))
-	Eventually(func() ClusterResourceList {
+	}, time.Second * 10).Should(ContainElement(r1))
+	Eventually(func() {{ .Name }}List {
+{{- if .ClusterScoped }}
 		list, err = client.List(clients.ListOpts{})
+{{- else }}
+		list, err = client.List(namespace, clients.ListOpts{})
+{{- end }}
 		Expect(err).NotTo(HaveOccurred())
 		return list
-	}).ShouldNot(ContainElement(r2))
+	}, time.Second * 10).ShouldNot(ContainElement(r2))
 
 {{- if .ClusterScoped }}
 	w, errs, err := client.Watch(clients.WatchOpts{

@@ -44,10 +44,12 @@ var _ = Describe("V1Emitter", func() {
 	BeforeEach(func() {
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
-		err := setup.SetupKubeForTest(namespace1)
+		var err error
+		cfg, err = kubeutils.GetConfig("", "")
+		Expect(err).NotTo(HaveOccurred())
+		err = setup.SetupKubeForTest(namespace1)
 		Expect(err).NotTo(HaveOccurred())
 		err = setup.SetupKubeForTest(namespace2)
-		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		var kube kubernetes.Interface
 		// MockResource Constructor

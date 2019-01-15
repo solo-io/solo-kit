@@ -46,7 +46,7 @@ var _ = Describe("AnotherMockResourceClient", func() {
 			AfterEach(func() {
 				test.Teardown(namespace)
 			})
-			It("CRUDs AnotherMockResources", func() {
+			It("CRUDs AnotherMockResources "+test.Description(), func() {
 				AnotherMockResourceClientTest(namespace, client, name1, name2, name3)
 			})
 		})
@@ -115,10 +115,17 @@ func AnotherMockResourceClientTest(namespace string, client AnotherMockResourceC
 	Expect(err).NotTo(HaveOccurred())
 	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
-	list, err = client.List(namespace, clients.ListOpts{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
-	Expect(list).NotTo(ContainElement(r2))
+
+	Eventually(func() AnotherMockResourceList {
+		list, err = client.List(namespace, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		return list
+	}, time.Second*10).Should(ContainElement(r1))
+	Eventually(func() AnotherMockResourceList {
+		list, err = client.List(namespace, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		return list
+	}, time.Second*10).ShouldNot(ContainElement(r2))
 	w, errs, err := client.Watch(namespace, clients.WatchOpts{
 		RefreshRate: time.Hour,
 	})
