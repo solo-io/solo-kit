@@ -44,18 +44,20 @@ type TestingEmitter interface {
 	MockResource() MockResourceClient
 	FakeResource() FakeResourceClient
 	AnotherMockResource() AnotherMockResourceClient
+	ClusterResource() ClusterResourceClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient) TestingEmitter {
-	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, anotherMockResourceClient, make(chan struct{}))
+func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient) TestingEmitter {
+	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
 		mockResource:        mockResourceClient,
 		fakeResource:        fakeResourceClient,
 		anotherMockResource: anotherMockResourceClient,
+		clusterResource:     clusterResourceClient,
 		forceEmit:           emit,
 	}
 }
@@ -65,6 +67,7 @@ type testingEmitter struct {
 	mockResource        MockResourceClient
 	fakeResource        FakeResourceClient
 	anotherMockResource AnotherMockResourceClient
+	clusterResource     ClusterResourceClient
 }
 
 func (c *testingEmitter) Register() error {
@@ -75,6 +78,9 @@ func (c *testingEmitter) Register() error {
 		return err
 	}
 	if err := c.anotherMockResource.Register(); err != nil {
+		return err
+	}
+	if err := c.clusterResource.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -90,6 +96,10 @@ func (c *testingEmitter) FakeResource() FakeResourceClient {
 
 func (c *testingEmitter) AnotherMockResource() AnotherMockResourceClient {
 	return c.anotherMockResource
+}
+
+func (c *testingEmitter) ClusterResource() ClusterResourceClient {
+	return c.clusterResource
 }
 
 func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error) {
@@ -114,9 +124,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	anotherMockResourceChan := make(chan anotherMockResourceListWithNamespace)
+	/* Create channel for ClusterResource */
 
 	for _, namespace := range watchNamespaces {
-		/* Setup watch for MockResource */
+		/* Setup namespaced watch for MockResource */
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
@@ -127,7 +138,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
 		}(namespace)
-		/* Setup watch for FakeResource */
+		/* Setup namespaced watch for FakeResource */
 		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting FakeResource watch")
@@ -138,7 +149,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
 		}(namespace)
-		/* Setup watch for AnotherMockResource */
+		/* Setup namespaced watch for AnotherMockResource */
 		anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting AnotherMockResource watch")
@@ -178,6 +189,17 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}
 		}(namespace)
 	}
+	/* Setup cluster-wide watch for ClusterResource */
+
+	clusterResourceChan, clusterResourceErrs, err := c.clusterResource.Watch(opts)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "starting ClusterResource watch")
+	}
+	done.Add(1)
+	go func() {
+		defer done.Done()
+		errutils.AggregateErrs(ctx, errs, clusterResourceErrs, "clusterresources")
+	}()
 
 	snapshots := make(chan *TestingSnapshot)
 	go func() {
@@ -252,6 +274,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				currentSnapshot.Anothermockresources.Clear(namespace)
 				currentSnapshot.Anothermockresources.Add(anotherMockResourceList...)
+			case clusterResourceList := <-clusterResourceChan:
+				record()
+				currentSnapshot.Clusterresources = clusterResourceList
 			}
 		}
 	}()

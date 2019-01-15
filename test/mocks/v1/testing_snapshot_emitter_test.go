@@ -39,6 +39,7 @@ var _ = Describe("V1Emitter", func() {
 		mockResourceClient        MockResourceClient
 		fakeResourceClient        FakeResourceClient
 		anotherMockResourceClient AnotherMockResourceClient
+		clusterResourceClient     ClusterResourceClient
 	)
 
 	BeforeEach(func() {
@@ -77,7 +78,15 @@ var _ = Describe("V1Emitter", func() {
 		}
 		anotherMockResourceClient, err = NewAnotherMockResourceClient(anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient)
+		// ClusterResource Constructor
+		clusterResourceClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         ClusterResourceCrd,
+			Cfg:         cfg,
+			SharedCache: kuberc.NewKubeCache(),
+		}
+		clusterResourceClient, err = NewClusterResourceClient(clusterResourceClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient)
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace1)
@@ -141,14 +150,12 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
-
 		err = mockResourceClient.Delete(mockResource2a.Metadata.Namespace, mockResource2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource2b.Metadata.Namespace, mockResource2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, MockResourceList{mockResource2a, mockResource2b})
-
 		err = mockResourceClient.Delete(mockResource1a.Metadata.Namespace, mockResource1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource1b.Metadata.Namespace, mockResource1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
@@ -201,14 +208,12 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
-
 		err = fakeResourceClient.Delete(fakeResource2a.Metadata.Namespace, fakeResource2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource2b.Metadata.Namespace, fakeResource2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b}, FakeResourceList{fakeResource2a, fakeResource2b})
-
 		err = fakeResourceClient.Delete(fakeResource1a.Metadata.Namespace, fakeResource1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource1b.Metadata.Namespace, fakeResource1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
@@ -261,19 +266,75 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b}, nil)
-
 		err = anotherMockResourceClient.Delete(anotherMockResource2a.Metadata.Namespace, anotherMockResource2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = anotherMockResourceClient.Delete(anotherMockResource2b.Metadata.Namespace, anotherMockResource2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, AnotherMockResourceList{anotherMockResource2a, anotherMockResource2b})
-
 		err = anotherMockResourceClient.Delete(anotherMockResource1a.Metadata.Namespace, anotherMockResource1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = anotherMockResourceClient.Delete(anotherMockResource1b.Metadata.Namespace, anotherMockResource1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotAnothermockresources(nil, AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b})
+
+		/*
+			ClusterResource
+		*/
+
+		assertSnapshotClusterresources := func(expectClusterresources ClusterResourceList, unexpectClusterresources ClusterResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectClusterresources {
+						if _, err := snap.Clusterresources.Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectClusterresources {
+						if _, err := snap.Clusterresources.Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := clusterResourceClient.List(clients.ListOpts{})
+					nsList2, _ := clusterResourceClient.List(clients.ListOpts{})
+					combined := nsList1.ByNamespace()
+					combined.Add(nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+
+		clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		clusterResource1b, err := clusterResourceClient.Write(NewClusterResource(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a, clusterResource1b}, nil)
+
+		clusterResource2a, err := clusterResourceClient.Write(NewClusterResource(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		clusterResource2b, err := clusterResourceClient.Write(NewClusterResource(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a, clusterResource1b, clusterResource2a, clusterResource2b}, nil)
+		err = clusterResourceClient.Delete(clusterResource2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = clusterResourceClient.Delete(clusterResource2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a, clusterResource1b}, ClusterResourceList{clusterResource2a, clusterResource2b})
+		err = clusterResourceClient.Delete(clusterResource1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = clusterResourceClient.Delete(clusterResource1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotClusterresources(nil, ClusterResourceList{clusterResource1a, clusterResource1b, clusterResource2a, clusterResource2b})
 	})
 })

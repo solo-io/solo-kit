@@ -108,16 +108,19 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 {{- range .Resources}}
 	/* Create channel for {{ .Name }} */
+{{- if (not .ClusterScoped) }}
 	type {{ lower_camel .Name }}ListWithNamespace struct {
 		list {{ .ImportPrefix }}{{ .Name }}List
 		namespace string
 	}
 	{{ lower_camel .Name }}Chan := make(chan {{ lower_camel .Name }}ListWithNamespace)
+{{- end }}
 {{- end}}
 
 	for _, namespace := range watchNamespaces {
 {{- range .Resources}}
-		/* Setup watch for {{ .Name }} */
+{{- if (not .ClusterScoped) }}
+		/* Setup namespaced watch for {{ .Name }} */
 		{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting {{ .Name }} watch")
@@ -129,6 +132,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-{{ lower_camel .PluralName }}")
 		}(namespace)
 
+{{- end }}
 {{- end}}
 
 
@@ -139,17 +143,36 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				case <-ctx.Done():
 					return
 {{- range .Resources}}
+{{- if (not .ClusterScoped) }}
 				case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}NamespacesChan:
 					select {
 					case <-ctx.Done():
 						return
 					case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list:{{ lower_camel .Name }}List, namespace:namespace}:
 					}
+{{- end }}
 {{- end}}
 				}
 			}
 		}(namespace)
 	}
+
+{{- range .Resources}}
+{{- if .ClusterScoped }}
+	/* Setup cluster-wide watch for {{ .Name }} */
+
+	{{ lower_camel .Name }}Chan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(opts)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "starting {{ .Name }} watch")
+	}
+	done.Add(1)
+	go func() {
+		defer done.Done()
+		errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, "{{ lower_camel .PluralName }}")
+	}()
+
+{{- end }}
+{{- end}}
 
 	
 	snapshots := make(chan *{{ .GoName }}Snapshot)
@@ -173,11 +196,13 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		// that guarantees that the first snapshot contains all the data.
 		for range watchNamespaces {
 {{- range .Resources}}
+{{- if (not .ClusterScoped) }}
    {{ lower_camel .Name }}NamespacedList := <- {{ lower_camel .Name }}Chan
    currentSnapshot.{{ .PluralName }}.Clear({{ lower_camel .Name }}NamespacedList.namespace)
    {{ lower_camel .Name }}List := {{ lower_camel .Name }}NamespacedList.list
 	currentSnapshot.{{ .PluralName }}.Add({{ lower_camel .Name }}List...)
 
+{{- end }}
 {{- end}}
 		}
 */
@@ -197,6 +222,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
 {{- range .Resources}}
+{{- if .ClusterScoped }}
+			case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}Chan:
+				record()
+				currentSnapshot.{{ .PluralName }} = {{ lower_camel .Name }}List
+{{- else }}
 			case {{ lower_camel .Name }}NamespacedList := <- {{ lower_camel .Name }}Chan:
 				record()
 
@@ -205,6 +235,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 				currentSnapshot.{{ .PluralName }}.Clear(namespace)
 				currentSnapshot.{{ .PluralName }}.Add({{ lower_camel .Name }}List...)
+{{- end }}
 {{- end}}
 			}
 		}
