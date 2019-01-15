@@ -35,7 +35,7 @@ func (m *Resource) Reset()         { *m = Resource{} }
 func (m *Resource) String() string { return proto.CompactTextString(m) }
 func (*Resource) ProtoMessage()    {}
 func (*Resource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_solo_kit_f263349f28f664bf, []int{0}
+	return fileDescriptor_solo_kit_0809b5578cdab298, []int{0}
 }
 func (m *Resource) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Resource.Unmarshal(m, b)
@@ -100,9 +100,9 @@ func init() {
 	proto.RegisterExtension(E_SkipHashing)
 }
 
-func init() { proto.RegisterFile("solo-kit.proto", fileDescriptor_solo_kit_f263349f28f664bf) }
+func init() { proto.RegisterFile("solo-kit.proto", fileDescriptor_solo_kit_0809b5578cdab298) }
 
-var fileDescriptor_solo_kit_f263349f28f664bf = []byte{
+var fileDescriptor_solo_kit_0809b5578cdab298 = []byte{
 	// 282 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x90, 0x41, 0x4b, 0xfb, 0x40,
 	0x10, 0xc5, 0xc9, 0xff, 0x0f, 0x92, 0x6e, 0x6b, 0x0f, 0x39, 0x48, 0x11, 0x4a, 0x83, 0x20, 0xf4,

@@ -11,6 +11,7 @@ Syntax Comments a
 
 - [MockResource](#MockResource)** Top-Level Resource**
 - [FakeResource](#FakeResource)** Top-Level Resource**
+- [MockXdsResourceConfig](#MockXdsResourceConfig)
   
 
 
@@ -65,6 +66,24 @@ Mock resources for goofin off
 | ----- | ---- | ----------- |----------- | 
 | `count` | `int` |  |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../api/v1/metadata.proto.sk.md#Metadata) |  |  |
+
+
+
+
+---
+### <a name="MockXdsResourceConfig">MockXdsResourceConfig</a>
+
+ 
+
+
+```yaml
+"domain": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `domain` | `string` |  |  |
 
 
 

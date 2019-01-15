@@ -52,7 +52,7 @@ func (m *Metadata) Reset()         { *m = Metadata{} }
 func (m *Metadata) String() string { return proto.CompactTextString(m) }
 func (*Metadata) ProtoMessage()    {}
 func (*Metadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_metadata_756d8f47d5feddd4, []int{0}
+	return fileDescriptor_metadata_91abd6aad2c35ae2, []int{0}
 }
 func (m *Metadata) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Metadata.Unmarshal(m, b)
@@ -162,9 +162,9 @@ func (this *Metadata) Equal(that interface{}) bool {
 	return true
 }
 
-func init() { proto.RegisterFile("metadata.proto", fileDescriptor_metadata_756d8f47d5feddd4) }
+func init() { proto.RegisterFile("metadata.proto", fileDescriptor_metadata_91abd6aad2c35ae2) }
 
-var fileDescriptor_metadata_756d8f47d5feddd4 = []byte{
+var fileDescriptor_metadata_91abd6aad2c35ae2 = []byte{
 	// 322 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x91, 0xc1, 0x4a, 0x03, 0x31,
 	0x10, 0x86, 0xd9, 0x6e, 0x5b, 0x6c, 0x2a, 0x5a, 0x43, 0x85, 0x50, 0x44, 0xcb, 0x5e, 0xec, 0xc5,
