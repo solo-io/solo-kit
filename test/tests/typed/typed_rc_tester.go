@@ -1,9 +1,10 @@
 package typed
 
 import (
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"io/ioutil"
 	"os"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"

@@ -54,6 +54,7 @@ func (client *fakeResourceClient) Register() error {
 
 func (client *fakeResourceClient) Read(namespace, name string, opts clients.ReadOpts) (*FakeResource, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *fakeResourceClient) Write(fakeResource *FakeResource, opts clients
 
 func (client *fakeResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *fakeResourceClient) List(namespace string, opts clients.ListOpts) (FakeResourceList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *fakeResourceClient) List(namespace string, opts clients.ListOpts) 
 
 func (client *fakeResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr
