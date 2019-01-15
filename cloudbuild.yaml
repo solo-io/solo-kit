@@ -38,3 +38,5 @@ steps:
       - 'GOPATH=/workspace/gopath'
     id: 'build-codegen'
     waitFor: ['test']
+
+timeout: 900s

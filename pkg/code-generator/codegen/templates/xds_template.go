@@ -23,7 +23,7 @@ import (
 
 // Type Definitions:
 
-const {{ upper_camel .MessageType }}Type = cache.TypePrefix + "/{{ .Package }}.{{ upper_camel .MessageType }}"
+const {{ upper_camel .MessageType }}Type = cache.TypePrefix + "/{{ .ProtoPackage }}.{{ upper_camel .MessageType }}"
 
 /* Defined a resource - to be used by snapshot */
 type {{ upper_camel .MessageType }}XdsResourceWrapper struct {
