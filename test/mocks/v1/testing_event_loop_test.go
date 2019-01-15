@@ -41,7 +41,13 @@ var _ = Describe("TestingEventLoop", func() {
 		anotherMockResourceClient, err := NewAnotherMockResourceClient(anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient)
+		clusterResourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		clusterResourceClient, err := NewClusterResourceClient(clusterResourceClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient)
 	})
 	It("runs sync function on a new snapshot", func() {
 		_, err = emitter.MockResource().Write(NewMockResource(namespace, "jerry"), clients.WriteOpts{})
@@ -49,6 +55,8 @@ var _ = Describe("TestingEventLoop", func() {
 		_, err = emitter.FakeResource().Write(NewFakeResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.AnotherMockResource().Write(NewAnotherMockResource(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = emitter.ClusterResource().Write(NewClusterResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockTestingSyncer{}
 		el := NewTestingEventLoop(emitter, sync)

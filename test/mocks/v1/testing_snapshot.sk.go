@@ -11,6 +11,7 @@ type TestingSnapshot struct {
 	Mocks                MocksByNamespace
 	Fakes                FakesByNamespace
 	Anothermockresources AnothermockresourcesByNamespace
+	Clusterresources     ClusterResourceList
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
@@ -18,6 +19,7 @@ func (s TestingSnapshot) Clone() TestingSnapshot {
 		Mocks:                s.Mocks.Clone(),
 		Fakes:                s.Fakes.Clone(),
 		Anothermockresources: s.Anothermockresources.Clone(),
+		Clusterresources:     s.Clusterresources.Clone(),
 	}
 }
 
@@ -26,6 +28,7 @@ func (s TestingSnapshot) Hash() uint64 {
 		s.hashMocks(),
 		s.hashFakes(),
 		s.hashAnothermockresources(),
+		s.hashClusterresources(),
 	)
 }
 
@@ -41,11 +44,16 @@ func (s TestingSnapshot) hashAnothermockresources() uint64 {
 	return hashutils.HashAll(s.Anothermockresources.List().AsInterfaces()...)
 }
 
+func (s TestingSnapshot) hashClusterresources() uint64 {
+	return hashutils.HashAll(s.Clusterresources.AsInterfaces()...)
+}
+
 func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	fields = append(fields, zap.Uint64("mocks", s.hashMocks()))
 	fields = append(fields, zap.Uint64("fakes", s.hashFakes()))
 	fields = append(fields, zap.Uint64("anothermockresources", s.hashAnothermockresources()))
+	fields = append(fields, zap.Uint64("clusterresources", s.hashClusterresources()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
 }

@@ -109,7 +109,6 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
-
 	Eventually(func() resources.ResourceList {
 		list, err = client.List(namespace, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())

@@ -110,12 +110,12 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
 				return err
 			}
-			if err := exec.Command("gofmt", "-w", path).Run(); err != nil {
-				return err
+			if out, err := exec.Command("gofmt", "-w", path).CombinedOutput(); err != nil {
+				return errors.Wrapf(err, "gofmt failed: %s", out)
 			}
 
-			if err := exec.Command("goimports", "-w", path).Run(); err != nil {
-				return err
+			if out, err := exec.Command("goimports", "-w", path).CombinedOutput(); err != nil {
+				return errors.Wrapf(err, "goimports failed: %s", out)
 			}
 		}
 	}
