@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/test/tests/typed"
 )
 
-var _ = FDescribe("ClusterResourceClient", func() {
+var _ = Describe("ClusterResourceClient", func() {
 	for _, test := range []typed.ResourceClientTester{
 		&typed.KubeRcTester{Crd: ClusterResourceCrd},
 	} {
@@ -78,9 +78,6 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 	read, err := client.Read(name, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(read).To(Equal(r1))
-	_, err = client.Read(name, clients.ReadOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsNotExist(err)).To(BeTrue())
 
 	name = name2
 	input = &ClusterResource{}

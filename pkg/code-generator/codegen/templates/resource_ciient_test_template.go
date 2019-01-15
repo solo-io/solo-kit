@@ -141,13 +141,11 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 	Expect(read).To(Equal(r1))
 
 
-{{- if .ClusterScoped }}
-	_, err = client.Read(name, clients.ReadOpts{})
-{{- else }}
+{{- if (not .ClusterScoped) }}
 	_, err = client.Read("doesntexist", name, clients.ReadOpts{})
-{{- end }}
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsNotExist(err)).To(BeTrue())
+{{- end }}
 
 	name = name2
 	input = &{{ .Name }}{}
