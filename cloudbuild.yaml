@@ -19,7 +19,7 @@ steps:
       - 'RUN_KUBE_TESTS=1'
       - 'CLOUD_BUILD=1'
       - 'GOPATH=/workspace/gopath'
-    args: ['-r']
+    args: ['-r', '-v', '-tags', 'solokit']
     id: 'test'
     waitFor: ['dep']
 
