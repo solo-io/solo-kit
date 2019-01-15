@@ -9,6 +9,7 @@ API Version: `testing.solo.io.v1`
 
 ### API Resources:
 - [AnotherMockResource](./github.com/solo-io/solo-kit/test/mocks/api/v1/more_mock_resources.proto.sk.md#AnotherMockResource)
+- [ClusterResource](./github.com/solo-io/solo-kit/test/mocks/api/v1/more_mock_resources.proto.sk.md#ClusterResource)
 - [FakeResource](./github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto.sk.md#FakeResource)
 - [MockResource](./github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto.sk.md#MockResource)
 

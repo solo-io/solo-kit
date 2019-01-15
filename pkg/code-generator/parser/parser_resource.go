@@ -161,7 +161,10 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 	comments := strings.Split(msg.GetComments().Leading, "\n")
 
 	name := msg.GetName()
-	var shortName, pluralName string
+	var (
+		shortName, pluralName string
+		clusterScoped         bool
+	)
 	resourceOpts, err := proto.GetExtension(msg.Options, core.E_Resource)
 	if err != nil {
 		log.Warnf("failed to get solo-kit message options for resource %v: %v", msg.GetName(), err)
@@ -184,6 +187,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 		}
 		shortName = res.ShortName
 		pluralName = res.PluralName
+		clusterScoped = res.ClusterScoped
 	}
 
 	// always make it upper camel
@@ -195,15 +199,16 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 	oneofs := collectOneofs(msg)
 
 	return &model.Resource{
-		Name:         name,
-		ProtoPackage: msg.GetPackage(),
-		GoPackage:    messageWrapper.GoPackage,
-		ShortName:    shortName,
-		PluralName:   pluralName,
-		HasStatus:    hasStatus,
-		Fields:       fields,
-		Oneofs:       oneofs,
-		Filename:     msg.GetFile().GetName(),
-		Original:     msg,
+		Name:          name,
+		ProtoPackage:  msg.GetPackage(),
+		GoPackage:     messageWrapper.GoPackage,
+		ShortName:     shortName,
+		PluralName:    pluralName,
+		HasStatus:     hasStatus,
+		Fields:        fields,
+		Oneofs:        oneofs,
+		ClusterScoped: clusterScoped,
+		Filename:      msg.GetFile().GetName(),
+		Original:      msg,
 	}, nil
 }

@@ -16,6 +16,8 @@ message Resource {
     string short_name = 1;
     // becomes the kubernetes plural name for the generated crd
     string plural_name = 2;
+    // the resource lives at the cluster level, namespace is ignored by the server
+    bool cluster_scoped = 3;
 }
 
 extend google.protobuf.FieldOptions {

@@ -155,4 +155,5 @@ var FakeResourceCrd = crd.NewCrd("testing.solo.io",
 	"v1",
 	"FakeResource",
 	"fk",
+	false,
 	&FakeResource{})

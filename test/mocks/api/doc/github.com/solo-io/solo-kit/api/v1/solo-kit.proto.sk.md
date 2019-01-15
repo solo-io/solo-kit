@@ -23,6 +23,7 @@
 ```yaml
 "short_name": string
 "plural_name": string
+"cluster_scoped": bool
 
 ```
 
@@ -30,6 +31,7 @@
 | ----- | ---- | ----------- |----------- | 
 | `short_name` | `string` | becomes the kubernetes short name for the generated crd |  |
 | `plural_name` | `string` | becomes the kubernetes plural name for the generated crd |  |
+| `cluster_scoped` | `bool` | the resource lives at the cluster level, namespace is ignored by the server |  |
 
 
 

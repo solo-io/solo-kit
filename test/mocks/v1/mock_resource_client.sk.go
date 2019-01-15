@@ -54,6 +54,7 @@ func (client *mockResourceClient) Register() error {
 
 func (client *mockResourceClient) Read(namespace, name string, opts clients.ReadOpts) (*MockResource, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *mockResourceClient) Write(mockResource *MockResource, opts clients
 
 func (client *mockResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *mockResourceClient) List(namespace string, opts clients.ListOpts) (MockResourceList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *mockResourceClient) List(namespace string, opts clients.ListOpts) 
 
 func (client *mockResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan MockResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr
