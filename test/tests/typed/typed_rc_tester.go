@@ -1,6 +1,7 @@
 package typed
 
 import (
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"io/ioutil"
 	"os"
 
@@ -54,13 +55,16 @@ func (rct *KubeRcTester) Skip() bool {
 }
 
 func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
-	err := setup.SetupKubeForTest(namespace)
-	Expect(err).NotTo(HaveOccurred())
-	cfg, err = kubeutils.GetConfig("", "")
+	if namespace != "" {
+		err := setup.SetupKubeForTest(namespace)
+		Expect(err).NotTo(HaveOccurred())
+	}
+	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.KubeResourceClientFactory{
-		Crd: rct.Crd,
-		Cfg: cfg,
+		Crd:         rct.Crd,
+		Cfg:         cfg,
+		SharedCache: kube.NewKubeCache(),
 	}
 }
 
@@ -188,7 +192,7 @@ func (rct *KubeConfigMapRcTester) Skip() bool {
 func (rct *KubeConfigMapRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	err := setup.SetupKubeForTest(namespace)
 	Expect(err).NotTo(HaveOccurred())
-	cfg, err = kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	kube, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
@@ -219,7 +223,7 @@ func (rct *KubeSecretRcTester) Skip() bool {
 func (rct *KubeSecretRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	err := setup.SetupKubeForTest(namespace)
 	Expect(err).NotTo(HaveOccurred())
-	cfg, err = kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	kube, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
