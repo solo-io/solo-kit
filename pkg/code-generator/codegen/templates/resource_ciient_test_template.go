@@ -197,15 +197,20 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- end }}
 	Expect(err).NotTo(HaveOccurred())
 
+	Eventually(func() {{ .Name }}List {
 {{- if .ClusterScoped }}
-	list, err = client.List(clients.ListOpts{})
+		list, err = client.List(clients.ListOpts{})
 {{- else }}
-	list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(namespace, clients.ListOpts{})
 {{- end }}
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
-	Expect(list).NotTo(ContainElement(r2))
-
+		Expect(err).NotTo(HaveOccurred())
+		return list
+	}).Should(ContainElement(r1))
+	Eventually(func() ClusterResourceList {
+		list, err = client.List(clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		return list
+	}).ShouldNot(ContainElement(r2))
 
 {{- if .ClusterScoped }}
 	w, errs, err := client.Watch(clients.WatchOpts{

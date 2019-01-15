@@ -25,7 +25,7 @@ var _ = Describe("ClusterResourceClient", func() {
 			var (
 				client              ClusterResourceClient
 				err                 error
-				name1, name2, name3 = "foo" + helpers.RandString(3), "boo" + helpers.RandString(3), "goo" + helpers.RandString(3)
+				name1, name2, name3 = "foo"+helpers.RandString(3), "boo"+helpers.RandString(3), "goo"+helpers.RandString(3)
 			)
 
 			BeforeEach(func() {
@@ -101,10 +101,16 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 	Expect(err).NotTo(HaveOccurred())
 	err = client.Delete(r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
-	list, err = client.List(clients.ListOpts{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
-	Expect(list).NotTo(ContainElement(r2))
+	Eventually(func() ClusterResourceList {
+		list, err = client.List(clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		return list
+	}).Should(ContainElement(r1))
+	Eventually(func() ClusterResourceList {
+		list, err = client.List(clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		return list
+	}).ShouldNot(ContainElement(r2))
 	w, errs, err := client.Watch(clients.WatchOpts{
 		RefreshRate: time.Hour,
 	})
