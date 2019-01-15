@@ -52,6 +52,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 	var (
 		namespace1          string
 		namespace2          string
+		name1, name2        = "angela"+helpers.RandString(3), "bob"+helpers.RandString(3)
 		cfg                *rest.Config
 		emitter            {{ .GoName }}Emitter
 {{- range .Resources }}
@@ -106,6 +107,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 	AfterEach(func() {
 		setup.TeardownKube(namespace1)
 		setup.TeardownKube(namespace2)
+{{- range .Resources }}
+{{- if .ClusterScoped }}
+		{{ lower_camel .Name }}Client.Delete(name1, clients.DeleteOpts{Ctx: ctx})
+		{{ lower_camel .Name }}Client.Delete(name2, clients.DeleteOpts{Ctx: ctx})
+{{- end }}
+{{- end }}
 	})
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
@@ -166,17 +173,16 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			}
 		}	
 
-
-		{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }, nil)
 
-		{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		{{ lower_camel .Name }}2b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		{{ lower_camel .Name }}2b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b,  {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b  }, nil)
