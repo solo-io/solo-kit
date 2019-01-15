@@ -145,7 +145,6 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
 	if err := rc.validateNamespace(namespace); err != nil {
 		return nil, err
@@ -179,7 +178,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 
 	if err := rc.validateNamespace(meta.Namespace); err != nil {
 		return nil, err
@@ -225,7 +223,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	if err := rc.validateNamespace(namespace); err != nil {
 		return err
 	}
@@ -255,8 +252,6 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 }
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
-
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	if err := rc.validateNamespace(namespace); err != nil {
 		return nil, err
 	}
@@ -301,7 +296,6 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	if err := rc.validateNamespace(namespace); err != nil {
 		return nil, nil, err
 	}
