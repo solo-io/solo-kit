@@ -183,5 +183,6 @@ var {{ .Name }}Crd = crd.NewCrd("{{ .Project.ProtoPackage }}",
 	"{{ .Project.ProjectConfig.Version }}",
 	"{{ .Name }}",
 	"{{ .ShortName }}",
+	{{ .ClusterScoped }},
 	&{{ .Name }}{})
 `))

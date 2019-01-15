@@ -57,9 +57,11 @@ type Resource struct {
 	// format "github.com/solo-io/solo-kit/foo/bar"
 	GoPackage string
 
-	HasStatus bool
-	Fields    []*Field
-	Oneofs    []*Oneof
+	HasStatus     bool
+	ClusterScoped bool // the resource lives at the cluster level, namespace is ignored
+
+	Fields []*Field
+	Oneofs []*Oneof
 
 	// resource groups i belong to
 	ResourceGroups []*ResourceGroup

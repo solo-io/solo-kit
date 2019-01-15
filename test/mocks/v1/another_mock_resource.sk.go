@@ -167,4 +167,5 @@ var AnotherMockResourceCrd = crd.NewCrd("testing.solo.io",
 	"v1",
 	"AnotherMockResource",
 	"amr",
+	false,
 	&AnotherMockResource{})

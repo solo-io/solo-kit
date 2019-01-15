@@ -168,4 +168,5 @@ var MockResourceCrd = crd.NewCrd("testing.solo.io",
 	"v1",
 	"MockResource",
 	"mk",
+	false,
 	&MockResource{})
