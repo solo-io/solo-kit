@@ -13,14 +13,28 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+{{- if .ClusterScoped }}
+{{- else }}
+{{- end }}
+
 type {{ .Name }}Client interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+{{- if .ClusterScoped }}
+	Read(name string, opts clients.ReadOpts) (*{{ .Name }}, error)
+{{- else }}
 	Read(namespace, name string, opts clients.ReadOpts) (*{{ .Name }}, error)
+{{- end }}
 	Write(resource *{{ .Name }}, opts clients.WriteOpts) (*{{ .Name }}, error)
+{{- if .ClusterScoped }}
+	Delete(name string, opts clients.DeleteOpts) error
+	List(opts clients.ListOpts) ({{ .Name }}List, error)
+	Watch(opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
+{{- else }}
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) ({{ .Name }}List, error)
 	Watch(namespace string, opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
+{{- end }}
 }
 
 type {{ lower_camel .Name }}Client struct {
@@ -56,9 +70,17 @@ func (client *{{ lower_camel .Name }}Client) Register() error {
 	return client.rc.Register()
 }
 
+{{- if .ClusterScoped }}
+func (client *{{ lower_camel .Name }}Client) Read(name string, opts clients.ReadOpts) (*{{ .Name }}, error) {
+{{- else }}
 func (client *{{ lower_camel .Name }}Client) Read(namespace, name string, opts clients.ReadOpts) (*{{ .Name }}, error) {
+{{- end }}
 	opts = opts.WithDefaults()
+{{- if .ClusterScoped }}
+	resource, err := client.rc.Read("", name, opts)
+{{- else }}
 	resource, err := client.rc.Read(namespace, name, opts)
+{{- end }}
 	if err != nil {
 		return nil, err
 	}
@@ -74,23 +96,47 @@ func (client *{{ lower_camel .Name }}Client) Write({{ lower_camel .Name }} *{{ .
 	return resource.(*{{ .Name }}), nil
 }
 
+{{- if .ClusterScoped }}
+func (client *{{ lower_camel .Name }}Client) Delete(name string, opts clients.DeleteOpts) error {
+{{- else }}
 func (client *{{ lower_camel .Name }}Client) Delete(namespace, name string, opts clients.DeleteOpts) error {
+{{- end }}
 	opts = opts.WithDefaults()
+{{- if .ClusterScoped }}
+	return client.rc.Delete("", name, opts)
+{{- else }}
 	return client.rc.Delete(namespace, name, opts)
+{{- end }}
 }
 
+{{- if .ClusterScoped }}
+func (client *{{ lower_camel .Name }}Client) List(opts clients.ListOpts) ({{ .Name }}List, error) {
+{{- else }}
 func (client *{{ lower_camel .Name }}Client) List(namespace string, opts clients.ListOpts) ({{ .Name }}List, error) {
+{{- end }}
 	opts = opts.WithDefaults()
+{{- if .ClusterScoped }}
+	resourceList, err := client.rc.List("", opts)
+{{- else }}
 	resourceList, err := client.rc.List(namespace, opts)
+{{- end }}
 	if err != nil {
 		return nil, err
 	}
 	return convertTo{{ .Name }}(resourceList), nil
 }
 
+{{- if .ClusterScoped }}
+func (client *{{ lower_camel .Name }}Client) Watch(opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error) {
+{{- else }}
 func (client *{{ lower_camel .Name }}Client) Watch(namespace string, opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error) {
+{{- end }}
 	opts = opts.WithDefaults()
+{{- if .ClusterScoped }}
+	resourcesChan, errs, initErr := client.rc.Watch("", opts)
+{{- else }}
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
+{{- end }}
 	if initErr != nil {
 		return nil, nil, initErr
 	}

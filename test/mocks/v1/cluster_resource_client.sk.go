@@ -12,11 +12,11 @@ import (
 type ClusterResourceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
-	Read(namespace, name string, opts clients.ReadOpts) (*ClusterResource, error)
+	Read(name string, opts clients.ReadOpts) (*ClusterResource, error)
 	Write(resource *ClusterResource, opts clients.WriteOpts) (*ClusterResource, error)
-	Delete(namespace, name string, opts clients.DeleteOpts) error
-	List(namespace string, opts clients.ListOpts) (ClusterResourceList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error)
+	Delete(name string, opts clients.DeleteOpts) error
+	List(opts clients.ListOpts) (ClusterResourceList, error)
+	Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error)
 }
 
 type clusterResourceClient struct {
@@ -51,10 +51,9 @@ func (client *clusterResourceClient) BaseClient() clients.ResourceClient {
 func (client *clusterResourceClient) Register() error {
 	return client.rc.Register()
 }
-
-func (client *clusterResourceClient) Read(namespace, name string, opts clients.ReadOpts) (*ClusterResource, error) {
+func (client *clusterResourceClient) Read(name string, opts clients.ReadOpts) (*ClusterResource, error) {
 	opts = opts.WithDefaults()
-	resource, err := client.rc.Read(namespace, name, opts)
+	resource, err := client.rc.Read("", name, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -69,24 +68,21 @@ func (client *clusterResourceClient) Write(clusterResource *ClusterResource, opt
 	}
 	return resource.(*ClusterResource), nil
 }
-
-func (client *clusterResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+func (client *clusterResourceClient) Delete(name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	return client.rc.Delete(namespace, name, opts)
+	return client.rc.Delete("", name, opts)
 }
-
-func (client *clusterResourceClient) List(namespace string, opts clients.ListOpts) (ClusterResourceList, error) {
+func (client *clusterResourceClient) List(opts clients.ListOpts) (ClusterResourceList, error) {
 	opts = opts.WithDefaults()
-	resourceList, err := client.rc.List(namespace, opts)
+	resourceList, err := client.rc.List("", opts)
 	if err != nil {
 		return nil, err
 	}
 	return convertToClusterResource(resourceList), nil
 }
-
-func (client *clusterResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error) {
+func (client *clusterResourceClient) Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
+	resourcesChan, errs, initErr := client.rc.Watch("", opts)
 	if initErr != nil {
 		return nil, nil, initErr
 	}
