@@ -37,7 +37,8 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:6b1e80a6e1e8571d911e7561229f0a570f8aaba2ebcb27b3a2ac6fef3370901f"
+  branch = "master"
+  digest = "1:6bc49cb8d6425571ca3d1eb5197d8f894b0e5ec4d85ebceb096cac9fd9c1518a"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -52,7 +53,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "676016db8193d83324a507a986a78cd3642ad713"
+  revision = "a09b615551f6665e7f8321bbb899670b384224c0"
 
 [[projects]]
   digest = "1:f1f2bd73c025d24c3b93abf6364bccb802cf2fdedaa44360804c67800e8fab8d"
@@ -785,9 +786,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:601e63e7d4577f907118bec825902505291918859d223bce015539e79f1160e3"
+  digest = "1:eff11a4ed88d9d3e28dd697961c550af1c4d0d3dccdc6252715b9a65a1d541bb"
   name = "google.golang.org/genproto"
-  packages = ["googleapis/rpc/status"]
+  packages = [
+    "googleapis/api/annotations",
+    "googleapis/rpc/status",
+  ]
   pruneopts = "UT"
   revision = "02b4e95473316948020af0b7a4f0f22c73929b0e"
 
@@ -1137,6 +1141,7 @@
     "go.uber.org/zap",
     "golang.org/x/net/context",
     "golang.org/x/sync/errgroup",
+    "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/metadata",
