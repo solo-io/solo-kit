@@ -67,7 +67,7 @@ type SharedCache interface {
 	// managed by clients that have registered with the factory.
 	// Clients must specify a size for the buffer of the channel they will
 	// receive notifications on.
-	AddWatch(bufferSize uint) <-chan v1.Resource
+	AddWatch(matchesClientKind MatchResourceTypeFunc, bufferSize uint) <-chan v1.Resource
 	// Removed the given channel from the watches added to the cache
 	RemoveWatch(c <-chan v1.Resource)
 }
@@ -78,6 +78,13 @@ func NewKubeCache() SharedCache {
 		registry:      newInformerRegistry(),
 		watchTimeout:  time.Second,
 	}
+}
+
+type MatchResourceTypeFunc func(resource v1.Resource) bool
+
+type resourceWatchChan struct {
+	resources         chan v1.Resource
+	matchesClientKind MatchResourceTypeFunc
 }
 
 // The ResourceClientSharedInformerFactory creates a SharedIndexInformer for each of the clients that register with it
@@ -98,7 +105,7 @@ type ResourceClientSharedInformerFactory struct {
 	factoryStarter sync.Once
 
 	// Listeners that need to be notified when a res
-	cacheUpdatedWatchers []chan v1.Resource
+	cacheUpdatedWatchers []resourceWatchChan
 
 	// Determines how long the controller will wait for a watch channel to accept an event before aborting the delivery
 	watchTimeout time.Duration
@@ -245,11 +252,14 @@ func (f *ResourceClientSharedInformerFactory) GetLister(namespace string, obj ru
 }
 
 // Adds a watch with the given buffer size to the factory.
-func (f *ResourceClientSharedInformerFactory) AddWatch(bufferSize uint) <-chan v1.Resource {
+func (f *ResourceClientSharedInformerFactory) AddWatch(matchesClientKind MatchResourceTypeFunc, bufferSize uint) <-chan v1.Resource {
 	f.cacheUpdatedWatchersMutex.Lock()
 	defer f.cacheUpdatedWatchersMutex.Unlock()
 	c := make(chan v1.Resource, bufferSize)
-	f.cacheUpdatedWatchers = append(f.cacheUpdatedWatchers, c)
+	f.cacheUpdatedWatchers = append(f.cacheUpdatedWatchers, resourceWatchChan{
+		resources:         c,
+		matchesClientKind: matchesClientKind,
+	})
 	return c
 }
 
@@ -259,7 +269,7 @@ func (f *ResourceClientSharedInformerFactory) RemoveWatch(c <-chan v1.Resource) 
 	f.cacheUpdatedWatchersMutex.Lock()
 	defer f.cacheUpdatedWatchersMutex.Unlock()
 	for i, cacheUpdated := range f.cacheUpdatedWatchers {
-		if cacheUpdated == c {
+		if cacheUpdated.resources == c {
 			f.cacheUpdatedWatchers = append(f.cacheUpdatedWatchers[:i], f.cacheUpdatedWatchers[i+1:]...)
 			return
 		}
@@ -285,9 +295,12 @@ func (f *ResourceClientSharedInformerFactory) updatedOccurred(resource v1.Resour
 	defer f.cacheUpdatedWatchersMutex.Unlock()
 	for _, watcher := range f.cacheUpdatedWatchers {
 		// Attempt delivery asynchronously
-		go func(watchChan chan v1.Resource, res v1.Resource) {
+		go func(watchChan resourceWatchChan, res v1.Resource) {
+			if !watchChan.matchesClientKind(res) {
+				return
+			}
 			select {
-			case watchChan <- resource:
+			case watchChan.resources <- resource:
 			case <-time.After(f.watchTimeout):
 				contextutils.LoggerFrom(context.TODO()).Errorf("timed out after waiting for %v"+
 					"for watch to receive event on resource %v", f.watchTimeout, resource)

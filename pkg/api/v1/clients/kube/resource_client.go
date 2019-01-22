@@ -319,7 +319,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		resourcesChan <- list
 	}
 	// watch should open up with an initial read
-	cacheUpdated := rc.sharedCache.AddWatch(10)
+	cacheUpdated := rc.sharedCache.AddWatch(rc.matchesClientKind, 10)
 
 	go func(watchedNamespace string) {
 		defer rc.sharedCache.RemoveWatch(cacheUpdated)
