@@ -4,9 +4,7 @@ import (
 	"text/template"
 )
 
-var ProjectTestSuiteTemplate = template.Must(template.New("project_template").Funcs(Funcs).Parse(`// +build solokit
-
-package {{ .ProjectConfig.Version }}
+var ProjectTestSuiteTemplate = template.Must(template.New("project_template").Funcs(Funcs).Parse(`package {{ .ProjectConfig.Version }}
 
 import (
 	"testing"
