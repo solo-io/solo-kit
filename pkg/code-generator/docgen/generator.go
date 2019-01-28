@@ -27,6 +27,7 @@ func generateFilesForProtoFiles(project *model.Project, protoFiles []*protokit.F
 		".sk.md": templates.ProtoFileTemplate(project),
 	} {
 		for _, protoFile := range protoFiles {
+			// Skip if file is to be ignored
 			var ignore bool
 			for _, ignoredFile := range ignoredFiles {
 				if protoFile.GetName() == ignoredFile {

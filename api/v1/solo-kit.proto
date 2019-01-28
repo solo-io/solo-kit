@@ -18,6 +18,8 @@ message Resource {
     string plural_name = 2;
     // the resource lives at the cluster level, namespace is ignored by the server
     bool cluster_scoped = 3;
+    // indicates whether documentation generation has to be skipped for the given resource, defaults to false
+    bool skip_docs_gen = 4;
 }
 
 extend google.protobuf.FieldOptions {
