@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 
 	"k8s.io/client-go/tools/cache"
 )

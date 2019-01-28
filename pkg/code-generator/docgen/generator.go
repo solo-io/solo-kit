@@ -6,7 +6,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protokit"
-	"github.com/solo-io/solo-kit/pkg/code-generator"
+	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/templates"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
