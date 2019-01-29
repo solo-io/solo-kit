@@ -55,7 +55,7 @@ var _ = Describe("DocsGen", func() {
 		Expect(os.RemoveAll(tempDir)).NotTo(HaveOccurred())
 	})
 
-	It("docs for a messages are generated based on the value of the skip_docs_gen option", func() {
+	It("docs for a message are generated based on the value of the skip_docs_gen option", func() {
 
 		// Collect all the generated docs
 		foundExpectedDoc := false

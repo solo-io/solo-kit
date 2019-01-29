@@ -7,6 +7,15 @@ steps:
     env: ['PROJECT_ROOT=github.com/solo-io/solo-kit']
     id: 'dep'
 
+  # Installs go executables required by codegen tests
+  - name: 'gcr.io/$PROJECT_ID/go-make'
+    args: ['install-codegen-deps']
+    waitFor: ['dep']
+    dir: './gopath/src/github.com/solo-io/solo-kit'
+    id: 'install-codegen-deps'
+    env:
+      - 'GOPATH=/workspace/gopath'
+
   # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
   # sets up redis, consul, kubectl, go with required environment variables
   # need to use the provided entrypoint
@@ -21,7 +30,7 @@ steps:
       - 'GOPATH=/workspace/gopath'
     args: ['-r', '-v', '-tags', 'solokit']
     id: 'test'
-    waitFor: ['dep']
+    waitFor: ['install-codegen-deps']
 
   - name: 'gcr.io/cloud-builders/go'
     args: ['build', '-o', 'solo-kit-gen', 'github.com/solo-io/solo-kit/cmd/cli']
