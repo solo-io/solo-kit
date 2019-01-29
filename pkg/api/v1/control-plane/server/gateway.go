@@ -22,7 +22,7 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
 )
 

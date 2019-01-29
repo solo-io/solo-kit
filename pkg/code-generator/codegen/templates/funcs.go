@@ -10,7 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/iancoleman/strcase"
-	"github.com/ilackarms/protoc-gen-doc"
+	gendoc "github.com/ilackarms/protoc-gen-doc"
 	"github.com/ilackarms/protokit"
 )
 

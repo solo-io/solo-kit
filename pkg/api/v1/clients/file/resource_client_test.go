@@ -10,7 +10,7 @@ import (
 	"os"
 
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/file"
-	"github.com/solo-io/solo-kit/test/mocks/v1"
+	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 )
 

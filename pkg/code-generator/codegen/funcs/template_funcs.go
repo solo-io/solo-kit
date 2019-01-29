@@ -12,9 +12,11 @@ import (
 	"text/template"
 	"unicode"
 
+	"github.com/solo-io/solo-kit/pkg/utils/log"
+
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/iancoleman/strcase"
-	"github.com/ilackarms/protoc-gen-doc"
+	gendoc "github.com/ilackarms/protoc-gen-doc"
 	"github.com/ilackarms/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -56,7 +58,7 @@ func TemplateFuncs(project *model.Project) template.FuncMap {
 		"noescape":           noEscape,
 		"linkForField":       linkForField(project),
 		"linkForResource":    linkForResource(project),
-		"forEachMessage":     funcs.forEachMessage,
+		"forEachMessage":     funcs.forEachMessage(getMessageSkippingInfo(project)),
 		"resourceForMessage": resourceForMessage(project),
 		"getFileForMessage": func(msg *protokit.Descriptor) *protokit.FileDescriptor {
 			return msg.GetFile()
@@ -435,48 +437,72 @@ func searchMessageForNestedType(msg *descriptor.DescriptorProto, typeNameParts [
 	return nil, nil, errors.Errorf("msg %v does not match type name %v", msg.GetName(), typeNameParts)
 }
 
-func (c *templateFunctions) forEachMessage(inFile *protokit.FileDescriptor, messages []*protokit.Descriptor, messageTemplate, enumTemplate string) (string, error) {
-	msgTmpl, err := template.New("msgtmpl").Funcs(c.Funcs).Parse(messageTemplate)
-	if err != nil {
-		return "", err
-	}
-	enumTmpl, err := template.New("enumtpml").Funcs(c.Funcs).Parse(enumTemplate)
-	if err != nil {
-		return "", err
-	}
-	str := ""
-	for _, msg := range messages {
-		// todo: add parameter to disable this
-		// ilackarms: the purpose of this block is to skip
-		// messages in the descriptor that are used by proto to represent map types
-		if strings.HasSuffix(msg.GetName(), "Entry") &&
-			len(msg.GetField()) == 2 &&
-			msg.GetField()[0].GetName() == "key" &&
-			msg.GetField()[1].GetName() == "value" {
-			continue
-		}
-		renderedMsgString := &bytes.Buffer{}
-		if err := msgTmpl.Execute(renderedMsgString, msg); err != nil {
+func (c *templateFunctions) forEachMessage(messagesToSkip map[string]bool) func(inFile *protokit.FileDescriptor, messages []*protokit.Descriptor, messageTemplate, enumTemplate string) (string, error) {
+	return func(inFile *protokit.FileDescriptor, messages []*protokit.Descriptor, messageTemplate, enumTemplate string) (string, error) {
+		msgTmpl, err := template.New("msgtmpl").Funcs(c.Funcs).Parse(messageTemplate)
+
+		if err != nil {
 			return "", err
 		}
-		str += renderedMsgString.String() + "\n"
-		if len(msg.GetMessages()) > 0 {
-			nested, err := c.forEachMessage(inFile, msg.GetMessages(), messageTemplate, enumTemplate)
-			if err != nil {
+		enumTmpl, err := template.New("enumtpml").Funcs(c.Funcs).Parse(enumTemplate)
+		if err != nil {
+			return "", err
+		}
+		str := ""
+		for _, msg := range messages {
+			// todo: add parameter to disable this
+			// ilackarms: the purpose of this block is to skip
+			// messages in the descriptor that are used by proto to represent map types
+			if strings.HasSuffix(msg.GetName(), "Entry") &&
+				len(msg.GetField()) == 2 &&
+				msg.GetField()[0].GetName() == "key" &&
+				msg.GetField()[1].GetName() == "value" {
+				continue
+			}
+
+			// Skip doc generation if SkipDocsGen == true for the resource associated with this message.
+			// If the map does not have an entry for this proto, default to generating the doc for the message.
+			lookupKey := strings.Join([]string{msg.GetPackage(), msg.GetName()}, ".")
+			if messagesToSkip[lookupKey] {
+				log.Printf("SkipDocsGen is true for message: %v . Skipping doc generation.", msg.GetName())
+				continue
+			}
+
+			renderedMsgString := &bytes.Buffer{}
+			if err := msgTmpl.Execute(renderedMsgString, msg); err != nil {
 				return "", err
 			}
-			str += nested
-		}
-		// TODO: ilackarms: this might get weird for templates that rely on specifiy enum or msg data
-		// for now it works because we only need the name of the type
-		for _, enum := range msg.GetEnums() {
-			renderedEnumString := &bytes.Buffer{}
-			if err := enumTmpl.Execute(renderedEnumString, enum); err != nil {
-				return "", err
+			str += renderedMsgString.String() + "\n"
+			if len(msg.GetMessages()) > 0 {
+				nested, err := c.forEachMessage(messagesToSkip)(inFile, msg.GetMessages(), messageTemplate, enumTemplate)
+				if err != nil {
+					return "", err
+				}
+				str += nested
 			}
-			str += renderedEnumString.String() + "\n"
+			// TODO: ilackarms: this might get weird for templates that rely on specifiy enum or msg data
+			// for now it works because we only need the name of the type
+			for _, enum := range msg.GetEnums() {
+				renderedEnumString := &bytes.Buffer{}
+				if err := enumTmpl.Execute(renderedEnumString, enum); err != nil {
+					return "", err
+				}
+				str += renderedEnumString.String() + "\n"
+			}
 		}
+		//str = strings.TrimSuffix(str, "\n")
+		return str, nil
 	}
-	//str = strings.TrimSuffix(str, "\n")
-	return str, nil
+}
+
+// Returns a map indicating which resources should be skipped during doc generation.
+// The keys are strings in the format <resource package>.<resource name>.
+func getMessageSkippingInfo(project *model.Project) map[string]bool {
+	// Build map for quick lookup of SkipDocsGen flag
+	toSkip := make(map[string]bool)
+	for _, resource := range project.Resources {
+		key := strings.Join([]string{resource.ProtoPackage, resource.Original.GetName()}, ".")
+		toSkip[key] = resource.SkipDocsGen
+	}
+	return toSkip
 }

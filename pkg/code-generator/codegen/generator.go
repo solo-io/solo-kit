@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/iancoleman/strcase"
-	"github.com/solo-io/solo-kit/pkg/code-generator"
+	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/utils/log"

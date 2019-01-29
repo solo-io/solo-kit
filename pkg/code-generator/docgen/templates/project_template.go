@@ -19,7 +19,9 @@ API Version: ` + "`{{ .ProjectConfig.Name }}.{{ .ProjectConfig.Version }}`" + `
 
 ### API Resources:
 {{- range .Resources}}
+{{- if (not .SkipDocsGen) }}
 - {{linkForResource . }}
+{{- end}}
 {{- end}}
 
 <!-- Start of HubSpot Embed Code -->

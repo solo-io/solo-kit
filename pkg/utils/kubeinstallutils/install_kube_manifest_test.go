@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/testutils"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 

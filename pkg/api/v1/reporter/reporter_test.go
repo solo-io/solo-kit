@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	rep "github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/test/mocks/v1"
+	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
 var _ = Describe("Reporter", func() {

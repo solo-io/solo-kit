@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	"github.com/gogo/protobuf/protoc-gen-gogo/plugin"
+	plugin_go "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 	"github.com/ilackarms/protokit"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -59,6 +59,7 @@ type Resource struct {
 
 	HasStatus     bool
 	ClusterScoped bool // the resource lives at the cluster level, namespace is ignored
+	SkipDocsGen   bool // if true, no docs will be generated for this resource
 
 	Fields []*Field
 	Oneofs []*Oneof
@@ -122,6 +123,7 @@ func LoadProjectConfig(path string) (ProjectConfig, error) {
 
 var goPackageStatementRegex = regexp.MustCompile(`option go_package.*=.*"(.*)";`)
 
+// Returns the value of the 'go_package' option of the first .proto file found in the same directory as projectFile
 func detectGoPackageForProject(projectFile string) (string, error) {
 	var goPkg string
 	projectDir := filepath.Dir(projectFile)

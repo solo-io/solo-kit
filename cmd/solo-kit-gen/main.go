@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
@@ -26,9 +27,9 @@ func main() {
 	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
 	genDocs := flag.Bool("docs", true, "generate docs as well")
 	var customImports, skipDirs arrayFlags
-	flag.Var(&customImports, "i", "import additional directories as proto roots " +
+	flag.Var(&customImports, "i", "import additional directories as proto roots "+
 		"(repeated flag, specify as many times as desired)")
-	flag.Var(&skipDirs, "s", "skip generating for this directory " +
+	flag.Var(&skipDirs, "s", "skip generating for this directory "+
 		"(repeated flag, specify as many times as desired)")
 	flag.Parse()
 

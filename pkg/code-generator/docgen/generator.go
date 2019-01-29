@@ -6,7 +6,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protokit"
-	"github.com/solo-io/solo-kit/pkg/code-generator"
+	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/templates"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
@@ -27,6 +27,7 @@ func generateFilesForProtoFiles(project *model.Project, protoFiles []*protokit.F
 		".sk.md": templates.ProtoFileTemplate(project),
 	} {
 		for _, protoFile := range protoFiles {
+			// Skip if file is to be ignored
 			var ignore bool
 			for _, ignoredFile := range ignoredFiles {
 				if protoFile.GetName() == ignoredFile {

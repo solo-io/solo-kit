@@ -36,6 +36,14 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	-I=. \
 	./*.proto
 
+.PHONY: install-codegen-deps
+install-codegen-deps:
+	go get -v -u golang.org/x/tools/cmd/goimports
+	go get -v -u github.com/gogo/protobuf/proto
+	go get -v -u github.com/gogo/protobuf/jsonpb
+	go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
+	go get -v -u github.com/gogo/protobuf/gogoproto
+
 #----------------------------------------------------------------------------------
 # Kubernetes Clientsets
 #----------------------------------------------------------------------------------

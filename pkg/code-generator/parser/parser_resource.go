@@ -162,8 +162,8 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 
 	name := msg.GetName()
 	var (
-		shortName, pluralName string
-		clusterScoped         bool
+		shortName, pluralName      string
+		clusterScoped, skipDocsGen bool
 	)
 	resourceOpts, err := proto.GetExtension(msg.Options, core.E_Resource)
 	if err != nil {
@@ -188,6 +188,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 		shortName = res.ShortName
 		pluralName = res.PluralName
 		clusterScoped = res.ClusterScoped
+		skipDocsGen = res.SkipDocsGen
 	}
 
 	// always make it upper camel
@@ -208,6 +209,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 		Fields:        fields,
 		Oneofs:        oneofs,
 		ClusterScoped: clusterScoped,
+		SkipDocsGen:   skipDocsGen,
 		Filename:      msg.GetFile().GetName(),
 		Original:      msg,
 	}, nil

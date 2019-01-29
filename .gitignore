@@ -16,3 +16,4 @@
 vendor/
 _output/
 /solo-kit-gen
+/doc-gen-test-*

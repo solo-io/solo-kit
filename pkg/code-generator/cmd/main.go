@@ -29,15 +29,16 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 		return err
 	}
 
-	// collect all projects
-	projects, err := collectProjectsFromRoot(absoluteRoot, skipDirs)
+	// Creates a ProjectConfig from each of the 'solo-kit.json' files
+	// found in the directory tree rooted at 'absoluteRoot'.
+	projectConfigs, err := collectProjectsFromRoot(absoluteRoot, skipDirs)
 	if err != nil {
 		return err
 	}
 
 	log.Printf("collected projects: %v", func() []string {
 		var names []string
-		for _, project := range projects {
+		for _, project := range projectConfigs {
 			names = append(names, project.Name)
 		}
 		sort.Strings(names)
@@ -49,7 +50,7 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 		if !compileProtos {
 			return false
 		}
-		for _, proj := range projects {
+		for _, proj := range projectConfigs {
 			if strings.HasPrefix(protoFile, filepath.Dir(proj.ProjectFile)) {
 				return true
 			}
@@ -57,6 +58,7 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 		return false
 	}
 
+	// Create a FileDescriptorProto for all the proto files under 'absoluteRoot' and each of the 'customImports' paths
 	descriptors, err := collectDescriptorsFromRoot(absoluteRoot, customImports, skipDirs, compileProto)
 	if err != nil {
 		return err
@@ -72,7 +74,11 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 		return names
 	}())
 
-	for _, projectConfig := range projects {
+	for _, projectConfig := range projectConfigs {
+
+		// Build a 'Project' object that contains a resource for each message that:
+		// - is contained in the FileDescriptor and
+		// - is a solo kit resource (i.e. it has a field named 'metadata')
 		project, err := parser.ProcessDescriptors(projectConfig, descriptors)
 		if err != nil {
 			return err
