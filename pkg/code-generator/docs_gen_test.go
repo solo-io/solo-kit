@@ -40,7 +40,7 @@ var _ = Describe("DocsGen", func() {
 		err = ioutil.WriteFile(filepath.Join(tempDir, testProtoName), []byte(buf.String()), 0644)
 		Expect(err).NotTo(HaveOccurred())
 
-		// Generate test proto file for which doc has to be generated
+		// Generate test proto file for which doc has not to be generated
 		buf = &bytes.Buffer{}
 		err = testProtoNoDocsTemplate().Execute(buf, relativePathToTempDir)
 		Expect(err).NotTo(HaveOccurred())
