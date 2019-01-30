@@ -59,7 +59,7 @@ type Resource struct {
 
 	HasStatus     bool
 	ClusterScoped bool // the resource lives at the cluster level, namespace is ignored
-	SkipDocsGen   bool // if true, no docs will be generated for this resource
+	SkipDocsGen   bool // if true, no docs will be generated for the proto file where this resource is defined
 
 	Fields []*Field
 	Oneofs []*Oneof

@@ -22,6 +22,15 @@ var ignoredFiles = []string{
 }
 
 func generateFilesForProtoFiles(project *model.Project, protoFiles []*protokit.FileDescriptor) (code_generator.Files, error) {
+
+	// Collect names of files that contain resources for which doc gen has to be skipped
+	skipMap := make(map[string]bool)
+	for _, res := range project.Resources {
+		if res.SkipDocsGen {
+			skipMap[res.Filename] = true
+		}
+	}
+
 	var v code_generator.Files
 	for suffix, tmpl := range map[string]*template.Template{
 		".sk.md": templates.ProtoFileTemplate(project),
@@ -38,6 +47,12 @@ func generateFilesForProtoFiles(project *model.Project, protoFiles []*protokit.F
 			if ignore {
 				continue
 			}
+
+			// Skip if the file contains a top-level resource that has to be skipped
+			if skipMap[protoFile.GetName()] {
+				continue
+			}
+
 			content, err := generateProtoFileFile(protoFile, tmpl)
 			if err != nil {
 				return nil, err
