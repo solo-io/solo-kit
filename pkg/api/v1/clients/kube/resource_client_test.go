@@ -1,6 +1,7 @@
 package kube_test
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -88,7 +89,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			err = v1.MockResourceCrd.Register(apiExts)
 			Expect(err).NotTo(HaveOccurred())
 
-			client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
+			client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(context.TODO()), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -113,7 +114,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 		BeforeEach(func() {
 			clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
-			cache = kube.NewKubeCache()
+			cache = kube.NewKubeCache(context.TODO())
 			rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
 		})
 

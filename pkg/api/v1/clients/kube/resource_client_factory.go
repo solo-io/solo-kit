@@ -60,7 +60,7 @@ type SharedCache interface {
 	// Registers the client with the shared cache
 	Register(rc *ResourceClient) error
 	// Starts all informers in the factory's registry. Must be idempotent.
-	Start(ctx context.Context)
+	Start()
 	// Returns a lister for resources of the given type in the given namespace.
 	GetLister(namespace string, obj runtime.Object) (ResourceLister, error)
 	// Returns a channel that will receive notifications on changes to resources
@@ -72,8 +72,10 @@ type SharedCache interface {
 	RemoveWatch(c <-chan v1.Resource)
 }
 
-func NewKubeCache() SharedCache {
+// start uses this context, runs until context gets cancelled
+func NewKubeCache(ctx context.Context) SharedCache {
 	return &ResourceClientSharedInformerFactory{
+		ctx:           ctx,
 		defaultResync: 12 * time.Hour,
 		registry:      newInformerRegistry(),
 		watchTimeout:  time.Second,
@@ -93,6 +95,10 @@ type ResourceClientSharedInformerFactory struct {
 
 	// Indicates whether the factory is started
 	started bool
+
+	// the context that was passed to the constructor for the factory.
+	// if the context is cancelled, all goroutines started by this cache should be cancelled
+	ctx context.Context
 
 	// This allows Start() to be called multiple times safely.
 	factoryStarter sync.Once
@@ -115,7 +121,7 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	ctx := context.TODO()
+	ctx := f.ctx
 	if f.started {
 		contextutils.LoggerFrom(ctx).Panic("can't register informer after factory has started. This may change in the future.")
 	}
@@ -181,10 +187,11 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 // Starts all informers in the factory's registry (if they have not yet been started) and configures the factory to call
 // the updateCallback function whenever any of the resources associated with the informers changes.
-func (f *ResourceClientSharedInformerFactory) Start(ctx context.Context) {
+func (f *ResourceClientSharedInformerFactory) Start() {
 
 	// Guarantees that the factory will be started at most once
 	f.factoryStarter.Do(func() {
+		ctx := f.ctx
 
 		// Collect all registered informers
 		sharedInformers := f.registry.list()
@@ -280,16 +287,18 @@ func (f *ResourceClientSharedInformerFactory) IsRunning() bool {
 // NOTE: as described in the doc for SharedInformer, we should NOT depend on the contents of the cache exactly matching
 // the resource in the notification we received in handler functions. The cache might be MORE fresh than the notification.
 func (f *ResourceClientSharedInformerFactory) updatedOccurred(resource v1.Resource) {
-	stats.Record(context.TODO(), MEvents.M(1))
+	stats.Record(f.ctx, MEvents.M(1))
 	f.cacheUpdatedWatchersMutex.Lock()
 	defer f.cacheUpdatedWatchersMutex.Unlock()
 	for _, watcher := range f.cacheUpdatedWatchers {
 		// Attempt delivery asynchronously
 		go func(watchChan chan v1.Resource, res v1.Resource) {
 			select {
+			case <-f.ctx.Done():
+				return
 			case watchChan <- resource:
 			case <-time.After(f.watchTimeout):
-				contextutils.LoggerFrom(context.TODO()).Errorf("timed out after waiting for %v"+
+				contextutils.LoggerFrom(f.ctx).Errorf("timed out after waiting for %v"+
 					"for watch to receive event on resource %v", f.watchTimeout, resource)
 			}
 		}(watcher, resource)
