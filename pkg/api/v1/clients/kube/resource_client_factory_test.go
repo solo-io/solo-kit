@@ -3,6 +3,7 @@ package kube_test
 import (
 	"context"
 	"runtime"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -246,14 +247,16 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			It("watches stop receiving events after the factory's context is cancelled", func() {
 
 				watchResults := [][]string{{}, {}, {}}
+				l := sync.Mutex{}
 				for i, watch := range watches {
+					preStartGoroutines++
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
-							case <-ctx.Done():
-								return
 							case res := <-watchChan:
+								l.Lock()
 								watchResults[index] = append(watchResults[index], res.ObjectMeta.Name)
+								l.Unlock()
 							}
 						}
 					}(i, watch)
@@ -266,12 +269,16 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-4", "test")).To(BeNil())
 				go Expect(util.DeleteMockResource(clientset, namespace2, "mock-res-2")).To(BeNil())
 
-				// Wait for results to be collected
-				time.Sleep(100 * time.Millisecond)
-
-				for _, watchResult := range watchResults {
-					Expect(len(watchResult)).To(BeEquivalentTo(4))
-					Expect(watchResult).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
+				for i := range watchResults {
+					Eventually(func() int {
+						l.Lock()
+						defer l.Unlock()
+						watchResult := watchResults[i]
+						return len(watchResult)
+					}).Should(BeEquivalentTo(4))
+					l.Lock()
+					Expect(watchResults[i]).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
+					l.Unlock()
 				}
 
 				// cancel the context! zbam
@@ -287,15 +294,19 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				go Expect(util.CreateMockResource(clientset, namespace1, "another-mock-res-4", "test")).To(BeNil())
 				go Expect(util.DeleteMockResource(clientset, namespace2, "another-mock-res-2")).To(BeNil())
 
-				// Wait for results
-				time.Sleep(100 * time.Millisecond)
-
-				for _, watchResult := range watchResults {
-					Expect(len(watchResult)).To(BeEquivalentTo(4))
-					Expect(watchResult).NotTo(ConsistOf("another-mock-res-1"))
-					Expect(watchResult).NotTo(ConsistOf("another-mock-res-2"))
-					Expect(watchResult).NotTo(ConsistOf("another-mock-res-3"))
-					Expect(watchResult).NotTo(ConsistOf("another-mock-res-4"))
+				for i := range watchResults {
+					Eventually(func() int {
+						l.Lock()
+						defer l.Unlock()
+						watchResult := watchResults[i]
+						return len(watchResult)
+					}).Should(BeEquivalentTo(4))
+					l.Lock()
+					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-1"))
+					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-2"))
+					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-3"))
+					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-4"))
+					l.Unlock()
 				}
 			})
 		})
