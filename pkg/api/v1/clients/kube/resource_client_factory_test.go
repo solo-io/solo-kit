@@ -243,7 +243,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				}
 			})
 
-			It("all watches receive the same events", func() {
+			It("watches stop receiving events after the factory's context is cancelled", func() {
 
 				watchResults := [][]string{{}, {}, {}}
 				for i, watch := range watches {
