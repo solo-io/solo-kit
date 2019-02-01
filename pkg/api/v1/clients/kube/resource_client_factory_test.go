@@ -109,7 +109,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 	Describe("creating watches", func() {
 
 		var (
-			clientset *fake.Clientset
+			clientset          *fake.Clientset
+			preStartGoroutines int
 		)
 
 		BeforeEach(func() {
@@ -119,6 +120,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			err := kubeCache.Register(client)
 			Expect(err).NotTo(HaveOccurred())
 
+			preStartGoroutines = runtime.NumGoroutine()
 			kubeCache.Start()
 			Expect(kubeCache.IsRunning()).To(BeTrue())
 		})
@@ -248,6 +250,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
+							case <-ctx.Done():
+								return
 							case res := <-watchChan:
 								watchResults[index] = append(watchResults[index], res.ObjectMeta.Name)
 							}
@@ -270,12 +274,11 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 					Expect(watchResult).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
 				}
 
-				goroutinesBeforeCancel := runtime.NumGoroutine()
 				// cancel the context! zbam
 				cancel()
 				Eventually(func() int {
-					return goroutinesBeforeCancel - runtime.NumGoroutine()
-				}).Should(Equal(12))
+					return runtime.NumGoroutine()
+				}, time.Second).Should(Equal(preStartGoroutines))
 
 				go Expect(util.CreateMockResource(clientset, namespace1, "another-mock-res-1", "test")).To(BeNil())
 				go Expect(util.CreateMockResource(clientset, namespace2, "another-mock-res-2", "test")).To(BeNil())
