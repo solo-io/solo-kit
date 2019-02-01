@@ -85,7 +85,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		{{ lower_camel .Name }}ClientFactory := &factory.KubeResourceClientFactory{
 			Crd: {{ .ImportPrefix }}{{ .Name }}Crd,
 			Cfg: cfg,
-		    SharedCache: kuberc.NewKubeCache(),
+		    SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 {{- else }}
 		kube, err = kubernetes.NewForConfig(cfg)

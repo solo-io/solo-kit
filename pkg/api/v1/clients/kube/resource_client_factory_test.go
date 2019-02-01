@@ -2,6 +2,8 @@ package kube_test
 
 import (
 	"context"
+	"runtime"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -24,10 +26,13 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 	var (
 		kubeCache                   *kube.ResourceClientSharedInformerFactory
 		client1, client2, client123 *kube.ResourceClient
+		ctx                         context.Context
+		cancel                      func()
 	)
 
 	BeforeEach(func() {
-		kubeCache = kube.NewKubeCache().(*kube.ResourceClientSharedInformerFactory)
+		ctx, cancel = context.WithCancel(context.TODO())
+		kubeCache = kube.NewKubeCache(ctx).(*kube.ResourceClientSharedInformerFactory)
 		Expect(len(kubeCache.Informers())).To(BeZero())
 
 		client1 = util.MockClientForNamespace(kubeCache, []string{namespace1})
@@ -72,7 +77,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 		It("panics when attempting of register a client with a running factory", func() {
 			// Start without registering clients, just to set the "started" flag
-			kubeCache.Start(context.TODO())
+			kubeCache.Start()
 			Expect(kubeCache.IsRunning()).To(BeTrue())
 
 			Expect(func() { _ = kubeCache.Register(client1) }).To(Panic())
@@ -85,7 +90,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			err := kubeCache.Register(client1)
 			Expect(err).NotTo(HaveOccurred())
 
-			kubeCache.Start(context.TODO())
+			kubeCache.Start()
 
 			Expect(kubeCache.IsRunning()).To(BeTrue())
 		})
@@ -94,9 +99,9 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			err := kubeCache.Register(client1)
 			Expect(err).NotTo(HaveOccurred())
 
-			kubeCache.Start(context.TODO())
-			kubeCache.Start(context.TODO())
-			kubeCache.Start(context.TODO())
+			kubeCache.Start()
+			kubeCache.Start()
+			kubeCache.Start()
 
 			Expect(kubeCache.IsRunning()).To(BeTrue())
 		})
@@ -105,7 +110,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 	Describe("creating watches", func() {
 
 		var (
-			clientset *fake.Clientset
+			clientset          *fake.Clientset
+			preStartGoroutines int
 		)
 
 		BeforeEach(func() {
@@ -115,7 +121,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			err := kubeCache.Register(client)
 			Expect(err).NotTo(HaveOccurred())
 
-			kubeCache.Start(context.TODO())
+			preStartGoroutines = runtime.NumGoroutine()
+			kubeCache.Start()
 			Expect(kubeCache.IsRunning()).To(BeTrue())
 		})
 
@@ -221,6 +228,85 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				for _, watchResult := range watchResults {
 					Expect(len(watchResult)).To(BeEquivalentTo(4))
 					Expect(watchResult).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
+				}
+			})
+		})
+
+		Context("context cancellation", func() {
+
+			var watches []<-chan solov1.Resource
+
+			BeforeEach(func() {
+				watches = []<-chan solov1.Resource{
+					kubeCache.AddWatch(10),
+					kubeCache.AddWatch(10),
+					kubeCache.AddWatch(10),
+				}
+			})
+
+			It("watches stop receiving events after the factory's context is cancelled", func() {
+
+				watchResults := [][]string{{}, {}, {}}
+				l := sync.Mutex{}
+				for i, watch := range watches {
+					preStartGoroutines++
+					go func(index int, watchChan <-chan solov1.Resource) {
+						for {
+							select {
+							case res := <-watchChan:
+								l.Lock()
+								watchResults[index] = append(watchResults[index], res.ObjectMeta.Name)
+								l.Unlock()
+							}
+						}
+					}(i, watch)
+				}
+
+				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(clientset, namespace2, "mock-res-2", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-3", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(clientset, namespace1, "mock-res-1")).To(BeNil())
+				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-4", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(clientset, namespace2, "mock-res-2")).To(BeNil())
+
+				for i := range watchResults {
+					Eventually(func() int {
+						l.Lock()
+						defer l.Unlock()
+						watchResult := watchResults[i]
+						return len(watchResult)
+					}).Should(BeEquivalentTo(4))
+					l.Lock()
+					Expect(watchResults[i]).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
+					l.Unlock()
+				}
+
+				// cancel the context! zbam
+				cancel()
+				Eventually(func() int {
+					return runtime.NumGoroutine()
+				}, time.Second).Should(Equal(preStartGoroutines))
+
+				go Expect(util.CreateMockResource(clientset, namespace1, "another-mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(clientset, namespace2, "another-mock-res-2", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(clientset, namespace1, "another-mock-res-3", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(clientset, namespace1, "another-mock-res-1")).To(BeNil())
+				go Expect(util.CreateMockResource(clientset, namespace1, "another-mock-res-4", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(clientset, namespace2, "another-mock-res-2")).To(BeNil())
+
+				for i := range watchResults {
+					Eventually(func() int {
+						l.Lock()
+						defer l.Unlock()
+						watchResult := watchResults[i]
+						return len(watchResult)
+					}).Should(BeEquivalentTo(4))
+					l.Lock()
+					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-1"))
+					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-2"))
+					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-3"))
+					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-4"))
+					l.Unlock()
 				}
 			})
 		})

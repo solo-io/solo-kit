@@ -257,7 +257,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 
 	// Will have no effect if the factory is already running
-	rc.sharedCache.Start(context.TODO())
+	rc.sharedCache.Start()
 
 	lister, err := rc.sharedCache.GetLister(namespace, rc.crd.Type)
 	if err != nil {
@@ -300,7 +300,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		return nil, nil, err
 	}
 
-	rc.sharedCache.Start(context.TODO())
+	rc.sharedCache.Start()
 
 	opts = opts.WithDefaults()
 	resourcesChan := make(chan resources.ResourceList)
