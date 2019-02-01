@@ -60,7 +60,7 @@ var _ = Describe("V1Emitter", func() {
 		mockResourceClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         MockResourceCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		mockResourceClient, err = NewMockResourceClient(mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -77,7 +77,7 @@ var _ = Describe("V1Emitter", func() {
 		anotherMockResourceClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         AnotherMockResourceCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		anotherMockResourceClient, err = NewAnotherMockResourceClient(anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -85,7 +85,7 @@ var _ = Describe("V1Emitter", func() {
 		clusterResourceClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         ClusterResourceCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		clusterResourceClient, err = NewClusterResourceClient(clusterResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())

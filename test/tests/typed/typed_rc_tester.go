@@ -1,6 +1,7 @@
 package typed
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 
@@ -65,7 +66,7 @@ func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	return &factory.KubeResourceClientFactory{
 		Crd:         rct.Crd,
 		Cfg:         cfg,
-		SharedCache: kube.NewKubeCache(),
+		SharedCache: kube.NewKubeCache(context.TODO()),
 	}
 }
 
