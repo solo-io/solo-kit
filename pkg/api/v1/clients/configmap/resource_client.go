@@ -1,23 +1,21 @@
 package configmap
 
 import (
-	"reflect"
-	"sort"
-	"time"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	kubewatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"reflect"
+	"sort"
 )
 
 const annotationKey = "resource_kind"
@@ -71,13 +69,15 @@ type ResourceClient struct {
 	ownerLabel   string
 	resourceName string
 	resourceType resources.Resource
+	kubeCache    cache.KubeCoreCache
 }
 
-func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resource) (*ResourceClient, error) {
+func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache) (*ResourceClient, error) {
 	return &ResourceClient{
 		kube:         kube,
 		resourceName: reflect.TypeOf(resourceType).String(),
 		resourceType: resourceType,
+		kubeCache:    kubeCache,
 	}, nil
 }
 
@@ -100,7 +100,6 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
 	configMap, err := rc.kube.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
@@ -125,7 +124,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 
 	// mutate and return clone
 	clone := proto.Clone(resource).(resources.Resource)
@@ -175,17 +173,14 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
-	configMapList, err := rc.kube.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(opts.Selector).String(),
-	})
+	configMapList, err := rc.kubeCache.ConfigMapLister().ConfigMaps(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing configMaps in %v", namespace)
 	}
 	var resourceList resources.ResourceList
-	for _, configMap := range configMapList.Items {
-		resource, err := rc.fromKubeConfigMap(&configMap)
+	for _, configMap := range configMapList {
+		resource, err := rc.fromKubeConfigMap(configMap)
 		if err != nil {
 			return nil, err
 		}
@@ -204,15 +199,13 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
-	watch, err := rc.kube.CoreV1().ConfigMaps(namespace).Watch(metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(opts.Selector).String(),
-	})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "initiating kube watch in %v", namespace)
-	}
+	watch := rc.kubeCache.Subscribe()
+
 	resourcesChan := make(chan resources.ResourceList)
 	errs := make(chan error)
+
+	// prevent flooding the channel with duplicates
+	var previous *resources.ResourceList
 	updateResourceList := func() {
 		list, err := rc.List(namespace, clients.ListOpts{
 			Ctx:      opts.Ctx,
@@ -222,27 +215,30 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 			errs <- err
 			return
 		}
+		if previous != nil {
+			if list.Equal(*previous) {
+				return
+			}
+		}
+		previous = &list
 		resourcesChan <- list
 	}
 
 	go func() {
+		defer rc.kubeCache.Unsubscribe(watch)
+		defer close(resourcesChan)
+		defer close(errs)
+
 		// watch should open up with an initial read
 		updateResourceList()
 		for {
 			select {
-			case <-time.After(opts.RefreshRate):
-				updateResourceList()
-			case event := <-watch.ResultChan():
-				switch event.Type {
-				case kubewatch.Error:
-					errs <- errors.Errorf("error during watch: %v", event)
-				default:
-					updateResourceList()
+			case _, ok := <-watch:
+				if !ok {
+					return
 				}
+				updateResourceList()
 			case <-opts.Ctx.Done():
-				watch.Stop()
-				close(resourcesChan)
-				close(errs)
 				return
 			}
 		}

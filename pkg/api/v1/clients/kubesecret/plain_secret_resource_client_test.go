@@ -1,6 +1,8 @@
-package kubesecretplain_test
+package kubesecret_test
 
 import (
+	"context"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"os"
 	"time"
 
@@ -12,7 +14,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
-	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecretplain"
+	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -24,7 +26,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var _ = Describe("Base", func() {
+var _ = Describe("Kube Secret Client Plain=True", func() {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
@@ -43,7 +45,7 @@ var _ = Describe("Base", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		client, err = NewResourceClient(kube, &v1.MockResource{})
+		client, err = NewResourceClient(kube, &v1.MockResource{}, true, cache.NewKubeCoreCache(context.TODO(), kube))
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace)
