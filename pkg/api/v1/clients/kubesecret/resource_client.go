@@ -263,9 +263,17 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 	var resourceList resources.ResourceList
 	for _, secret := range secretList {
-		resource, err := rc.fromKubeSecret(secret)
-		if err != nil {
-			return nil, err
+		var resource resources.Resource
+		if rc.plainSecrets {
+			resource, err = rc.fromPlainKubeSecret(secret)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			resource, err = rc.fromKubeSecret(secret)
+			if err != nil {
+				return nil, err
+			}
 		}
 		// not our resource, ignore it
 		if resource == nil {
