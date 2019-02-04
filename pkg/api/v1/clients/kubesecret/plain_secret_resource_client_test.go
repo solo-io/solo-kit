@@ -2,9 +2,10 @@ package kubesecret_test
 
 import (
 	"context"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"os"
 	"time"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -2,10 +2,11 @@ package factory
 
 import (
 	"fmt"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"

@@ -2,18 +2,19 @@ package configmap_test
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"os"
-	"time"
 
 	"github.com/solo-io/go-utils/kubeutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/solo-kit/test/mocks/v1"
+	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -78,7 +79,6 @@ var _ = Describe("Base", func() {
 		Expect(cm.Data).To(HaveKey("data.json"))
 		Expect(cm.Data["data.json"]).To(ContainSubstring("'hello: goodbye'"))
 	})
-
 
 	Context("multiple namespaces", func() {
 		var (

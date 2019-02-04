@@ -2,9 +2,10 @@ package cache
 
 import (
 	"context"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 	"sync"
 	"time"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/cache"

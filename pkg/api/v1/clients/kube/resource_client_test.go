@@ -2,9 +2,10 @@ package kube_test
 
 import (
 	"context"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"os"
 	"time"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,7 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/mocks/util"
-	"github.com/solo-io/solo-kit/test/mocks/v1"
+	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
