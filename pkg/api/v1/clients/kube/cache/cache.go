@@ -7,9 +7,6 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 
-	"github.com/pkg/errors"
-	"k8s.io/client-go/tools/cache"
-
 	kubeinformers "k8s.io/client-go/informers"
 	kubelisters "k8s.io/client-go/listers/core/v1"
 
@@ -59,14 +56,6 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCor
 		}
 	}()
 
-	ok := cache.WaitForCacheSync(stop,
-		configMaps.Informer().HasSynced,
-		secrets.Informer().HasSynced)
-	if !ok {
-		// if initError is non-nil, the kube resource client will panic
-		k.initError = errors.Errorf("waiting for kube pod, endpoints, services cache sync failed")
-	}
-
 	return k
 }
 
@@ -81,7 +70,7 @@ func (k *KubeCoreCaches) SecretLister() kubelisters.SecretLister {
 func (k *KubeCoreCaches) Subscribe() <-chan struct{} {
 	k.cacheUpdatedWatchersMutex.Lock()
 	defer k.cacheUpdatedWatchersMutex.Unlock()
-	c := make(chan struct{}, 1)
+	c := make(chan struct{}, 10)
 	k.cacheUpdatedWatchers = append(k.cacheUpdatedWatchers, c)
 	return c
 }

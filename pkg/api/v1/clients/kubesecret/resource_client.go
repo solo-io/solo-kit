@@ -1,8 +1,11 @@
 package kubesecret
 
 import (
+	"context"
 	"reflect"
 	"sort"
+
+	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -99,7 +102,7 @@ func (rc *ResourceClient) fromPlainKubeSecret(secret *v1.Secret) (resources.Reso
 	return resource, nil
 }
 
-func (rc *ResourceClient) toPlainKubeSecret(resource resources.Resource) (*v1.Secret, error) {
+func (rc *ResourceClient) toPlainKubeSecret(ctx context.Context, resource resources.Resource) (*v1.Secret, error) {
 	resourceMap, err := protoutils.MarshalMapEmitZeroValues(resource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling resource as map")
@@ -112,6 +115,8 @@ func (rc *ResourceClient) toPlainKubeSecret(resource resources.Resource) (*v1.Se
 		default:
 			// TODO: handle other field types; for now the caller
 			// must know this resource client only supports map[string]string style objects
+			contextutils.LoggerFrom(ctx).Warnf("invalid resource type (%v) used for plain secret. unable to " +
+				"convert to kube secret. only resources with fields of type string are supported for the plain secret client.")
 		}
 	}
 
@@ -206,7 +211,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	var secret *v1.Secret
 	var err error
 	if rc.plainSecrets {
-		secret, err = rc.toPlainKubeSecret(resource.(resources.Resource))
+		secret, err = rc.toPlainKubeSecret(opts.Ctx, resource.(resources.Resource))
 		if err != nil {
 			return nil, err
 		}

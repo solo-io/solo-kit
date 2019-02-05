@@ -92,6 +92,7 @@ var _ = Describe("Base", func() {
 			err := setup.SetupKubeForTest(ns1)
 			Expect(err).NotTo(HaveOccurred())
 			err = setup.SetupKubeForTest(ns2)
+			Expect(err).NotTo(HaveOccurred())
 
 			cfg, err = kubeutils.GetConfig("", "")
 			Expect(err).NotTo(HaveOccurred())
