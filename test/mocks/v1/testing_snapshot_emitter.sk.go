@@ -224,15 +224,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		      mockResourceNamespacedList := <- mockResourceChan
 		      currentSnapshot.Mocks.Clear(mockResourceNamespacedList.namespace)
 		      mockResourceList := mockResourceNamespacedList.list
-		   	currentSnapshot.Mocks.Add(mockResourceList...)
+		   	currentSnapshot.Mocks[namespace] = mockResource
 		      fakeResourceNamespacedList := <- fakeResourceChan
 		      currentSnapshot.Fakes.Clear(fakeResourceNamespacedList.namespace)
 		      fakeResourceList := fakeResourceNamespacedList.list
-		   	currentSnapshot.Fakes.Add(fakeResourceList...)
+		   	currentSnapshot.Fakes[namespace] = fakeResource
 		      anotherMockResourceNamespacedList := <- anotherMockResourceChan
 		      currentSnapshot.Anothermockresources.Clear(anotherMockResourceNamespacedList.namespace)
 		      anotherMockResourceList := anotherMockResourceNamespacedList.list
-		   	currentSnapshot.Anothermockresources.Add(anotherMockResourceList...)
+		   	currentSnapshot.Anothermockresources[namespace] = anotherMockResource
 		   		}
 		*/
 

@@ -200,7 +200,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
    {{ lower_camel .Name }}NamespacedList := <- {{ lower_camel .Name }}Chan
    currentSnapshot.{{ .PluralName }}.Clear({{ lower_camel .Name }}NamespacedList.namespace)
    {{ lower_camel .Name }}List := {{ lower_camel .Name }}NamespacedList.list
-	currentSnapshot.{{ .PluralName }}.Add({{ lower_camel .Name }}List...)
+	currentSnapshot.{{ .PluralName }}[namespace] = {{ lower_camel .Name }}
 
 {{- end }}
 {{- end}}
