@@ -186,16 +186,12 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- end }}
 {{- end}}
 
-	lock := sync.RWMutex{}
-
 	snapshots := make(chan *{{ .GoName }}Snapshot)
 	go func() {
 		originalSnapshot := {{ .GoName }}Snapshot{}
 		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
 		sync := func() {
-			lock.RLock()
-			defer lock.RUnlock()
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
@@ -232,9 +228,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				namespace := {{ lower_camel .Name }}NamespacedList.namespace
 				{{ lower_camel .Name }}List := {{ lower_camel .Name }}NamespacedList.list
 
-				lock.Lock()
 				currentSnapshot.{{ .PluralName }}[namespace] = {{ lower_camel .Name }}List
-				lock.Unlock()
 {{- end }}
 {{- end}}
 			}

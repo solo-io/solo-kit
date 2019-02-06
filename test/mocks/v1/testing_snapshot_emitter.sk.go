@@ -213,16 +213,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		errutils.AggregateErrs(ctx, errs, clusterResourceErrs, "clusterresources")
 	}()
 
-	lock := sync.RWMutex{}
-
 	snapshots := make(chan *TestingSnapshot)
 	go func() {
 		originalSnapshot := TestingSnapshot{}
 		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
 		sync := func() {
-			lock.RLock()
-			defer lock.RUnlock()
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
@@ -253,27 +249,21 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				namespace := mockResourceNamespacedList.namespace
 				mockResourceList := mockResourceNamespacedList.list
 
-				lock.Lock()
 				currentSnapshot.Mocks[namespace] = mockResourceList
-				lock.Unlock()
 			case fakeResourceNamespacedList := <-fakeResourceChan:
 				record()
 
 				namespace := fakeResourceNamespacedList.namespace
 				fakeResourceList := fakeResourceNamespacedList.list
 
-				lock.Lock()
 				currentSnapshot.Fakes[namespace] = fakeResourceList
-				lock.Unlock()
 			case anotherMockResourceNamespacedList := <-anotherMockResourceChan:
 				record()
 
 				namespace := anotherMockResourceNamespacedList.namespace
 				anotherMockResourceList := anotherMockResourceNamespacedList.list
 
-				lock.Lock()
 				currentSnapshot.Anothermockresources[namespace] = anotherMockResourceList
-				lock.Unlock()
 			case clusterResourceList := <-clusterResourceChan:
 				record()
 				currentSnapshot.Clusterresources = clusterResourceList
