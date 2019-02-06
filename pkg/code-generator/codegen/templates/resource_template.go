@@ -134,14 +134,6 @@ func (list {{ .Name }}List) AsInterfaces() []interface{}{
 	return asInterfaces
 }
 
-func (list {{ .Name }}List) ByNamespace() {{ .PluralName }}ByNamespace {
-	byNamespace := make({{ .PluralName }}ByNamespace)
-	for _, {{ lower_camel .Name }} := range list {
-		byNamespace.Add({{ lower_camel .Name }})
-	}
-	return byNamespace
-}
-
 func (byNamespace {{ .PluralName }}ByNamespace) Add({{ lower_camel .Name }} ... *{{ .Name }}) {
 	for _, item := range {{ lower_camel .Name }} {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -161,7 +153,11 @@ func (byNamespace {{ .PluralName }}ByNamespace) List() {{ .Name }}List {
 }
 
 func (byNamespace {{ .PluralName }}ByNamespace) Clone() {{ .PluralName }}ByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make({{ .PluralName }}ByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &{{ .Name }}{}
