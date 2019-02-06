@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecretplain"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
@@ -108,12 +108,15 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 	case *MemoryResourceClientFactory:
 		return memory.NewResourceClient(opts.Cache, resourceType), nil
 	case *KubeConfigMapClientFactory:
-		return configmap.NewResourceClient(opts.Clientset, resourceType)
-	case *KubeSecretClientFactory:
-		if opts.PlainSecrets {
-			return kubesecretplain.NewResourceClient(opts.Clientset, resourceType)
+		if opts.Cache == nil {
+			return nil, errors.Errorf("invalid opts, configmap client requires a kube core cache")
 		}
-		return kubesecret.NewResourceClient(opts.Clientset, resourceType)
+		return configmap.NewResourceClient(opts.Clientset, resourceType, opts.Cache)
+	case *KubeSecretClientFactory:
+		if opts.Cache == nil {
+			return nil, errors.Errorf("invalid opts, secret client requires a kube core cache")
+		}
+		return kubesecret.NewResourceClient(opts.Clientset, resourceType, opts.PlainSecrets, opts.Cache)
 	case *VaultSecretClientFactory:
 		return vault.NewResourceClient(opts.Vault, opts.RootKey, resourceType), nil
 	}
@@ -170,6 +173,7 @@ func (f *MemoryResourceClientFactory) NewResourceClient(params NewResourceClient
 
 type KubeConfigMapClientFactory struct {
 	Clientset kubernetes.Interface
+	Cache     cache.KubeCoreCache
 }
 
 func (f *KubeConfigMapClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
@@ -181,6 +185,7 @@ type KubeSecretClientFactory struct {
 	// set this  to true if resource fields are all strings
 	// resources will be stored as plain kubernetes secrets without serializing/deserializing
 	PlainSecrets bool
+	Cache        cache.KubeCoreCache
 }
 
 func (f *KubeSecretClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {

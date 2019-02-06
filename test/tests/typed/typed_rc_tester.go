@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 
 	"github.com/hashicorp/consul/api"
@@ -200,6 +202,7 @@ func (rct *KubeConfigMapRcTester) Setup(namespace string) factory.ResourceClient
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.KubeConfigMapClientFactory{
 		Clientset: kube,
+		Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
 	}
 }
 
@@ -231,6 +234,7 @@ func (rct *KubeSecretRcTester) Setup(namespace string) factory.ResourceClientFac
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.KubeSecretClientFactory{
 		Clientset: kube,
+		Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
 	}
 }
 

@@ -43,6 +43,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 {{- if $needs_standard_client }}
 	"k8s.io/client-go/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 {{- end }}
 )
 
@@ -94,10 +95,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- if (eq .Name "Secret") }}
 		{{ lower_camel .Name }}ClientFactory := &factory.KubeSecretClientFactory{
 			Clientset: kube,
+			Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
 		}
 {{- else }}
 		{{ lower_camel .Name }}ClientFactory := &factory.KubeConfigMapClientFactory{
 			Clientset: kube,
+			Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
 		}
 {{- end }}
 {{- end }}

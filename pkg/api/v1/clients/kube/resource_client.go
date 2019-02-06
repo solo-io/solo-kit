@@ -334,8 +334,8 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 			case resource := <-cacheUpdated:
 
 				// Only notify watchers if the updated resource is in the watched
-				// namespace and its kind matches the one of the resource client
-				if resource.ObjectMeta.Namespace == watchedNamespace && rc.matchesClientKind(resource) {
+				// namespace and its kind matches the one of the resource clientz
+				if matchesTargetNamespace(watchedNamespace, resource.ObjectMeta.Namespace) && rc.matchesClientKind(resource) {
 					updateResourceList()
 				}
 			case <-ctx.Done():
@@ -346,6 +346,14 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	}(namespace)
 
 	return resourcesChan, errs, nil
+}
+
+func matchesTargetNamespace(targetNs, resourceNs string) bool {
+	// "" == all namespaces are valid
+	if targetNs == "" {
+		return true
+	}
+	return targetNs == resourceNs
 }
 
 // Checks whether the type of the given resource matches the one of the client's underlying CRD:
