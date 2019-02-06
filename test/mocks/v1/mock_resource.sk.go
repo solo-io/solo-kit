@@ -119,14 +119,6 @@ func (list MockResourceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list MockResourceList) ByNamespace() MocksByNamespace {
-	byNamespace := make(MocksByNamespace)
-	for _, mockResource := range list {
-		byNamespace.Add(mockResource)
-	}
-	return byNamespace
-}
-
 func (byNamespace MocksByNamespace) Add(mockResource ...*MockResource) {
 	for _, item := range mockResource {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -146,7 +138,11 @@ func (byNamespace MocksByNamespace) List() MockResourceList {
 }
 
 func (byNamespace MocksByNamespace) Clone() MocksByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(MocksByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &MockResource{}
