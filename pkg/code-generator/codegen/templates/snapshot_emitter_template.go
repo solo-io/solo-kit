@@ -101,6 +101,18 @@ func (c *{{ lower_camel $.GoName }}Emitter) {{ .Name }}() {{ .ImportPrefix }}{{ 
 {{- end}}
 
 func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{""}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for "+
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+	}
+
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
@@ -174,7 +186,6 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- end }}
 {{- end}}
 
-	
 	snapshots := make(chan *{{ .GoName }}Snapshot)
 	go func() {
 		originalSnapshot := {{ .GoName }}Snapshot{}
@@ -190,22 +201,6 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
-
-/* TODO (yuval-k): figure out how to make this work to avoid a stale snapshot.
-		// construct the first snapshot from all the configs that are currently there
-		// that guarantees that the first snapshot contains all the data.
-		for range watchNamespaces {
-{{- range .Resources}}
-{{- if (not .ClusterScoped) }}
-   {{ lower_camel .Name }}NamespacedList := <- {{ lower_camel .Name }}Chan
-   currentSnapshot.{{ .PluralName }}.Clear({{ lower_camel .Name }}NamespacedList.namespace)
-   {{ lower_camel .Name }}List := {{ lower_camel .Name }}NamespacedList.list
-	currentSnapshot.{{ .PluralName }}.Add({{ lower_camel .Name }}List...)
-
-{{- end }}
-{{- end}}
-		}
-*/
 
 		for {
 			record := func(){stats.Record(ctx, m{{ .GoName }}SnapshotIn.M(1))}
@@ -233,8 +228,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				namespace := {{ lower_camel .Name }}NamespacedList.namespace
 				{{ lower_camel .Name }}List := {{ lower_camel .Name }}NamespacedList.list
 
-				currentSnapshot.{{ .PluralName }}.Clear(namespace)
-				currentSnapshot.{{ .PluralName }}.Add({{ lower_camel .Name }}List...)
+				currentSnapshot.{{ .PluralName }}[namespace] = {{ lower_camel .Name }}List
 {{- end }}
 {{- end}}
 			}

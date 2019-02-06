@@ -118,14 +118,6 @@ func (list ClusterResourceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list ClusterResourceList) ByNamespace() ClusterresourcesByNamespace {
-	byNamespace := make(ClusterresourcesByNamespace)
-	for _, clusterResource := range list {
-		byNamespace.Add(clusterResource)
-	}
-	return byNamespace
-}
-
 func (byNamespace ClusterresourcesByNamespace) Add(clusterResource ...*ClusterResource) {
 	for _, item := range clusterResource {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -145,7 +137,11 @@ func (byNamespace ClusterresourcesByNamespace) List() ClusterResourceList {
 }
 
 func (byNamespace ClusterresourcesByNamespace) Clone() ClusterresourcesByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(ClusterresourcesByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &ClusterResource{}

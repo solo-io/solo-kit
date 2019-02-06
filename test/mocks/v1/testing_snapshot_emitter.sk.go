@@ -103,6 +103,18 @@ func (c *testingEmitter) ClusterResource() ClusterResourceClient {
 }
 
 func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{""}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+	}
+
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
@@ -217,25 +229,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			snapshots <- &sentSnapshot
 		}
 
-		/* TODO (yuval-k): figure out how to make this work to avoid a stale snapshot.
-		   		// construct the first snapshot from all the configs that are currently there
-		   		// that guarantees that the first snapshot contains all the data.
-		   		for range watchNamespaces {
-		      mockResourceNamespacedList := <- mockResourceChan
-		      currentSnapshot.Mocks.Clear(mockResourceNamespacedList.namespace)
-		      mockResourceList := mockResourceNamespacedList.list
-		   	currentSnapshot.Mocks.Add(mockResourceList...)
-		      fakeResourceNamespacedList := <- fakeResourceChan
-		      currentSnapshot.Fakes.Clear(fakeResourceNamespacedList.namespace)
-		      fakeResourceList := fakeResourceNamespacedList.list
-		   	currentSnapshot.Fakes.Add(fakeResourceList...)
-		      anotherMockResourceNamespacedList := <- anotherMockResourceChan
-		      currentSnapshot.Anothermockresources.Clear(anotherMockResourceNamespacedList.namespace)
-		      anotherMockResourceList := anotherMockResourceNamespacedList.list
-		   	currentSnapshot.Anothermockresources.Add(anotherMockResourceList...)
-		   		}
-		*/
-
 		for {
 			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }
 
@@ -256,24 +249,21 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				namespace := mockResourceNamespacedList.namespace
 				mockResourceList := mockResourceNamespacedList.list
 
-				currentSnapshot.Mocks.Clear(namespace)
-				currentSnapshot.Mocks.Add(mockResourceList...)
+				currentSnapshot.Mocks[namespace] = mockResourceList
 			case fakeResourceNamespacedList := <-fakeResourceChan:
 				record()
 
 				namespace := fakeResourceNamespacedList.namespace
 				fakeResourceList := fakeResourceNamespacedList.list
 
-				currentSnapshot.Fakes.Clear(namespace)
-				currentSnapshot.Fakes.Add(fakeResourceList...)
+				currentSnapshot.Fakes[namespace] = fakeResourceList
 			case anotherMockResourceNamespacedList := <-anotherMockResourceChan:
 				record()
 
 				namespace := anotherMockResourceNamespacedList.namespace
 				anotherMockResourceList := anotherMockResourceNamespacedList.list
 
-				currentSnapshot.Anothermockresources.Clear(namespace)
-				currentSnapshot.Anothermockresources.Add(anotherMockResourceList...)
+				currentSnapshot.Anothermockresources[namespace] = anotherMockResourceList
 			case clusterResourceList := <-clusterResourceChan:
 				record()
 				currentSnapshot.Clusterresources = clusterResourceList

@@ -106,14 +106,6 @@ func (list FakeResourceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list FakeResourceList) ByNamespace() FakesByNamespace {
-	byNamespace := make(FakesByNamespace)
-	for _, fakeResource := range list {
-		byNamespace.Add(fakeResource)
-	}
-	return byNamespace
-}
-
 func (byNamespace FakesByNamespace) Add(fakeResource ...*FakeResource) {
 	for _, item := range fakeResource {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -133,7 +125,11 @@ func (byNamespace FakesByNamespace) List() FakeResourceList {
 }
 
 func (byNamespace FakesByNamespace) Clone() FakesByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(FakesByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &FakeResource{}
