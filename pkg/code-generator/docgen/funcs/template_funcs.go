@@ -237,7 +237,7 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
 
 			if docsOptions.Output == options.Restructured {
-				link = linkedFile + ".rst.md#" + declaredName
+				link = linkedFile + ".sk.rst#" + declaredName
 			} else {
 				link = linkedFile + ".sk.md#" + declaredName
 			}
