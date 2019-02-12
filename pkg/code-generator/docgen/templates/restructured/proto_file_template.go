@@ -28,7 +28,7 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 
 {{- if gt (len .Messages) 0 }} 
 
-.. _{{ .Package }}.{{ printfptr \"%v\" .Name }}:
+.. _{{ .Package }}.{{ printfptr "%v" .Name }}:
 
 
 ##### Types:
