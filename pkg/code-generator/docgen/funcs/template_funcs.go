@@ -76,7 +76,7 @@ func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) tem
 			suffix := githubFile[3]
 
 			if docsOptions.Output == options.Restructured {
-				return fmt.Sprintf("`%v <https://github.com/%v/%v/blob/%v/%v>`",
+				return fmt.Sprintf("`%v <https://github.com/%v/%v/blob/%v/%v>`_",
 					path, org, project, branch, suffix), nil
 			}
 
@@ -233,7 +233,7 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 			link = wellKnownProtoLink(typeName)
 
 			if docsOptions.Output == options.Restructured {
-				linkText = "`" + typeName + "<" + link + ">`"
+				linkText = "`" + typeName + "<" + link + ">`_"
 			} else {
 				linkText = "[" + typeName + "](" + link + ")"
 			}
