@@ -254,7 +254,7 @@ func linkForResource(project *model.Project, docsOptions *options.DocsOptions) f
 			if file.GetName() == resource.Filename {
 				// TODO: turn this X.proto.sk.md convention into a function lest this linking break
 				if docsOptions.Output == options.Restructured {
-					return fmt.Sprintf("[%v](./%v.rst.md#%v)", resource.Name, resource.Filename, resource.Name), nil
+					return fmt.Sprintf("[%v](./%v.sk.rst#%v)", resource.Name, resource.Filename, resource.Name), nil
 				}
 				return fmt.Sprintf("[%v](./%v.sk.md#%v)", resource.Name, resource.Filename, resource.Name), nil
 			}
