@@ -34,7 +34,7 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 Types:
 ~~~~~~
 
-{{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }}** Top-Level Resource**{{ end }}" }}
+{{ $linkMessage :=  "- :ref:{{backtick}}{{ .Package }}.{{ printfptr \"%v\" .Name }}>{{backtick}}{{- if (resourceForMessage .) }} ** Top-Level Resource**{{ end }}" }}
 {{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }})" }}
 {{- forEachMessage $File .Messages $linkMessage $linkEnum }}  
 
@@ -57,8 +57,11 @@ Source File: {{ githubLinkForFile "master" .Name }}
 
 {{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}
----
-### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
+
+.. _{{ .Package }}.{{ printfptr "%v" .Name }}:
+
+{{ printfptr "%v" .Name }}
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {{ if gt (len .Comments.Leading) 0 }} 
 {{ remove_magic_comments .Comments.Leading }}
