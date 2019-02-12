@@ -74,7 +74,7 @@ Source File: {{ githubLinkForFile "master" .Name }}
    :header: "Field" , "Type", "Description", "Default"
    :delim: |
 
-{{range .Fields -}}
+{{range .Fields }}
    {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}}
 {{end}}
 
