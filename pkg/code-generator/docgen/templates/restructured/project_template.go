@@ -11,17 +11,21 @@ import (
 
 func ProjectDocsRootTemplate(project *model.Project, docsOptions *options.DocsOptions) *template.Template {
 	return template.Must(template.New("pf").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(`
-
-### API Reference for {{ .ProjectConfig.Title}}
+===========================================
+API Reference for {{ .ProjectConfig.Title}}
+===========================================
+.. _{{ .ProjectConfig.Title}}:
 
 API Version: ` + "`{{ .ProjectConfig.Name }}.{{ .ProjectConfig.Version }}`" + `
 
 {{ .ProjectConfig.Description }}
 
 ### API Resources:
+.. toctree::
+   :maxdepth: 2
 {{- range .Resources}}
 {{- if (not .SkipDocsGen) }}
-- {{linkForResource . }}
+   {{linkForResource . }}
 {{- end}}
 {{- end}}
 

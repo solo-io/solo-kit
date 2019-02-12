@@ -12,7 +12,9 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 	str := `
 {{ $File := . -}}
 
-### Package: {{ backtick }}{{ .Package }}{{ backtick }}
+===================================================
+Package: {{ backtick }}{{ .Package }}{{ backtick }}
+===================================================
 
 {{- if gt (len .SyntaxComments.Detached) 0 }}
 
@@ -25,6 +27,10 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 {{ end }}
 
 {{- if gt (len .Messages) 0 }} 
+
+.. _{{ .Package }}.{{ printfptr \"%v\" .Name }}:
+
+
 ##### Types:
 
 {{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }}** Top-Level Resource**{{ end }}" }}
@@ -64,6 +70,8 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 {{range .Fields -}}
+.. _{{ .Package }}.{{ printfptr \"%v\" .Name }}:
+
 | {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
@@ -90,7 +98,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 
 {{- forEachMessage $File .Messages $msgLongInfo $enumLongInfo }}  
 
-{{- range .Enums }}  
+{{- range .Enums }}
 ### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
 
 Description: {{ remove_magic_comments .Comments.Leading }}
