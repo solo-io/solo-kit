@@ -29,17 +29,17 @@ var ignoredFiles = []string{
 }
 
 func (d *DocsGen) protoSuffix() string {
-	if d.DocsOptions.Output == Restructured {
+	if d.DocsOptions.Output == options.Restructured {
 		return ".sk.rst"
 	}
 	return ".sk.md"
 }
 
 func (d *DocsGen) protoFileTemplate() *template.Template {
-	if d.DocsOptions.Output == Restructured {
-		return rst.ProtoFileTemplate(d.Project)
+	if d.DocsOptions.Output == options.Restructured {
+		return rst.ProtoFileTemplate(d.Project, &d.DocsOptions)
 	}
-	return md.ProtoFileTemplate(d.Project)
+	return md.ProtoFileTemplate(d.Project, &d.DocsOptions)
 }
 
 func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescriptor) (code_generator.Files, error) {
@@ -92,8 +92,8 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (code_generator.Files, error) {
 	protoFiles := protokit.ParseCodeGenRequest(project.Request)
 	if docsOptions == nil {
-		docsOptions = &DocsOptions{
-			Output: Markdown,
+		docsOptions = &options.DocsOptions{
+			Output: options.Markdown,
 		}
 	}
 
@@ -119,17 +119,17 @@ func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (co
 }
 
 func (d *DocsGen) projectSuffix() string {
-	if d.DocsOptions.Output == Restructured {
+	if d.DocsOptions.Output == options.Restructured {
 		return ".project.sk.rst"
 	}
 	return ".project.sk.md"
 }
 
 func (d *DocsGen) projectDocsRootTemplate() *template.Template {
-	if d.DocsOptions.Output == Restructured {
-		return rst.ProjectDocsRootTemplate(d.Project)
+	if d.DocsOptions.Output == options.Restructured {
+		return rst.ProjectDocsRootTemplate(d.Project, &d.DocsOptions)
 	}
-	return md.ProjectDocsRootTemplate(d.Project)
+	return md.ProjectDocsRootTemplate(d.Project, &d.DocsOptions)
 }
 
 func (d *DocsGen) GenerateFilesForProject() (code_generator.Files, error) {
