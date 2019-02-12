@@ -1,15 +1,16 @@
-package templates
+package markdown
 
 import (
 	"text/template"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/funcs"
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/funcs"
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func ProjectDocsRootTemplate(project *model.Project) *template.Template {
-	return template.Must(template.New("pf").Funcs(funcs.TemplateFuncs(project)).Parse(`
+func ProjectDocsRootTemplate(project *model.Project, docsOptions *options.DocsOptions) *template.Template {
+	return template.Must(template.New("pf").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(`
 
 ### API Reference for {{ .ProjectConfig.Title}}
 
