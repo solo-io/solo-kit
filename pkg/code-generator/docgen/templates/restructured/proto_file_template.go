@@ -31,7 +31,8 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 .. _{{ .Package }}.{{ printfptr "%v" .Name }}:
 
 
-##### Types:
+Types:
+~~~~~~
 
 {{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }}** Top-Level Resource**{{ end }}" }}
 {{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }})" }}
@@ -41,7 +42,8 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 
 {{- if gt (len .Enums) 0 }} 
 
-##### Enums:
+Enums:
+~~~~~~
 
 {{ range .Enums}}
 	- [{{ printfptr "%v" .Name }}](#{{ printfptr "%v" .Name }})
@@ -50,7 +52,8 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 
 {{ end}}
 
-##### Source File: {{ githubLinkForFile "master" .Name }}
+Source File: {{ githubLinkForFile "master" .Name }}
+~~~~~~~~~~~~
 
 {{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}
@@ -61,20 +64,19 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 {{ remove_magic_comments .Comments.Leading }}
 {{- end }}
 
-{{backtick}}{{backtick}}{{backtick}}yaml
+::
+
 {{range .Fields -}}
-"{{ printfptr "%v" .Name}}": {{ fieldType . }}
+   "{{ printfptr "%v" .Name}}": {{ fieldType . }}
 {{end}}
-{{backtick}}{{backtick}}{{backtick}}
 
-+-------+------+-------------+---------+
-| Field | Type | Description | Default |
-+=======+======+=============+=========+
+
+.. csv-table:: Fields Reference
+   :header: "Field" , "Type", "Description", "Default"
+   :delim: |
+
 {{range .Fields -}}
-
-| {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
-+-------+------+-------------+---------+
-
+   | {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
 ` + "`" + ` }}

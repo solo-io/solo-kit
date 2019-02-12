@@ -74,8 +74,15 @@ func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) tem
 			org := githubFile[1]
 			project := githubFile[2]
 			suffix := githubFile[3]
+
+			if docsOptions.Output == options.Restructured {
+				return fmt.Sprintf("`%v <https://github.com/%v/%v/blob/%v/%v>`",
+					path, org, project, branch, suffix), nil
+			}
+
 			return fmt.Sprintf("[%v](https://github.com/%v/%v/blob/%v/%v)",
 				path, org, project, branch, suffix), nil
+
 		},
 		"printfptr": printPointer,
 		"remove_magic_comments": func(in string) string {
@@ -246,7 +253,7 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 
 			if docsOptions.Output == options.Restructured {
 				link = linkedFile + ".sk.rst#" + declaredName
-				linkText = ":ref: " + typeName + "<" + link + ">"
+				linkText = ":ref:`" + typeName + "<" + link + ">`"
 			} else {
 				link = linkedFile + ".sk.md#" + declaredName
 				linkText = "[" + typeName + "](" + link + ")"
