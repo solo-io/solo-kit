@@ -219,9 +219,17 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 			declaredName = enum.GetName()
 		}
 		var link string
+		var linkText string
+
 		switch {
 		case strings.Contains(typeName, ".google.protobuf."):
 			link = wellKnownProtoLink(typeName)
+
+			if docsOptions.Output == options.Restructured {
+				linkText = "`" + typeName + "<" + link + ">`"
+			} else {
+				linkText = "[" + typeName + "](" + link + ")"
+			}
 		default:
 			var linkedFile string
 			for _, toGenerate := range project.Request.FileToGenerate {
@@ -238,11 +246,12 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 
 			if docsOptions.Output == options.Restructured {
 				link = linkedFile + ".sk.rst#" + declaredName
+				linkText = ":ref: " + typeName + "<" + link + ">"
 			} else {
 				link = linkedFile + ".sk.md#" + declaredName
+				linkText = "[" + typeName + "](" + link + ")"
 			}
 		}
-		linkText := "[" + typeName + "](" + link + ")"
 		return linkText, nil
 	}
 }
@@ -254,7 +263,7 @@ func linkForResource(project *model.Project, docsOptions *options.DocsOptions) f
 			if file.GetName() == resource.Filename {
 				// TODO: turn this X.proto.sk.md convention into a function lest this linking break
 				if docsOptions.Output == options.Restructured {
-					return fmt.Sprintf("[%v](./%v.sk.rst#%v)", resource.Name, resource.Filename, resource.Name), nil
+					return fmt.Sprintf("[%v](./%v.sk#%v)", resource.Name, resource.Filename, resource.Name), nil
 				}
 				return fmt.Sprintf("[%v](./%v.sk.md#%v)", resource.Name, resource.Filename, resource.Name), nil
 			}
