@@ -70,13 +70,12 @@ Source File: {{ githubLinkForFile "master" .Name }}
    "{{ printfptr "%v" .Name}}": {{ fieldType . }}
 {{end}}
 
-
 .. csv-table:: Fields Reference
    :header: "Field" , "Type", "Description", "Default"
    :delim: |
 
 {{range .Fields -}}
-   | {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+   {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}}
 {{end}}
 
 ` + "`" + ` }}
@@ -92,10 +91,12 @@ Source File: {{ githubLinkForFile "master" .Name }}
 {{ remove_magic_comments .Comments.Leading }}
 {{- end }}
 
-| Name | Description |
-| ----- | ----------- | 
+.. csv-table:: Enum Reference
+   :header: "Name", "Description"
+   :delim: |
+
 {{range .Values -}}
-| {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{ remove_magic_comments (nobr .Comments.Leading) }} |
+   {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{ remove_magic_comments (nobr .Comments.Leading) }}
 {{end}}
 
 ` + "`" + ` }}
