@@ -89,9 +89,11 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (code_generator.Files, error) {
 	protoFiles := protokit.ParseCodeGenRequest(project.Request)
 	if docsOptions == nil {
-		docsOptions = &options.DocsOptions{
-			Output: options.Markdown,
-		}
+		docsOptions = &options.DocsOptions{}
+	}
+
+	if docsOptions.Output == "" {
+		docsOptions.Output = options.Markdown
 	}
 
 	docGenerator := DocsGen{
