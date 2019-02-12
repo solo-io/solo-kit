@@ -20,17 +20,21 @@ API Version: ` + "`{{ .ProjectConfig.Name }}.{{ .ProjectConfig.Version }}`" + `
 
 {{ .ProjectConfig.Description }}
 
-### API Resources:
+API Resources:
+~~~~~~~~~~~~~~
+
 .. toctree::
    :maxdepth: 2
-{{- range .Resources}}
+
+{{ range .Resources}}
 {{- if (not .SkipDocsGen) }}
-   {{linkForResource . }}
+   .Name <{{ .Filename }}.sk>
 {{- end}}
 {{- end}}
 
-<!-- Start of HubSpot Embed Code -->
-<script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
-<!-- End of HubSpot Embed Code -->
+.. raw:: html
+   <!-- Start of HubSpot Embed Code -->
+   <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
+   <!-- End of HubSpot Embed Code -->
 `))
 }

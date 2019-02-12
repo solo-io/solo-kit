@@ -252,8 +252,7 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
 
 			if docsOptions.Output == options.Restructured {
-				link = linkedFile + ".sk.rst#" + declaredName
-				linkText = ":ref:`" + typeName + "<" + link + ">`"
+				linkText = ":ref:`message." + strings.TrimPrefix(field.GetTypeName(), ".") + "`"
 			} else {
 				link = linkedFile + ".sk.md#" + declaredName
 				linkText = "[" + typeName + "](" + link + ")"
@@ -270,7 +269,7 @@ func linkForResource(project *model.Project, docsOptions *options.DocsOptions) f
 			if file.GetName() == resource.Filename {
 				// TODO: turn this X.proto.sk.md convention into a function lest this linking break
 				if docsOptions.Output == options.Restructured {
-					return fmt.Sprintf("[%v](./%v.sk#%v)", resource.Name, resource.Filename, resource.Name), nil
+					return fmt.Sprintf(":ref:`%v`", resource.Original.FullName), nil
 				}
 				return fmt.Sprintf("[%v](./%v.sk.md#%v)", resource.Name, resource.Filename, resource.Name), nil
 			}

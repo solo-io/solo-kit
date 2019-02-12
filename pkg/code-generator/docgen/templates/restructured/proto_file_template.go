@@ -26,15 +26,14 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 
 {{ end }}
 
-{{- if gt (len .Messages) 0 }} 
+{{- if gt (len .Messages) 0 }}
 
 .. _{{ .Package }}.{{ printfptr "%v" .Name }}:
 
 
-Types:
-~~~~~~
+**Types:**
 
-{{ $linkMessage :=  "- :ref:{{backtick}}{{ .Package }}.{{ printfptr \"%v\" .Name }}>{{backtick}}{{- if (resourceForMessage .) }} ** Top-Level Resource**{{ end }}" }}
+{{ $linkMessage :=  "- :ref:{{backtick}}message.{{ .FullName }}{{backtick}}{{- if (resourceForMessage .) }} **Top-Level Resource**{{ end }}" }}
 {{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }})" }}
 {{- forEachMessage $File .Messages $linkMessage $linkEnum }}  
 
@@ -42,8 +41,7 @@ Types:
 
 {{- if gt (len .Enums) 0 }} 
 
-Enums:
-~~~~~~
+**Enums:**
 
 {{ range .Enums}}
 	- [{{ printfptr "%v" .Name }}](#{{ printfptr "%v" .Name }})
@@ -52,37 +50,42 @@ Enums:
 
 {{ end}}
 
-Source File: {{ githubLinkForFile "master" .Name }}
-~~~~~~~~~~~~
+**Source File:** {{ githubLinkForFile "master" .Name }}
 
 {{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}
 
-.. _{{ .Package }}.{{ printfptr "%v" .Name }}:
+.. _message.{{ .FullName }}:
 
 {{ printfptr "%v" .Name }}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {{ if gt (len .Comments.Leading) 0 }} 
 {{ remove_magic_comments .Comments.Leading }}
-{{- end }}
+{{ end }}
 
 ::
 
-{{range .Fields -}}
+{{range .Fields }}
    "{{ printfptr "%v" .Name}}": {{ fieldType . }}
-{{end}}
-
-.. csv-table:: Fields Reference
-   :header: "Field" , "Type", "Description", "Default"
-   :delim: |
+{{- end}}
 
 {{range .Fields }}
-   {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}}
-{{end}}
+
+.. _field.{{ .FullName }}:
+
+{{ printfptr "%v" .Name }}
+++++++++++++++++++++++++++
+
+Type: {{linkForField (getFileForMessage $Message) . }} 
+
+Description: {{ remove_magic_comments (nobr .Comments.Leading) }} 
+
+{{if .DefaultValue}}Default: {{.DefaultValue}}{{end}}
+{{- end}}
+
 
 ` + "`" + ` }}
-
 
 {{ $enumLongInfo :=  ` + "`" +
 		`
@@ -98,7 +101,7 @@ Source File: {{ githubLinkForFile "master" .Name }}
    :header: "Name", "Description"
    :delim: |
 
-{{range .Values -}}
+{{range .Values }}
    {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{ remove_magic_comments (nobr .Comments.Leading) }}
 {{end}}
 
@@ -111,17 +114,21 @@ Source File: {{ githubLinkForFile "master" .Name }}
 
 Description: {{ remove_magic_comments .Comments.Leading }}
 
-| Name | Description |
-| ----- | ----------- | 
-{{range .Values -}}
-| {{ printfptr "%v" .Name }} | {{ remove_magic_comments (nobr .Comments.Leading) }} |
+.. csv-table:: Fields Reference
+   :header: "Name", "Description"
+   :delim: |
+
+{{range .Values }}
+   {{ printfptr "%v" .Name }} | {{ remove_magic_comments (nobr .Comments.Leading) }}
 {{end}}
+
 
 {{- end }}
 
-<!-- Start of HubSpot Embed Code -->
-<script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
-<!-- End of HubSpot Embed Code -->
+.. raw:: html
+   <!-- Start of HubSpot Embed Code -->
+   <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
+   <!-- End of HubSpot Embed Code -->
 `
 	return template.Must(template.New("p").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(str))
 }
