@@ -71,7 +71,6 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 | Field | Type | Description | Default |
 +=======+======+=============+=========+
 {{range .Fields -}}
-.. _{{ .Package }}.{{ printfptr "%v" .Name }}:
 
 | {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 +-------+------+-------------+---------+
