@@ -254,7 +254,11 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 			if docsOptions.Output == options.Restructured {
 				linkText = ":ref:`message." + strings.TrimPrefix(field.GetTypeName(), ".") + "`"
 			} else {
-				link = linkedFile + ".sk.md#" + declaredName
+				ext := ".sk.md"
+				if docsOptions.Output == options.Hugo {
+					ext = ".sk"
+				}
+				link = linkedFile + ext + "#" + declaredName
 				linkText = "[" + typeName + "](" + link + ")"
 			}
 		}
