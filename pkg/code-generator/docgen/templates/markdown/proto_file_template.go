@@ -27,7 +27,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 {{- if gt (len .Messages) 0 }} 
 ##### Types:
 
-{{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }}** Top-Level Resource**{{ end }}" }}
+{{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }} **Top-Level Resource**{{ end }}" }}
 {{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }})" }}
 {{- forEachMessage $File .Messages $linkMessage $linkEnum }}  
 
