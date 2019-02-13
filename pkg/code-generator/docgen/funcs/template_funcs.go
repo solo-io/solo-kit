@@ -271,7 +271,7 @@ func linkForResource(project *model.Project, docsOptions *options.DocsOptions) f
 				if docsOptions.Output == options.Restructured {
 					return fmt.Sprintf(":ref:`%v`", resource.Original.FullName), nil
 				}
-				return fmt.Sprintf("[%v](./%v.sk.md#%v)", resource.Name, resource.Filename, resource.Name), nil
+				return fmt.Sprintf("[%v](./%v.sk#%v)", resource.Name, resource.Filename, resource.Name), nil
 			}
 		}
 		return "", errors.Errorf("internal error: could not find file for resource %v in project %v",
