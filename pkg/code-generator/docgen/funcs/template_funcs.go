@@ -255,10 +255,12 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 				linkText = ":ref:`message." + strings.TrimPrefix(field.GetTypeName(), ".") + "`"
 			} else {
 				ext := ".sk.md"
+				prefix := ""
 				if docsOptions.Output == options.Hugo {
 					ext = ".sk"
+					prefix = "../"
 				}
-				link = linkedFile + ext + "#" + declaredName
+				link = prefix + linkedFile + ext + "#" + declaredName
 				linkText = "[" + typeName + "](" + link + ")"
 			}
 		}
@@ -276,10 +278,12 @@ func linkForResource(project *model.Project, docsOptions *options.DocsOptions) f
 					return fmt.Sprintf(":ref:`%v`", resource.Original.FullName), nil
 				}
 				ext := ".sk.md"
+				prefix := "./"
 				if docsOptions.Output == options.Hugo {
 					ext = ".sk"
+					prefix = "../"
 				}
-				return fmt.Sprintf("[%v](./%v%v#%v)", resource.Name, resource.Filename, ext, resource.Name), nil
+				return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, resource.Name), nil
 			}
 		}
 		return "", errors.Errorf("internal error: could not find file for resource %v in project %v",
