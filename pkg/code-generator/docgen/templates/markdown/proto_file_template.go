@@ -9,12 +9,6 @@ import (
 )
 
 func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions) *template.Template {
-	frontMatter := `
----
-title: "{{ printfptr "%v" .Name }}"
-weight: 5
----
-`
 	str := `
 {{ $File := . -}}
 
@@ -113,9 +107,5 @@ Description: {{ remove_magic_comments .Comments.Leading }}
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
 <!-- End of HubSpot Embed Code -->
 `
-	fullTemplate := str
-	if docsOptions.Output == options.Hugo {
-		fullTemplate = frontMatter + str
-	}
-	return template.Must(template.New("p").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(fullTemplate))
+	return template.Must(template.New("p").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(str))
 }
