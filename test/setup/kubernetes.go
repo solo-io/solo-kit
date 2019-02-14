@@ -38,6 +38,11 @@ func SetupKubeForTest(namespace string) error {
 func TeardownKube(namespace string) error {
 	return Kubectl("delete", "namespace", namespace)
 }
+
+func DeleteCrd(crd string) error {
+	return Kubectl("delete", "crd", crd)
+}
+
 func Kubectl(args ...string) error {
 	cmd := exec.Command("kubectl", args...)
 	log.Debugf("k command: %v", cmd.Args)

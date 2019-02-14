@@ -298,7 +298,7 @@ func (f *ResourceClientSharedInformerFactory) updatedOccurred(resource v1.Resour
 				return
 			case watchChan <- resource:
 			case <-time.After(f.watchTimeout):
-				contextutils.LoggerFrom(f.ctx).Errorf("timed out after waiting for %v"+
+				contextutils.LoggerFrom(f.ctx).Errorf("timed out after waiting for %v "+
 					"for watch to receive event on resource %v", f.watchTimeout, resource)
 			}
 		}(watcher, resource)

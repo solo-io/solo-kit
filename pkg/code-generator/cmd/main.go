@@ -14,6 +14,7 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -22,7 +23,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDirs []string) error {
+type DocsOptions = options.DocsOptions
+
+func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customImports, skipDirs []string) error {
 	skipDirs = append(skipDirs, "vendor/")
 	absoluteRoot, err := filepath.Abs(relativeRoot)
 	if err != nil {
@@ -89,8 +92,8 @@ func Run(relativeRoot string, compileProtos, genDocs bool, customImports, skipDi
 			return err
 		}
 
-		if project.ProjectConfig.DocsDir != "" && genDocs {
-			docs, err := docgen.GenerateFiles(project)
+		if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
+			docs, err := docgen.GenerateFiles(project, genDocs)
 			if err != nil {
 				return err
 			}

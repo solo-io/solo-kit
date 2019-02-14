@@ -1,13 +1,14 @@
-package templates
+package markdown
 
 import (
 	"text/template"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/funcs"
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/funcs"
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func ProtoFileTemplate(project *model.Project) *template.Template {
+func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions) *template.Template {
 	str := `
 {{ $File := . -}}
 
@@ -26,7 +27,7 @@ func ProtoFileTemplate(project *model.Project) *template.Template {
 {{- if gt (len .Messages) 0 }} 
 ##### Types:
 
-{{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }}** Top-Level Resource**{{ end }}" }}
+{{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }} **Top-Level Resource**{{ end }}" }}
 {{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }})" }}
 {{- forEachMessage $File .Messages $linkMessage $linkEnum }}  
 
@@ -106,5 +107,5 @@ Description: {{ remove_magic_comments .Comments.Leading }}
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
 <!-- End of HubSpot Embed Code -->
 `
-	return template.Must(template.New("p").Funcs(funcs.TemplateFuncs(project)).Parse(str))
+	return template.Must(template.New("p").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(str))
 }

@@ -99,6 +99,9 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			if err := setup.TeardownKube(namespace); err != nil {
 				panic(err)
 			}
+			if err := setup.DeleteCrd(v1.MockResourceCrd.FullName()); err != nil {
+				panic(err)
+			}
 		})
 
 		It("CRUDs resources", func() {
@@ -140,6 +143,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		AfterEach(func() {
 			setup.TeardownKube(ns1)
 			setup.TeardownKube(ns2)
+			setup.DeleteCrd(v1.MockResourceCrd.FullName())
 		})
 		It("can watch resources across namespaces when using NamespaceAll", func() {
 			namespace := ""

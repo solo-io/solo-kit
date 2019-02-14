@@ -33,7 +33,12 @@ func main() {
 		"(repeated flag, specify as many times as desired)")
 	flag.Parse()
 
-	if err := cmd.Run(*relativeRoot, *compileProtos, *genDocs, customImports, skipDirs); err != nil {
+	var docOptions *cmd.DocsOptions
+	if *genDocs {
+		docOptions = new(cmd.DocsOptions)
+	}
+
+	if err := cmd.Run(*relativeRoot, *compileProtos, docOptions, customImports, skipDirs); err != nil {
 		log.Fatalf("%v", err)
 	}
 }

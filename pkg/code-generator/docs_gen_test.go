@@ -55,7 +55,7 @@ var _ = Describe("DocsGen", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run code gen
-		err = cmd.Run(tempDir, true, true, nil, nil)
+		err = cmd.Run(tempDir, true, new(cmd.DocsOptions), nil, nil)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
