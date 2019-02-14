@@ -4,8 +4,8 @@
 ##### Types:
 
 
-- [AnotherMockResource](#AnotherMockResource)** Top-Level Resource**
-- [ClusterResource](#ClusterResource)** Top-Level Resource**
+- [AnotherMockResource](#AnotherMockResource) **Top-Level Resource**
+- [ClusterResource](#ClusterResource) **Top-Level Resource**
   
 
 

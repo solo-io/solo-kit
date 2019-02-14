@@ -8,7 +8,7 @@ import (
 //go:generate go run generate.go
 
 func main() {
-	if err := cmd.Run(".", true, true, nil, nil); err != nil {
+	if err := cmd.Run(".", true, nil, nil, nil); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
 }
