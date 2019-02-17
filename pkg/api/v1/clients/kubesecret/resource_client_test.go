@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -27,10 +26,12 @@ import (
 )
 
 var _ = Describe("Base", func() {
-	if os.Getenv("RUN_KUBE_TESTS") != "1" {
-		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
-		return
-	}
+	BeforeEach(func() {
+		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+			Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+		}
+	})
+
 	var (
 		namespace string
 		cfg       *rest.Config
