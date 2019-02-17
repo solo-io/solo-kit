@@ -82,7 +82,7 @@ func (rc *ResourceClient) ToKubeSecret(ctx context.Context, resource resources.R
 	}, nil
 }
 
-type SecretConvertor interface {
+type SecretConverter interface {
 	FromKubeSecret(ctx context.Context, rc *ResourceClient, secret *v1.Secret) (resources.Resource, error)
 	ToKubeSecret(ctx context.Context, rc *ResourceClient, resource resources.Resource) (*v1.Secret, error)
 }
@@ -146,25 +146,25 @@ type ResourceClient struct {
 	kubeCache    cache.KubeCoreCache
 	// should we marshal/unmarshal these secrets assuming their structure is map[string]string ?
 	// custom logic to convert the secret to a resource
-	secretConvertor SecretConvertor
+	secretConverter SecretConverter
 }
 
 func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resource, plainSecrets bool, kubeCache cache.KubeCoreCache) (*ResourceClient, error) {
-	var sc SecretConvertor
+	var sc SecretConverter
 	if plainSecrets {
 		sc = new(plainSecret)
 	}
-	return NewResourceClientWithSecretConvertor(kube, resourceType, kubeCache, sc)
+	return NewResourceClientWithSecretConverter(kube, resourceType, kubeCache, sc)
 }
 
-func NewResourceClientWithSecretConvertor(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, sc SecretConvertor) (*ResourceClient, error) {
+func NewResourceClientWithSecretConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, sc SecretConverter) (*ResourceClient, error) {
 
 	return &ResourceClient{
 		kube:            kube,
 		resourceName:    reflect.TypeOf(resourceType).String(),
 		resourceType:    resourceType,
 		kubeCache:       kubeCache,
-		secretConvertor: sc,
+		secretConverter: sc,
 	}, nil
 }
 
@@ -209,8 +209,8 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 
 func (rc *ResourceClient) resourceToKubeSecret(ctx context.Context, resource resources.Resource) (*v1.Secret, error) {
 
-	if rc.secretConvertor != nil {
-		return rc.secretConvertor.ToKubeSecret(ctx, rc, resource)
+	if rc.secretConverter != nil {
+		return rc.secretConverter.ToKubeSecret(ctx, rc, resource)
 	}
 
 	return rc.ToKubeSecret(ctx, resource)
@@ -295,8 +295,8 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 func (rc *ResourceClient) fromKubeResource(ctx context.Context, secret *v1.Secret) (resources.Resource, error) {
 
-	if rc.secretConvertor != nil {
-		return rc.secretConvertor.FromKubeSecret(ctx, rc, secret)
+	if rc.secretConverter != nil {
+		return rc.secretConverter.FromKubeSecret(ctx, rc, secret)
 	}
 
 	return rc.FromKubeSecret(secret)
