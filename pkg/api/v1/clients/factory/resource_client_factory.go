@@ -116,6 +116,9 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		if opts.Cache == nil {
 			return nil, errors.Errorf("invalid opts, secret client requires a kube core cache")
 		}
+		if opts.SecretConverter != nil {
+			return kubesecret.NewResourceClientWithSecretConverter(opts.Clientset, resourceType, opts.Cache, opts.SecretConverter)
+		}
 		return kubesecret.NewResourceClient(opts.Clientset, resourceType, opts.PlainSecrets, opts.Cache)
 	case *VaultSecretClientFactory:
 		return vault.NewResourceClient(opts.Vault, opts.RootKey, resourceType), nil
@@ -184,8 +187,9 @@ type KubeSecretClientFactory struct {
 	Clientset kubernetes.Interface
 	// set this  to true if resource fields are all strings
 	// resources will be stored as plain kubernetes secrets without serializing/deserializing
-	PlainSecrets bool
-	Cache        cache.KubeCoreCache
+	PlainSecrets    bool
+	SecretConverter kubesecret.SecretConverter
+	Cache           cache.KubeCoreCache
 }
 
 func (f *KubeSecretClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {

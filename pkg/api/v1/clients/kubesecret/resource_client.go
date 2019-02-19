@@ -7,7 +7,6 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -24,7 +23,7 @@ import (
 
 const annotationKey = "resource_kind"
 
-func (rc *ResourceClient) fromKubeSecret(secret *v1.Secret) (resources.Resource, error) {
+func (rc *ResourceClient) FromKubeSecret(secret *v1.Secret) (resources.Resource, error) {
 	resource := rc.NewResource()
 	// not our secret
 	// should be an error on a Read, ignored on a list
@@ -60,7 +59,7 @@ func fromStringStringMap(input map[string]string) map[string][]byte {
 	return output
 }
 
-func (rc *ResourceClient) toKubeSecret(resource resources.Resource) (*v1.Secret, error) {
+func (rc *ResourceClient) ToKubeSecret(ctx context.Context, resource resources.Resource) (*v1.Secret, error) {
 	resourceMap, err := protoutils.MarshalMap(resource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling resource as map")
@@ -83,7 +82,14 @@ func (rc *ResourceClient) toKubeSecret(resource resources.Resource) (*v1.Secret,
 	}, nil
 }
 
-func (rc *ResourceClient) fromPlainKubeSecret(secret *v1.Secret) (resources.Resource, error) {
+type SecretConverter interface {
+	FromKubeSecret(ctx context.Context, rc *ResourceClient, secret *v1.Secret) (resources.Resource, error)
+	ToKubeSecret(ctx context.Context, rc *ResourceClient, resource resources.Resource) (*v1.Secret, error)
+}
+
+type plainSecret struct{}
+
+func (p *plainSecret) FromKubeSecret(ctx context.Context, rc *ResourceClient, secret *v1.Secret) (resources.Resource, error) {
 	resource := rc.NewResource()
 	// not our secret
 	// should be an error on a Read, ignored on a list
@@ -102,7 +108,7 @@ func (rc *ResourceClient) fromPlainKubeSecret(secret *v1.Secret) (resources.Reso
 	return resource, nil
 }
 
-func (rc *ResourceClient) toPlainKubeSecret(ctx context.Context, resource resources.Resource) (*v1.Secret, error) {
+func (p *plainSecret) ToKubeSecret(ctx context.Context, rc *ResourceClient, resource resources.Resource) (*v1.Secret, error) {
 	resourceMap, err := protoutils.MarshalMapEmitZeroValues(resource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling resource as map")
@@ -139,16 +145,26 @@ type ResourceClient struct {
 	resourceType resources.Resource
 	kubeCache    cache.KubeCoreCache
 	// should we marshal/unmarshal these secrets assuming their structure is map[string]string ?
-	plainSecrets bool
+	// custom logic to convert the secret to a resource
+	secretConverter SecretConverter
 }
 
 func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resource, plainSecrets bool, kubeCache cache.KubeCoreCache) (*ResourceClient, error) {
+	var sc SecretConverter
+	if plainSecrets {
+		sc = new(plainSecret)
+	}
+	return NewResourceClientWithSecretConverter(kube, resourceType, kubeCache, sc)
+}
+
+func NewResourceClientWithSecretConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, sc SecretConverter) (*ResourceClient, error) {
+
 	return &ResourceClient{
-		kube:         kube,
-		resourceName: reflect.TypeOf(resourceType).String(),
-		resourceType: resourceType,
-		plainSecrets: plainSecrets,
-		kubeCache:    kubeCache,
+		kube:            kube,
+		resourceName:    reflect.TypeOf(resourceType).String(),
+		resourceType:    resourceType,
+		kubeCache:       kubeCache,
+		secretConverter: sc,
 	}, nil
 }
 
@@ -179,22 +195,25 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		}
 		return nil, errors.Wrapf(err, "reading secret from kubernetes")
 	}
-	var resource resources.Resource
-	if rc.plainSecrets {
-		resource, err = rc.fromPlainKubeSecret(secret)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		resource, err = rc.fromKubeSecret(secret)
-		if err != nil {
-			return nil, err
-		}
+
+	resource, err := rc.fromKubeResource(opts.Ctx, secret)
+	if err != nil {
+		return nil, err
 	}
+
 	if resource == nil {
 		return nil, errors.Errorf("secret %v is not kind %v", name, rc.Kind())
 	}
 	return resource, nil
+}
+
+func (rc *ResourceClient) resourceToKubeSecret(ctx context.Context, resource resources.Resource) (*v1.Secret, error) {
+
+	if rc.secretConverter != nil {
+		return rc.secretConverter.ToKubeSecret(ctx, rc, resource)
+	}
+
+	return rc.ToKubeSecret(ctx, resource)
 }
 
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
@@ -204,22 +223,9 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 	meta := resource.GetMetadata()
 
-	// mutate and return clone
-	clone := proto.Clone(resource).(resources.Resource)
-	clone.SetMetadata(meta)
-
-	var secret *v1.Secret
-	var err error
-	if rc.plainSecrets {
-		secret, err = rc.toPlainKubeSecret(opts.Ctx, resource.(resources.Resource))
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		secret, err = rc.toKubeSecret(resource.(resources.Resource))
-		if err != nil {
-			return nil, err
-		}
+	secret, err := rc.resourceToKubeSecret(opts.Ctx, resource)
+	if err != nil {
+		return nil, err
 	}
 
 	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{
@@ -269,17 +275,9 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 	var resourceList resources.ResourceList
 	for _, secret := range secretList {
-		var resource resources.Resource
-		if rc.plainSecrets {
-			resource, err = rc.fromPlainKubeSecret(secret)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			resource, err = rc.fromKubeSecret(secret)
-			if err != nil {
-				return nil, err
-			}
+		resource, err := rc.fromKubeResource(opts.Ctx, secret)
+		if err != nil {
+			return nil, err
 		}
 		// not our resource, ignore it
 		if resource == nil {
@@ -293,6 +291,15 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	})
 
 	return resourceList, nil
+}
+
+func (rc *ResourceClient) fromKubeResource(ctx context.Context, secret *v1.Secret) (resources.Resource, error) {
+
+	if rc.secretConverter != nil {
+		return rc.secretConverter.FromKubeSecret(ctx, rc, secret)
+	}
+
+	return rc.FromKubeSecret(secret)
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
