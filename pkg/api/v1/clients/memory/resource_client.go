@@ -192,7 +192,6 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	cachedResources := rc.cache.List(rc.Prefix(namespace))
 	var resourceList resources.ResourceList
 	for _, resource := range cachedResources {
@@ -210,7 +209,6 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	resourcesChan := make(chan resources.ResourceList)
 	errs := make(chan error)
 	updateResourceList := func() {
