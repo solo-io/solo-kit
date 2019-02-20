@@ -36,10 +36,11 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 
 	Expect(r1).To(BeAssignableToTypeOf(&v1.MockResource{}))
 	Expect(r1.GetMetadata().Name).To(Equal(foo))
-	if namespace == "" {
-		namespace = DefaultNamespace
+	writtenNamespace := namespace
+	if writtenNamespace == "" {
+		writtenNamespace = DefaultNamespace
 	}
-	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
+	Expect(r1.GetMetadata().Namespace).To(Equal(writtenNamespace))
 	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(""))
 	Expect(r1.(*v1.MockResource).Data).To(Equal(data))
 
@@ -62,7 +63,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	read, err := client.Read(namespace, foo, clients.ReadOpts{})
+	read, err := client.Read(writtenNamespace, foo, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	// it should update the resource version on the new write
 	Expect(read.GetMetadata().ResourceVersion).NotTo(Equal(oldRv))
@@ -97,16 +98,16 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	Expect(list).To(ContainElement(r1))
 	Expect(list).To(ContainElement(r2))
 
-	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{})
+	err = client.Delete(writtenNamespace, "adsfw", clients.DeleteOpts{})
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsNotExist(err)).To(BeTrue())
 
-	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{
+	err = client.Delete(writtenNamespace, "adsfw", clients.DeleteOpts{
 		IgnoreNotExist: true,
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
+	err = client.Delete(writtenNamespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
 	Eventually(func() resources.ResourceList {
