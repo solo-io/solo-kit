@@ -8,6 +8,8 @@ var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_s
 	`package {{ .Project.ProjectConfig.Version }}
 
 import (
+	"fmt"
+
 	{{ .Imports }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
@@ -62,4 +64,36 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash",  s.Hash()))
 }
 
+type {{ .GoName }}SnapshotStringer struct {
+	Version              uint64
+{{- range .Resources}}
+	{{ upper_camel .PluralName }} []string
+{{- end}}
+}
+
+func (ss {{ .GoName }}SnapshotStringer) String() string {
+	s := fmt.Sprintf("{{ .GoName }}Snapshot %v\n", ss.Version)
+{{- range .Resources}}
+
+	s += fmt.Sprintf("  {{ upper_camel .PluralName }} %v\n", len(ss.{{ upper_camel .PluralName }}))
+	for _, name := range ss.{{ upper_camel .PluralName }} {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+{{- end}}
+
+	return s
+}
+
+func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
+	return {{ .GoName }}SnapshotStringer{
+		Version: s.Hash(),
+{{- range .Resources}}
+{{- if .ClusterScoped }}
+		{{ upper_camel .PluralName }}: s.{{ upper_camel .PluralName }}.Names(),
+{{- else }}
+		{{ upper_camel .PluralName }}: s.{{ upper_camel .PluralName }}.List().NamespacesDotNames(),
+{{- end }}
+{{- end}}
+	}
+}
 `))
