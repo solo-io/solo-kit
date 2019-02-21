@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"fmt"
+
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -56,4 +58,48 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	fields = append(fields, zap.Uint64("clusterresources", s.hashClusterresources()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+}
+
+type TestingSnapshotStringer struct {
+	Version              uint64
+	Mocks                []string
+	Fakes                []string
+	Anothermockresources []string
+	Clusterresources     []string
+}
+
+func (ss TestingSnapshotStringer) String() string {
+	s := fmt.Sprintf("TestingSnapshot %v\n", ss.Version)
+
+	s += fmt.Sprintf("  Mocks %v\n", len(ss.Mocks))
+	for _, name := range ss.Mocks {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Fakes %v\n", len(ss.Fakes))
+	for _, name := range ss.Fakes {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Anothermockresources %v\n", len(ss.Anothermockresources))
+	for _, name := range ss.Anothermockresources {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Clusterresources %v\n", len(ss.Clusterresources))
+	for _, name := range ss.Clusterresources {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	return s
+}
+
+func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
+	return TestingSnapshotStringer{
+		Version:              s.Hash(),
+		Mocks:                s.Mocks.List().NamespacesDotNames(),
+		Fakes:                s.Fakes.List().NamespacesDotNames(),
+		Anothermockresources: s.Anothermockresources.List().NamespacesDotNames(),
+		Clusterresources:     s.Clusterresources.Names(),
+	}
 }
