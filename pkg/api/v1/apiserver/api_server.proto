@@ -40,8 +40,8 @@ message DeleteResponse {
 }
 
 message ListRequest {
-    string namespace = 2;
-    string type_url = 3;
+    string namespace = 1;
+    string type_url = 2;
 }
 
 message ListResponse {
@@ -49,9 +49,10 @@ message ListResponse {
 }
 
 message WatchRequest {
-    string namespace = 2;
-    string type_url = 3;
-    google.protobuf.Duration sync_frequency = 4;
+    string namespace = 1;
+    string type_url = 2;
+    // TODO: remove this?
+    google.protobuf.Duration sync_frequency = 3;
 }
 
 message WatchResponse {
