@@ -7,12 +7,11 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -26,58 +25,12 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-type Resource struct {
-	Kind                 string        `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
-	Data                 *types.Struct `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
-}
-
-func (m *Resource) Reset()         { *m = Resource{} }
-func (m *Resource) String() string { return proto.CompactTextString(m) }
-func (*Resource) ProtoMessage()    {}
-func (*Resource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{0}
-}
-func (m *Resource) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Resource.Unmarshal(m, b)
-}
-func (m *Resource) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Resource.Marshal(b, m, deterministic)
-}
-func (m *Resource) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Resource.Merge(m, src)
-}
-func (m *Resource) XXX_Size() int {
-	return xxx_messageInfo_Resource.Size(m)
-}
-func (m *Resource) XXX_DiscardUnknown() {
-	xxx_messageInfo_Resource.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Resource proto.InternalMessageInfo
-
-func (m *Resource) GetKind() string {
-	if m != nil {
-		return m.Kind
-	}
-	return ""
-}
-
-func (m *Resource) GetData() *types.Struct {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
 //
 //GRPC stuff
 type ReadRequest struct {
 	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Namespace            string   `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Kind                 string   `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	TypeUrl              string   `protobuf:"bytes,3,opt,name=type_url,json=typeUrl,proto3" json:"type_url,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -87,7 +40,7 @@ func (m *ReadRequest) Reset()         { *m = ReadRequest{} }
 func (m *ReadRequest) String() string { return proto.CompactTextString(m) }
 func (*ReadRequest) ProtoMessage()    {}
 func (*ReadRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{1}
+	return fileDescriptor_bc0f2054e1069c43, []int{0}
 }
 func (m *ReadRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadRequest.Unmarshal(m, b)
@@ -121,25 +74,25 @@ func (m *ReadRequest) GetNamespace() string {
 	return ""
 }
 
-func (m *ReadRequest) GetKind() string {
+func (m *ReadRequest) GetTypeUrl() string {
 	if m != nil {
-		return m.Kind
+		return m.TypeUrl
 	}
 	return ""
 }
 
 type ReadResponse struct {
-	Resource             *Resource `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
+	Resource             *types.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
 func (m *ReadResponse) Reset()         { *m = ReadResponse{} }
 func (m *ReadResponse) String() string { return proto.CompactTextString(m) }
 func (*ReadResponse) ProtoMessage()    {}
 func (*ReadResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{2}
+	return fileDescriptor_bc0f2054e1069c43, []int{1}
 }
 func (m *ReadResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadResponse.Unmarshal(m, b)
@@ -159,7 +112,7 @@ func (m *ReadResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ReadResponse proto.InternalMessageInfo
 
-func (m *ReadResponse) GetResource() *Resource {
+func (m *ReadResponse) GetResource() *types.Any {
 	if m != nil {
 		return m.Resource
 	}
@@ -167,18 +120,18 @@ func (m *ReadResponse) GetResource() *Resource {
 }
 
 type WriteRequest struct {
-	Resource             *Resource `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
-	OverwriteExisting    bool      `protobuf:"varint,2,opt,name=overwrite_existing,json=overwriteExisting,proto3" json:"overwrite_existing,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
+	Resource             *types.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	OverwriteExisting    bool       `protobuf:"varint,2,opt,name=overwrite_existing,json=overwriteExisting,proto3" json:"overwrite_existing,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
 func (m *WriteRequest) Reset()         { *m = WriteRequest{} }
 func (m *WriteRequest) String() string { return proto.CompactTextString(m) }
 func (*WriteRequest) ProtoMessage()    {}
 func (*WriteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{3}
+	return fileDescriptor_bc0f2054e1069c43, []int{2}
 }
 func (m *WriteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteRequest.Unmarshal(m, b)
@@ -198,7 +151,7 @@ func (m *WriteRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WriteRequest proto.InternalMessageInfo
 
-func (m *WriteRequest) GetResource() *Resource {
+func (m *WriteRequest) GetResource() *types.Any {
 	if m != nil {
 		return m.Resource
 	}
@@ -213,17 +166,17 @@ func (m *WriteRequest) GetOverwriteExisting() bool {
 }
 
 type WriteResponse struct {
-	Resource             *Resource `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
+	Resource             *types.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
 func (m *WriteResponse) Reset()         { *m = WriteResponse{} }
 func (m *WriteResponse) String() string { return proto.CompactTextString(m) }
 func (*WriteResponse) ProtoMessage()    {}
 func (*WriteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{4}
+	return fileDescriptor_bc0f2054e1069c43, []int{3}
 }
 func (m *WriteResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteResponse.Unmarshal(m, b)
@@ -243,7 +196,7 @@ func (m *WriteResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WriteResponse proto.InternalMessageInfo
 
-func (m *WriteResponse) GetResource() *Resource {
+func (m *WriteResponse) GetResource() *types.Any {
 	if m != nil {
 		return m.Resource
 	}
@@ -253,7 +206,7 @@ func (m *WriteResponse) GetResource() *Resource {
 type DeleteRequest struct {
 	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Namespace            string   `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Kind                 string   `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	TypeUrl              string   `protobuf:"bytes,3,opt,name=type_url,json=typeUrl,proto3" json:"type_url,omitempty"`
 	IgnoreNotExist       bool     `protobuf:"varint,4,opt,name=ignore_not_exist,json=ignoreNotExist,proto3" json:"ignore_not_exist,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -264,7 +217,7 @@ func (m *DeleteRequest) Reset()         { *m = DeleteRequest{} }
 func (m *DeleteRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteRequest) ProtoMessage()    {}
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{5}
+	return fileDescriptor_bc0f2054e1069c43, []int{4}
 }
 func (m *DeleteRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteRequest.Unmarshal(m, b)
@@ -298,9 +251,9 @@ func (m *DeleteRequest) GetNamespace() string {
 	return ""
 }
 
-func (m *DeleteRequest) GetKind() string {
+func (m *DeleteRequest) GetTypeUrl() string {
 	if m != nil {
-		return m.Kind
+		return m.TypeUrl
 	}
 	return ""
 }
@@ -322,7 +275,7 @@ func (m *DeleteResponse) Reset()         { *m = DeleteResponse{} }
 func (m *DeleteResponse) String() string { return proto.CompactTextString(m) }
 func (*DeleteResponse) ProtoMessage()    {}
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{6}
+	return fileDescriptor_bc0f2054e1069c43, []int{5}
 }
 func (m *DeleteResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteResponse.Unmarshal(m, b)
@@ -344,7 +297,7 @@ var xxx_messageInfo_DeleteResponse proto.InternalMessageInfo
 
 type ListRequest struct {
 	Namespace            string   `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Kind                 string   `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	TypeUrl              string   `protobuf:"bytes,3,opt,name=type_url,json=typeUrl,proto3" json:"type_url,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -354,7 +307,7 @@ func (m *ListRequest) Reset()         { *m = ListRequest{} }
 func (m *ListRequest) String() string { return proto.CompactTextString(m) }
 func (*ListRequest) ProtoMessage()    {}
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{7}
+	return fileDescriptor_bc0f2054e1069c43, []int{6}
 }
 func (m *ListRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListRequest.Unmarshal(m, b)
@@ -381,25 +334,25 @@ func (m *ListRequest) GetNamespace() string {
 	return ""
 }
 
-func (m *ListRequest) GetKind() string {
+func (m *ListRequest) GetTypeUrl() string {
 	if m != nil {
-		return m.Kind
+		return m.TypeUrl
 	}
 	return ""
 }
 
 type ListResponse struct {
-	ResourceList         []*Resource `protobuf:"bytes,1,rep,name=resource_list,json=resourceList,proto3" json:"resource_list,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+	ResourceList         []*types.Any `protobuf:"bytes,1,rep,name=resource_list,json=resourceList,proto3" json:"resource_list,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
 func (m *ListResponse) Reset()         { *m = ListResponse{} }
 func (m *ListResponse) String() string { return proto.CompactTextString(m) }
 func (*ListResponse) ProtoMessage()    {}
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{8}
+	return fileDescriptor_bc0f2054e1069c43, []int{7}
 }
 func (m *ListResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListResponse.Unmarshal(m, b)
@@ -419,7 +372,7 @@ func (m *ListResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ListResponse proto.InternalMessageInfo
 
-func (m *ListResponse) GetResourceList() []*Resource {
+func (m *ListResponse) GetResourceList() []*types.Any {
 	if m != nil {
 		return m.ResourceList
 	}
@@ -428,7 +381,7 @@ func (m *ListResponse) GetResourceList() []*Resource {
 
 type WatchRequest struct {
 	Namespace            string          `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Kind                 string          `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	TypeUrl              string          `protobuf:"bytes,3,opt,name=type_url,json=typeUrl,proto3" json:"type_url,omitempty"`
 	SyncFrequency        *types.Duration `protobuf:"bytes,4,opt,name=sync_frequency,json=syncFrequency,proto3" json:"sync_frequency,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
@@ -439,7 +392,7 @@ func (m *WatchRequest) Reset()         { *m = WatchRequest{} }
 func (m *WatchRequest) String() string { return proto.CompactTextString(m) }
 func (*WatchRequest) ProtoMessage()    {}
 func (*WatchRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{9}
+	return fileDescriptor_bc0f2054e1069c43, []int{8}
 }
 func (m *WatchRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WatchRequest.Unmarshal(m, b)
@@ -466,9 +419,9 @@ func (m *WatchRequest) GetNamespace() string {
 	return ""
 }
 
-func (m *WatchRequest) GetKind() string {
+func (m *WatchRequest) GetTypeUrl() string {
 	if m != nil {
-		return m.Kind
+		return m.TypeUrl
 	}
 	return ""
 }
@@ -481,17 +434,17 @@ func (m *WatchRequest) GetSyncFrequency() *types.Duration {
 }
 
 type WatchResponse struct {
-	ResourceList         []*Resource `protobuf:"bytes,1,rep,name=resource_list,json=resourceList,proto3" json:"resource_list,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+	ResourceList         []*types.Any `protobuf:"bytes,1,rep,name=resource_list,json=resourceList,proto3" json:"resource_list,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
 func (m *WatchResponse) Reset()         { *m = WatchResponse{} }
 func (m *WatchResponse) String() string { return proto.CompactTextString(m) }
 func (*WatchResponse) ProtoMessage()    {}
 func (*WatchResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{10}
+	return fileDescriptor_bc0f2054e1069c43, []int{9}
 }
 func (m *WatchResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WatchResponse.Unmarshal(m, b)
@@ -511,7 +464,7 @@ func (m *WatchResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WatchResponse proto.InternalMessageInfo
 
-func (m *WatchResponse) GetResourceList() []*Resource {
+func (m *WatchResponse) GetResourceList() []*types.Any {
 	if m != nil {
 		return m.ResourceList
 	}
@@ -528,7 +481,7 @@ func (m *RegisterRequest) Reset()         { *m = RegisterRequest{} }
 func (m *RegisterRequest) String() string { return proto.CompactTextString(m) }
 func (*RegisterRequest) ProtoMessage()    {}
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{11}
+	return fileDescriptor_bc0f2054e1069c43, []int{10}
 }
 func (m *RegisterRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RegisterRequest.Unmarshal(m, b)
@@ -558,7 +511,7 @@ func (m *RegisterResponse) Reset()         { *m = RegisterResponse{} }
 func (m *RegisterResponse) String() string { return proto.CompactTextString(m) }
 func (*RegisterResponse) ProtoMessage()    {}
 func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bc0f2054e1069c43, []int{12}
+	return fileDescriptor_bc0f2054e1069c43, []int{11}
 }
 func (m *RegisterResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RegisterResponse.Unmarshal(m, b)
@@ -579,7 +532,6 @@ func (m *RegisterResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_RegisterResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*Resource)(nil), "apiserver.api.v1.Resource")
 	proto.RegisterType((*ReadRequest)(nil), "apiserver.api.v1.ReadRequest")
 	proto.RegisterType((*ReadResponse)(nil), "apiserver.api.v1.ReadResponse")
 	proto.RegisterType((*WriteRequest)(nil), "apiserver.api.v1.WriteRequest")
@@ -597,76 +549,44 @@ func init() {
 func init() { proto.RegisterFile("api_server.proto", fileDescriptor_bc0f2054e1069c43) }
 
 var fileDescriptor_bc0f2054e1069c43 = []byte{
-	// 581 bytes of a gzipped FileDescriptorProto
+	// 560 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x53, 0xcb, 0x6e, 0xd3, 0x40,
-	0x14, 0xad, 0x69, 0x5a, 0x25, 0x37, 0x0f, 0xd2, 0x11, 0x12, 0xc1, 0x2a, 0x21, 0xcc, 0x2a, 0x12,
-	0xaa, 0xdd, 0x06, 0xa9, 0xdb, 0x02, 0x2a, 0xad, 0x44, 0x79, 0xc9, 0x59, 0x54, 0x62, 0x13, 0x39,
-	0xce, 0xd4, 0x1d, 0x25, 0xf5, 0x98, 0x99, 0x71, 0xa0, 0x2b, 0x24, 0xbe, 0x86, 0x6f, 0x62, 0xc9,
-	0x97, 0xa0, 0x79, 0xd8, 0x49, 0x8b, 0x43, 0x45, 0xe9, 0x2a, 0x93, 0x7b, 0x8e, 0xcf, 0x9c, 0x73,
-	0xe7, 0x5e, 0x68, 0x87, 0x29, 0x1d, 0x09, 0xc2, 0xe7, 0x84, 0x7b, 0x29, 0x67, 0x92, 0x21, 0x55,
-	0xb1, 0x85, 0x30, 0xa5, 0xde, 0x7c, 0xcf, 0x7d, 0x10, 0xb3, 0x98, 0x69, 0xd0, 0x57, 0x27, 0xc3,
-	0x73, 0xb7, 0x63, 0xc6, 0xe2, 0x19, 0xf1, 0xf5, 0xbf, 0x71, 0x76, 0xe6, 0x0b, 0xc9, 0xb3, 0x48,
-	0x5a, 0xb4, 0x7b, 0x1d, 0x9d, 0x64, 0x3c, 0x94, 0x94, 0x25, 0x06, 0xc7, 0x27, 0x50, 0x0d, 0x88,
-	0x60, 0x19, 0x8f, 0x08, 0x42, 0x50, 0x99, 0xd2, 0x64, 0xd2, 0x71, 0x7a, 0x4e, 0xbf, 0x16, 0xe8,
-	0x33, 0x7a, 0x06, 0x95, 0x49, 0x28, 0xc3, 0x4e, 0xa5, 0xe7, 0xf4, 0xeb, 0x83, 0x87, 0x9e, 0x91,
-	0xf3, 0x72, 0x39, 0x6f, 0xa8, 0x2f, 0x0b, 0x34, 0x09, 0x0f, 0xa1, 0x1e, 0x90, 0x70, 0x12, 0x90,
-	0xcf, 0x19, 0x11, 0x52, 0xe9, 0x25, 0xe1, 0x05, 0xc9, 0xf5, 0xd4, 0x19, 0x6d, 0x43, 0x4d, 0xfd,
-	0x8a, 0x34, 0x8c, 0x48, 0xe7, 0x9e, 0x06, 0x16, 0x85, 0xc2, 0xc1, 0xfa, 0xc2, 0x01, 0x3e, 0x82,
-	0x86, 0x11, 0x15, 0x29, 0x4b, 0x04, 0x41, 0xfb, 0x50, 0xe5, 0xd6, 0xb1, 0x56, 0xae, 0x0f, 0x5c,
-	0xef, 0x7a, 0xab, 0xbc, 0x3c, 0x53, 0x50, 0x70, 0x71, 0x06, 0x8d, 0x53, 0x4e, 0x25, 0xc9, 0xdd,
-	0xdd, 0x52, 0x07, 0xed, 0x00, 0x62, 0x73, 0xc2, 0xbf, 0x28, 0xad, 0x11, 0xf9, 0x4a, 0x85, 0xa4,
-	0x49, 0xac, 0xa3, 0x54, 0x83, 0xad, 0x02, 0x79, 0x6d, 0x01, 0x7c, 0x0c, 0x4d, 0x7b, 0xed, 0x7f,
-	0xfa, 0xff, 0x06, 0xcd, 0x43, 0x32, 0x23, 0x8b, 0x00, 0x77, 0xd2, 0x5e, 0xd4, 0x87, 0x36, 0x8d,
-	0x13, 0xc6, 0xc9, 0x28, 0x61, 0xd2, 0xe4, 0xd1, 0x8f, 0x5d, 0x0d, 0x5a, 0xa6, 0xfe, 0x9e, 0x49,
-	0x1d, 0x06, 0xb7, 0xa1, 0x95, 0x1b, 0x30, 0x51, 0xf0, 0x01, 0xd4, 0xdf, 0x52, 0x21, 0x73, 0x43,
-	0xff, 0xfe, 0xb6, 0x1f, 0xa0, 0x61, 0x04, 0x6c, 0x6f, 0x0e, 0xa0, 0x99, 0xe7, 0x1d, 0xcd, 0x94,
-	0x13, 0xa7, 0xb7, 0x7e, 0x43, 0x83, 0x1a, 0xf9, 0x07, 0x4a, 0x08, 0x7f, 0x77, 0xa0, 0x71, 0x1a,
-	0xca, 0xe8, 0xfc, 0xd6, 0x9e, 0xd0, 0x0b, 0x68, 0x89, 0xcb, 0x24, 0x1a, 0x9d, 0x71, 0x25, 0x91,
-	0x44, 0x97, 0x76, 0xf6, 0x1f, 0xfd, 0x31, 0xfb, 0x87, 0x76, 0x95, 0x82, 0xa6, 0xfa, 0xe0, 0x28,
-	0xe7, 0xe3, 0x8f, 0xd0, 0xb4, 0x1e, 0xee, 0x2a, 0xd6, 0x16, 0xdc, 0x0f, 0x48, 0x4c, 0x85, 0x24,
-	0xdc, 0x06, 0xc3, 0x08, 0xda, 0x8b, 0x92, 0xb9, 0x67, 0xf0, 0x73, 0x1d, 0x6a, 0x2f, 0x53, 0x3a,
-	0xd4, 0x92, 0x68, 0xa8, 0x56, 0xdb, 0x30, 0xd0, 0xd3, 0xb2, 0xab, 0xae, 0x08, 0xba, 0xf8, 0x6f,
-	0x14, 0xfb, 0xe0, 0x6b, 0xe8, 0x18, 0x2a, 0x6a, 0x1b, 0xd1, 0xe3, 0x32, 0x76, 0xb1, 0xfa, 0x6e,
-	0x77, 0x15, 0x5c, 0x08, 0xbd, 0x81, 0x0d, 0xbd, 0x17, 0xa8, 0x84, 0xba, 0xbc, 0xa7, 0xee, 0x93,
-	0x95, 0x78, 0xa1, 0xf5, 0x0e, 0x36, 0xcd, 0x64, 0xa2, 0x12, 0xf2, 0x95, 0xa5, 0x71, 0x7b, 0xab,
-	0x09, 0xcb, 0x19, 0x55, 0xd7, 0xcb, 0x32, 0x2e, 0x8d, 0x7b, 0x59, 0xc6, 0xe5, 0x61, 0xc6, 0x6b,
-	0xe8, 0x04, 0x36, 0xf4, 0x20, 0x94, 0x66, 0x5c, 0x9a, 0xd2, 0x9b, 0xa5, 0x76, 0x9d, 0x57, 0xfb,
-	0x3f, 0x7e, 0x75, 0x9d, 0x4f, 0xbb, 0x31, 0x95, 0xe7, 0xd9, 0xd8, 0x8b, 0xd8, 0x85, 0x2f, 0xd8,
-	0x8c, 0xed, 0x50, 0x66, 0x7e, 0xa7, 0x54, 0xfa, 0xe9, 0x34, 0xf6, 0xc3, 0x94, 0xfa, 0xf3, 0x3d,
-	0xbf, 0xd0, 0x1b, 0x6f, 0xea, 0x79, 0x7d, 0xfe, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x57, 0x7f, 0x82,
-	0x11, 0x62, 0x06, 0x00, 0x00,
+	0x14, 0xad, 0x69, 0x5a, 0x92, 0x9b, 0x07, 0xe9, 0xa8, 0x8b, 0xc4, 0x82, 0x10, 0x66, 0xd5, 0x4d,
+	0xed, 0x34, 0x48, 0x48, 0xec, 0x1a, 0x54, 0x8a, 0x28, 0x8f, 0x85, 0x2b, 0x54, 0xa9, 0x1b, 0xcb,
+	0x71, 0xa7, 0xee, 0xa8, 0xae, 0xc7, 0xcc, 0x8c, 0x03, 0xf9, 0x01, 0x24, 0xfe, 0x84, 0x6f, 0x62,
+	0xc9, 0x97, 0xa0, 0x99, 0xb1, 0x9d, 0x10, 0x1c, 0x10, 0x2d, 0x2b, 0xdb, 0xf7, 0x1c, 0x9f, 0x39,
+	0xe7, 0xce, 0xbd, 0xd0, 0x0d, 0x52, 0xea, 0x0b, 0xc2, 0x67, 0x84, 0x3b, 0x29, 0x67, 0x92, 0x21,
+	0x55, 0xc9, 0x0b, 0x41, 0x4a, 0x9d, 0xd9, 0x81, 0xbd, 0x1b, 0xb1, 0x88, 0x69, 0xd0, 0x55, 0x6f,
+	0x86, 0x67, 0xf7, 0x23, 0xc6, 0xa2, 0x98, 0xb8, 0xfa, 0x6b, 0x9a, 0x5d, 0xba, 0x41, 0x32, 0xcf,
+	0xa1, 0xc1, 0x2a, 0x74, 0x91, 0xf1, 0x40, 0x52, 0x96, 0x18, 0x1c, 0x9f, 0x43, 0xd3, 0x23, 0xc1,
+	0x85, 0x47, 0x3e, 0x66, 0x44, 0x48, 0x84, 0xa0, 0x96, 0x04, 0x37, 0xa4, 0x67, 0x0d, 0xad, 0xbd,
+	0x86, 0xa7, 0xdf, 0xd1, 0x43, 0x68, 0xa8, 0xa7, 0x48, 0x83, 0x90, 0xf4, 0xee, 0x69, 0x60, 0x51,
+	0x40, 0x7d, 0xa8, 0xcb, 0x79, 0x4a, 0xfc, 0x8c, 0xc7, 0xbd, 0x4d, 0x0d, 0xde, 0x57, 0xdf, 0x1f,
+	0x78, 0x8c, 0x0f, 0xa1, 0x65, 0xb4, 0x45, 0xca, 0x12, 0x41, 0xd0, 0x08, 0xea, 0x9c, 0x08, 0x96,
+	0xf1, 0xd0, 0x1c, 0xd0, 0x1c, 0xef, 0x3a, 0xc6, 0x9e, 0x53, 0xd8, 0x73, 0x26, 0xc9, 0xdc, 0x2b,
+	0x59, 0x98, 0x41, 0xeb, 0x8c, 0x53, 0x49, 0x0a, 0x7b, 0xff, 0xac, 0x80, 0xf6, 0x01, 0xb1, 0x19,
+	0xe1, 0x9f, 0x94, 0x8a, 0x4f, 0x3e, 0x53, 0x21, 0x69, 0x12, 0xe9, 0x14, 0x75, 0x6f, 0xa7, 0x44,
+	0x5e, 0xe6, 0x00, 0x9e, 0x40, 0x3b, 0x3f, 0xf0, 0xd6, 0x9e, 0xbf, 0x58, 0xd0, 0x3e, 0x22, 0x31,
+	0x59, 0xb8, 0xfe, 0x9f, 0x4d, 0x45, 0x7b, 0xd0, 0xa5, 0x51, 0xc2, 0x38, 0xf1, 0x13, 0x26, 0x4d,
+	0xa2, 0x5e, 0x4d, 0xc7, 0xe9, 0x98, 0xfa, 0x7b, 0x26, 0x75, 0x1c, 0xdc, 0x85, 0x4e, 0xe1, 0xc3,
+	0x84, 0xc1, 0xc7, 0xd0, 0x7c, 0x4b, 0x85, 0x2c, 0x7c, 0xdd, 0xfa, 0x62, 0x5f, 0x43, 0xcb, 0xe8,
+	0xe4, 0x4d, 0x7a, 0x0e, 0xed, 0x22, 0xbe, 0x1f, 0x2b, 0x43, 0xd6, 0x70, 0x73, 0x6d, 0xa7, 0x5a,
+	0x05, 0x55, 0x49, 0xe0, 0xaf, 0x16, 0xb4, 0xce, 0x02, 0x19, 0x5e, 0xdd, 0xd5, 0x14, 0x3a, 0x84,
+	0x8e, 0x98, 0x27, 0xa1, 0x7f, 0xc9, 0x95, 0x52, 0x12, 0xce, 0x75, 0x5b, 0x9a, 0xe3, 0xfe, 0x6f,
+	0x2e, 0x8e, 0xf2, 0x15, 0xf0, 0xda, 0xea, 0x87, 0xe3, 0x82, 0x8f, 0x4f, 0xa0, 0x9d, 0x5b, 0xb9,
+	0x7b, 0xae, 0x1d, 0x78, 0xe0, 0x91, 0x88, 0x0a, 0x49, 0x78, 0x9e, 0x0c, 0x23, 0xe8, 0x2e, 0x4a,
+	0xe6, 0x84, 0xf1, 0xf7, 0x4d, 0x68, 0x4c, 0x52, 0x7a, 0xaa, 0x97, 0x1c, 0x9d, 0x42, 0xbd, 0x60,
+	0xa0, 0x27, 0xce, 0xea, 0xf2, 0x3b, 0x2b, 0x82, 0x36, 0xfe, 0x13, 0x25, 0xbf, 0xf2, 0x0d, 0xf4,
+	0x0a, 0x6a, 0x6a, 0x0b, 0xd1, 0xa3, 0x2a, 0x76, 0xb9, 0xf9, 0xf6, 0x60, 0x1d, 0x5c, 0x0a, 0x9d,
+	0xc0, 0x96, 0xde, 0x0d, 0x54, 0x41, 0x5d, 0xde, 0x52, 0xfb, 0xf1, 0x5a, 0xbc, 0xd4, 0x7a, 0x07,
+	0xdb, 0x66, 0x36, 0x51, 0x05, 0xf9, 0x97, 0xed, 0xb1, 0x87, 0xeb, 0x09, 0xcb, 0x19, 0x55, 0xd7,
+	0xab, 0x32, 0x2e, 0x0d, 0x7c, 0x55, 0xc6, 0xe5, 0x39, 0xc6, 0x1b, 0xe8, 0x0d, 0x6c, 0xe9, 0x11,
+	0xa8, 0xcc, 0xb8, 0x34, 0xa6, 0x7f, 0x97, 0x1a, 0x59, 0x2f, 0x9e, 0x7d, 0xfb, 0x31, 0xb0, 0xce,
+	0x47, 0x11, 0x95, 0x57, 0xd9, 0xd4, 0x09, 0xd9, 0x8d, 0x2b, 0x58, 0xcc, 0xf6, 0x29, 0x33, 0xcf,
+	0x6b, 0x2a, 0xdd, 0xf4, 0x3a, 0x72, 0x83, 0x94, 0xba, 0xb3, 0x03, 0xb7, 0xd4, 0x9b, 0x6e, 0xeb,
+	0xb9, 0x7a, 0xfa, 0x33, 0x00, 0x00, 0xff, 0xff, 0x36, 0xde, 0xe5, 0x2c, 0x11, 0x06, 0x00, 0x00,
 }
 
-func (this *Resource) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Resource)
-	if !ok {
-		that2, ok := that.(Resource)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Kind != that1.Kind {
-		return false
-	}
-	if !this.Data.Equal(that1.Data) {
-		return false
-	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
 func (this *ReadRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -692,7 +612,7 @@ func (this *ReadRequest) Equal(that interface{}) bool {
 	if this.Namespace != that1.Namespace {
 		return false
 	}
-	if this.Kind != that1.Kind {
+	if this.TypeUrl != that1.TypeUrl {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -809,7 +729,7 @@ func (this *DeleteRequest) Equal(that interface{}) bool {
 	if this.Namespace != that1.Namespace {
 		return false
 	}
-	if this.Kind != that1.Kind {
+	if this.TypeUrl != that1.TypeUrl {
 		return false
 	}
 	if this.IgnoreNotExist != that1.IgnoreNotExist {
@@ -866,7 +786,7 @@ func (this *ListRequest) Equal(that interface{}) bool {
 	if this.Namespace != that1.Namespace {
 		return false
 	}
-	if this.Kind != that1.Kind {
+	if this.TypeUrl != that1.TypeUrl {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -928,7 +848,7 @@ func (this *WatchRequest) Equal(that interface{}) bool {
 	if this.Namespace != that1.Namespace {
 		return false
 	}
-	if this.Kind != that1.Kind {
+	if this.TypeUrl != that1.TypeUrl {
 		return false
 	}
 	if !this.SyncFrequency.Equal(that1.SyncFrequency) {

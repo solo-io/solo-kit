@@ -13,7 +13,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"google.golang.org/grpc"
 )
 
@@ -32,10 +31,18 @@ type ApiServer struct {
 	factory       factory.ResourceClientFactory
 }
 
+func TypeUrl(m resources.Resource) string {
+	data, err := types.MarshalAny(m)
+	if err != nil {
+		panic("failed to marshal resource " + err.Error())
+	}
+	return data.TypeUrl
+}
+
 func NewApiServer(s *grpc.Server, callbacks Callbacks, factory factory.ResourceClientFactory, resourceTypes ...resources.Resource) ApiServerServer {
 	mapped := make(map[string]resources.Resource)
 	for _, resource := range resourceTypes {
-		mapped[resources.Kind(resource)] = resource
+		mapped[TypeUrl(resource)] = resource
 	}
 	srv := &ApiServer{
 		callbacks:     callbacks,
@@ -94,7 +101,7 @@ func (s *ApiServer) Read(ctx context.Context, req *ReadRequest) (*ReadResponse, 
 			return resp, err
 		}
 	}
-	rc, err := s.resourceClient(ctx, req.Kind)
+	rc, err := s.resourceClient(ctx, req.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -104,15 +111,12 @@ func (s *ApiServer) Read(ctx context.Context, req *ReadRequest) (*ReadResponse, 
 	if err != nil {
 		return nil, err
 	}
-	data, err := protoutils.MarshalStruct(resource)
+	data, err := types.MarshalAny(resource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal resource")
 	}
 	return &ReadResponse{
-		Resource: &Resource{
-			Kind: rc.Kind(),
-			Data: data,
-		},
+		Resource: data,
 	}, nil
 }
 
@@ -123,12 +127,12 @@ func (s *ApiServer) Write(ctx context.Context, req *WriteRequest) (*WriteRespons
 			return resp, err
 		}
 	}
-	rc, err := s.resourceClient(ctx, req.Resource.Kind)
+	rc, err := s.resourceClient(ctx, req.Resource.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
 	resource := rc.NewResource()
-	if err := protoutils.UnmarshalStruct(req.Resource.Data, resource); err != nil {
+	if err := types.UnmarshalAny(req.Resource, resource); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 	}
 	resource, err = rc.Write(resource, clients.WriteOpts{
@@ -138,15 +142,14 @@ func (s *ApiServer) Write(ctx context.Context, req *WriteRequest) (*WriteRespons
 	if err != nil {
 		return nil, err
 	}
-	data, err := protoutils.MarshalStruct(resource)
+
+	data, err := types.MarshalAny(resource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal resource")
 	}
+
 	return &WriteResponse{
-		Resource: &Resource{
-			Kind: rc.Kind(),
-			Data: data,
-		},
+		Resource: data,
 	}, nil
 }
 
@@ -157,7 +160,7 @@ func (s *ApiServer) Delete(ctx context.Context, req *DeleteRequest) (*DeleteResp
 			return resp, err
 		}
 	}
-	rc, err := s.resourceClient(ctx, req.Kind)
+	rc, err := s.resourceClient(ctx, req.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +168,7 @@ func (s *ApiServer) Delete(ctx context.Context, req *DeleteRequest) (*DeleteResp
 		IgnoreNotExist: req.IgnoreNotExist,
 		Ctx:            contextutils.WithLogger(ctx, "apiserver.delete"),
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to delete resource %v", req.Kind)
+		return nil, errors.Wrapf(err, "failed to delete resource %v", req.TypeUrl)
 	}
 	return &DeleteResponse{}, nil
 }
@@ -177,23 +180,22 @@ func (s *ApiServer) List(ctx context.Context, req *ListRequest) (*ListResponse, 
 			return resp, err
 		}
 	}
-	rc, err := s.resourceClient(ctx, req.Kind)
+	rc, err := s.resourceClient(ctx, req.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
 	resourceList, err := rc.List(req.Namespace, clients.ListOpts{
 		Ctx: contextutils.WithLogger(ctx, "apiserver.read"),
 	})
-	var resourceListResponse []*Resource
+	var resourceListResponse []*types.Any
 	for _, resource := range resourceList {
-		data, err := protoutils.MarshalStruct(resource)
+
+		data, err := types.MarshalAny(resource)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal resource %v", req.Kind)
+			return nil, errors.Wrapf(err, "failed to marshal resource %v", req.TypeUrl)
 		}
-		resourceListResponse = append(resourceListResponse, &Resource{
-			Kind: rc.Kind(),
-			Data: data,
-		})
+
+		resourceListResponse = append(resourceListResponse, data)
 	}
 	return &ListResponse{
 		ResourceList: resourceListResponse,
@@ -207,7 +209,7 @@ func (s *ApiServer) Watch(req *WatchRequest, watch ApiServer_WatchServer) error 
 			return err
 		}
 	}
-	rc, err := s.resourceClient(watch.Context(), req.Kind)
+	rc, err := s.resourceClient(watch.Context(), req.TypeUrl)
 	if err != nil {
 		return err
 	}
@@ -226,16 +228,15 @@ func (s *ApiServer) Watch(req *WatchRequest, watch ApiServer_WatchServer) error 
 	for {
 		select {
 		case resourceList := <-resourceWatch:
-			var resourceListResponse []*Resource
+			var resourceListResponse []*types.Any
 			for _, resource := range resourceList {
-				data, err := protoutils.MarshalStruct(resource)
+
+				data, err := types.MarshalAny(resource)
 				if err != nil {
-					return errors.Wrapf(err, "failed to marshal resource %v", req.Kind)
+					return errors.Wrapf(err, "failed to marshal resource %v", req.TypeUrl)
 				}
-				resourceListResponse = append(resourceListResponse, &Resource{
-					Kind: rc.Kind(),
-					Data: data,
-				})
+
+				resourceListResponse = append(resourceListResponse, data)
 			}
 			if err := watch.Send(&ListResponse{
 				ResourceList: resourceListResponse,
@@ -243,7 +244,7 @@ func (s *ApiServer) Watch(req *WatchRequest, watch ApiServer_WatchServer) error 
 				return errors.Wrapf(err, "failed to send list response on watch")
 			}
 		case err := <-errs:
-			return errors.Wrapf(err, "error during %v watch", req.Kind)
+			return errors.Wrapf(err, "error during %v watch", req.TypeUrl)
 		case <-ctx.Done():
 			return nil
 		}
