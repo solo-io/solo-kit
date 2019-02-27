@@ -14,6 +14,7 @@ import (
 )
 
 type KubeCoreCache interface {
+	PodLister() kubelisters.PodLister
 	ConfigMapLister() kubelisters.ConfigMapLister
 	SecretLister() kubelisters.SecretLister
 	Subscribe() <-chan struct{}
@@ -23,6 +24,7 @@ type KubeCoreCache interface {
 type KubeCoreCaches struct {
 	initError error
 
+	podLister       kubelisters.PodLister
 	configMapLister kubelisters.ConfigMapLister
 	secretLister    kubelisters.SecretLister
 
@@ -36,16 +38,18 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCor
 	resyncDuration := 12 * time.Hour
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, resyncDuration)
 
+	pods := kubeInformerFactory.Core().V1().Pods()
 	configMaps := kubeInformerFactory.Core().V1().ConfigMaps()
 	secrets := kubeInformerFactory.Core().V1().Secrets()
 	k := &KubeCoreCaches{
+		podLister:       pods.Lister(),
 		configMapLister: configMaps.Lister(),
 		secretLister:    secrets.Lister(),
 	}
 
 	kubeController := controller.NewController("kube-plugin-controller",
 		controller.NewLockingSyncHandler(k.updatedOccured),
-		configMaps.Informer(), secrets.Informer())
+		pods.Informer(), configMaps.Informer(), secrets.Informer())
 
 	stop := ctx.Done()
 	go kubeInformerFactory.Start(stop)
@@ -57,6 +61,10 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCor
 	}()
 
 	return k
+}
+
+func (k *KubeCoreCaches) PodLister() kubelisters.PodLister {
+	return k.podLister
 }
 
 func (k *KubeCoreCaches) ConfigMapLister() kubelisters.ConfigMapLister {
