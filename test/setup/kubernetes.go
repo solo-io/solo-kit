@@ -130,8 +130,13 @@ func WaitPodsTerminated(podNames ...string) error {
 }
 
 // TestRunner executes a command inside the TestRunner container
-func TestRunner(args ...string) (string, error) {
-	args = append([]string{"exec", "-i", testrunner, "--"}, args...)
+func TestRunner(namespace string, command ...string) (string, error) {
+	args := []string{"exec", "-i", testrunner}
+	if namespace != "" {
+		args = append(args, "-n", namespace)
+	}
+	args = append(args, "--")
+	args = append(args, command...)
 	return KubectlOut(args...)
 }
 
@@ -215,15 +220,15 @@ type CurlOpts struct {
 	ReturnHeaders bool
 }
 
-func CurlEventuallyShouldRespond(opts CurlOpts, substr string, timeout ...time.Duration) {
+func CurlEventuallyShouldRespond(opts CurlOpts, namespace, substr string, ginkgoOffset int, timeout ...time.Duration) {
 	t := time.Second * 20
 	if len(timeout) > 0 {
 		t = timeout[0]
 	}
 	// for some useful-ish output
 	tick := time.Tick(t / 8)
-	gomega.Eventually(func() string {
-		res, err := Curl(opts)
+	gomega.EventuallyWithOffset(ginkgoOffset, func() string {
+		res, err := Curl(opts, namespace)
 		if err != nil {
 			res = err.Error()
 		}
@@ -240,7 +245,7 @@ func CurlEventuallyShouldRespond(opts CurlOpts, substr string, timeout ...time.D
 	}, t, "5s").Should(gomega.ContainSubstring(substr))
 }
 
-func Curl(opts CurlOpts) (string, error) {
+func Curl(opts CurlOpts, namespace string) (string, error) {
 	args := []string{"curl", "-v", "--connect-timeout", "10", "--max-time", "10"}
 
 	if opts.ReturnHeaders {
@@ -277,5 +282,5 @@ func Curl(opts CurlOpts) (string, error) {
 	}
 	args = append(args, fmt.Sprintf("%v://%s:%v%s", protocol, service, port, opts.Path))
 	log.Debugf("running: curl %v", strings.Join(args, " "))
-	return TestRunner(args...)
+	return TestRunner(namespace, args...)
 }
