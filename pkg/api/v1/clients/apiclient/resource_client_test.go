@@ -1,6 +1,8 @@
 package apiclient_test
 
 import (
+	"context"
+
 	"google.golang.org/grpc"
 
 	"fmt"
@@ -17,7 +19,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/apiserver"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"go.uber.org/zap"
 
@@ -43,8 +44,16 @@ var _ = Describe("Base", func() {
 				grpc_ctxtags.StreamServerInterceptor(),
 				grpc_zap.StreamServerInterceptor(zap.NewNop()),
 				func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-					log.Printf("%v", info.FullMethod)
+					fmt.Fprintf(GinkgoWriter, "%v\n", info.FullMethod)
 					return handler(srv, ss)
+				},
+			)), grpc.UnaryInterceptor(
+			grpc_middleware.ChainUnaryServer(
+				grpc_ctxtags.UnaryServerInterceptor(),
+				grpc_zap.UnaryServerInterceptor(zap.NewNop()),
+				func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+					fmt.Fprintf(GinkgoWriter, "%v\n", info.FullMethod)
+					return handler(ctx, req)
 				},
 			)))
 		apiserver.NewApiServer(server, nil, &factory.MemoryResourceClientFactory{
@@ -52,7 +61,7 @@ var _ = Describe("Base", func() {
 		}, &v1.MockResource{})
 
 		port = lis.Addr().(*net.TCPAddr).Port
-		log.Printf("grpc listening on %v", port)
+		fmt.Fprintf(GinkgoWriter, "grpc listening on %v\n", port)
 		go server.Serve(lis)
 
 		// now start the client:
