@@ -4,7 +4,6 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/apiserver";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
-import "google/protobuf/duration.proto";
 option (gogoproto.equal_all) = true;
 
 /*
@@ -51,8 +50,6 @@ message ListResponse {
 message WatchRequest {
     string namespace = 1;
     string type_url = 2;
-    // TODO: remove this?
-    google.protobuf.Duration sync_frequency = 3;
 }
 
 message WatchResponse {

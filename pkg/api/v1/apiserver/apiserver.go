@@ -26,9 +26,10 @@ type Callbacks interface {
 }
 
 type ApiServer struct {
-	callbacks     Callbacks
-	resourceTypes map[string]resources.Resource
-	factory       factory.ResourceClientFactory
+	callbacks            Callbacks
+	resourceTypes        map[string]resources.Resource
+	factory              factory.ResourceClientFactory
+	watchRefreshDuration time.Duration
 }
 
 func TypeUrl(m resources.Resource) string {
@@ -39,15 +40,16 @@ func TypeUrl(m resources.Resource) string {
 	return data.TypeUrl
 }
 
-func NewApiServer(s *grpc.Server, callbacks Callbacks, factory factory.ResourceClientFactory, resourceTypes ...resources.Resource) ApiServerServer {
+func NewApiServer(s *grpc.Server, callbacks Callbacks, factory factory.ResourceClientFactory, watchRefreshDuration time.Duration, resourceTypes ...resources.Resource) ApiServerServer {
 	mapped := make(map[string]resources.Resource)
 	for _, resource := range resourceTypes {
 		mapped[TypeUrl(resource)] = resource
 	}
 	srv := &ApiServer{
-		callbacks:     callbacks,
-		resourceTypes: mapped,
-		factory:       factory,
+		callbacks:            callbacks,
+		resourceTypes:        mapped,
+		factory:              factory,
+		watchRefreshDuration: watchRefreshDuration,
 	}
 	RegisterApiServerServer(s, srv)
 	return srv
@@ -214,15 +216,9 @@ func (s *ApiServer) Watch(req *WatchRequest, watch ApiServer_WatchServer) error 
 		return err
 	}
 	ctx := contextutils.WithLogger(watch.Context(), "apiserver.read")
-	var duration time.Duration
-	if req.SyncFrequency != nil {
-		duration, err = types.DurationFromProto(req.SyncFrequency)
-		if err != nil {
-			return err
-		}
-	}
+
 	resourceWatch, errs, err := rc.Watch(req.Namespace, clients.WatchOpts{
-		RefreshRate: duration,
+		RefreshRate: s.watchRefreshDuration,
 		Ctx:         ctx,
 	})
 	for {
