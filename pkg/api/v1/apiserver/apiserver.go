@@ -40,6 +40,8 @@ func TypeUrl(m resources.Resource) string {
 	return data.TypeUrl
 }
 
+// TODO(yuval-k): can we get rid of watchRefreshDuration ? sounds like this should be the ResourceClientFactory
+// responsibility
 func NewApiServer(s *grpc.Server, callbacks Callbacks, factory factory.ResourceClientFactory, watchRefreshDuration time.Duration, resourceTypes ...resources.Resource) ApiServerServer {
 	mapped := make(map[string]resources.Resource)
 	for _, resource := range resourceTypes {

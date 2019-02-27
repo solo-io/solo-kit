@@ -4,7 +4,6 @@ import (
 	"io"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/apiserver"
@@ -150,13 +149,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
 	opts.Ctx = metadata.AppendToOutgoingContext(opts.Ctx, "authorization", "bearer "+rc.token)
-	secs := opts.RefreshRate.Seconds()
-	nanos := int64(opts.RefreshRate.Seconds()) % int64(time.Duration(opts.RefreshRate.Seconds())*time.Second)
 	resp, err := rc.grpc.Watch(opts.Ctx, &apiserver.WatchRequest{
-		SyncFrequency: &types.Duration{
-			Seconds: int64(secs),
-			Nanos:   int32(nanos),
-		},
 		Namespace: namespace,
 		TypeUrl:   rc.typeUrl,
 	})

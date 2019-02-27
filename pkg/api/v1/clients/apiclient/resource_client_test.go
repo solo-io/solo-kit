@@ -58,7 +58,7 @@ var _ = Describe("Apiclient", func() {
 			)))
 		apiserver.NewApiServer(server, nil, &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
-		}, &v1.MockResource{})
+		}, time.Second, &v1.MockResource{})
 
 		port = lis.Addr().(*net.TCPAddr).Port
 		fmt.Fprintf(GinkgoWriter, "grpc listening on %v\n", port)
