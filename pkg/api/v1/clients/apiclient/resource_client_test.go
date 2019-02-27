@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/test/tests/generic"
 )
 
-var _ = Describe("Base", func() {
+var _ = Describe("Apiclient", func() {
 
 	var (
 		port   = 0
