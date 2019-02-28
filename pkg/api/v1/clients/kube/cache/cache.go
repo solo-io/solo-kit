@@ -37,7 +37,7 @@ type KubeCoreCaches struct {
 
 // This context should live as long as the cache is desired. i.e. if the cache is shared
 // across clients, it should get a context that has a longer lifetime than the clients themselves
-func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCoreCaches {
+func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*KubeCoreCaches, error) {
 	resyncDuration := 12 * time.Hour
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, resyncDuration)
 
@@ -73,7 +73,7 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCor
 		k.initError = errors.Errorf("waiting for kube cache sync failed")
 	}
 
-	return k
+	return k, k.initError
 }
 
 func (k *KubeCoreCaches) PodLister() kubelisters.PodLister {
