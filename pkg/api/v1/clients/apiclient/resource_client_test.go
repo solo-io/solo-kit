@@ -1,33 +1,81 @@
 package apiclient_test
 
 import (
+	"context"
+
+	"google.golang.org/grpc"
+
+	"fmt"
+	"net"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"time"
 
-	"fmt"
+	"github.com/solo-io/solo-kit/pkg/api/v1/apiserver"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
+	"go.uber.org/zap"
 
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/apiclient"
-	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/tests/generic"
-	"google.golang.org/grpc"
 )
 
-var _ = Describe("Base", func() {
+var _ = Describe("Apiclient", func() {
 
 	var (
+		port   = 0
+		server *grpc.Server
+		lis    net.Listener
 		client *ResourceClient
 		cc     *grpc.ClientConn
-		err    error
 	)
 	BeforeEach(func() {
-		// give grpc server time to start
-		time.Sleep(time.Second)
-		cc, err = grpc.Dial(fmt.Sprintf("127.0.0.1:%v", port), grpc.WithInsecure())
+		var err error
+		lis, err = net.Listen("tcp", fmt.Sprintf(":0"))
+		Expect(err).NotTo(HaveOccurred())
+		server = grpc.NewServer(grpc.StreamInterceptor(
+			grpc_middleware.ChainStreamServer(
+				grpc_ctxtags.StreamServerInterceptor(),
+				grpc_zap.StreamServerInterceptor(zap.NewNop()),
+				func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+					fmt.Fprintf(GinkgoWriter, "%v\n", info.FullMethod)
+					return handler(srv, ss)
+				},
+			)), grpc.UnaryInterceptor(
+			grpc_middleware.ChainUnaryServer(
+				grpc_ctxtags.UnaryServerInterceptor(),
+				grpc_zap.UnaryServerInterceptor(zap.NewNop()),
+				func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+					fmt.Fprintf(GinkgoWriter, "%v\n", info.FullMethod)
+					return handler(ctx, req)
+				},
+			)))
+		apiserver.NewApiServer(server, nil, &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}, time.Second, &v1.MockResource{})
+
+		port = lis.Addr().(*net.TCPAddr).Port
+		fmt.Fprintf(GinkgoWriter, "grpc listening on %v\n", port)
+		go server.Serve(lis)
+
+		// now start the client:
+
+		cc, err = grpc.Dial(fmt.Sprintf("localhost:%v", port), grpc.WithInsecure())
 		Expect(err).NotTo(HaveOccurred())
 		client = NewResourceClient(cc, "foo", &v1.MockResource{})
 	})
+
+	AfterEach(func() {
+		server.Stop()
+		lis.Close()
+	})
+
 	AfterEach(func() {
 		cc.Close()
 	})

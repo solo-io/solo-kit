@@ -3,14 +3,8 @@ package apiserver.api.v1;
 option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/apiserver";
 
 import "gogoproto/gogo.proto";
-import "google/protobuf/struct.proto";
-import "google/protobuf/duration.proto";
+import "google/protobuf/any.proto";
 option (gogoproto.equal_all) = true;
-
-message Resource {
-    string kind = 1;
-    google.protobuf.Struct data = 4;
-}
 
 /*
 GRPC stuff
@@ -18,26 +12,26 @@ GRPC stuff
 message ReadRequest {
     string name = 1;
     string namespace = 2;
-    string kind = 3;
+    string type_url = 3;
 }
 
 message ReadResponse {
-    Resource resource = 1;
+    google.protobuf.Any resource = 1;
 }
 
 message WriteRequest {
-    Resource resource = 1;
+    google.protobuf.Any resource = 1;
     bool overwrite_existing = 2;
 }
 
 message WriteResponse {
-    Resource resource = 1;
+    google.protobuf.Any resource = 1;
 }
 
 message DeleteRequest {
     string name = 1;
     string namespace = 2;
-    string kind = 3;
+    string type_url = 3;
     bool ignore_not_exist = 4;
 }
 
@@ -45,22 +39,21 @@ message DeleteResponse {
 }
 
 message ListRequest {
-    string namespace = 2;
-    string kind = 3;
+    string namespace = 1;
+    string type_url = 2;
 }
 
 message ListResponse {
-    repeated Resource resource_list = 1;
+    repeated google.protobuf.Any resource_list = 1;
 }
 
 message WatchRequest {
-    string namespace = 2;
-    string kind = 3;
-    google.protobuf.Duration sync_frequency = 4;
+    string namespace = 1;
+    string type_url = 2;
 }
 
 message WatchResponse {
-    repeated Resource resource_list = 1;
+    repeated google.protobuf.Any resource_list = 1;
 }
 
 message RegisterRequest {
