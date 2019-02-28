@@ -5,6 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/go-utils/errors"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 
 	kubeinformers "k8s.io/client-go/informers"
@@ -14,6 +17,7 @@ import (
 )
 
 type KubeCoreCache interface {
+	PodLister() kubelisters.PodLister
 	ConfigMapLister() kubelisters.ConfigMapLister
 	SecretLister() kubelisters.SecretLister
 	Subscribe() <-chan struct{}
@@ -23,6 +27,7 @@ type KubeCoreCache interface {
 type KubeCoreCaches struct {
 	initError error
 
+	podLister       kubelisters.PodLister
 	configMapLister kubelisters.ConfigMapLister
 	secretLister    kubelisters.SecretLister
 
@@ -32,20 +37,23 @@ type KubeCoreCaches struct {
 
 // This context should live as long as the cache is desired. i.e. if the cache is shared
 // across clients, it should get a context that has a longer lifetime than the clients themselves
-func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCoreCaches {
+func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*KubeCoreCaches, error) {
 	resyncDuration := 12 * time.Hour
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, resyncDuration)
 
+	pods := kubeInformerFactory.Core().V1().Pods()
 	configMaps := kubeInformerFactory.Core().V1().ConfigMaps()
 	secrets := kubeInformerFactory.Core().V1().Secrets()
+
 	k := &KubeCoreCaches{
+		podLister:       pods.Lister(),
 		configMapLister: configMaps.Lister(),
 		secretLister:    secrets.Lister(),
 	}
 
 	kubeController := controller.NewController("kube-plugin-controller",
 		controller.NewLockingSyncHandler(k.updatedOccured),
-		configMaps.Informer(), secrets.Informer())
+		pods.Informer(), configMaps.Informer(), secrets.Informer())
 
 	stop := ctx.Done()
 	go kubeInformerFactory.Start(stop)
@@ -56,7 +64,20 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCor
 		}
 	}()
 
-	return k
+	ok := cache.WaitForCacheSync(stop,
+		pods.Informer().HasSynced,
+		configMaps.Informer().HasSynced,
+		secrets.Informer().HasSynced)
+	if !ok {
+		// if initError is non-nil, the kube resource client will panic
+		k.initError = errors.Errorf("waiting for kube cache sync failed")
+	}
+
+	return k, k.initError
+}
+
+func (k *KubeCoreCaches) PodLister() kubelisters.PodLister {
+	return k.podLister
 }
 
 func (k *KubeCoreCaches) ConfigMapLister() kubelisters.ConfigMapLister {

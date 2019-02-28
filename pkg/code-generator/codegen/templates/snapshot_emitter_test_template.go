@@ -93,14 +93,18 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 {{/* TODO(ilackarms): Come with a way to specify that a resource is based on the secret client or configmap client*/}}
 {{- if (eq .Name "Secret") }}
+		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}ClientFactory := &factory.KubeSecretClientFactory{
 			Clientset: kube,
-			Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
+			Cache:     kcache,
 		}
 {{- else }}
+		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}ClientFactory := &factory.KubeConfigMapClientFactory{
 			Clientset: kube,
-			Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
+			Cache:     kcache,
 		}
 {{- end }}
 {{- end }}
