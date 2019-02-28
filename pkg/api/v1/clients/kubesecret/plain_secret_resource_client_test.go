@@ -46,7 +46,9 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		client, err = NewResourceClient(kube, &v1.MockResource{}, true, cache.NewKubeCoreCache(context.TODO(), kube))
+		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
+		client, err = NewResourceClient(kube, &v1.MockResource{}, true, kcache)
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace)

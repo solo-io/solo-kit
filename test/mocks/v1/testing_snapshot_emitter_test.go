@@ -69,9 +69,11 @@ var _ = Describe("V1Emitter", func() {
 		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
+		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
 		fakeResourceClientFactory := &factory.KubeConfigMapClientFactory{
 			Clientset: kube,
-			Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
+			Cache:     kcache,
 		}
 		fakeResourceClient, err = NewFakeResourceClient(fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())

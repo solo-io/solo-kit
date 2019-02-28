@@ -46,7 +46,8 @@ var _ = Describe("Base", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kube, err := kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		kubeCache = cache.NewKubeCoreCache(context.TODO(), kube)
+		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
 		client, err = NewResourceClient(kube, &v1.MockResource{}, false, kubeCache)
 	})
 	AfterEach(func() {
@@ -76,7 +77,8 @@ var _ = Describe("Base", func() {
 			clientset, err := kubernetes.NewForConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			kubeCache = cache.NewKubeCoreCache(context.TODO(), clientset)
+			kubeCache, err = cache.NewKubeCoreCache(context.TODO(), clientset)
+			Expect(err).NotTo(HaveOccurred())
 			client, err = NewResourceClient(clientset, &v1.MockResource{}, false, kubeCache)
 			Expect(err).NotTo(HaveOccurred())
 		})
