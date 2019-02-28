@@ -5,6 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/go-utils/errors"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 
 	kubeinformers "k8s.io/client-go/informers"
@@ -41,6 +44,7 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCor
 	pods := kubeInformerFactory.Core().V1().Pods()
 	configMaps := kubeInformerFactory.Core().V1().ConfigMaps()
 	secrets := kubeInformerFactory.Core().V1().Secrets()
+
 	k := &KubeCoreCaches{
 		podLister:       pods.Lister(),
 		configMapLister: configMaps.Lister(),
@@ -59,6 +63,15 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) *KubeCor
 			k.initError = err
 		}
 	}()
+
+	ok := cache.WaitForCacheSync(stop,
+		pods.Informer().HasSynced,
+		configMaps.Informer().HasSynced,
+		secrets.Informer().HasSynced)
+	if !ok {
+		// if initError is non-nil, the kube resource client will panic
+		k.initError = errors.Errorf("waiting for kube cache sync failed")
+	}
 
 	return k
 }
