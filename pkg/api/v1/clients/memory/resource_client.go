@@ -137,7 +137,10 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	if !ok {
 		return nil, errors.NewNotExistErr(namespace, name)
 	}
-	return resource, nil
+
+	// avoid data races
+	clone := proto.Clone(resource).(resources.Resource)
+	return clone, nil
 }
 
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
@@ -196,7 +199,8 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	var resourceList resources.ResourceList
 	for _, resource := range cachedResources {
 		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
-			resourceList = append(resourceList, resource)
+			clone := proto.Clone(resource).(resources.Resource)
+			resourceList = append(resourceList, clone)
 		}
 	}
 
