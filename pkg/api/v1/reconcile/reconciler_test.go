@@ -58,6 +58,9 @@ var _ = Describe("Reconciler", func() {
 			resources.UpdateMetadata(mockList[i], func(meta *core.Metadata) {
 				meta.ResourceVersion = ""
 			})
+			resources.UpdateMetadata(desiredMockResources[i], func(meta *core.Metadata) {
+				meta.ResourceVersion = ""
+			})
 			Expect(mockList[i]).To(Equal(desiredMockResources[i]))
 		}
 
@@ -77,6 +80,9 @@ var _ = Describe("Reconciler", func() {
 		Expect(mockList).To(HaveLen(2))
 		for i := range mockList {
 			resources.UpdateMetadata(mockList[i], func(meta *core.Metadata) {
+				meta.ResourceVersion = ""
+			})
+			resources.UpdateMetadata(desiredMockResources[i], func(meta *core.Metadata) {
 				meta.ResourceVersion = ""
 			})
 			Expect(mockList[i]).To(Equal(desiredMockResources[i]))
