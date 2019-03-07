@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -77,7 +78,7 @@ func (d Crd) Register(apiexts apiexts.Interface) error {
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to register crd: %v", err)
 	}
-	return nil
+	return kubeutils.WaitForCrdActive(apiexts, toRegister.Name)
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
