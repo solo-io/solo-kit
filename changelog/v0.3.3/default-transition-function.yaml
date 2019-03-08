@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Reconcilers now have a default reconcile function, which will use the `Hash()` of resources to prevent re-writing the same resource to storage
+    issueLink: https://github.com/solo-io/solo-kit/issues/96
