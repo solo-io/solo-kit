@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix issue where memory clients cannot read objects with empty namespaces
+    issueLink: https://github.com/solo-io/solo-kit/issues/97

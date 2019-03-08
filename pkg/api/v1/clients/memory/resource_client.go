@@ -132,7 +132,6 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	resource, ok := rc.cache.Get(rc.key(namespace, name))
 	if !ok {
 		return nil, errors.NewNotExistErr(namespace, name)
@@ -149,7 +148,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 
 	key := rc.key(meta.Namespace, meta.Name)
 
@@ -179,7 +177,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	key := rc.key(namespace, name)
 	_, ok := rc.cache.Get(key)
 	if !ok {
