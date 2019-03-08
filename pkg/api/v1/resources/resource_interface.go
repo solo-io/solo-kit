@@ -304,6 +304,11 @@ func (list InputResourceList) AsResourceList() ResourceList {
 	return resources
 }
 
+type HashableResource interface {
+	Resource
+	Hash() uint64
+}
+
 func Clone(resource Resource) Resource {
 	return proto.Clone(resource).(Resource)
 }
