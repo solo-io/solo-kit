@@ -10,6 +10,14 @@
   version = "v0.34.0"
 
 [[projects]]
+  digest = "1:1c9dffe45896d21dc8e183fdc3cdb405249e6c7dd3d00792e534af3597d5e4fc"
+  name = "github.com/avast/retry-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "08d411bf8302219fe47ca04dbdf9de892010c5e5"
+  version = "v2.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:d6afaeed1502aa28e80a4ed0981d570ad91b2579193404256ce672ed0a609e0d"
   name = "github.com/beorn7/perks"
@@ -494,12 +502,12 @@
   version = "v2.0.1"
 
 [[projects]]
-  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:26663fafdea73a38075b07e8e9d82fc0056379d2be8bb4e13899e8fda7c7dd23"
@@ -571,12 +579,15 @@
   version = "v0.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:c4f5e25cc8582ee64fc188ee0b0b2151743c406d23f835d4e3322065207c2f69"
+  digest = "1:e2153b0f9cbb98a6b35addaaa11d411e28818f7b298eb7de5a61672d3c80dd61"
   name = "github.com/solo-io/go-utils"
-  packages = ["kubeutils"]
+  packages = [
+    "errors",
+    "kubeutils",
+  ]
   pruneopts = "UT"
-  revision = "67428b92743fd710ab708665d5fff86e06ff1612"
+  revision = "167df0ee2b8bde9d0944f00c650f19772b25d36b"
+  version = "v0.3.1"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -1205,6 +1216,7 @@
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
     "github.com/radovskyb/watcher",
+    "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/kubeutils",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",
