@@ -9,6 +9,7 @@ import (
 	. "github.com/solo-io/solo-kit/pkg/api/v1/reconcile"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
@@ -99,4 +100,74 @@ var _ = Describe("Reconciler", func() {
 
 		Expect(mockList).To(HaveLen(0))
 	})
+	Context("nil transition function passed", func() {
+		It("does not re-write resources which are identical", func() {
+
+			res := v1.NewMockResource(namespace, "a1-barry")
+			mockResourceClient.Write(res, clients.WriteOpts{})
+
+			// use test client to check that Write is not called
+			mockReconciler = NewReconciler(&testResourceClient{errorOnWrite: true, base: mockResourceClient})
+			err := mockReconciler.Reconcile(namespace, resources.ResourceList{res}, nil, clients.ListOpts{})
+			// error will occur if Write was called
+			Expect(err).NotTo(HaveOccurred())
+
+		})
+	})
+	Context("transition function passed", func() {
+		It("can update for resources which are identical", func() {
+			res := v1.NewMockResource(namespace, "a1-barry")
+			mockResourceClient.Write(res, clients.WriteOpts{})
+
+			// use test client to check that Write is not called
+			mockReconciler = NewReconciler(&testResourceClient{errorOnWrite: true, base: mockResourceClient})
+			err := mockReconciler.Reconcile(namespace, resources.ResourceList{res}, func(original, desired resources.Resource) (b bool, e error) {
+				// always return true
+				return true, nil
+			}, clients.ListOpts{})
+			// error will occur if Write was called
+			Expect(err).To(HaveOccurred())
+
+		})
+	})
 })
+
+type testResourceClient struct {
+	errorOnWrite bool
+	base         clients.ResourceClient
+}
+
+func (c *testResourceClient) Kind() string {
+	panic("implement me")
+}
+
+func (c *testResourceClient) NewResource() resources.Resource {
+	panic("implement me")
+}
+
+func (c *testResourceClient) Register() error {
+	panic("implement me")
+}
+
+func (c *testResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
+	panic("implement me")
+}
+
+func (c *testResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+	if c.errorOnWrite {
+		return nil, errors.Errorf("write should not have been called")
+	}
+	return nil, nil
+}
+
+func (c *testResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+	panic("implement me")
+}
+
+func (c *testResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+	return c.base.List(namespace, opts)
+}
+
+func (c *testResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
+	panic("implement me")
+}

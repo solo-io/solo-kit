@@ -66,6 +66,21 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 		if desiredInput, ok := desired.(resources.InputResource); ok {
 			desiredInput.SetStatus(core.Status{})
 		}
+		// default transition policy: only perform an update if the Hash has changed
+		if transition == nil {
+			transition = func(original, desired resources.Resource) (b bool, e error) {
+				originalHasher, ok1 := original.(resources.HashableResource)
+				desiredHasher, ok2 := desired.(resources.HashableResource)
+
+				// both are hashable
+				if ok1 && ok2 {
+					return originalHasher.Hash() != desiredHasher.Hash(), nil
+				}
+
+				// default behavior: perform the update if one if the objects are not hashable
+				return true, nil
+			}
+		}
 		if transition != nil {
 			needsUpdate, err := transition(original, desired)
 			if err != nil {
