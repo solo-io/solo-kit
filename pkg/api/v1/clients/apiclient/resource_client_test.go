@@ -80,6 +80,6 @@ var _ = Describe("Apiclient", func() {
 		cc.Close()
 	})
 	It("CRUDs resources", func() {
-		generic.TestCrudClient("", client, time.Minute)
+		generic.TestCrudClient("test", client, time.Minute)
 	})
 })

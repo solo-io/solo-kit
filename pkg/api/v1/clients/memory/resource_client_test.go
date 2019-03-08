@@ -22,7 +22,7 @@ var _ = Describe("Base", func() {
 	AfterEach(func() {
 	})
 	It("CRUDs resources", func() {
-		generic.TestCrudClient("", client, time.Minute)
+		generic.TestCrudClient("test", client, time.Minute)
 	})
 	It("should not return pointer to internal object", func() {
 		obj := &v1.MockResource{
