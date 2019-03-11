@@ -25,6 +25,10 @@ type ProjectConfig struct {
 	Version        string                      `json:"version"`
 	DocsDir        string                      `json:"docs_dir"`
 	ResourceGroups map[string][]ResourceConfig `json:"resource_groups"`
+	// if set, this group will override the proto pacakge typically used
+	// as the api group for the crd
+	CrdGroupOverride string `json:"crd_group_override"`
+
 	// set by load
 	ProjectFile string
 	GoPackage   string

@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Solo-Kit now allows overriding the Groupname used for Kubernetes CRDs in the solo-kit.json config
+    issueLink: https://github.com/solo-io/solo-kit/issues/101
