@@ -157,9 +157,9 @@ func (o *AnotherMockResource) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*AnotherMockResource)
 }
 
-var AnotherMockResourceCrd = crd.NewCrd("testing.solo.io",
+var AnotherMockResourceCrd = crd.NewCrd("crds.testing.solo.io",
 	"anothermockresources",
-	"testing.solo.io",
+	"crds.testing.solo.io",
 	"v1",
 	"AnotherMockResource",
 	"amr",

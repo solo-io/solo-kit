@@ -173,9 +173,14 @@ func (o *{{ .Name }}) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*{{ .Name }})
 }
 
-var {{ .Name }}Crd = crd.NewCrd("{{ .Project.ProtoPackage }}",
+{{- $crdGroupName := .Project.ProtoPackage }}
+{{- if ne .Project.ProjectConfig.CrdGroupOverride "" }}
+{{- $crdGroupName = .Project.ProjectConfig.CrdGroupOverride }}
+{{- end}}
+
+var {{ .Name }}Crd = crd.NewCrd("{{ $crdGroupName }}",
 	"{{ lowercase (upper_camel .PluralName) }}",
-	"{{ .Project.ProtoPackage }}",
+	"{{ $crdGroupName }}",
 	"{{ .Project.ProjectConfig.Version }}",
 	"{{ .Name }}",
 	"{{ .ShortName }}",

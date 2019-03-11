@@ -157,9 +157,9 @@ func (o *ClusterResource) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*ClusterResource)
 }
 
-var ClusterResourceCrd = crd.NewCrd("testing.solo.io",
+var ClusterResourceCrd = crd.NewCrd("crds.testing.solo.io",
 	"clusterresources",
-	"testing.solo.io",
+	"crds.testing.solo.io",
 	"v1",
 	"ClusterResource",
 	"clr",

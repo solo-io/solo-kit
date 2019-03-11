@@ -145,9 +145,9 @@ func (o *FakeResource) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*FakeResource)
 }
 
-var FakeResourceCrd = crd.NewCrd("testing.solo.io",
+var FakeResourceCrd = crd.NewCrd("crds.testing.solo.io",
 	"fakes",
-	"testing.solo.io",
+	"crds.testing.solo.io",
 	"v1",
 	"FakeResource",
 	"fk",
