@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Solo-Kit now renders field names in camelcase form to be consistent with how field names appear in YAML/JSON
+    issueLink: https://github.com/solo-io/solo-kit/issues/102

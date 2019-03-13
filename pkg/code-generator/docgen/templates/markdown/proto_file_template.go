@@ -57,14 +57,14 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 
 {{backtick}}{{backtick}}{{backtick}}yaml
 {{range .Fields -}}
-"{{ printfptr "%v" .Name}}": {{ fieldType . }}
+"{{ lower_camel (printfptr "%v" .Name) }}": {{ fieldType . }}
 {{end}}
 {{backtick}}{{backtick}}{{backtick}}
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 {{range .Fields -}}
-| {{backtick}}{{ printfptr "%v" .Name }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+| {{backtick}}{{ lower_camel (printfptr "%v" .Name) }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
 ` + "`" + ` }}
