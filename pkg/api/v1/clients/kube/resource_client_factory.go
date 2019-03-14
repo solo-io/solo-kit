@@ -198,7 +198,7 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 
 		// Initialize a new kubernetes controller
 		kubeController := controller.NewController("solo-resource-controller",
-			controller.NewLockingCallbackHandler(f.updatedOccurred), sharedInformers...)
+			controller.NewLockingCallbackHandler(f.updatedOccurred), true, sharedInformers...)
 
 		// Start the controller
 		runResult := make(chan error, 1)

@@ -52,7 +52,7 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*KubeCo
 	}
 
 	kubeController := controller.NewController("kube-plugin-controller",
-		controller.NewLockingSyncHandler(k.updatedOccured),
+		controller.NewLockingSyncHandler(k.updatedOccured), false,
 		pods.Informer(), configMaps.Informer(), secrets.Informer())
 
 	stop := ctx.Done()
