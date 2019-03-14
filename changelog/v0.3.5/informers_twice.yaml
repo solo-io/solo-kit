@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: don't run informer twice, so when cancelled there is no panic
+    issueLink: https://github.com/solo-io/solo-kit/issues/105
