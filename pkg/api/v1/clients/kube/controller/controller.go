@@ -14,8 +14,7 @@ import (
 
 // This custom Kubernetes controller is used to provide a shared caching mechanism for the solo-kit resource clients.
 type Controller struct {
-	runInformers bool
-	name         string
+	name string
 
 	informers []cache.SharedIndexInformer
 
@@ -33,15 +32,14 @@ type Controller struct {
 // Returns a new kubernetes controller without starting it.
 func NewController(
 	controllerName string,
-	handler cache.ResourceEventHandler, RunInformers bool,
+	handler cache.ResourceEventHandler,
 	informers ...cache.SharedIndexInformer) *Controller {
 
 	return &Controller{
-		name:         controllerName,
-		runInformers: RunInformers,
-		informers:    informers,
-		workQueue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName),
-		handler:      handler,
+		name:      controllerName,
+		informers: informers,
+		workQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName),
+		handler:   handler,
 	}
 }
 
@@ -60,16 +58,23 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 	log.Debugf("Starting %v controller", c.name)
 
 	// For each informer
+	var syncFunctions []cache.InformerSynced
 	for _, informer := range c.informers {
-		// Register the event handler with the informer
+
+		// 1. Get the function to tell if it has synced
+		syncFunctions = append(syncFunctions, informer.HasSynced)
+
+		// 2. Register the event handler with the informer
 		informer.AddEventHandler(c.eventHandlerFunctions())
+
+		// 3. Run the informer
+		go informer.Run(stopCh)
 	}
 
-	// 3. Run the informer
-	if c.runInformers {
-		if err := c.RunAndWaitForInformers(stopCh); err != nil {
-			return err
-		}
+	// Wait for all the informer caches to be synced before starting workers
+	log.Debugf("Waiting for informer caches to sync")
+	if ok := cache.WaitForCacheSync(stopCh, []cache.InformerSynced(syncFunctions)...); !ok {
+		return fmt.Errorf("error while waiting for caches to sync")
 	}
 
 	// Start workers in goroutine so we can defer the queue shutdown
@@ -89,29 +94,6 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 		log.Debugf("Stopping workers")
 	}()
 
-	return nil
-}
-func (c *Controller) RunAndWaitForInformers(stopCh <-chan struct{}) error {
-	c.RunInformers(stopCh)
-	return c.WaitForInformers(stopCh)
-}
-
-func (c *Controller) RunInformers(stopCh <-chan struct{}) {
-	for _, informer := range c.informers {
-		go informer.Run(stopCh)
-	}
-}
-func (c *Controller) WaitForInformers(stopCh <-chan struct{}) error {
-
-	var syncFunctions []cache.InformerSynced
-	for _, informer := range c.informers {
-		syncFunctions = append(syncFunctions, informer.HasSynced)
-	}
-	// Wait for all the informer caches to be synced before starting workers
-	log.Debugf("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, []cache.InformerSynced(syncFunctions)...); !ok {
-		return fmt.Errorf("error while waiting for caches to sync")
-	}
 	return nil
 }
 
