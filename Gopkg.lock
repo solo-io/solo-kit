@@ -586,8 +586,8 @@
     "kubeutils",
   ]
   pruneopts = "UT"
-  revision = "167df0ee2b8bde9d0944f00c650f19772b25d36b"
-  version = "v0.3.1"
+  revision = "94b56d174b345de8c59b6312228ccbd9c21b3581"
+  version = "v0.5.1"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -1216,7 +1216,6 @@
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
     "github.com/radovskyb/watcher",
-    "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/kubeutils",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",

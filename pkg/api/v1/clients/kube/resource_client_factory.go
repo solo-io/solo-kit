@@ -216,7 +216,7 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 			err = errors.Errorf("timed out while waiting for informer caches to sync")
 		}
 
-		// If initError is non-nil, the kube resource client will panic
+		// If err is non-nil, the kube resource client will panic
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Panicf("failed to start kube shared informer factory: %v", err)
 		}
