@@ -32,3 +32,7 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
 [[constraint]]
   revision = "ee2393f3bbf04700fc5d611077496c47ec1937ed"
   name = "github.com/ilackarms/protokit"
+
+[[constraint]]
+  name = "github.com/solo-io/go-utils"
+  version = "0.5.1"
