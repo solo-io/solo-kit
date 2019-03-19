@@ -98,7 +98,7 @@ func (s *{{ lower_camel .Name }}Server) Fetch{{ upper_camel .MessageType }}(ctx 
 	return s.Server.Fetch(ctx, req)
 }
 
-func (s *{{ lower_camel .Name }}Server) Incremental{{ upper_camel .MessageType }}(_ {{ upper_camel .Name }}_Incremental{{ upper_camel .MessageType }}Server) error {
+func (s *{{ lower_camel .Name }}Server) Delta{{ upper_camel .MessageType }}(_ {{ upper_camel .Name }}_Delta{{ upper_camel .MessageType }}Server) error {
 	return errors.New("not implemented")
 }
 

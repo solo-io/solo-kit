@@ -83,7 +83,7 @@ func (s *mockXdsResourceDiscoveryServiceServer) FetchMockXdsResourceConfig(ctx c
 	return s.Server.Fetch(ctx, req)
 }
 
-func (s *mockXdsResourceDiscoveryServiceServer) IncrementalMockXdsResourceConfig(_ MockXdsResourceDiscoveryService_IncrementalMockXdsResourceConfigServer) error {
+func (s *mockXdsResourceDiscoveryServiceServer) DeltaMockXdsResourceConfig(_ MockXdsResourceDiscoveryService_DeltaMockXdsResourceConfigServer) error {
 	return errors.New("not implemented")
 }
 
