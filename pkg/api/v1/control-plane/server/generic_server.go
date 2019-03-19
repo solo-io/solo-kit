@@ -73,7 +73,7 @@ func (s *server) StreamAggregatedResources(stream discovery.AggregatedDiscoveryS
 	return s.Stream(stream, cache.AnyType)
 }
 
-func (s *server) IncrementalAggregatedResources(_ discovery.AggregatedDiscoveryService_IncrementalAggregatedResourcesServer) error {
+func (s *server) DeltaAggregatedResources(_ discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
 	return errors.New("not implemented")
 }
 
