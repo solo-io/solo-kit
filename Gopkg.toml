@@ -36,3 +36,7 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
 [[constraint]]
   name = "github.com/solo-io/go-utils"
   version = "0.5.1"
+
+[[constraint]]
+  version = "0.6.9"
+  name = "github.com/envoyproxy/go-control-plane"
