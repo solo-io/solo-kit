@@ -115,6 +115,11 @@ func (p *plainSecret) ToKubeSecret(ctx context.Context, rc *ResourceClient, reso
 	}
 	kubeSecretData := make(map[string][]byte)
 	for k, v := range resourceMap {
+		// metadata comes from ToKubeMeta
+		// status not supported
+		if k == "metadata" {
+			continue
+		}
 		switch val := v.(type) {
 		case string:
 			kubeSecretData[k] = []byte(val)
