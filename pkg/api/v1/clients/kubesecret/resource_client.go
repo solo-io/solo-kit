@@ -200,7 +200,10 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 	opts = opts.WithDefaults()
 
-	secret, err := rc.kubeCache.SecretLister().Secrets(namespace).Get(name)
+	// TODO(yuval-k): do NOT use the lister on read. As Read is mainly called after write, to
+	// refresh the object. In theory we could use the object returned from the write call to kubernetes
+	// but that requres further investigation.
+	secret, err := rc.kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
