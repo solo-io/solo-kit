@@ -83,7 +83,9 @@ func (rc *ResourceClient) ToKubeSecret(ctx context.Context, resource resources.R
 }
 
 type SecretConverter interface {
+	// If this methoed returns nil,nil the default conversion will be used.
 	FromKubeSecret(ctx context.Context, rc *ResourceClient, secret *v1.Secret) (resources.Resource, error)
+	// If this methoed returns nil,nil the default conversion will be used.
 	ToKubeSecret(ctx context.Context, rc *ResourceClient, resource resources.Resource) (*v1.Secret, error)
 }
 
@@ -193,7 +195,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 	opts = opts.WithDefaults()
 
-	secret, err := rc.kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := rc.kubeCache.SecretLister().Secrets(namespace).Get(name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -215,7 +217,10 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 func (rc *ResourceClient) resourceToKubeSecret(ctx context.Context, resource resources.Resource) (*v1.Secret, error) {
 
 	if rc.secretConverter != nil {
-		return rc.secretConverter.ToKubeSecret(ctx, rc, resource)
+		secret, err := rc.secretConverter.ToKubeSecret(ctx, rc, resource)
+		if err != nil || secret != nil {
+			return secret, err
+		}
 	}
 
 	return rc.ToKubeSecret(ctx, resource)
@@ -301,7 +306,10 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 func (rc *ResourceClient) fromKubeResource(ctx context.Context, secret *v1.Secret) (resources.Resource, error) {
 
 	if rc.secretConverter != nil {
-		return rc.secretConverter.FromKubeSecret(ctx, rc, secret)
+		r, err := rc.secretConverter.FromKubeSecret(ctx, rc, secret)
+		if r != nil || err != nil {
+			return r, err
+		}
 	}
 
 	return rc.FromKubeSecret(secret)
