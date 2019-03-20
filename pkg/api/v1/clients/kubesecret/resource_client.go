@@ -291,12 +291,12 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	var resourceList resources.ResourceList
 	for _, secret := range secretList {
 		resource, err := rc.fromKubeResource(opts.Ctx, secret)
-		if err != nil {
-			return nil, err
-		}
 		// not our resource, ignore it
 		if err == NotOurResource {
 			continue
+		}
+		if err != nil {
+			return nil, err
 		}
 		resourceList = append(resourceList, resource)
 	}
