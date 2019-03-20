@@ -31,10 +31,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type genericResourceClientFactory struct {
-	opts ResourceClientFactory
-}
-
 type NewResourceClientParams struct {
 	ResourceType resources.Resource
 	Token        string
@@ -111,7 +107,10 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		if opts.Cache == nil {
 			return nil, errors.Errorf("invalid opts, configmap client requires a kube core cache")
 		}
-		return configmap.NewResourceClient(opts.Clientset, resourceType, opts.Cache)
+		if opts.CustomtConverter != nil {
+			return configmap.NewResourceClientWithConverter(opts.Clientset, resourceType, opts.Cache, opts.CustomtConverter)
+		}
+		return configmap.NewResourceClient(opts.Clientset, resourceType, opts.Cache, opts.PlainConfigmaps)
 	case *KubeSecretClientFactory:
 		if opts.Cache == nil {
 			return nil, errors.Errorf("invalid opts, secret client requires a kube core cache")
@@ -177,6 +176,12 @@ func (f *MemoryResourceClientFactory) NewResourceClient(params NewResourceClient
 type KubeConfigMapClientFactory struct {
 	Clientset kubernetes.Interface
 	Cache     cache.KubeCoreCache
+	// set this  to true if resource fields are all strings
+	// resources will be stored as plain kubernetes configmaps without serializing/deserializing as objects
+	PlainConfigmaps bool
+	// a custom handler to define how configmaps are serialized/deserialized out of resources
+	// if set, Plain is ignored
+	CustomtConverter configmap.ConfigMapConverter
 }
 
 func (f *KubeConfigMapClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
@@ -186,7 +191,7 @@ func (f *KubeConfigMapClientFactory) NewResourceClient(params NewResourceClientP
 type KubeSecretClientFactory struct {
 	Clientset kubernetes.Interface
 	// set this  to true if resource fields are all strings
-	// resources will be stored as plain kubernetes secrets without serializing/deserializing
+	// resources will be stored as plain kubernetes secrets without serializing/deserializing as objects
 	PlainSecrets    bool
 	SecretConverter kubesecret.SecretConverter
 	Cache           cache.KubeCoreCache
