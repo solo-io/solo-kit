@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix the nil semantics of nil from kubesecret.
+    issueLink: https://github.com/solo-io/solo-kit/pull/113
