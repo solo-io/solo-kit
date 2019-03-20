@@ -127,7 +127,7 @@ func (p *plainSecret) ToKubeSecret(ctx context.Context, rc *ResourceClient, reso
 			// TODO: handle other field types; for now the caller
 			// must know this resource client only supports map[string]string style objects
 			contextutils.LoggerFrom(ctx).Warnf("invalid resource type (%v) used for plain secret. unable to " +
-				"convert to kube secret. only resources with fields of type string are supported for the plain secret client.")
+				"convert to kube secret. only resources with fields of type string are supported for the plain secret client.", resources.Kind(resource))
 		}
 	}
 

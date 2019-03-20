@@ -103,7 +103,7 @@ func (cc *plainConverter) ToKubeConfigMap(ctx context.Context, rc *ResourceClien
 			// TODO: handle other field types; for now the caller
 			// must know this resource client only supports map[string]string style objects
 			contextutils.LoggerFrom(ctx).Warnf("invalid resource type (%v) used for plain configmap. unable to " +
-				"convert to kube configmap. only resources with fields of type string are supported for the plain configmap client.")
+				"convert to kube configmap. only resources with fields of type string are supported for the plain configmap client.", resources.Kind(resource))
 		}
 	}
 	meta := kubeutils.ToKubeMeta(resource.GetMetadata())
