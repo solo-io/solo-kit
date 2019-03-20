@@ -83,9 +83,9 @@ func (rc *ResourceClient) ToKubeSecret(ctx context.Context, resource resources.R
 }
 
 type SecretConverter interface {
-	// If this methoed returns nil,nil the default conversion will be used.
+	// If this method returns nil,nil the default conversion will be used.
 	FromKubeSecret(ctx context.Context, rc *ResourceClient, secret *v1.Secret) (resources.Resource, error)
-	// If this methoed returns nil,nil the default conversion will be used.
+	// If this method returns nil,nil the default conversion will be used.
 	ToKubeSecret(ctx context.Context, rc *ResourceClient, resource resources.Resource) (*v1.Secret, error)
 }
 
