@@ -9,9 +9,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	v1 "k8s.io/api/core/v1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,49 +18,6 @@ import (
 
 const annotationKey = "resource_kind"
 
-func (rc *ResourceClient) fromKubeConfigMap(configMap *v1.ConfigMap) (resources.Resource, error) {
-	resource := rc.NewResource()
-	// not our configMap
-	// should be an error on a Read, ignored on a list
-	if len(configMap.ObjectMeta.Annotations) == 0 || configMap.ObjectMeta.Annotations[annotationKey] != rc.Kind() {
-		return nil, nil
-	}
-	// convert mapstruct to our object
-	resourceMap, err := protoutils.MapStringStringToMapStringInterface(configMap.Data)
-	if err != nil {
-		return nil, errors.Wrapf(err, "parsing configmap data as map[string]interface{}")
-	}
-
-	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
-		return nil, errors.Wrapf(err, "reading configmap data into %v", rc.Kind())
-	}
-	resource.SetMetadata(kubeutils.FromKubeMeta(configMap.ObjectMeta))
-
-	return resource, nil
-}
-
-func (rc *ResourceClient) toKubeConfigMap(resource resources.Resource) (*v1.ConfigMap, error) {
-	resourceMap, err := protoutils.MarshalMap(resource)
-	if err != nil {
-		return nil, errors.Wrapf(err, "marshalling resource as map")
-	}
-	resourceData, err := protoutils.MapStringInterfaceToMapStringString(resourceMap)
-	if err != nil {
-		return nil, errors.Wrapf(err, "internal err: converting resource map to map[string]string")
-	}
-	// metadata moves over to kube style
-	delete(resourceData, "metadata")
-	meta := kubeutils.ToKubeMeta(resource.GetMetadata())
-	if meta.Annotations == nil {
-		meta.Annotations = make(map[string]string)
-	}
-	meta.Annotations[annotationKey] = rc.Kind()
-	return &v1.ConfigMap{
-		ObjectMeta: meta,
-		Data:       resourceData,
-	}, nil
-}
-
 type ResourceClient struct {
 	apiexts      apiexts.Interface
 	kube         kubernetes.Interface
@@ -71,14 +25,25 @@ type ResourceClient struct {
 	resourceName string
 	resourceType resources.Resource
 	kubeCache    cache.KubeCoreCache
+	// custom logic to convert the configmap to a resource
+	converter ConfigMapConverter
 }
 
-func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache) (*ResourceClient, error) {
+func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, plainConfigMaps bool) (*ResourceClient, error) {
+	var configmapConverter ConfigMapConverter = &structConverter{}
+	if plainConfigMaps {
+		configmapConverter = &plainConverter{}
+	}
+	return NewResourceClientWithConverter(kube, resourceType, kubeCache, configmapConverter)
+}
+
+func NewResourceClientWithConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, secretConverter ConfigMapConverter) (*ResourceClient, error) {
 	return &ResourceClient{
 		kube:         kube,
 		resourceName: reflect.TypeOf(resourceType).String(),
 		resourceType: resourceType,
 		kubeCache:    kubeCache,
+		converter:    secretConverter,
 	}, nil
 }
 
@@ -109,7 +74,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		}
 		return nil, errors.Wrapf(err, "reading configMap from kubernetes")
 	}
-	resource, err := rc.fromKubeConfigMap(configMap)
+	resource, err := rc.converter.FromKubeConfigMap(opts.Ctx, rc, configMap)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +94,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	// mutate and return clone
 	clone := proto.Clone(resource).(resources.Resource)
 	clone.SetMetadata(meta)
-	configMap, err := rc.toKubeConfigMap(resource)
+	configMap, err := rc.converter.ToKubeConfigMap(opts.Ctx, rc, resource)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +146,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 	var resourceList resources.ResourceList
 	for _, configMap := range configMapList {
-		resource, err := rc.fromKubeConfigMap(configMap)
+		resource, err := rc.converter.FromKubeConfigMap(opts.Ctx, rc, configMap)
 		if err != nil {
 			return nil, err
 		}
