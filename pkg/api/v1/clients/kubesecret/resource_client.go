@@ -2,6 +2,7 @@ package kubesecret
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 
@@ -23,12 +24,16 @@ import (
 
 const annotationKey = "resource_kind"
 
+var (
+	NotOurResource error = fmt.Errorf("not kube secret resource")
+)
+
 func (rc *ResourceClient) FromKubeSecret(secret *v1.Secret) (resources.Resource, error) {
 	resource := rc.NewResource()
 	// not our secret
 	// should be an error on a Read, ignored on a list
 	if len(secret.ObjectMeta.Annotations) == 0 || secret.ObjectMeta.Annotations[annotationKey] != rc.Kind() {
-		return nil, nil
+		return nil, NotOurResource
 	}
 	// convert mapstruct to our object
 	resourceMap, err := protoutils.MapStringStringToMapStringInterface(toStringStringMap(secret.Data))
@@ -96,7 +101,7 @@ func (p *plainSecret) FromKubeSecret(ctx context.Context, rc *ResourceClient, se
 	// not our secret
 	// should be an error on a Read, ignored on a list
 	if len(secret.ObjectMeta.Annotations) == 0 || secret.ObjectMeta.Annotations[annotationKey] != rc.Kind() {
-		return nil, nil
+		return nil, NotOurResource
 	}
 	// only works for string fields
 	resourceMap := make(map[string]interface{})
@@ -128,7 +133,7 @@ func (p *plainSecret) ToKubeSecret(ctx context.Context, rc *ResourceClient, reso
 		default:
 			// TODO: handle other field types; for now the caller
 			// must know this resource client only supports map[string]string style objects
-			contextutils.LoggerFrom(ctx).Warnf("invalid resource type (%v) used for plain secret. unable to " +
+			contextutils.LoggerFrom(ctx).Warnf("invalid resource type (%v) used for plain secret. unable to "+
 				"convert to kube secret. only resources with fields of type string are supported for the plain secret client.", resources.Kind(resource))
 		}
 	}
@@ -204,13 +209,13 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 
 	resource, err := rc.fromKubeResource(opts.Ctx, secret)
+	if err == NotOurResource {
+		return nil, errors.Errorf("secret %v is not kind %v", name, rc.Kind())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	if resource == nil {
-		return nil, errors.Errorf("secret %v is not kind %v", name, rc.Kind())
-	}
 	return resource, nil
 }
 
@@ -290,7 +295,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 			return nil, err
 		}
 		// not our resource, ignore it
-		if resource == nil {
+		if err == NotOurResource {
 			continue
 		}
 		resourceList = append(resourceList, resource)
