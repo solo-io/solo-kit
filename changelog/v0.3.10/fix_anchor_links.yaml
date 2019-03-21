@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fixes anchor links when generating Hugo docs.
+    issueLink: https://github.com/solo-io/solo-kit/issues/114
