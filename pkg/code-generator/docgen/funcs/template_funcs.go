@@ -128,12 +128,12 @@ func toHeading(docsOptions *options.DocsOptions) func(format string, p *string) 
 	if docsOptions.Output == options.Hugo {
 		return printPointer
 	} else {
+		//--> <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
 		return func(format string, p *string) string {
 			val := printPointer(format, p)
 			return "<a name=" + val + ">" + val + "</a>"
 		}
 	}
-	//to_heading <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
 }
 
 func printPointer(format string, p *string) string {
