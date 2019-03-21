@@ -1,4 +1,4 @@
 changelog:
-  - type: FIX
-    description: Fix the nil semantics of nil from kubesecret.
-    issueLink: https://github.com/solo-io/solo-kit/pull/113
+  - type: BREAKING_CHANGE
+    description: use context utils from go utils
+    issueLink: https://github.com/solo-io/solo-kit/pull/116
