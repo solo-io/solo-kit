@@ -138,7 +138,7 @@ func toHeading(docsOptions *options.DocsOptions) func(format string, p *string) 
 }
 
 func toAnchorLink(docsOptions *options.DocsOptions) func(format string, p *string) string {
-	if docsOptions.Output == options.Hugo {
+	if docsOptions.Output != options.Hugo {
 		return printPointer
 	} else {
 		return func(format string, p *string) string {
