@@ -25,10 +25,10 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 {{ end }}
 
 {{- if gt (len .Messages) 0 }} 
-##### Types:
+#### Types:
 
-{{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }}) {{- if (resourceForMessage .) }} **Top-Level Resource**{{ end }}" }}
-{{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ printfptr \"%v\" .Name }})" }}
+{{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ toAnchorLink \"%v\" .Name }}) {{- if (resourceForMessage .) }} **Top-Level Resource**{{ end }}" }}
+{{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ toAnchorLink \"%v\" .Name }})" }}
 {{- forEachMessage $File .Messages $linkMessage $linkEnum }}  
 
 {{ end}}
@@ -38,7 +38,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 ##### Enums:
 
 {{ range .Enums}}
-	- [{{ printfptr "%v" .Name }}](#{{ printfptr "%v" .Name }})
+	- [{{ printfptr "%v" .Name }}](#{{ toAnchorLink "%v" .Name }})
 
 {{- end}}
 

@@ -84,8 +84,9 @@ func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) tem
 				path, org, project, branch, suffix), nil
 
 		},
-		"printfptr": printPointer,
-		"toHeading": toHeading(docsOptions),
+		"printfptr":    printPointer,
+		"toHeading":    toHeading(docsOptions),
+		"toAnchorLink": toAnchorLink(docsOptions),
 		"remove_magic_comments": func(in string) string {
 			lines := strings.Split(in, "\n")
 			var linesWithoutMagicComments []string
@@ -132,6 +133,16 @@ func toHeading(docsOptions *options.DocsOptions) func(format string, p *string) 
 		return func(format string, p *string) string {
 			val := printPointer(format, p)
 			return "<a name=" + val + ">" + val + "</a>"
+		}
+	}
+}
+
+func toAnchorLink(docsOptions *options.DocsOptions) func(format string, p *string) string {
+	if docsOptions.Output == options.Hugo {
+		return printPointer
+	} else {
+		return func(format string, p *string) string {
+			return strings.ToLower(printPointer(format, p))
 		}
 	}
 }
