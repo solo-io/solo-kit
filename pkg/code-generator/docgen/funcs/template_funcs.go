@@ -84,7 +84,9 @@ func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) tem
 				path, org, project, branch, suffix), nil
 
 		},
-		"printfptr": printPointer,
+		"printfptr":    printPointer,
+		"toHeading":    toHeading(docsOptions),
+		"toAnchorLink": toAnchorLink(docsOptions),
 		"remove_magic_comments": func(in string) string {
 			lines := strings.Split(in, "\n")
 			var linesWithoutMagicComments []string
@@ -121,6 +123,28 @@ func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) tem
 	}
 	funcs.Funcs = funcMap
 	return funcMap
+}
+
+func toHeading(docsOptions *options.DocsOptions) func(format string, p *string) string {
+	if docsOptions.Output == options.Hugo {
+		return printPointer
+	} else {
+		//--> <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
+		return func(format string, p *string) string {
+			val := printPointer(format, p)
+			return "<a name=" + val + ">" + val + "</a>"
+		}
+	}
+}
+
+func toAnchorLink(docsOptions *options.DocsOptions) func(format string, p *string) string {
+	if docsOptions.Output != options.Hugo {
+		return printPointer
+	} else {
+		return func(format string, p *string) string {
+			return strings.ToLower(printPointer(format, p))
+		}
+	}
 }
 
 func printPointer(format string, p *string) string {
@@ -259,6 +283,7 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 				if docsOptions.Output == options.Hugo {
 					ext = ".sk"
 					prefix = "../"
+					declaredName = strings.ToLower(declaredName)
 				}
 				link = prefix + linkedFile + ext + "#" + declaredName
 				linkText = "[" + typeName + "](" + link + ")"
@@ -279,11 +304,14 @@ func linkForResource(project *model.Project, docsOptions *options.DocsOptions) f
 				}
 				ext := ".sk.md"
 				prefix := "./"
+				name := resource.Name
 				if docsOptions.Output == options.Hugo {
 					ext = ".sk"
 					prefix = "../"
+					name = strings.ToLower(name)
 				}
-				return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, resource.Name), nil
+
+				return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, name), nil
 			}
 		}
 		return "", errors.Errorf("internal error: could not find file for resource %v in project %v",
