@@ -3,9 +3,9 @@ package configmap
 import (
 	"context"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	v1 "k8s.io/api/core/v1"
@@ -102,7 +102,7 @@ func (cc *plainConverter) ToKubeConfigMap(ctx context.Context, rc *ResourceClien
 		default:
 			// TODO: handle other field types; for now the caller
 			// must know this resource client only supports map[string]string style objects
-			contextutils.LoggerFrom(ctx).Warnf("invalid resource type (%v) used for plain configmap. unable to " +
+			contextutils.LoggerFrom(ctx).Warnf("invalid resource type (%v) used for plain configmap. unable to "+
 				"convert to kube configmap. only resources with fields of type string are supported for the plain configmap client.", resources.Kind(resource))
 		}
 	}
