@@ -49,7 +49,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 {{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}
 ---
-### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
+### {{ toHeading "%v" .Name }}
 
 {{ if gt (len .Comments.Leading) 0 }} 
 {{ remove_magic_comments .Comments.Leading }}
@@ -74,7 +74,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 		`
 {{ $Enum := . -}}
 ---
-### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
+### {{ toHeading "%v" .Name }}
 
 {{ if gt (len .Comments.Leading) 0 }} 
 {{ remove_magic_comments .Comments.Leading }}
@@ -91,7 +91,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 {{- forEachMessage $File .Messages $msgLongInfo $enumLongInfo }}  
 
 {{- range .Enums }}  
-### <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
+### {{ toHeading "%v" .Name }}
 
 Description: {{ remove_magic_comments .Comments.Leading }}
 
