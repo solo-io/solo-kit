@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bufio"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -24,17 +26,127 @@ import (
 )
 
 type DocsOptions = options.DocsOptions
+type SoloKitContext struct {
+	CompileProtos bool
+	GenDocs       *DocsOptions
+	SkipDirs      []string
+	CustomImports []string
+}
 
 func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customImports, skipDirs []string) error {
-	skipDirs = append(skipDirs, "vendor/")
-	absoluteRoot, err := filepath.Abs(relativeRoot)
+
+	skctx := SoloKitContext{
+		CompileProtos: compileProtos,
+		GenDocs:       genDocs,
+		SkipDirs:      skipDirs,
+		CustomImports: customImports,
+	}
+
+	cmd := exec.Command("go", "env", "GOMOD")
+	modBytes, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	module := strings.TrimSpace(string(modBytes))
+	if module == "" {
+		return RunGoPath(relativeRoot, skctx)
+	}
+
+	if len(customImports) != 0 {
+		return fmt.Errorf("custom imports not supported in module mode. please vendor your protos")
+	}
+
+	return RunModules(module, relativeRoot, skctx)
+
+}
+
+func getModPath(module string) (string, error) {
+
+	f, _ := os.Open(module)
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanLines)
+
+	if !scanner.Scan() {
+		return "", fmt.Errorf("invalid module file")
+	}
+	line := scanner.Text()
+	parts := strings.Split(line, " ")
+
+	return parts[len(parts)-1], nil
+
+}
+
+func RunModules(module string, relativeRoot string, skctx SoloKitContext) error {
+	// vendor our protos
+
+	modulePath, err := getModPath(module)
 	if err != nil {
 		return err
 	}
 
+	directory, _ := filepath.Split(module)
+	absoluteRoot, err := filepath.Abs(filepath.Join(directory, "vendor", modulePath, relativeRoot))
+	if err != nil {
+		return err
+	}
+
+	// copy over our protos to right path
+	r := Runner{
+		RelativeRoot:     relativeRoot,
+		SoloKitContext:   skctx,
+		BaseOutDir:       "vendor",
+		DescriptorOutDir: "vendor",
+		CommonImports: []string{
+			"vendor",
+		},
+		AbsoluteRoot: "vendor",
+		ProjectRoot:  absoluteRoot,
+	}
+	// copy out generated code
+	return r.Run()
+}
+
+func RunGoPath(relativeRoot string, skctx SoloKitContext) error {
+
+	absoluteRoot, err := filepath.Abs(relativeRoot)
+	if err != nil {
+		return err
+	}
+	gopathSrc := filepath.Join(os.Getenv("GOPATH"), "src")
+
+	r := Runner{
+		RelativeRoot:     relativeRoot,
+		SoloKitContext:   skctx,
+		DescriptorOutDir: gopathSrc,
+		BaseOutDir:       gopathSrc,
+		CommonImports: []string{
+			gopathSrc,
+			filepath.Join(gopathSrc, "github.com", "solo-io", "solo-kit", "api", "external"),
+		},
+		AbsoluteRoot: absoluteRoot,
+		ProjectRoot:  absoluteRoot,
+	}
+
+	r.SkipDirs = append(r.SkipDirs, "vendor/")
+	return r.Run()
+}
+
+type Runner struct {
+	SoloKitContext
+	CommonImports    []string
+	RelativeRoot     string
+	DescriptorOutDir string
+	BaseOutDir       string
+	AbsoluteRoot     string
+	ProjectRoot      string
+}
+
+func (r *Runner) Run() error {
+
 	// Creates a ProjectConfig from each of the 'solo-kit.json' files
 	// found in the directory tree rooted at 'absoluteRoot'.
-	projectConfigs, err := collectProjectsFromRoot(absoluteRoot, skipDirs)
+	projectConfigs, err := r.collectProjectsFromRoot(r.ProjectRoot, r.SkipDirs)
 	if err != nil {
 		return err
 	}
@@ -50,7 +162,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 
 	// whether or not to do a regular gogo-proto generate while collecting descriptors
 	compileProto := func(protoFile string) bool {
-		if !compileProtos {
+		if !r.CompileProtos {
 			return false
 		}
 		for _, proj := range projectConfigs {
@@ -62,7 +174,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 	}
 
 	// Create a FileDescriptorProto for all the proto files under 'absoluteRoot' and each of the 'customImports' paths
-	descriptors, err := collectDescriptorsFromRoot(absoluteRoot, customImports, skipDirs, compileProto)
+	descriptors, err := r.collectDescriptorsFromRoot(compileProto)
 	if err != nil {
 		return err
 	}
@@ -92,14 +204,14 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 			return err
 		}
 
-		if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
-			docs, err := docgen.GenerateFiles(project, genDocs)
+		if project.ProjectConfig.DocsDir != "" && (r.GenDocs != nil) {
+			docs, err := docgen.GenerateFiles(project, r.GenDocs)
 			if err != nil {
 				return err
 			}
 
 			for _, file := range docs {
-				path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
+				path := filepath.Join(r.ProjectRoot, project.ProjectConfig.DocsDir, file.Filename)
 				if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
 					return err
 				}
@@ -109,7 +221,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 			}
 		}
 
-		outDir := filepath.Join(gopathSrc(), project.ProjectConfig.GoPackage)
+		outDir := filepath.Join(r.BaseOutDir, project.ProjectConfig.GoPackage)
 
 		for _, file := range code {
 			path := filepath.Join(outDir, file.Filename)
@@ -132,11 +244,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 	return nil
 }
 
-func gopathSrc() string {
-	return filepath.Join(os.Getenv("GOPATH"), "src")
-}
-
-func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectConfig, error) {
+func (r *Runner) collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectConfig, error) {
 	var projects []model.ProjectConfig
 
 	if err := filepath.Walk(root, func(projectFile string, info os.FileInfo, err error) error {
@@ -169,9 +277,13 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectCon
 	return projects, nil
 }
 
-func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto), root, protoFile string, customImports []string, wantCompile func(string) bool) error {
+func (r *Runner) addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto), root, protoFile string, wantCompile func(string) bool) error {
+
+	// TODO(yuval-k): if in go mod mode, copy proto into right place in vendor folder
+	// vendor/removePrefix(protoFiles,root)
+
 	log.Printf("processing proto file input %v", protoFile)
-	imports, err := importsForProtoFile(root, protoFile, customImports)
+	imports, err := r.importsForProtoFile(root, protoFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading imports for proto file")
 	}
@@ -191,10 +303,10 @@ func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto)
 	}
 	defer os.Remove(tmpFile.Name())
 
-	if err := writeDescriptors(protoFile, tmpFile.Name(), imports, compile); err != nil {
+	if err := r.writeDescriptors(protoFile, tmpFile.Name(), imports, compile); err != nil {
 		return errors.Wrapf(err, "writing descriptors")
 	}
-	desc, err := readDescriptors(tmpFile.Name())
+	desc, err := r.readDescriptors(tmpFile.Name())
 	if err != nil {
 		return errors.Wrapf(err, "reading descriptors")
 	}
@@ -206,7 +318,7 @@ func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto)
 	return nil
 }
 
-func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
+func (r *Runner) collectDescriptorsFromRoot(wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
 	var descriptors []*descriptor.FileDescriptorProto
 	var mutex sync.Mutex
 	addDescriptor := func(f *descriptor.FileDescriptorProto) {
@@ -227,7 +339,7 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 		descriptors = append(descriptors, f)
 	}
 	var g errgroup.Group
-	for _, dir := range append([]string{root}, customImports...) {
+	for _, dir := range append([]string{r.AbsoluteRoot}, r.CustomImports...) {
 		absoluteDir, err := filepath.Abs(dir)
 		if err != nil {
 			return nil, err
@@ -236,7 +348,7 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 			if !strings.HasSuffix(protoFile, ".proto") {
 				return nil
 			}
-			for _, skip := range skipDirs {
+			for _, skip := range r.SkipDirs {
 				skipRoot := filepath.Join(absoluteDir, skip)
 				if strings.HasPrefix(protoFile, skipRoot) {
 					log.Warnf("skipping proto %v because it is %v is a skipped directory", protoFile, skipRoot)
@@ -246,7 +358,7 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 
 			// parallelize parsing the descriptors as each one requires file i/o and is slow
 			g.Go(func() error {
-				return addDescriptorsForFile(addDescriptor, absoluteDir, protoFile, customImports, wantCompile)
+				return r.addDescriptorsForFile(addDescriptor, absoluteDir, protoFile, wantCompile)
 			})
 			return nil
 		})
@@ -267,7 +379,7 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 
 var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
 
-func detectImportsForFile(file string) ([]string, error) {
+func (r *Runner) detectImportsForFile(file string) ([]string, error) {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -287,24 +399,19 @@ func detectImportsForFile(file string) ([]string, error) {
 	return protoImports, nil
 }
 
-var commonImports = []string{
-	gopathSrc(),
-	filepath.Join(gopathSrc(), "github.com", "solo-io", "solo-kit", "api", "external"),
-}
-
-func importsForProtoFile(absoluteRoot, protoFile string, customImports []string) ([]string, error) {
-	importStatements, err := detectImportsForFile(protoFile)
+func (r *Runner) importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
+	importStatements, err := r.detectImportsForFile(protoFile)
 	if err != nil {
 		return nil, err
 	}
-	importsForProto := append([]string{}, commonImports...)
+	importsForProto := append([]string{}, r.CommonImports...)
 	for _, importedProto := range importStatements {
-		importPath, err := findImportRelativeToRoot(absoluteRoot, importedProto, customImports, importsForProto)
+		importPath, err := r.findImportRelativeToRoot(absoluteRoot, importedProto, importsForProto)
 		if err != nil {
 			return nil, err
 		}
 		dependency := filepath.Join(importPath, importedProto)
-		dependencyImports, err := importsForProtoFile(absoluteRoot, dependency, customImports)
+		dependencyImports, err := r.importsForProtoFile(absoluteRoot, dependency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting imports for dependency")
 		}
@@ -315,7 +422,7 @@ func importsForProtoFile(absoluteRoot, protoFile string, customImports []string)
 	return importsForProto, nil
 }
 
-func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImports, existingImports []string) (string, error) {
+func (r *Runner) findImportRelativeToRoot(absoluteRoot, importedProtoFile string, existingImports []string) (string, error) {
 	// if the file is already imported, point to that import
 	for _, importPath := range existingImports {
 		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
@@ -324,7 +431,7 @@ func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImpo
 	}
 	rootsToTry := []string{absoluteRoot}
 
-	for _, customImport := range customImports {
+	for _, customImport := range r.CustomImports {
 		absoluteCustomImport, err := filepath.Abs(customImport)
 		if err != nil {
 			return "", err
@@ -357,7 +464,7 @@ func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImpo
 
 }
 
-func writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
+func (r *Runner) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
 	cmd := exec.Command("protoc")
 	for i := range imports {
 		imports[i] = "-I" + imports[i]
@@ -373,7 +480,7 @@ func writeDescriptors(protoFile, toFile string, imports []string, compileProtos 
 				"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,"+
 				"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,"+
 				"Menvoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2"+
-				":"+gopathSrc())
+				":"+r.DescriptorOutDir)
 	}
 
 	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",
@@ -386,7 +493,7 @@ func writeDescriptors(protoFile, toFile string, imports []string, compileProtos 
 	return nil
 }
 
-func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
+func (r *Runner) readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 	var desc descriptor.FileDescriptorSet
 	protoBytes, err := ioutil.ReadFile(fromFile)
 	if err != nil {
