@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reconcile"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 // Option to copy anything from the original to the desired before writing. Return value of false means don't update

@@ -1,0 +1,4 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: use context utils from go utils
+    issueLink: https://github.com/solo-io/solo-kit/pull/116
