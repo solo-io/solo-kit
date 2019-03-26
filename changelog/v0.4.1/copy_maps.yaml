@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Copy maps in helper method to prevent concurrent writes.
+    issueLink: https://github.com/solo-io/gloo/issues/622
