@@ -17,6 +17,8 @@ message Status {
         // Rejected indicates an invalid configuration by the user
         // Rejected resources may be propagated to the xDS server depending on their severity
         Rejected = 2;
+        // Invalid indicates the resource does not adhere to the CRD spec and can't be deserialized
+        Invalid = 3;
     }
     // State is the enum indicating the state of the resource
     State state = 1;

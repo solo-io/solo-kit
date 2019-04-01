@@ -2,6 +2,7 @@ package kube_test
 
 import (
 	"context"
+	"log"
 	"os"
 	"time"
 
@@ -17,7 +18,6 @@ import (
 	solov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/mocks/util"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
@@ -64,16 +64,16 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 	Context("integrations tests", func() {
 
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
-			log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
-			return
-		}
 		var (
 			namespace string
 			cfg       *rest.Config
 			client    *kube.ResourceClient
 		)
 		BeforeEach(func() {
+			if os.Getenv("RUN_KUBE_TESTS") != "1" {
+				log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+				Skip("Skipping tests. Set RUN_KUBE_TESTS=1 to run.")
+			}
 			namespace = helpers.RandString(8)
 			err := setup.SetupKubeForTest(namespace)
 			Expect(err).NotTo(HaveOccurred())
@@ -106,6 +106,10 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 		It("CRUDs resources", func() {
 			generic.TestCrudClient(namespace, client, time.Minute)
+		})
+
+		It("Properly handles invalid objects", func() {
+
 		})
 	})
 
@@ -329,7 +333,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(errors.IsNotExist(err)).To(BeTrue())
 			})
 
-			It("return an error when receiving a malformed resource", func() {
+			It("return an error when reading a malformed resource", func() {
 				_, err := rc.Read(namespace1, malformedResourceName, clients.ReadOpts{})
 				Expect(err).To(HaveOccurred())
 				Expect(errors.IsNotExist(err)).To(BeFalse())
@@ -414,6 +418,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		Describe("listing resources", func() {
 
 			var clientset *fake.Clientset
+			var malformedResourceName string
 
 			BeforeEach(func() {
 				clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
@@ -424,14 +429,34 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(util.CreateMockResource(clientset, namespace1, "res-3", "val-3")).NotTo(HaveOccurred())
 				Expect(util.CreateMockResource(clientset, namespace2, "res-4", "val-4")).NotTo(HaveOccurred())
 
+				malformedResourceName = "malformed-res"
+				malformedResourceCrd := &solov1.Resource{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "testing.solo.io/v1",
+						Kind:       "MockResource",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      malformedResourceName,
+						Namespace: namespace1,
+					},
+					Spec: &solov1.Spec{
+						"unexpectedField": data,
+					},
+				}
+				_, err := clientset.ResourcesV1().Resources(namespace1).Create(malformedResourceCrd)
+				Expect(err).NotTo(HaveOccurred())
+
 				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1, namespace2, "empty"}, 0)
 				Expect(rc.Register()).NotTo(HaveOccurred())
 			})
 
-			It("lists the correct resources for the given namespace", func() {
+			FIt("lists the correct resources for the given namespace", func() {
 				list, err := rc.List(namespace1, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(list).To(HaveLen(3))
+				Expect(list).To(HaveLen(4))
+				malformed, err := list.AsInputResourceList().Find(namespace1, malformedResourceName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(malformed.GetStatus().State).To(BeEquivalentTo(core.Status_Invalid))
 
 				list, err = rc.List(namespace2, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())

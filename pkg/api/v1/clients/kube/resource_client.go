@@ -79,7 +79,7 @@ var (
 	EventsCountView = &view.View{
 		Name:        "kube/events-count",
 		Measure:     MEvents,
-		Description: "The number of events sent from kuberenets to us",
+		Description: "The number of events sent from kubernetes to us",
 		Aggregation: view.Count(),
 	}
 )
@@ -132,6 +132,18 @@ func (rc *ResourceClient) Kind() string {
 
 func (rc *ResourceClient) NewResource() resources.Resource {
 	return resources.Clone(rc.resourceType)
+}
+
+func (rc *ResourceClient) NewInvalidResource() resources.Resource {
+	res, ok := resources.Clone(rc.resourceType).(resources.InputResource)
+	if !ok {
+		return nil
+	}
+	status := res.GetStatus()
+	status.State = core.Status_Invalid
+	status.ReportedBy = "kube resource client"
+	res.SetStatus(status)
+	return res
 }
 
 // Registers the client with the shared cache. The cache will create a dedicated informer to list and
@@ -282,7 +294,10 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	for _, resourceCrd := range listedResources {
 		resource, err := rc.convertCrdToResource(resourceCrd)
 		if err != nil {
-			return nil, errors.Wrapf(err, "converting output crd")
+			resource, err = rc.convertCrdToInvalidResource(resourceCrd)
+			if err != nil {
+				return nil, errors.Wrapf(err, "converting output crd")
+			}
 		}
 		resourceList = append(resourceList, resource)
 	}
@@ -375,6 +390,20 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 	_, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{}) // TODO(yuval-k): check error for real
 	return err == nil
 
+}
+
+func (rc *ResourceClient) convertCrdToInvalidResource(resourceCrd *v1.Resource) (resources.Resource, error) {
+	resourceCrd.Status.State = core.Status_Invalid
+	_, err := rc.crdClientset.ResourcesV1().Resources(resourceCrd.Namespace).Update(resourceCrd)
+	if err != nil {
+		return nil, err
+	}
+	updatedResource := rc.NewInvalidResource()
+	if updatedResource == nil {
+		return nil, errors.Errorf("Could not handle invalid resource %v", resourceCrd)
+	}
+	updatedResource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
+	return updatedResource, nil
 }
 
 func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resources.Resource, error) {
