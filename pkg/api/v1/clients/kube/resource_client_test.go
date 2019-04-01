@@ -446,7 +446,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(rc.Register()).NotTo(HaveOccurred())
 			})
 
-			FIt("lists the correct resources for the given namespace", func() {
+			It("lists the correct resources for the given namespace", func() {
 				list, err := rc.List(namespace1, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(list).To(HaveLen(4))
