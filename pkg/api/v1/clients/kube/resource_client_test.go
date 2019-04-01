@@ -107,10 +107,6 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		It("CRUDs resources", func() {
 			generic.TestCrudClient(namespace, client, time.Minute)
 		})
-
-		It("Properly handles invalid objects", func() {
-
-		})
 	})
 
 	Context("multiple namespaces", func() {
