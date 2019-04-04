@@ -45,19 +45,21 @@ type TestingEmitter interface {
 	FakeResource() FakeResourceClient
 	AnotherMockResource() AnotherMockResourceClient
 	ClusterResource() ClusterResourceClient
+	MockCustomType() MockCustomTypeClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient) TestingEmitter {
-	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, make(chan struct{}))
+func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient) TestingEmitter {
+	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
 		mockResource:        mockResourceClient,
 		fakeResource:        fakeResourceClient,
 		anotherMockResource: anotherMockResourceClient,
 		clusterResource:     clusterResourceClient,
+		mockCustomType:      mockCustomTypeClient,
 		forceEmit:           emit,
 	}
 }
@@ -68,6 +70,7 @@ type testingEmitter struct {
 	fakeResource        FakeResourceClient
 	anotherMockResource AnotherMockResourceClient
 	clusterResource     ClusterResourceClient
+	mockCustomType      MockCustomTypeClient
 }
 
 func (c *testingEmitter) Register() error {
@@ -81,6 +84,9 @@ func (c *testingEmitter) Register() error {
 		return err
 	}
 	if err := c.clusterResource.Register(); err != nil {
+		return err
+	}
+	if err := c.mockCustomType.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -100,6 +106,10 @@ func (c *testingEmitter) AnotherMockResource() AnotherMockResourceClient {
 
 func (c *testingEmitter) ClusterResource() ClusterResourceClient {
 	return c.clusterResource
+}
+
+func (c *testingEmitter) MockCustomType() MockCustomTypeClient {
+	return c.mockCustomType
 }
 
 func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error) {
@@ -137,6 +147,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 	anotherMockResourceChan := make(chan anotherMockResourceListWithNamespace)
 	/* Create channel for ClusterResource */
+	/* Create channel for MockCustomType */
+	type mockCustomTypeListWithNamespace struct {
+		list      MockCustomTypeList
+		namespace string
+	}
+	mockCustomTypeChan := make(chan mockCustomTypeListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for MockResource */
@@ -172,6 +188,17 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-anothermockresources")
 		}(namespace)
+		/* Setup namespaced watch for MockCustomType */
+		mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting MockCustomType watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -196,6 +223,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					case <-ctx.Done():
 						return
 					case anotherMockResourceChan <- anotherMockResourceListWithNamespace{list: anotherMockResourceList, namespace: namespace}:
+					}
+				case mockCustomTypeList := <-mockCustomTypeNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
 					}
 				}
 			}
@@ -267,6 +300,13 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			case clusterResourceList := <-clusterResourceChan:
 				record()
 				currentSnapshot.Clusterresources = clusterResourceList
+			case mockCustomTypeNamespacedList := <-mockCustomTypeChan:
+				record()
+
+				namespace := mockCustomTypeNamespacedList.namespace
+				mockCustomTypeList := mockCustomTypeNamespacedList.list
+
+				currentSnapshot.Mcts[namespace] = mockCustomTypeList
 			}
 		}
 	}()

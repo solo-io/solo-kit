@@ -4,6 +4,14 @@
   "version": "v1",
   "docs_dir": "../doc",
   "crd_group_override": "crds.testing.solo.io",
+  "custom_resources": [
+    {
+      "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype",
+      "type": "MockCustomType",
+      "plural_name": "mcts",
+      "short_name": "mct"
+    }
+  ],
   "resource_groups": {
     "testing.solo.io": [
       {
@@ -21,6 +29,10 @@
       {
         "name": "ClusterResource",
         "package": "testing.solo.io"
+      },
+      {
+        "name": "MockCustomType",
+        "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
       }
     ]
   }

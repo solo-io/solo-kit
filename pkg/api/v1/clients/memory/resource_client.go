@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -138,7 +137,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 
 	// avoid data races
-	clone := proto.Clone(resource).(resources.Resource)
+	clone := resources.Clone(resource)
 	return clone, nil
 }
 
@@ -162,17 +161,14 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// mutate and return clone
-	clone := proto.Clone(resource).(resources.Resource)
+	resource = resources.Clone(resource)
 	// initialize or increment resource version
 	meta.ResourceVersion = newOrIncrementResourceVer(meta.ResourceVersion)
-	clone.SetMetadata(meta)
+	resource.SetMetadata(meta)
 
-	rc.cache.Set(key, clone)
+	rc.cache.Set(key, resource)
 
-	// return another clone!
-	clone = proto.Clone(clone).(resources.Resource)
-
-	return clone, nil
+	return resource, nil
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
@@ -196,7 +192,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	var resourceList resources.ResourceList
 	for _, resource := range cachedResources {
 		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
-			clone := proto.Clone(resource).(resources.Resource)
+			clone := resources.Clone(resource)
 			resourceList = append(resourceList, clone)
 		}
 	}

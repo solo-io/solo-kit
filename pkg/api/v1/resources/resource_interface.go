@@ -309,7 +309,15 @@ type HashableResource interface {
 	Hash() uint64
 }
 
+type CloneableResource interface {
+	Resource
+	Clone() Resource
+}
+
 func Clone(resource Resource) Resource {
+	if cloneable, ok := resource.(CloneableResource); ok {
+		return cloneable.Clone()
+	}
 	return proto.Clone(resource).(Resource)
 }
 

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/gogo/protobuf/proto"
 	"github.com/hashicorp/vault/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -142,7 +141,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// mutate and return clone
-	clone := proto.Clone(resource).(resources.Resource)
+	clone := resources.Clone(resource)
 	meta.ResourceVersion = newOrIncrementResourceVer(meta.ResourceVersion)
 	clone.SetMetadata(meta)
 
