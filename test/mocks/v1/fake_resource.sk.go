@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewFakeResource(namespace, name string) *FakeResource {
 	fakeresource := &FakeResource{}
 	fakeresource.SetMetadata(core.Metadata{

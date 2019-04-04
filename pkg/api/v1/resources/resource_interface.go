@@ -15,10 +15,25 @@ import (
 const delim = " "
 
 type Resource interface {
-	proto.Message
 	GetMetadata() core.Metadata
 	SetMetadata(meta core.Metadata)
 	Equal(that interface{}) bool
+}
+
+type ProtoResource interface {
+	Resource
+	proto.Message
+}
+
+func ProtoCast(res Resource) (ProtoResource, error) {
+	if res == nil {
+		return nil, nil
+	}
+	protoResource, ok := res.(ProtoResource)
+	if !ok {
+		return nil, errors.Errorf("internal server error: unexpected type %T not convertible to resources.Proto", res)
+	}
+	return protoResource, nil
 }
 
 func Key(resource Resource) string {
@@ -318,7 +333,10 @@ func Clone(resource Resource) Resource {
 	if cloneable, ok := resource.(CloneableResource); ok {
 		return cloneable.Clone()
 	}
-	return proto.Clone(resource).(Resource)
+	if protoMessage, ok := resource.(ProtoResource); ok {
+		return proto.Clone(protoMessage).(Resource)
+	}
+	return nil
 }
 
 func Kind(resource Resource) string {

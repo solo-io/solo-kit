@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewClusterResource(namespace, name string) *ClusterResource {
 	clusterresource := &ClusterResource{}
 	clusterresource.SetMetadata(core.Metadata{

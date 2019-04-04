@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewAnotherMockResource(namespace, name string) *AnotherMockResource {
 	anothermockresource := &AnotherMockResource{}
 	anothermockresource.SetMetadata(core.Metadata{

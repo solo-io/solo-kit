@@ -22,10 +22,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {
 	{{ lowercase .Name }} := &{{ .Name }}{}
+{{- if $.IsCustom }}
+	{{ lowercase .Name }}.{{ $.Name }}.SetMetadata(core.Metadata{
+{{- else }}
 	{{ lowercase .Name }}.SetMetadata(core.Metadata{
+{{- end }}
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -35,21 +38,7 @@ func New{{ .Name }}(namespace, name string) *{{ .Name }} {
 {{- if $.IsCustom }}
 
 type {{ $.Name }} struct {
-	{{ $.CustomImportPrefix }}.{{ $.Name }}
-}
-
-// we require {{ $.CustomImportPrefix }}.{{ $.Name }} to implement .Clone()
-
-type Cloneable{{ .Name }} interface { 
-	Clone() {{ $.CustomImportPrefix }}.{{ $.Name }}
-}
-
-var _ Cloneable{{ .Name }} = {{ $.CustomImportPrefix }}.{{ $.Name }}{}
-
-func (r *{{ .Name }}) Clone() resources.Resource {
-	return &{{ .Name }}{
-		{{ $.Name }}: r.{{ $.Name }}.Clone(),
-	}
+	{{ $.CustomImportPrefix}}.{{ $.Name }}
 }
 
 {{- else }}
@@ -63,8 +52,6 @@ func (r *{{ .Name }}) SetMetadata(meta core.Metadata) {
 func (r *{{ .Name }}) SetStatus(status core.Status) {
 	r.Status = status
 }
-{{- end }}
-
 {{- end }}
 
 func (r *{{ .Name }}) Hash() uint64 {
@@ -82,6 +69,8 @@ func (r *{{ .Name }}) Hash() uint64 {
 {{- end}}
 	)
 }
+
+{{- end }}
 
 type {{ .Name }}List []*{{ .Name }}
 type {{ upper_camel .PluralName }}ByNamespace map[string]{{ .Name }}List
@@ -187,6 +176,8 @@ func (byNamespace {{ upper_camel .PluralName }}ByNamespace) Clone() {{ upper_cam
 	return cloned
 }
 
+{{- if not $.IsCustom }}
+
 var _ resources.Resource = &{{ .Name }}{}
 
 // Kubernetes Adapter for {{ .Name }}
@@ -213,4 +204,6 @@ var {{ .Name }}Crd = crd.NewCrd("{{ $crdGroupName }}",
 	"{{ .ShortName }}",
 	{{ .ClusterScoped }},
 	&{{ .Name }}{})
+
+{{- end}}
 `))

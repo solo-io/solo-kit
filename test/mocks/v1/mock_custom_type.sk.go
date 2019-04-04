@@ -7,19 +7,14 @@ import (
 
 	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewMockCustomType(namespace, name string) *MockCustomType {
 	mockcustomtype := &MockCustomType{}
-	mockcustomtype.SetMetadata(core.Metadata{
+	mockcustomtype.MockCustomType.SetMetadata(core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -28,28 +23,6 @@ func NewMockCustomType(namespace, name string) *MockCustomType {
 
 type MockCustomType struct {
 	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType
-}
-
-// we require github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType to implement .Clone()
-
-type CloneableMockCustomType interface {
-	Clone() github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType
-}
-
-var _ CloneableMockCustomType = github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType{}
-
-func (r *MockCustomType) Clone() resources.Resource {
-	return &MockCustomType{
-		MockCustomType: r.MockCustomType.Clone(),
-	}
-}
-
-func (r *MockCustomType) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	return hashutils.HashAll(
-		metaCopy,
-	)
 }
 
 type MockCustomTypeList []*MockCustomType
@@ -145,25 +118,3 @@ func (byNamespace MctsByNamespace) Clone() MctsByNamespace {
 	}
 	return cloned
 }
-
-var _ resources.Resource = &MockCustomType{}
-
-// Kubernetes Adapter for MockCustomType
-
-func (o *MockCustomType) GetObjectKind() schema.ObjectKind {
-	t := MockCustomTypeCrd.TypeMeta()
-	return &t
-}
-
-func (o *MockCustomType) DeepCopyObject() runtime.Object {
-	return resources.Clone(o).(*MockCustomType)
-}
-
-var MockCustomTypeCrd = crd.NewCrd("crds.testing.solo.io",
-	"mcts",
-	"crds.testing.solo.io",
-	"v1",
-	"MockCustomType",
-	"mct",
-	false,
-	&MockCustomType{})
