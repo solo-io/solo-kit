@@ -88,9 +88,9 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 	}
 
 	for _, custom := range project.ProjectConfig.CustomResources {
-		impPrefix := strings.ReplaceAll(custom.Package, "/", "_")
-		impPrefix = strings.ReplaceAll(impPrefix, ".", "_")
-		impPrefix = strings.ReplaceAll(impPrefix, "-", "_")
+		impPrefix := strings.Replace(custom.Package, "/", "_", -1)
+		impPrefix = strings.Replace(impPrefix, ".", "_", -1)
+		impPrefix = strings.Replace(impPrefix, "-", "_", -1)
 		resources = append(resources, &model.Resource{
 			Name:               custom.Type,
 			ShortName:          custom.ShortName,
