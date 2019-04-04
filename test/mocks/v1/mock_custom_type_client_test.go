@@ -22,7 +22,6 @@ var _ = Describe("MockCustomTypeClient", func() {
 		namespace string
 	)
 	for _, test := range []typed.ResourceClientTester{
-		&typed.KubeRcTester{Crd: MockCustomTypeCrd},
 		&typed.ConsulRcTester{},
 		&typed.FileRcTester{},
 		&typed.MemoryRcTester{},

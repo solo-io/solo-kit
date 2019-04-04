@@ -10,6 +10,10 @@ type MockCustomType struct {
 	meta core.Metadata
 }
 
+func (m MockCustomType) Clone() MockCustomType {
+	return MockCustomType{meta: m.meta}
+}
+
 func (m *MockCustomType) GetMetadata() core.Metadata {
 	return m.meta
 }

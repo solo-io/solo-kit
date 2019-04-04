@@ -29,7 +29,9 @@ var _ = Describe("{{ .Name }}Client", func() {
 	)
 {{- end }}
 	for _, test := range []typed.ResourceClientTester{
+{{- if (not .IsCustom) }}
 		&typed.KubeRcTester{Crd: {{ .Name }}Crd},
+{{- end }}
 {{- /* cluster-scoped resources are currently only supported by crd client */}}
 {{- if (not .ClusterScoped) }}
 		&typed.ConsulRcTester{},

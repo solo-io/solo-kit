@@ -25,6 +25,10 @@ type MockCustomType struct {
 	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType
 }
 
+func (r *MockCustomType) Clone() resources.Resource {
+	return &MockCustomType{MockCustomType: r.MockCustomType.Clone()}
+}
+
 type MockCustomTypeList []*MockCustomType
 type MctsByNamespace map[string]MockCustomTypeList
 

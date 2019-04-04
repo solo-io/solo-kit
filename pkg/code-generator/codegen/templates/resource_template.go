@@ -41,6 +41,10 @@ type {{ $.Name }} struct {
 	{{ $.CustomImportPrefix}}.{{ $.Name }}
 }
 
+func (r *{{ .Name }}) Clone() resources.Resource {
+	return &{{ .Name }}{ {{ .Name }}: r.{{ .Name }}.Clone() }
+}
+
 {{- else }}
 
 func (r *{{ .Name }}) SetMetadata(meta core.Metadata) {
