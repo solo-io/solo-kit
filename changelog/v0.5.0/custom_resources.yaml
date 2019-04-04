@@ -5,4 +5,5 @@ changelog:
       Solo-Kit can generate clients and event loops for resources which implement the resources.Resource
       interface. Note that the resources.Resource interface has been changed to remove the proto.Message
       interface. This means that `proto.{Marshal,Unmarshal,Clone}` methods will not compile on a resources.Resource.
+    issueLink: https://github.com/solo-io/solo-kit/issues/123
 
