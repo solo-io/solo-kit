@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 )
 
 func NewMockCustomType(namespace, name string) *MockCustomType {
@@ -27,6 +28,16 @@ type MockCustomType struct {
 
 func (r *MockCustomType) Clone() resources.Resource {
 	return &MockCustomType{MockCustomType: r.MockCustomType.Clone()}
+}
+
+func (r *MockCustomType) Hash() uint64 {
+	clone := r.MockCustomType.Clone()
+
+	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
+		meta.ResourceVersion = ""
+	})
+
+	return hashutils.HashAll(clone.MockCustomType)
 }
 
 type MockCustomTypeList []*MockCustomType

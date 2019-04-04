@@ -45,6 +45,16 @@ func (r *{{ .Name }}) Clone() resources.Resource {
 	return &{{ .Name }}{ {{ .Name }}: r.{{ .Name }}.Clone() }
 }
 
+func (r *{{ .Name }}) Hash() uint64 {
+	clone := r.{{ .Name }}.Clone()
+
+	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
+		meta.ResourceVersion = ""
+	})
+
+	return hashutils.HashAll(clone.{{ .Name }})
+}
+
 {{- else }}
 
 func (r *{{ .Name }}) SetMetadata(meta core.Metadata) {
