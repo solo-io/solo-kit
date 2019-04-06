@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Export list error string.
+    issueLink: https://github.com/solo-io/solo-kit/issues/122
