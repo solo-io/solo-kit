@@ -8,11 +8,11 @@ weight: 5
 
 
 ### Package: `testing.solo.io` 
-##### Types:
+#### Types:
 
 
-- [AnotherMockResource](#AnotherMockResource) **Top-Level Resource**
-- [ClusterResource](#ClusterResource) **Top-Level Resource**
+- [AnotherMockResource](#anothermockresource) **Top-Level Resource**
+- [ClusterResource](#clusterresource) **Top-Level Resource**
   
 
 
@@ -24,7 +24,7 @@ weight: 5
 
 
 ---
-### <a name="AnotherMockResource">AnotherMockResource</a>
+### AnotherMockResource
 
  
 Description of the AnotherMockResource
@@ -38,15 +38,15 @@ Description of the AnotherMockResource
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `metadata` | [.core.solo.io.Metadata](../../../../../api/v1/metadata.proto.sk#Metadata) |  |  |
-| `status` | [.core.solo.io.Status](../../../../../api/v1/status.proto.sk#Status) |  |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../api/v1/metadata.proto.sk#metadata) |  |  |
+| `status` | [.core.solo.io.Status](../../../../../api/v1/status.proto.sk#status) |  |  |
 | `basicField` | `string` | comments that go above the basic field in our docs |  |
 
 
 
 
 ---
-### <a name="ClusterResource">ClusterResource</a>
+### ClusterResource
 
 
 
@@ -59,8 +59,8 @@ Description of the AnotherMockResource
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `metadata` | [.core.solo.io.Metadata](../../../../../api/v1/metadata.proto.sk#Metadata) |  |  |
-| `status` | [.core.solo.io.Status](../../../../../api/v1/status.proto.sk#Status) |  |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../api/v1/metadata.proto.sk#metadata) |  |  |
+| `status` | [.core.solo.io.Status](../../../../../api/v1/status.proto.sk#status) |  |  |
 | `basicField` | `string` | comments that go above the basic field in our docs |  |
 
 
