@@ -58,6 +58,7 @@ func (r *{{ .Name }}) Hash() uint64 {
 
 type {{ .Name }}List []*{{ .Name }}
 type {{ .PluralName }}ByNamespace map[string]{{ .Name }}List
+const {{ .Name }}ListErrorTag = "list did not find {{ lower_camel .Name }}"
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list {{ .Name }}List) Find(namespace, name string) (*{{ .Name }}, error) {
@@ -68,11 +69,11 @@ func (list {{ .Name }}List) Find(namespace, name string) (*{{ .Name }}, error) {
 			}
 		}
 	}
-	return nil, errors.Errorf("list did not find {{ lower_camel .Name }} %v.%v", namespace, name)
+	return nil, errors.Errorf("%v %v.%v", {{ .Name }}ListErrorTag, namespace, name)
 }
 
 func (list {{ .Name }}List) AsResources() resources.ResourceList {
-	var ress resources.ResourceList 
+	var ress resources.ResourceList
 	for _, {{ lower_camel .Name }} := range list {
 		ress = append(ress, {{ lower_camel .Name }})
 	}

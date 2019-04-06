@@ -46,6 +46,8 @@ func (r *MockResource) Hash() uint64 {
 type MockResourceList []*MockResource
 type MocksByNamespace map[string]MockResourceList
 
+const MockResourceListErrorTag = "list did not find mockResource"
+
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list MockResourceList) Find(namespace, name string) (*MockResource, error) {
 	for _, mockResource := range list {
@@ -55,7 +57,7 @@ func (list MockResourceList) Find(namespace, name string) (*MockResource, error)
 			}
 		}
 	}
-	return nil, errors.Errorf("list did not find mockResource %v.%v", namespace, name)
+	return nil, errors.Errorf("%v %v.%v", MockResourceListErrorTag, namespace, name)
 }
 
 func (list MockResourceList) AsResources() resources.ResourceList {
