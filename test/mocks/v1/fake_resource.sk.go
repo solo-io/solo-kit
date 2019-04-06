@@ -41,6 +41,8 @@ func (r *FakeResource) Hash() uint64 {
 type FakeResourceList []*FakeResource
 type FakesByNamespace map[string]FakeResourceList
 
+const FakeResourceListErrorTag = "list did not find fakeResource"
+
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list FakeResourceList) Find(namespace, name string) (*FakeResource, error) {
 	for _, fakeResource := range list {
@@ -50,7 +52,7 @@ func (list FakeResourceList) Find(namespace, name string) (*FakeResource, error)
 			}
 		}
 	}
-	return nil, errors.Errorf("list did not find fakeResource %v.%v", namespace, name)
+	return nil, errors.Errorf("%v %v.%v", FakeResourceListErrorTag, namespace, name)
 }
 
 func (list FakeResourceList) AsResources() resources.ResourceList {

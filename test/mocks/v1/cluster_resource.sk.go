@@ -45,6 +45,8 @@ func (r *ClusterResource) Hash() uint64 {
 type ClusterResourceList []*ClusterResource
 type ClusterresourcesByNamespace map[string]ClusterResourceList
 
+const ClusterResourceListErrorTag = "list did not find clusterResource"
+
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ClusterResourceList) Find(namespace, name string) (*ClusterResource, error) {
 	for _, clusterResource := range list {
@@ -54,7 +56,7 @@ func (list ClusterResourceList) Find(namespace, name string) (*ClusterResource, 
 			}
 		}
 	}
-	return nil, errors.Errorf("list did not find clusterResource %v.%v", namespace, name)
+	return nil, errors.Errorf("%v %v.%v", ClusterResourceListErrorTag, namespace, name)
 }
 
 func (list ClusterResourceList) AsResources() resources.ResourceList {

@@ -15,10 +15,10 @@ API Version: `testing.solo.io.v1`
 
 
 ### API Resources:
-- [AnotherMockResource](../github.com/solo-io/solo-kit/test/mocks/api/v1/more_mock_resources.proto.sk#AnotherMockResource)
-- [ClusterResource](../github.com/solo-io/solo-kit/test/mocks/api/v1/more_mock_resources.proto.sk#ClusterResource)
-- [FakeResource](../github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto.sk#FakeResource)
-- [MockResource](../github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto.sk#MockResource)
+- [AnotherMockResource](../github.com/solo-io/solo-kit/test/mocks/api/v1/more_mock_resources.proto.sk#anothermockresource)
+- [ClusterResource](../github.com/solo-io/solo-kit/test/mocks/api/v1/more_mock_resources.proto.sk#clusterresource)
+- [FakeResource](../github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto.sk#fakeresource)
+- [MockResource](../github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto.sk#mockresource)
 
 <!-- Start of HubSpot Embed Code -->
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
