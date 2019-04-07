@@ -79,7 +79,7 @@ require (
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.2
 	github.com/ryanuber/go-glob v0.0.0-20160226084822-572520ed46db // indirect
-	github.com/solo-io/go-utils v0.5.1
+	github.com/solo-io/go-utils v0.6.0
 	go.opencensus.io v0.18.0
 	go.uber.org/zap v1.9.1
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4
