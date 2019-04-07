@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -107,7 +108,45 @@ func RunModules(module string, relativeRoot string, skctx SoloKitContext) error 
 		ProjectRoot:  projecteRoot,
 	}
 	// copy out generated code
-	return r.Run()
+	err = r.Run()
+	if err != nil {
+		return err
+	}
+	// copy protos back
+
+	if err := filepath.Walk(projecteRoot, func(pbgoFile string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(pbgoFile, ".pb.go") {
+			return nil
+		}
+
+		dest := strings.TrimPrefix(pbgoFile, projecteRoot)
+		dir, _ := filepath.Split(dest)
+		os.MkdirAll(dir, 0755)
+
+		// copy
+		srcFile, err := os.Open(pbgoFile)
+		if err != nil {
+			return err
+		}
+		defer srcFile.Close()
+
+		dstFile, err := os.Create(dest)
+		if err != nil {
+			return err
+		}
+		defer dstFile.Close()
+
+		_, err = io.Copy(dstFile, srcFile)
+		return err
+
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func RunGoPath(relativeRoot string, skctx SoloKitContext) error {
