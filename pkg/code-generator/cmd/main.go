@@ -123,6 +123,7 @@ func RunModules(module string, relativeRoot string, skctx SoloKitContext) error 
 		}
 
 		dest := strings.TrimPrefix(pbgoFile, projecteRoot)
+		dest = strings.TrimPrefix(dest, "/")
 		dir, _ := filepath.Split(dest)
 		os.MkdirAll(dir, 0755)
 
@@ -139,6 +140,7 @@ func RunModules(module string, relativeRoot string, skctx SoloKitContext) error 
 		}
 		defer dstFile.Close()
 
+		log.Printf("copying %v -> %v", srcFile, dstFile)
 		_, err = io.Copy(dstFile, srcFile)
 		return err
 
