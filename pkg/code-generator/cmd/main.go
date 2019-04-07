@@ -86,22 +86,25 @@ func RunModules(module string, relativeRoot string, skctx SoloKitContext) error 
 	}
 
 	directory, _ := filepath.Split(module)
-	absoluteRoot, err := filepath.Abs(filepath.Join(directory, "vendor", modulePath, relativeRoot))
+
+	absoluteVendor, err := filepath.Abs(filepath.Join(directory, "vendor"))
 	if err != nil {
 		return err
 	}
+
+	projecteRoot := filepath.Join(absoluteVendor, modulePath, relativeRoot)
 
 	// copy over our protos to right path
 	r := Runner{
 		RelativeRoot:     relativeRoot,
 		SoloKitContext:   skctx,
-		BaseOutDir:       "vendor",
-		DescriptorOutDir: "vendor",
+		BaseOutDir:       absoluteVendor,
+		DescriptorOutDir: absoluteVendor,
 		CommonImports: []string{
-			"vendor",
+			absoluteVendor,
 		},
-		AbsoluteRoot: "vendor",
-		ProjectRoot:  absoluteRoot,
+		AbsoluteRoot: absoluteVendor,
+		ProjectRoot:  projecteRoot,
 	}
 	// copy out generated code
 	return r.Run()
@@ -283,7 +286,7 @@ func (r *Runner) addDescriptorsForFile(addDescriptor func(f *descriptor.FileDesc
 	// vendor/removePrefix(protoFiles,root)
 
 	log.Printf("processing proto file input %v", protoFile)
-	imports, err := r.importsForProtoFile(root, protoFile)
+	imports, err := r.importsForProtoFile(protoFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading imports for proto file")
 	}
@@ -339,7 +342,7 @@ func (r *Runner) collectDescriptorsFromRoot(wantCompile func(string) bool) ([]*d
 		descriptors = append(descriptors, f)
 	}
 	var g errgroup.Group
-	for _, dir := range append([]string{r.AbsoluteRoot}, r.CustomImports...) {
+	for _, dir := range append([]string{r.ProjectRoot}, r.CustomImports...) {
 		absoluteDir, err := filepath.Abs(dir)
 		if err != nil {
 			return nil, err
@@ -399,19 +402,19 @@ func (r *Runner) detectImportsForFile(file string) ([]string, error) {
 	return protoImports, nil
 }
 
-func (r *Runner) importsForProtoFile(absoluteRoot, protoFile string) ([]string, error) {
+func (r *Runner) importsForProtoFile(protoFile string) ([]string, error) {
 	importStatements, err := r.detectImportsForFile(protoFile)
 	if err != nil {
 		return nil, err
 	}
 	importsForProto := append([]string{}, r.CommonImports...)
 	for _, importedProto := range importStatements {
-		importPath, err := r.findImportRelativeToRoot(absoluteRoot, importedProto, importsForProto)
+		importPath, err := r.findImportRelativeToRoot(importedProto, importsForProto)
 		if err != nil {
 			return nil, err
 		}
 		dependency := filepath.Join(importPath, importedProto)
-		dependencyImports, err := r.importsForProtoFile(absoluteRoot, dependency)
+		dependencyImports, err := r.importsForProtoFile(dependency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting imports for dependency")
 		}
@@ -422,14 +425,14 @@ func (r *Runner) importsForProtoFile(absoluteRoot, protoFile string) ([]string, 
 	return importsForProto, nil
 }
 
-func (r *Runner) findImportRelativeToRoot(absoluteRoot, importedProtoFile string, existingImports []string) (string, error) {
+func (r *Runner) findImportRelativeToRoot(importedProtoFile string, existingImports []string) (string, error) {
 	// if the file is already imported, point to that import
 	for _, importPath := range existingImports {
 		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
 			return importPath, nil
 		}
 	}
-	rootsToTry := []string{absoluteRoot}
+	rootsToTry := []string{r.AbsoluteRoot}
 
 	for _, customImport := range r.CustomImports {
 		absoluteCustomImport, err := filepath.Abs(customImport)
@@ -453,7 +456,7 @@ func (r *Runner) findImportRelativeToRoot(absoluteRoot, importedProtoFile string
 	}
 	if len(possibleImportPaths) == 0 {
 		return "", errors.Errorf("found no possible import paths in root directory %v for import %v",
-			absoluteRoot, importedProtoFile)
+			r.AbsoluteRoot, importedProtoFile)
 	}
 	if len(possibleImportPaths) != 1 {
 		log.Warnf("found more than one possible import path in root directory for "+
