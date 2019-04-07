@@ -124,6 +124,7 @@ func RunModules(module string, relativeRoot string, skctx SoloKitContext) error 
 
 		dest := strings.TrimPrefix(pbgoFile, projecteRoot)
 		dest = strings.TrimPrefix(dest, "/")
+		dest = filepath.Join(relativeRoot, dest)
 		dir, _ := filepath.Split(dest)
 		os.MkdirAll(dir, 0755)
 
