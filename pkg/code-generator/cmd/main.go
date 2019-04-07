@@ -140,7 +140,7 @@ func RunModules(module string, relativeRoot string, skctx SoloKitContext) error 
 		}
 		defer dstFile.Close()
 
-		log.Printf("copying %v -> %v", srcFile, dstFile)
+		log.Printf("copying %v -> %v", pbgoFile, dest)
 		_, err = io.Copy(dstFile, srcFile)
 		return err
 
