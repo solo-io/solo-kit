@@ -116,6 +116,9 @@ func LoadProjectConfig(path string) (ProjectConfig, error) {
 	}
 	var pc ProjectConfig
 	err = json.Unmarshal(b, &pc)
+	if err != nil {
+		return ProjectConfig{}, err
+	}
 	pc.ProjectFile = path
 	goPkg, err := detectGoPackageForProject(path)
 	if err != nil {
