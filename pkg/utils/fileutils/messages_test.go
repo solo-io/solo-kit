@@ -3,11 +3,11 @@ package fileutils_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	"io/ioutil"
 	"os"
 
-	"github.com/gogo/protobuf/types"
 	. "github.com/solo-io/solo-kit/pkg/utils/fileutils"
 )
 
@@ -22,12 +22,8 @@ var _ = Describe("Messages", func() {
 		os.RemoveAll(filename)
 	})
 	It("Writes and reads proto messages into files", func() {
-		input := &types.Struct{
-			Fields: map[string]*types.Value{
-				"foo": {
-					Kind: &types.Value_StringValue{StringValue: "bar"},
-				},
-			},
+		input := &v1.MockResource{
+			Data: "hi",
 		}
 		err := WriteToFile(filename, input)
 		Expect(err).NotTo(HaveOccurred())
@@ -35,9 +31,12 @@ var _ = Describe("Messages", func() {
 		b, err := ioutil.ReadFile(filename)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(string(b)).To(Equal("foo: bar\n"))
+		Expect(string(b)).To(Equal(`data.json: hi
+metadata: {}
+status: {}
+`))
 
-		var output types.Struct
+		var output v1.MockResource
 		err = ReadFileInto(filename, &output)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(output).To(Equal(*input))

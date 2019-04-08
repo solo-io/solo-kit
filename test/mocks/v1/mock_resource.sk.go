@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,22 +14,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewMockResource(namespace, name string) *MockResource {
-	return &MockResource{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *MockResource) SetStatus(status core.Status) {
-	r.Status = status
+	mockresource := &MockResource{}
+	mockresource.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return mockresource
 }
 
 func (r *MockResource) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *MockResource) SetStatus(status core.Status) {
+	r.Status = status
 }
 
 func (r *MockResource) Hash() uint64 {
@@ -49,8 +47,8 @@ type MocksByNamespace map[string]MockResourceList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list MockResourceList) Find(namespace, name string) (*MockResource, error) {
 	for _, mockResource := range list {
-		if mockResource.Metadata.Name == name {
-			if namespace == "" || mockResource.Metadata.Namespace == namespace {
+		if mockResource.GetMetadata().Name == name {
+			if namespace == "" || mockResource.GetMetadata().Namespace == namespace {
 				return mockResource, nil
 			}
 		}
@@ -77,7 +75,7 @@ func (list MockResourceList) AsInputResources() resources.InputResourceList {
 func (list MockResourceList) Names() []string {
 	var names []string
 	for _, mockResource := range list {
-		names = append(names, mockResource.Metadata.Name)
+		names = append(names, mockResource.GetMetadata().Name)
 	}
 	return names
 }
@@ -85,14 +83,14 @@ func (list MockResourceList) Names() []string {
 func (list MockResourceList) NamespacesDotNames() []string {
 	var names []string
 	for _, mockResource := range list {
-		names = append(names, mockResource.Metadata.Namespace+"."+mockResource.Metadata.Name)
+		names = append(names, mockResource.GetMetadata().Namespace+"."+mockResource.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list MockResourceList) Sort() MockResourceList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -100,7 +98,7 @@ func (list MockResourceList) Sort() MockResourceList {
 func (list MockResourceList) Clone() MockResourceList {
 	var mockResourceList MockResourceList
 	for _, mockResource := range list {
-		mockResourceList = append(mockResourceList, proto.Clone(mockResource).(*MockResource))
+		mockResourceList = append(mockResourceList, resources.Clone(mockResource).(*MockResource))
 	}
 	return mockResourceList
 }
@@ -121,7 +119,7 @@ func (list MockResourceList) AsInterfaces() []interface{} {
 
 func (byNamespace MocksByNamespace) Add(mockResource ...*MockResource) {
 	for _, item := range mockResource {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

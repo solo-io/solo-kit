@@ -48,8 +48,8 @@ func resourceGroupsFromMessages(messages []ProtoMessageWrapper) map[string][]mod
 				continue
 			}
 			resourceGroupsCfg[rgName] = append(resourceGroupsCfg[rgName], model.ResourceConfig{
-				MessageName:    msg.Message.GetName(),
-				MessagePackage: msg.Message.GetPackage(),
+				ResourceName:    msg.Message.GetName(),
+				ResourcePackage: msg.Message.GetPackage(),
 			})
 		}
 	}
@@ -58,7 +58,7 @@ func resourceGroupsFromMessages(messages []ProtoMessageWrapper) map[string][]mod
 
 func getResource(resources []*model.Resource, cfg model.ResourceConfig) (*model.Resource, error) {
 	for _, res := range resources {
-		if res.Name == cfg.MessageName && res.ProtoPackage == cfg.MessagePackage {
+		if res.Name == cfg.ResourceName && (res.ProtoPackage == cfg.ResourcePackage || res.GoPackage == cfg.ResourcePackage) {
 			return res, nil
 		}
 	}
@@ -87,6 +87,24 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 		resources = append(resources, resource)
 	}
 
+	for _, custom := range project.ProjectConfig.CustomResources {
+		impPrefix := strings.Replace(custom.Package, "/", "_", -1)
+		impPrefix = strings.Replace(impPrefix, ".", "_", -1)
+		impPrefix = strings.Replace(impPrefix, "-", "_", -1)
+		resources = append(resources, &model.Resource{
+			Name:               custom.Type,
+			ShortName:          custom.ShortName,
+			PluralName:         custom.PluralName,
+			GoPackage:          custom.Package,
+			ClusterScoped:      custom.ClusterScoped,
+			CustomImportPrefix: impPrefix,
+			SkipDocsGen:        true,
+			Project:            project,
+			IsCustom:           true,
+			CustomResource:     custom,
+		})
+	}
+
 	var (
 		resourceGroups []*model.ResourceGroup
 	)
@@ -98,7 +116,7 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 			if err != nil {
 				return nil, nil, err
 			}
-			if resource.ProtoPackage != project.ProtoPackage {
+			if resource.ProtoPackage != project.ProtoPackage && !resource.IsCustom {
 				importPrefix := strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
 				resource.ImportPrefix = importPrefix
 			}

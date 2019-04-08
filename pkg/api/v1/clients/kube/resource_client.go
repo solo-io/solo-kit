@@ -9,7 +9,6 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
@@ -184,7 +183,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// mutate and return clone
-	clone := proto.Clone(resource).(resources.InputResource)
+	clone := resources.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
 	resourceCrd := rc.crd.KubeResource(clone)
 

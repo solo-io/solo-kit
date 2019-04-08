@@ -18,12 +18,12 @@ import (
 
 type ResourceClient struct {
 	grpc         apiserver.ApiServerClient
-	resourceType resources.Resource
+	resourceType resources.ProtoResource
 	token        string
 	typeUrl      string
 }
 
-func NewResourceClient(cc *grpc.ClientConn, token string, resourceType resources.Resource) *ResourceClient {
+func NewResourceClient(cc *grpc.ClientConn, token string, resourceType resources.ProtoResource) *ResourceClient {
 	return &ResourceClient{
 		grpc:         apiserver.NewApiServerClient(cc),
 		resourceType: resourceType,
@@ -64,7 +64,13 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, errors.Wrapf(err, "performing grpc request")
 	}
 	resource := rc.NewResource()
-	if err := types.UnmarshalAny(resp.Resource, resource); err != nil {
+
+	protoResource, err := resources.ProtoCast(resource)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := types.UnmarshalAny(resp.Resource, protoResource); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 	}
 	return resource, nil
@@ -76,7 +82,12 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 	opts = opts.WithDefaults()
 	opts.Ctx = metadata.AppendToOutgoingContext(opts.Ctx, "authorization", "bearer "+rc.token)
-	data, err := types.MarshalAny(resource)
+
+	protoResource, err := resources.ProtoCast(resource)
+	if err != nil {
+		return nil, err
+	}
+	data, err := types.MarshalAny(protoResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal resource")
 	}
@@ -93,7 +104,12 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 	written := rc.NewResource()
 
-	if err := types.UnmarshalAny(resp.Resource, written); err != nil {
+	protoResource, err = resources.ProtoCast(written)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := types.UnmarshalAny(resp.Resource, protoResource); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 	}
 	return written, nil
@@ -131,7 +147,11 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	var resourceList resources.ResourceList
 	for _, resourceData := range resp.ResourceList {
 		resource := rc.NewResource()
-		if err := types.UnmarshalAny(resourceData, resource); err != nil {
+		protoResource, err := resources.ProtoCast(resource)
+		if err != nil {
+			return nil, err
+		}
+		if err := types.UnmarshalAny(resourceData, protoResource); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 		}
 		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
@@ -190,7 +210,13 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 				var resourceList resources.ResourceList
 				for _, resourceData := range resourceDataList.ResourceList {
 					resource := rc.NewResource()
-					if err := types.UnmarshalAny(resourceData, resource); err != nil {
+
+					protoResource, err := resources.ProtoCast(resource)
+					if err != nil {
+						errs <- err
+						continue
+					}
+					if err := types.UnmarshalAny(resourceData, protoResource); err != nil {
 						errs <- errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 						continue
 					}
