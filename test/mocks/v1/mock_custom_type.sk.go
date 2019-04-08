@@ -22,12 +22,21 @@ func NewMockCustomType(namespace, name string) *MockCustomType {
 	return mockcustomtype
 }
 
+// require custom resource to implement Clone() as well as resources.Resource interface
+
+type CloneableMockCustomType interface {
+	resources.Resource
+	Clone() *github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType
+}
+
+var _ CloneableMockCustomType = &github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType{}
+
 type MockCustomType struct {
 	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType
 }
 
 func (r *MockCustomType) Clone() resources.Resource {
-	return &MockCustomType{MockCustomType: r.MockCustomType.Clone()}
+	return &MockCustomType{MockCustomType: *r.MockCustomType.Clone()}
 }
 
 func (r *MockCustomType) Hash() uint64 {

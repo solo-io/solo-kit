@@ -37,12 +37,21 @@ func New{{ .Name }}(namespace, name string) *{{ .Name }} {
 
 {{- if $.IsCustom }}
 
+// require custom resource to implement Clone() as well as resources.Resource interface
+
+type Cloneable{{ $.Name }} interface {
+	resources.Resource
+	Clone() *{{ $.CustomImportPrefix}}.{{ $.Name }}
+}
+
+var _ Cloneable{{ $.Name }} = &{{ $.CustomImportPrefix}}.{{ $.Name }}{}
+
 type {{ $.Name }} struct {
 	{{ $.CustomImportPrefix}}.{{ $.Name }}
 }
 
 func (r *{{ .Name }}) Clone() resources.Resource {
-	return &{{ .Name }}{ {{ .Name }}: r.{{ .Name }}.Clone() }
+	return &{{ .Name }}{ {{ .Name }}: *r.{{ .Name }}.Clone() }
 }
 
 func (r *{{ .Name }}) Hash() uint64 {
