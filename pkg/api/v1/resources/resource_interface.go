@@ -31,7 +31,7 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 	}
 	protoResource, ok := res.(ProtoResource)
 	if !ok {
-		return nil, errors.Errorf("internal server error: unexpected type %T not convertible to resources.Proto", res)
+		return nil, errors.Errorf("internal error: unexpected type %T not convertible to resources.Proto", res)
 	}
 	return protoResource, nil
 }
@@ -336,7 +336,7 @@ func Clone(resource Resource) Resource {
 	if protoMessage, ok := resource.(ProtoResource); ok {
 		return proto.Clone(protoMessage).(Resource)
 	}
-	return nil
+	panic(fmt.Errorf("resource %T is not cloneable and not a proto", resource))
 }
 
 func Kind(resource Resource) string {

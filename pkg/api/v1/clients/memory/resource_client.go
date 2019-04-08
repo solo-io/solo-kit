@@ -168,7 +168,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 	rc.cache.Set(key, resource)
 
-	return resource, nil
+	return resources.Clone(resource), nil
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

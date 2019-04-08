@@ -52,7 +52,7 @@ func (r *{{ .Name }}) Hash() uint64 {
 		meta.ResourceVersion = ""
 	})
 
-	return hashutils.HashAll(clone.{{ .Name }})
+	return hashutils.HashAll(clone)
 }
 
 {{- else }}

@@ -37,7 +37,7 @@ func (r *MockCustomType) Hash() uint64 {
 		meta.ResourceVersion = ""
 	})
 
-	return hashutils.HashAll(clone.MockCustomType)
+	return hashutils.HashAll(clone)
 }
 
 type MockCustomTypeList []*MockCustomType
