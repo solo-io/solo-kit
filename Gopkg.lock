@@ -579,7 +579,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:6f8fad8d44df91e7141f06f4b2167f5ea582e71bd92251f0971c06a779303f86"
+  digest = "1:e3940bc731419ded74ec548e05b39f7ee2a6ae2ab51d6a3c5a0352b4b1ccf366"
   name = "github.com/solo-io/go-utils"
   packages = [
     "contextutils",
@@ -587,8 +587,8 @@
     "kubeutils",
   ]
   pruneopts = "UT"
-  revision = "606083a7f0dbaf6d60966679b60746c20f486737"
-  version = "v0.6.0"
+  revision = "cf70ab13b400e4ec3fdf1641edfeac8cd14a0933"
+  version = "v0.7.1"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
