@@ -29,14 +29,29 @@ type ProjectConfig struct {
 	// as the api group for the crd
 	CrdGroupOverride string `json:"crd_group_override"`
 
+	// define custom resources here
+	CustomResources []CustomResourceConfig `json:"custom_resources"`
+
 	// set by load
 	ProjectFile string
 	GoPackage   string
 }
 
 type ResourceConfig struct {
-	MessageName    string `json:"name"`
-	MessagePackage string `json:"package"`
+	ResourceName    string `json:"name"`
+	ResourcePackage string `json:"package"` // resource package doubles as the proto package or the go import package
+}
+
+// Create a Solo-Kit backed resource from
+// a Go Type that implements the Resource Interface
+type CustomResourceConfig struct {
+	// the import path for the Go Type
+	Package string `json:"package"`
+	// the name of the Go Type
+	Type          string `json:"type"`
+	PluralName    string `json:"plural_name"`
+	ShortName     string `json:"short_name"`
+	ClusterScoped bool   `json:"cluster_scoped"`
 }
 
 type Project struct {
@@ -61,9 +76,12 @@ type Resource struct {
 	// format "github.com/solo-io/solo-kit/foo/bar"
 	GoPackage string
 
-	HasStatus     bool
-	ClusterScoped bool // the resource lives at the cluster level, namespace is ignored
-	SkipDocsGen   bool // if true, no docs will be generated for the proto file where this resource is defined
+	HasStatus          bool
+	ClusterScoped      bool                 // the resource lives at the cluster level, namespace is ignored
+	SkipDocsGen        bool                 // if true, no docs will be generated for the proto file where this resource is defined
+	IsCustom           bool                 // if true, this will be treated as a custom resource without a proto file behind it
+	CustomResource     CustomResourceConfig // this struct will be empty unless IsCustom is true
+	CustomImportPrefix string               // import prefix for the struct type the generated wrapper will wrap
 
 	Fields []*Field
 	Oneofs []*Oneof
@@ -116,6 +134,9 @@ func LoadProjectConfig(path string) (ProjectConfig, error) {
 	}
 	var pc ProjectConfig
 	err = json.Unmarshal(b, &pc)
+	if err != nil {
+		return ProjectConfig{}, err
+	}
 	pc.ProjectFile = path
 	goPkg, err := detectGoPackageForProject(path)
 	if err != nil {

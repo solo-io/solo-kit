@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/hashicorp/consul/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -90,7 +89,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// mutate and return clone
-	clone := proto.Clone(resource).(resources.Resource)
+	clone := resources.Clone(resource)
 	clone.SetMetadata(meta)
 
 	data, err := protoutils.MarshalBytes(clone)

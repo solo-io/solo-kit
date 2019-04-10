@@ -7,77 +7,44 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/ghodss/yaml"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 )
 
 var jsonpbMarshaler = &jsonpb.Marshaler{OrigName: false}
 var jsonpbMarshalerEmitZeroValues = &jsonpb.Marshaler{OrigName: false, EmitDefaults: true}
 
-// this function is designed for converting go object (that is not a proto.Message) into a
-// pb Struct, based on json struct tags
-func MarshalStruct(m proto.Message) (*types.Struct, error) {
-	data, err := MarshalBytes(m)
-	if err != nil {
-		return nil, err
+func UnmarshalBytes(data []byte, into resources.Resource) error {
+	if protoInto, ok := into.(proto.Message); ok {
+		return jsonpb.Unmarshal(bytes.NewBuffer(data), protoInto)
 	}
-	var pb types.Struct
-	err = jsonpb.UnmarshalString(string(data), &pb)
-	return &pb, err
-}
-
-func MarshalStructEmitZeroValues(m proto.Message) (*types.Struct, error) {
-	data, err := MarshalBytesEmitZeroValues(m)
-	if err != nil {
-		return nil, err
-	}
-	var pb types.Struct
-	err = jsonpb.UnmarshalString(string(data), &pb)
-	return &pb, err
-}
-
-func UnmarshalStruct(structuredData *types.Struct, into interface{}) error {
-	if structuredData == nil {
-		return errors.New("cannot unmarshal nil proto struct")
-	}
-	strData, err := jsonpbMarshaler.MarshalToString(structuredData)
-	if err != nil {
-		return err
-	}
-	data := []byte(strData)
 	return json.Unmarshal(data, into)
 }
 
-func UnmarshalBytes(data []byte, into proto.Message) error {
-	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
-}
-
-func UnmarshalYaml(data []byte, into proto.Message) error {
-	jsn, err := yaml.YAMLToJSON([]byte(data))
-	if err != nil {
-		return err
+func MarshalBytes(res resources.Resource) ([]byte, error) {
+	if pb, ok := res.(proto.Message); ok {
+		buf := &bytes.Buffer{}
+		err := jsonpbMarshaler.Marshal(buf, pb)
+		return buf.Bytes(), err
 	}
-
-	return jsonpb.Unmarshal(bytes.NewBuffer(jsn), into)
+	return json.Marshal(res)
 }
 
-func MarshalBytes(pb proto.Message) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := jsonpbMarshaler.Marshal(buf, pb)
-	return buf.Bytes(), err
+func MarshalBytesEmitZeroValues(res resources.Resource) ([]byte, error) {
+	if pb, ok := res.(proto.Message); ok {
+		buf := &bytes.Buffer{}
+		err := jsonpbMarshalerEmitZeroValues.Marshal(buf, pb)
+		return buf.Bytes(), err
+	}
+	return json.Marshal(res)
 }
 
-func MarshalBytesEmitZeroValues(pb proto.Message) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := jsonpbMarshalerEmitZeroValues.Marshal(buf, pb)
-	return buf.Bytes(), err
-}
-
-func MarshalMap(from proto.Message) (map[string]interface{}, error) {
+func MarshalMap(from resources.Resource) (map[string]interface{}, error) {
 	data, err := MarshalBytes(from)
 	if err != nil {
 		return nil, err
@@ -87,7 +54,7 @@ func MarshalMap(from proto.Message) (map[string]interface{}, error) {
 	return m, err
 }
 
-func MarshalMapEmitZeroValues(from proto.Message) (map[string]interface{}, error) {
+func MarshalMapEmitZeroValues(from resources.Resource) (map[string]interface{}, error) {
 	data, err := MarshalBytesEmitZeroValues(from)
 	if err != nil {
 		return nil, err
@@ -97,7 +64,7 @@ func MarshalMapEmitZeroValues(from proto.Message) (map[string]interface{}, error
 	return m, err
 }
 
-func UnmarshalMap(m map[string]interface{}, into proto.Message) error {
+func UnmarshalMap(m map[string]interface{}, into resources.Resource) error {
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err

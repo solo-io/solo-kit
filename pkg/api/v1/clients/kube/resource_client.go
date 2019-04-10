@@ -9,7 +9,6 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
@@ -32,7 +31,7 @@ var (
 	CreateCountView = &view.View{
 		Name:        "kube/creates-count",
 		Measure:     MCreates,
-		Description: "The number of list calls",
+		Description: "The number of create calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -42,7 +41,7 @@ var (
 	UpdateCountView = &view.View{
 		Name:        "kube/updates-count",
 		Measure:     MUpdates,
-		Description: "The number of list calls",
+		Description: "The number of update calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -53,7 +52,7 @@ var (
 	DeleteCountView = &view.View{
 		Name:        "kube/deletes-count",
 		Measure:     MDeletes,
-		Description: "The number of list calls",
+		Description: "The number of delete calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -66,12 +65,11 @@ var (
 	InFlightSumView = &view.View{
 		Name:        "kube/req-in-flight",
 		Measure:     MInFlight,
-		Description: "The number of list calls",
+		Description: "The number of requests in flight",
 		Aggregation: view.Sum(),
 		TagKeys: []tag.Key{
 			KeyOpKind,
 			KeyKind,
-			KeyNamespaceKind,
 		},
 	}
 
@@ -184,7 +182,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// mutate and return clone
-	clone := proto.Clone(resource).(resources.InputResource)
+	clone := resources.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
 	resourceCrd := rc.crd.KubeResource(clone)
 

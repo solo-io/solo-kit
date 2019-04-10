@@ -3,14 +3,15 @@ package fileutils
 import (
 	"io/ioutil"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/ghodss/yaml"
-	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
-func WriteToFile(filename string, pb proto.Message) error {
-	jsn, err := protoutils.MarshalBytes(pb)
+func WriteToFile(filename string, res resources.Resource) error {
+	jsn, err := protoutils.MarshalBytes(res)
 	if err != nil {
 		return err
 	}
@@ -21,7 +22,7 @@ func WriteToFile(filename string, pb proto.Message) error {
 	return ioutil.WriteFile(filename, data, 0644)
 }
 
-func ReadFileInto(filename string, v proto.Message) error {
+func ReadFileInto(filename string, res resources.Resource) error {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return errors.Errorf("error reading file: %v", err)
@@ -30,5 +31,5 @@ func ReadFileInto(filename string, v proto.Message) error {
 	if err != nil {
 		return err
 	}
-	return protoutils.UnmarshalBytes(jsn, v)
+	return protoutils.UnmarshalBytes(jsn, res)
 }

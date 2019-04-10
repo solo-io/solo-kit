@@ -27,12 +27,12 @@ type Callbacks interface {
 
 type ApiServer struct {
 	callbacks            Callbacks
-	resourceTypes        map[string]resources.Resource
+	resourceTypes        map[string]resources.ProtoResource
 	factory              factory.ResourceClientFactory
 	watchRefreshDuration time.Duration
 }
 
-func TypeUrl(m resources.Resource) string {
+func TypeUrl(m resources.ProtoResource) string {
 	data, err := types.MarshalAny(m)
 	if err != nil {
 		panic("failed to marshal resource " + err.Error())
@@ -42,8 +42,8 @@ func TypeUrl(m resources.Resource) string {
 
 // TODO(yuval-k): can we get rid of watchRefreshDuration ? sounds like this should be the ResourceClientFactory
 // responsibility
-func NewApiServer(s *grpc.Server, callbacks Callbacks, factory factory.ResourceClientFactory, watchRefreshDuration time.Duration, resourceTypes ...resources.Resource) ApiServerServer {
-	mapped := make(map[string]resources.Resource)
+func NewApiServer(s *grpc.Server, callbacks Callbacks, factory factory.ResourceClientFactory, watchRefreshDuration time.Duration, resourceTypes ...resources.ProtoResource) ApiServerServer {
+	mapped := make(map[string]resources.ProtoResource)
 	for _, resource := range resourceTypes {
 		mapped[TypeUrl(resource)] = resource
 	}
@@ -115,7 +115,11 @@ func (s *ApiServer) Read(ctx context.Context, req *ReadRequest) (*ReadResponse, 
 	if err != nil {
 		return nil, err
 	}
-	data, err := types.MarshalAny(resource)
+	protoResource, err := resources.ProtoCast(resource)
+	if err != nil {
+		return nil, err
+	}
+	data, err := types.MarshalAny(protoResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal resource")
 	}
@@ -136,7 +140,11 @@ func (s *ApiServer) Write(ctx context.Context, req *WriteRequest) (*WriteRespons
 		return nil, err
 	}
 	resource := rc.NewResource()
-	if err := types.UnmarshalAny(req.Resource, resource); err != nil {
+	protoResource, err := resources.ProtoCast(resource)
+	if err != nil {
+		return nil, err
+	}
+	if err := types.UnmarshalAny(req.Resource, protoResource); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 	}
 	resource, err = rc.Write(resource, clients.WriteOpts{
@@ -146,8 +154,12 @@ func (s *ApiServer) Write(ctx context.Context, req *WriteRequest) (*WriteRespons
 	if err != nil {
 		return nil, err
 	}
+	protoResource, err = resources.ProtoCast(resource)
+	if err != nil {
+		return nil, err
+	}
 
-	data, err := types.MarshalAny(resource)
+	data, err := types.MarshalAny(protoResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal resource")
 	}
@@ -193,8 +205,11 @@ func (s *ApiServer) List(ctx context.Context, req *ListRequest) (*ListResponse, 
 	})
 	var resourceListResponse []*types.Any
 	for _, resource := range resourceList {
-
-		data, err := types.MarshalAny(resource)
+		protoResource, err := resources.ProtoCast(resource)
+		if err != nil {
+			return nil, err
+		}
+		data, err := types.MarshalAny(protoResource)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal resource %v", req.TypeUrl)
 		}
@@ -228,8 +243,11 @@ func (s *ApiServer) Watch(req *WatchRequest, watch ApiServer_WatchServer) error 
 		case resourceList := <-resourceWatch:
 			var resourceListResponse []*types.Any
 			for _, resource := range resourceList {
-
-				data, err := types.MarshalAny(resource)
+				protoResource, err := resources.ProtoCast(resource)
+				if err != nil {
+					return err
+				}
+				data, err := types.MarshalAny(protoResource)
 				if err != nil {
 					return errors.Wrapf(err, "failed to marshal resource %v", req.TypeUrl)
 				}

@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,14 +14,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewFakeResource(namespace, name string) *FakeResource {
-	return &FakeResource{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
+	fakeresource := &FakeResource{}
+	fakeresource.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return fakeresource
 }
 
 func (r *FakeResource) SetMetadata(meta core.Metadata) {
@@ -44,8 +42,8 @@ type FakesByNamespace map[string]FakeResourceList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list FakeResourceList) Find(namespace, name string) (*FakeResource, error) {
 	for _, fakeResource := range list {
-		if fakeResource.Metadata.Name == name {
-			if namespace == "" || fakeResource.Metadata.Namespace == namespace {
+		if fakeResource.GetMetadata().Name == name {
+			if namespace == "" || fakeResource.GetMetadata().Namespace == namespace {
 				return fakeResource, nil
 			}
 		}
@@ -64,7 +62,7 @@ func (list FakeResourceList) AsResources() resources.ResourceList {
 func (list FakeResourceList) Names() []string {
 	var names []string
 	for _, fakeResource := range list {
-		names = append(names, fakeResource.Metadata.Name)
+		names = append(names, fakeResource.GetMetadata().Name)
 	}
 	return names
 }
@@ -72,14 +70,14 @@ func (list FakeResourceList) Names() []string {
 func (list FakeResourceList) NamespacesDotNames() []string {
 	var names []string
 	for _, fakeResource := range list {
-		names = append(names, fakeResource.Metadata.Namespace+"."+fakeResource.Metadata.Name)
+		names = append(names, fakeResource.GetMetadata().Namespace+"."+fakeResource.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list FakeResourceList) Sort() FakeResourceList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -87,7 +85,7 @@ func (list FakeResourceList) Sort() FakeResourceList {
 func (list FakeResourceList) Clone() FakeResourceList {
 	var fakeResourceList FakeResourceList
 	for _, fakeResource := range list {
-		fakeResourceList = append(fakeResourceList, proto.Clone(fakeResource).(*FakeResource))
+		fakeResourceList = append(fakeResourceList, resources.Clone(fakeResource).(*FakeResource))
 	}
 	return fakeResourceList
 }
@@ -108,7 +106,7 @@ func (list FakeResourceList) AsInterfaces() []interface{} {
 
 func (byNamespace FakesByNamespace) Add(fakeResource ...*FakeResource) {
 	for _, item := range fakeResource {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

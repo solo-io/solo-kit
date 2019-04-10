@@ -220,7 +220,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- if .ClusterScoped }}
 			case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}Chan:
 				record()
-				currentSnapshot.{{ .PluralName }} = {{ lower_camel .Name }}List
+				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List
 {{- else }}
 			case {{ lower_camel .Name }}NamespacedList := <- {{ lower_camel .Name }}Chan:
 				record()
@@ -228,7 +228,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				namespace := {{ lower_camel .Name }}NamespacedList.namespace
 				{{ lower_camel .Name }}List := {{ lower_camel .Name }}NamespacedList.list
 
-				currentSnapshot.{{ .PluralName }}[namespace] = {{ lower_camel .Name }}List
+				currentSnapshot.{{ upper_camel .PluralName }}[namespace] = {{ lower_camel .Name }}List
 {{- end }}
 {{- end}}
 			}

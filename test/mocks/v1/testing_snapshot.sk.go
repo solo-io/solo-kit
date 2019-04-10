@@ -14,6 +14,7 @@ type TestingSnapshot struct {
 	Fakes                FakesByNamespace
 	Anothermockresources AnothermockresourcesByNamespace
 	Clusterresources     ClusterResourceList
+	Mcts                 MctsByNamespace
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
@@ -22,6 +23,7 @@ func (s TestingSnapshot) Clone() TestingSnapshot {
 		Fakes:                s.Fakes.Clone(),
 		Anothermockresources: s.Anothermockresources.Clone(),
 		Clusterresources:     s.Clusterresources.Clone(),
+		Mcts:                 s.Mcts.Clone(),
 	}
 }
 
@@ -31,6 +33,7 @@ func (s TestingSnapshot) Hash() uint64 {
 		s.hashFakes(),
 		s.hashAnothermockresources(),
 		s.hashClusterresources(),
+		s.hashMcts(),
 	)
 }
 
@@ -50,12 +53,17 @@ func (s TestingSnapshot) hashClusterresources() uint64 {
 	return hashutils.HashAll(s.Clusterresources.AsInterfaces()...)
 }
 
+func (s TestingSnapshot) hashMcts() uint64 {
+	return hashutils.HashAll(s.Mcts.List().AsInterfaces()...)
+}
+
 func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	fields = append(fields, zap.Uint64("mocks", s.hashMocks()))
 	fields = append(fields, zap.Uint64("fakes", s.hashFakes()))
 	fields = append(fields, zap.Uint64("anothermockresources", s.hashAnothermockresources()))
 	fields = append(fields, zap.Uint64("clusterresources", s.hashClusterresources()))
+	fields = append(fields, zap.Uint64("mcts", s.hashMcts()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
 }
@@ -66,6 +74,7 @@ type TestingSnapshotStringer struct {
 	Fakes                []string
 	Anothermockresources []string
 	Clusterresources     []string
+	Mcts                 []string
 }
 
 func (ss TestingSnapshotStringer) String() string {
@@ -91,6 +100,11 @@ func (ss TestingSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  Mcts %v\n", len(ss.Mcts))
+	for _, name := range ss.Mcts {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	return s
 }
 
@@ -101,5 +115,6 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 		Fakes:                s.Fakes.List().NamespacesDotNames(),
 		Anothermockresources: s.Anothermockresources.List().NamespacesDotNames(),
 		Clusterresources:     s.Clusterresources.Names(),
+		Mcts:                 s.Mcts.List().NamespacesDotNames(),
 	}
 }
