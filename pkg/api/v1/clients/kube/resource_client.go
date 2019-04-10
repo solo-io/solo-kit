@@ -32,7 +32,7 @@ var (
 	CreateCountView = &view.View{
 		Name:        "kube/creates-count",
 		Measure:     MCreates,
-		Description: "The number of list calls",
+		Description: "The number of create calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -42,7 +42,7 @@ var (
 	UpdateCountView = &view.View{
 		Name:        "kube/updates-count",
 		Measure:     MUpdates,
-		Description: "The number of list calls",
+		Description: "The number of update calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -53,7 +53,7 @@ var (
 	DeleteCountView = &view.View{
 		Name:        "kube/deletes-count",
 		Measure:     MDeletes,
-		Description: "The number of list calls",
+		Description: "The number of delete calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -66,12 +66,11 @@ var (
 	InFlightSumView = &view.View{
 		Name:        "kube/req-in-flight",
 		Measure:     MInFlight,
-		Description: "The number of list calls",
+		Description: "The number of requests in flight",
 		Aggregation: view.Sum(),
 		TagKeys: []tag.Key{
 			KeyOpKind,
 			KeyKind,
-			KeyNamespaceKind,
 		},
 	}
 

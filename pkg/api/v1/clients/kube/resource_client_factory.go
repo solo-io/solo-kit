@@ -157,20 +157,22 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 		sharedInformer := cache.NewSharedIndexInformer(
 			&cache.ListWatch{
 				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-					if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyOpKind, "list")); err == nil {
-						ctx = ctxWithTags
+					listCtx := ctx
+					if ctxWithTags, err := tag.New(listCtx, tag.Insert(KeyOpKind, "list")); err == nil {
+						listCtx = ctxWithTags
 					}
-					stats.Record(ctx, MLists.M(1), MInFlight.M(1))
-					defer stats.Record(ctx, MInFlight.M(-1))
+					stats.Record(listCtx, MLists.M(1), MInFlight.M(1))
+					defer stats.Record(listCtx, MInFlight.M(-1))
 					return list(options)
 				},
 				WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
-					if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyOpKind, "watch")); err == nil {
-						ctx = ctxWithTags
+					watchCtx := ctx
+					if ctxWithTags, err := tag.New(watchCtx, tag.Insert(KeyOpKind, "watch")); err == nil {
+						watchCtx = ctxWithTags
 					}
 
-					stats.Record(ctx, MWatches.M(1), MInFlight.M(1))
-					defer stats.Record(ctx, MInFlight.M(-1))
+					stats.Record(watchCtx, MWatches.M(1), MInFlight.M(1))
+					defer stats.Record(watchCtx, MInFlight.M(-1))
 					return watch(options)
 				},
 			},
