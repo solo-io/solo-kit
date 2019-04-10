@@ -43,7 +43,7 @@ var (
 	WatchCountView = &view.View{
 		Name:        "kube/watches-count",
 		Measure:     MWatches,
-		Description: "The number of list calls",
+		Description: "The number of watch calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -53,7 +53,7 @@ var (
 )
 
 func init() {
-	view.Register(ListCountView)
+	view.Register(ListCountView, WatchCountView)
 }
 
 type SharedCache interface {
@@ -114,6 +114,13 @@ type ResourceClientSharedInformerFactory struct {
 	cacheUpdatedWatchersMutex sync.Mutex
 }
 
+func notEmpty(ns string) string {
+	if ns == "" {
+		return "<all>"
+	}
+	return ns
+}
+
 // Creates a new SharedIndexInformer and adds it to the factory's informer registry.
 // NOTE: Currently we cannot share informers between resource clients, because the listWatch functions are configured
 // with the client's specific token. Hence, we must enforce a one-to-one relationship between informers and clients.
@@ -148,8 +155,9 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 		}
 
-		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyNamespaceKind, ns)); err == nil {
-			ctx = ctxWithTags
+		nsCtx := ctx
+		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(KeyNamespaceKind, notEmpty(ns))); err == nil {
+			nsCtx = ctxWithTags
 		}
 
 		list := rc.crdClientset.ResourcesV1().Resources(ns).List
@@ -157,7 +165,7 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 		sharedInformer := cache.NewSharedIndexInformer(
 			&cache.ListWatch{
 				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-					listCtx := ctx
+					listCtx := nsCtx
 					if ctxWithTags, err := tag.New(listCtx, tag.Insert(KeyOpKind, "list")); err == nil {
 						listCtx = ctxWithTags
 					}
@@ -166,7 +174,7 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 					return list(options)
 				},
 				WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
-					watchCtx := ctx
+					watchCtx := nsCtx
 					if ctxWithTags, err := tag.New(watchCtx, tag.Insert(KeyOpKind, "watch")); err == nil {
 						watchCtx = ctxWithTags
 					}
