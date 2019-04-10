@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Typo in metric name. I don't think it matters as the view is correct. but better safe than sorry.
