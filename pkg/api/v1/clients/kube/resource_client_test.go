@@ -9,11 +9,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/fake"
+	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	solov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -357,6 +360,8 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Data:          data,
 					SomeDumbField: dumbValue,
 				}
+				ownerRef      metav1.OwnerReference
+				kubeWriteOpts *KubeWriteOpts
 			)
 
 			BeforeEach(func() {
@@ -368,6 +373,16 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
 				Expect(rc.Register()).NotTo(HaveOccurred())
+				ownerRef = metav1.OwnerReference{
+					APIVersion: "APIVersion",
+					Kind:       "Kind",
+					Name:       "Name",
+				}
+				kubeWriteOpts = &KubeWriteOpts{
+					PreWriteCallback: func(r *crdv1.Resource) {
+						r.ObjectMeta.OwnerReferences = []metav1.OwnerReference{ownerRef}
+					},
+				}
 			})
 
 			Context("resource does not exist", func() {
@@ -382,6 +397,16 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Expect(mockRes.Metadata.Namespace).To(BeEquivalentTo(resourceToCreate.Metadata.Namespace))
 					Expect(mockRes.Data).To(BeEquivalentTo(resourceToCreate.Data))
 					Expect(mockRes.SomeDumbField).To(BeEquivalentTo(resourceToCreate.SomeDumbField))
+				})
+
+				It("correctly applies the pre write callback", func() {
+					_, err := rc.Write(resourceToCreate, clients.WriteOpts{StorageWriteOpts: kubeWriteOpts})
+					Expect(err).NotTo(HaveOccurred())
+					r, err := clientset.ResourcesV1().Resources(namespace1).Get(resourceToCreate.Metadata.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(r.OwnerReferences).To(HaveLen(1))
+					Expect(r.OwnerReferences[0]).To(Equal(ownerRef))
 				})
 			})
 
@@ -399,6 +424,17 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Expect(ok).To(BeTrue())
 					Expect(checkMockRes.SomeDumbField).To(BeEquivalentTo(resourceToUpdate.SomeDumbField))
 				})
+
+				It("correctly applies the pre write callback", func() {
+					_, err := rc.Write(resourceToUpdate, clients.WriteOpts{OverwriteExisting: true, StorageWriteOpts: kubeWriteOpts})
+					Expect(err).NotTo(HaveOccurred())
+					r, err := clientset.ResourcesV1().Resources(namespace1).Get(resourceToUpdate.Metadata.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(r.OwnerReferences).To(HaveLen(1))
+					Expect(r.OwnerReferences[0]).To(Equal(ownerRef))
+				})
+
 			})
 
 			Context("resource exists and we don't want to overwrite", func() {
