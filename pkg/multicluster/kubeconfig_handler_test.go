@@ -73,7 +73,6 @@ var _ = Describe("KubeConfigHandler", func() {
 			return allKubeConfigs
 		}, time.Minute).Should(HaveLen(2))
 
-
 		readKc1 := allKubeConfigs[ClusterId(kubeCfg1.Metadata.Name)].KubeConfig.KubeConfig
 		readKc2 := allKubeConfigs[ClusterId(kubeCfg2.Metadata.Name)].KubeConfig.KubeConfig
 		Expect(readKc1.Clusters).To(Equal(kubeCfg1.KubeConfig.KubeConfig.Clusters))
