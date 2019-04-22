@@ -32,9 +32,11 @@ type ProjectConfig struct {
 	// define custom resources here
 	CustomResources []CustomResourceConfig `json:"custom_resources"`
 
+	// set by load if not specified
+	GoPackage string `json:"go_package"`
+
 	// set by load
 	ProjectFile string
-	GoPackage   string
 }
 
 type ResourceConfig struct {
@@ -138,11 +140,13 @@ func LoadProjectConfig(path string) (ProjectConfig, error) {
 		return ProjectConfig{}, err
 	}
 	pc.ProjectFile = path
-	goPkg, err := detectGoPackageForProject(path)
-	if err != nil {
-		return ProjectConfig{}, err
+	if pc.GoPackage == "" {
+		goPkg, err := detectGoPackageForProject(path)
+		if err != nil {
+			return ProjectConfig{}, err
+		}
+		pc.GoPackage = goPkg
 	}
-	pc.GoPackage = goPkg
 	return pc, err
 }
 

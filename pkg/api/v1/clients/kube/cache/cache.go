@@ -83,7 +83,6 @@ func (k *kubeCoreCaches) NamespaceLister() kubelisters.NamespaceLister {
 	return k.namespaceLister
 }
 
-
 func (k *kubeCoreCaches) Subscribe() <-chan struct{} {
 	k.cacheUpdatedWatchersMutex.Lock()
 	defer k.cacheUpdatedWatchersMutex.Unlock()
