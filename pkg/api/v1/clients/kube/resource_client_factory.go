@@ -222,7 +222,7 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 		var err error
 		select {
 		case err = <-runResult:
-		case <-time.After(10 * time.Second):
+		case <-time.After(60 * time.Second):
 			err = errors.Errorf("timed out while waiting for informer caches to sync")
 		}
 
