@@ -11,8 +11,8 @@ import (
 // multicluster RestConfigs are a custom solo-kit resource
 // which are parsed from kubernetes secrets
 type KubeConfig struct {
-	Metadata   core.Metadata
-	KubeConfig api.Config
+	Metadata core.Metadata
+	api.Config
 }
 
 func (c *KubeConfig) GetMetadata() core.Metadata {
@@ -29,7 +29,7 @@ func (c *KubeConfig) Equal(that interface{}) bool {
 
 func (c *KubeConfig) Clone() *KubeConfig {
 	meta := proto.Clone(&c.Metadata).(*core.Metadata)
-	innerClone := c.KubeConfig.DeepCopy()
-	clone := KubeConfig{Metadata: *meta, KubeConfig: *innerClone}
+	innerClone := c.Config.DeepCopy()
+	clone := KubeConfig{Metadata: *meta, Config: *innerClone}
 	return &clone
 }

@@ -13,6 +13,9 @@ import (
 
 type ClusterId core.ResourceRef
 
+// empty ClusterId refers to local
+var LocalCluster = ClusterId{}
+
 type KubeConfigs map[ClusterId]*v1.KubeConfig
 
 func WatchKubeConfigs(ctx context.Context, kube kubernetes.Interface, cache cache.KubeCoreCache) (<-chan KubeConfigs, <-chan error, error) {

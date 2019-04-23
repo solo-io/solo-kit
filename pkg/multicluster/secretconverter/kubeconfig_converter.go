@@ -30,7 +30,7 @@ func KubeCfgFromSecret(kubeSecret *kubev1.Secret) (*v1.KubeConfig, error) {
 		return nil, err
 	}
 	meta := kubeutils.FromKubeMeta(kubeSecret.ObjectMeta)
-	return &v1.KubeConfig{KubeConfig: apiv1.KubeConfig{Metadata: meta, KubeConfig: *baseConfig}}, nil
+	return &v1.KubeConfig{KubeConfig: apiv1.KubeConfig{Metadata: meta, Config: *baseConfig}}, nil
 }
 
 func KubeConfigToSecret(meta metav1.ObjectMeta, kubeconfig *clientcmdapi.Config) (*kubev1.Secret, error) {
@@ -52,5 +52,5 @@ func (t *KubeConfigSecretConverter) ToKubeSecret(ctx context.Context, rc *kubese
 	if !ok {
 		return nil, kubesecret.NotOurResource
 	}
-	return KubeConfigToSecret(kubeutils.ToKubeMeta(kc.Metadata), &kc.KubeConfig.KubeConfig)
+	return KubeConfigToSecret(kubeutils.ToKubeMeta(kc.Metadata), &kc.KubeConfig.Config)
 }

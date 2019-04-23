@@ -70,9 +70,9 @@ var _ = Describe("WatchKubeconfigs", func() {
 			}
 		}, time.Minute).Should(HaveLen(2))
 
-		readKc1 := allKubeConfigs[ClusterId(kubeCfg1.Metadata.Ref())].KubeConfig.KubeConfig
-		readKc2 := allKubeConfigs[ClusterId(kubeCfg2.Metadata.Ref())].KubeConfig.KubeConfig
-		Expect(readKc1.Clusters).To(Equal(kubeCfg1.KubeConfig.KubeConfig.Clusters))
-		Expect(readKc2.Clusters).To(Equal(kubeCfg2.KubeConfig.KubeConfig.Clusters))
+		readKc1 := allKubeConfigs[ClusterId(kubeCfg1.Metadata.Ref())].KubeConfig.Config
+		readKc2 := allKubeConfigs[ClusterId(kubeCfg2.Metadata.Ref())].KubeConfig.Config
+		Expect(readKc1.Clusters).To(Equal(kubeCfg1.KubeConfig.Config.Clusters))
+		Expect(readKc2.Clusters).To(Equal(kubeCfg2.KubeConfig.Config.Clusters))
 	})
 })
