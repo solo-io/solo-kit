@@ -32,9 +32,11 @@ type ProjectConfig struct {
 	// define custom resources here
 	CustomResources []CustomResourceConfig `json:"custom_resources"`
 
+	// set by load if not specified
+	GoPackage string `json:"go_package"`
+
 	// set by load
 	ProjectFile string
-	GoPackage   string `json:"go_package"`
 }
 
 type ResourceConfig struct {
