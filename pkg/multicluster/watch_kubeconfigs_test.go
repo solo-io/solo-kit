@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/errors"
 	. "github.com/solo-io/solo-kit/pkg/multicluster"
 	"github.com/solo-io/solo-kit/pkg/multicluster/secretconverter"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -52,25 +53,21 @@ var _ = Describe("KubeConfigHandler", func() {
 
 		kubeCache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
 		Expect(err).NotTo(HaveOccurred())
-		rch, err := NewKubeConfigHandler(kubeClient, kubeCache)
+
+		kubeConfigs, errs, err := WatchKubeConfigs(context.TODO(), kubeClient, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 
 		var allKubeConfigs KubeConfigs
-		rch.SetCallback(func(updated KubeConfigs) error {
-			allKubeConfigs = updated
-			return nil
-		})
-
-		errs, err := rch.Start(context.TODO())
-		Expect(err).NotTo(HaveOccurred())
-		go func() {
-			defer GinkgoRecover()
-			err := <-errs
-			Expect(err).NotTo(HaveOccurred())
-		}()
-
-		Eventually(func() KubeConfigs {
-			return allKubeConfigs
+		Eventually(func() (KubeConfigs, error) {
+			select {
+			case kcs := <-kubeConfigs:
+				allKubeConfigs = kcs
+				return kcs, nil
+			case err := <-errs:
+				return nil, err
+			case <-time.After(time.Second * 5):
+				return nil, errors.Errorf("timed out waiting for next kubeconfigs snapshot")
+			}
 		}, time.Minute).Should(HaveLen(2))
 
 		readKc1 := allKubeConfigs[ClusterId(kubeCfg1.Metadata.Name)].KubeConfig.KubeConfig
