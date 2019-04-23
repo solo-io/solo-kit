@@ -1,4 +1,4 @@
-package pod_test
+package pod
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	skpod "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/resources/pod"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -29,7 +28,7 @@ var _ = Describe("PodBaseClient", func() {
 	var (
 		namespace string
 		cfg       *rest.Config
-		client    *skpod.PodResourceClient
+		client    *podResourceClient
 		kube      kubernetes.Interface
 		kubeCache cache.KubeCoreCache
 	)
@@ -44,7 +43,7 @@ var _ = Describe("PodBaseClient", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
-		client = skpod.NewResourceClient(kube, kubeCache)
+		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -77,7 +76,7 @@ var _ = Describe("PodBaseClient", func() {
 		Expect(pods).To(HaveLen(1))
 		Expect(pods[0].GetMetadata().Name).To(Equal(pod.Name))
 		Expect(pods[0].GetMetadata().Namespace).To(Equal(pod.Namespace))
-		kubePod, err := skpod.ToKubePod(pods[0])
+		kubePod, err := ToKubePod(pods[0])
 		Expect(err).NotTo(HaveOccurred())
 		Expect(kubePod.Spec.Containers).To(Equal(pod.Spec.Containers))
 	})

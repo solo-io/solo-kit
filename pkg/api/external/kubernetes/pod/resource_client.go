@@ -4,8 +4,8 @@ import (
 	"sort"
 
 	kubepod "github.com/solo-io/solo-kit/api/external/kubernetes/pod"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/resources/common"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	kubev1 "k8s.io/api/core/v1"
 
@@ -18,18 +18,23 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type PodResourceClient struct {
+type podResourceClient struct {
 	common.KubeCoreResourceClient
 }
 
-func NewResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *PodResourceClient {
-	return &PodResourceClient{
+func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *podResourceClient {
+	return &podResourceClient{
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			Kube:         kube,
 			Cache:        cache,
 			ResourceType: &skkube.Pod{},
 		},
 	}
+}
+
+func NewResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skkube.PodClient {
+	resourceClient := newResourceClient(kube, cache)
+	return skkube.NewPodClientWithBase(resourceClient)
 }
 
 func FromKubePod(pod *kubev1.Pod) *skkube.Pod {
@@ -54,9 +59,9 @@ func ToKubePod(resource resources.Resource) (*kubev1.Pod, error) {
 	return &pod, nil
 }
 
-var _ clients.ResourceClient = &PodResourceClient{}
+var _ clients.ResourceClient = &podResourceClient{}
 
-func (rc *PodResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
+func (rc *podResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}
@@ -77,7 +82,7 @@ func (rc *PodResourceClient) Read(namespace, name string, opts clients.ReadOpts)
 	return resource, nil
 }
 
-func (rc *PodResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+func (rc *podResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	opts = opts.WithDefaults()
 	if err := resources.Validate(resource); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
@@ -115,7 +120,7 @@ func (rc *PodResourceClient) Write(resource resources.Resource, opts clients.Wri
 	return rc.Read(podObj.Namespace, podObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
 }
 
-func (rc *PodResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+func (rc *podResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
 	if !rc.exist(namespace, name) {
 		if !opts.IgnoreNotExist {
@@ -130,7 +135,7 @@ func (rc *PodResourceClient) Delete(namespace, name string, opts clients.DeleteO
 	return nil
 }
 
-func (rc *PodResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+func (rc *podResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
 	podObjList, err := rc.Cache.PodLister().Pods(namespace).List(labels.SelectorFromSet(opts.Selector))
@@ -154,11 +159,11 @@ func (rc *PodResourceClient) List(namespace string, opts clients.ListOpts) (reso
 	return resourceList, nil
 }
 
-func (rc *PodResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
+func (rc *podResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	return common.KubeResourceWatch(rc.Cache, rc.List, namespace, opts)
 }
 
-func (rc *PodResourceClient) exist(namespace, name string) bool {
+func (rc *podResourceClient) exist(namespace, name string) bool {
 	_, err := rc.Kube.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
 	return err == nil
 }

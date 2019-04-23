@@ -1,4 +1,4 @@
-package namespace_test
+package namespace
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	sknamespace "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/resources/namespace"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
 	kubev1 "k8s.io/api/core/v1"
@@ -30,7 +29,7 @@ var _ = Describe("Namespace base client", func() {
 	var (
 		namespace    string
 		cfg          *rest.Config
-		client       *sknamespace.NamespaceResourceClient
+		client       *namespaceResourceClient
 		kube         kubernetes.Interface
 		kubeCache    cache.KubeCoreCache
 		namespaceObj *kubev1.Namespace
@@ -45,7 +44,7 @@ var _ = Describe("Namespace base client", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
-		client = sknamespace.NewResourceClient(kube, kubeCache)
+		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 		namespaceObj, err = kube.CoreV1().Namespaces().Create(&kubev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{

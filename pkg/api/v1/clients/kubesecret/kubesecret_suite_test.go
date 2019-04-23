@@ -1,4 +1,4 @@
-package secret_test
+package kubesecret_test
 
 import (
 	"testing"

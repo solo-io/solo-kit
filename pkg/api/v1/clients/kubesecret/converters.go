@@ -1,4 +1,4 @@
-package secret
+package kubesecret
 
 import (
 	"context"

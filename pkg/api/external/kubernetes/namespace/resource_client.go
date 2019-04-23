@@ -6,8 +6,8 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	kubenamespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/resources/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
@@ -18,18 +18,23 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type NamespaceResourceClient struct {
+type namespaceResourceClient struct {
 	common.KubeCoreResourceClient
 }
 
-func NewResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *NamespaceResourceClient {
-	return &NamespaceResourceClient{
+func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *namespaceResourceClient {
+	return &namespaceResourceClient{
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			Kube:         kube,
 			Cache:        cache,
 			ResourceType: &skkube.KubeNamespace{},
 		},
 	}
+}
+
+func NewResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skkube.KubeNamespaceClient {
+	resourceClient := newResourceClient(kube, cache)
+	return skkube.NewKubeNamespaceClientWithBase(resourceClient)
 }
 
 func FromKubeNamespace(namespace *kubev1.Namespace) *skkube.KubeNamespace {
@@ -54,7 +59,7 @@ func ToKubeNamespace(resource resources.Resource) (*kubev1.Namespace, error) {
 	return &namespace, nil
 }
 
-func (rc *NamespaceResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
+func (rc *namespaceResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}
@@ -75,7 +80,7 @@ func (rc *NamespaceResourceClient) Read(namespace, name string, opts clients.Rea
 	return resource, nil
 }
 
-func (rc *NamespaceResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+func (rc *namespaceResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	opts = opts.WithDefaults()
 	if err := resources.Validate(resource); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
@@ -113,7 +118,7 @@ func (rc *NamespaceResourceClient) Write(resource resources.Resource, opts clien
 	return rc.Read(namespaceObj.Namespace, namespaceObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
 }
 
-func (rc *NamespaceResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+func (rc *namespaceResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
 	if !rc.exist(namespace, name) {
 		if !opts.IgnoreNotExist {
@@ -128,7 +133,7 @@ func (rc *NamespaceResourceClient) Delete(namespace, name string, opts clients.D
 	return nil
 }
 
-func (rc *NamespaceResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+func (rc *namespaceResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
 	podObjList, err := rc.Cache.NamespaceLister().List(labels.SelectorFromSet(opts.Selector))
@@ -152,11 +157,11 @@ func (rc *NamespaceResourceClient) List(namespace string, opts clients.ListOpts)
 	return resourceList, nil
 }
 
-func (rc *NamespaceResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
+func (rc *namespaceResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	return common.KubeResourceWatch(rc.Cache, rc.List, namespace, opts)
 }
 
-func (rc *NamespaceResourceClient) exist(namespace, name string) bool {
+func (rc *namespaceResourceClient) exist(namespace, name string) bool {
 	_, err := rc.Kube.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
 	return err == nil
 }

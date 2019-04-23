@@ -1,10 +1,11 @@
-package secret_test
+package configmap_test
 
 import (
 	"context"
 	"os"
 	"time"
 
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -14,8 +15,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/kubeutils"
-	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/resources/secret"
+	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -27,7 +27,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var _ = Describe("Kube Secret Client Plain=True", func() {
+var _ = Describe("PlainConfigmap", func() {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
@@ -37,6 +37,7 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		cfg       *rest.Config
 		client    *ResourceClient
 		kube      kubernetes.Interface
+		kubeCache cache.KubeCoreCache
 	)
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
@@ -46,9 +47,10 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
-		client, err = NewResourceClient(kube, &v1.MockResource{}, true, kcache)
+		client, err = NewResourceClient(kube, &v1.MockResource{}, kubeCache, true)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace)
@@ -70,7 +72,7 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		_, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		cm, err := kube.CoreV1().Secrets(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
+		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
 		Expect(string(cm.Data["data.json"])).To(Equal("hello: goodbye"))
@@ -89,9 +91,8 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		_, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		cm, err := kube.CoreV1().Secrets(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
+		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
 	})
-	// no string escape
 })
