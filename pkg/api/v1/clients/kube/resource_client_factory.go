@@ -2,6 +2,7 @@ package kube
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -195,6 +196,18 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 	return nil
 }
 
+var cacheSyncTimeout = func() time.Duration {
+	timeout := time.Minute
+	if timeoutOverride := os.Getenv("SOLOKIT_CACHE_SYNC_TIMEOUT"); timeoutOverride != "" {
+		override, err := time.ParseDuration(timeoutOverride)
+		if err != nil {
+			panic(err)
+		}
+		timeout = override
+	}
+	return timeout
+}()
+
 // Starts all informers in the factory's registry (if they have not yet been started) and configures the factory to call
 // the updateCallback function whenever any of the resources associated with the informers changes.
 func (f *ResourceClientSharedInformerFactory) Start() {
@@ -222,7 +235,7 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 		var err error
 		select {
 		case err = <-runResult:
-		case <-time.After(10 * time.Second):
+		case <-time.After(cacheSyncTimeout):
 			err = errors.Errorf("timed out while waiting for informer caches to sync")
 		}
 
