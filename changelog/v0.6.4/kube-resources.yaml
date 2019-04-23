@@ -1,4 +1,4 @@
 changelog:
-  - type: BREAKING_CHANGE
+  - type: NEW_FEATURE
     description: Include generic kubernetes resource clients for kube cache resources in solo-kit
     issueLink: https://github.com/solo-io/solo-kit/issues/142
