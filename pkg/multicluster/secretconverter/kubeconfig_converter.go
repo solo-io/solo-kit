@@ -6,7 +6,6 @@ import (
 	apiv1 "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
