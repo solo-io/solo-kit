@@ -32,7 +32,7 @@ func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *po
 	}
 }
 
-func NewResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skkube.PodClient {
+func NewPodClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skkube.PodClient {
 	resourceClient := newResourceClient(kube, cache)
 	return skkube.NewPodClientWithBase(resourceClient)
 }

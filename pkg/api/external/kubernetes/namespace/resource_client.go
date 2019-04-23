@@ -32,7 +32,7 @@ func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *na
 	}
 }
 
-func NewResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skkube.KubeNamespaceClient {
+func NewNamespaceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skkube.KubeNamespaceClient {
 	resourceClient := newResourceClient(kube, cache)
 	return skkube.NewKubeNamespaceClientWithBase(resourceClient)
 }
