@@ -51,7 +51,7 @@ func (t *KubeConfigSecretConverter) FromKubeSecret(ctx context.Context, rc *kube
 func (t *KubeConfigSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
 	kc, ok := resource.(*v1.KubeConfig)
 	if !ok {
-		return nil, errors.Errorf("can only convert a *v1.KubeConfig, received %T", resource)
+		return nil, kubesecret.NotOurResource
 	}
 	return KubeConfigToSecret(kubeutils.ToKubeMeta(kc.Metadata), &kc.KubeConfig.KubeConfig)
 }
