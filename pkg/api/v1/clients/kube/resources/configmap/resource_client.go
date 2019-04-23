@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -163,53 +164,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	opts = opts.WithDefaults()
-	watch := rc.kubeCache.Subscribe()
-
-	resourcesChan := make(chan resources.ResourceList)
-	errs := make(chan error)
-
-	// prevent flooding the channel with duplicates
-	var previous *resources.ResourceList
-	updateResourceList := func() {
-		list, err := rc.List(namespace, clients.ListOpts{
-			Ctx:      opts.Ctx,
-			Selector: opts.Selector,
-		})
-		if err != nil {
-			errs <- err
-			return
-		}
-		if previous != nil {
-			if list.Equal(*previous) {
-				return
-			}
-		}
-		previous = &list
-		resourcesChan <- list
-	}
-
-	go func() {
-		defer rc.kubeCache.Unsubscribe(watch)
-		defer close(resourcesChan)
-		defer close(errs)
-
-		// watch should open up with an initial read
-		updateResourceList()
-		for {
-			select {
-			case _, ok := <-watch:
-				if !ok {
-					return
-				}
-				updateResourceList()
-			case <-opts.Ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return resourcesChan, errs, nil
+	return common.KubeResourceWatch(rc.kubeCache, rc.List, namespace, opts)
 }
 
 func (rc *ResourceClient) exist(namespace, name string) bool {

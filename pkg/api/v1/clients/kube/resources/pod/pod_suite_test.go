@@ -1,4 +1,4 @@
-package kubesecret_test
+package pod_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestKubesecret(t *testing.T) {
+func TestPod(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Kubesecret Suite")
+	RunSpecs(t, "Pod Suite")
 }

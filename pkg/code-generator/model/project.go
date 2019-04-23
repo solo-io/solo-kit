@@ -34,7 +34,7 @@ type ProjectConfig struct {
 
 	// set by load
 	ProjectFile string
-	GoPackage   string
+	GoPackage   string `json:"go_package"`
 }
 
 type ResourceConfig struct {
@@ -138,11 +138,13 @@ func LoadProjectConfig(path string) (ProjectConfig, error) {
 		return ProjectConfig{}, err
 	}
 	pc.ProjectFile = path
-	goPkg, err := detectGoPackageForProject(path)
-	if err != nil {
-		return ProjectConfig{}, err
+	if pc.GoPackage == "" {
+		goPkg, err := detectGoPackageForProject(path)
+		if err != nil {
+			return ProjectConfig{}, err
+		}
+		pc.GoPackage = goPkg
 	}
-	pc.GoPackage = goPkg
 	return pc, err
 }
 
