@@ -21,12 +21,12 @@ var _ = Describe("kube core cache tests", func() {
 			return
 		}
 		var (
-			cfg       *rest.Config
-			client    *kubernetes.Clientset
+			cfg    *rest.Config
+			client *kubernetes.Clientset
 
-			cache *kubeCoreCaches
-			ctx context.Context
-			cancel context.CancelFunc
+			cache     *kubeCoreCaches
+			ctx       context.Context
+			cancel    context.CancelFunc
 			selectors = labels.SelectorFromSet(make(map[string]string))
 		)
 		BeforeEach(func() {
@@ -46,7 +46,7 @@ var _ = Describe("kube core cache tests", func() {
 		})
 
 		It("Allows for multiple subscribers", func() {
-			watches :=  make([]<- chan struct{}, 3)
+			watches := make([]<-chan struct{}, 3)
 			for i := 0; i < 4; i++ {
 				watches = append(watches, cache.Subscribe())
 			}

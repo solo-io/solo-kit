@@ -6,8 +6,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/common"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/resources/common"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -87,74 +86,10 @@ func (rc *ResourceClient) ToKubeSecret(ctx context.Context, resource resources.R
 	}, nil
 }
 
-type SecretConverter interface {
-	// If this method returns nil,nil the default conversion will be used.
-	FromKubeSecret(ctx context.Context, rc *ResourceClient, secret *v1.Secret) (resources.Resource, error)
-	// If this method returns nil,nil the default conversion will be used.
-	ToKubeSecret(ctx context.Context, rc *ResourceClient, resource resources.Resource) (*v1.Secret, error)
-}
-
-type plainSecret struct{}
-
-func (p *plainSecret) FromKubeSecret(ctx context.Context, rc *ResourceClient, secret *v1.Secret) (resources.Resource, error) {
-	resource := rc.NewResource()
-	// not our secret
-	// should be an error on a Read, ignored on a list
-	if len(secret.ObjectMeta.Annotations) == 0 || secret.ObjectMeta.Annotations[annotationKey] != rc.Kind() {
-		return nil, NotOurResource
-	}
-	// only works for string fields
-	resourceMap := make(map[string]interface{})
-	for k, v := range secret.Data {
-		resourceMap[k] = string(v)
-	}
-	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
-		return nil, errors.Wrapf(err, "reading secret data into %v", rc.Kind())
-	}
-	resource.SetMetadata(kubeutils.FromKubeMeta(secret.ObjectMeta))
-	return resource, nil
-}
-
-func (p *plainSecret) ToKubeSecret(ctx context.Context, rc *ResourceClient, resource resources.Resource) (*v1.Secret, error) {
-	resourceMap, err := protoutils.MarshalMapEmitZeroValues(resource)
-	if err != nil {
-		return nil, errors.Wrapf(err, "marshalling resource as map")
-	}
-	kubeSecretData := make(map[string][]byte)
-	for k, v := range resourceMap {
-		// metadata comes from ToKubeMeta
-		// status not supported
-		if k == "metadata" {
-			continue
-		}
-		switch val := v.(type) {
-		case string:
-			kubeSecretData[k] = []byte(val)
-		default:
-			// TODO: handle other field types; for now the caller
-			// must know this resource client only supports map[string]string style objects
-			contextutils.LoggerFrom(ctx).Warnf("invalid resource type (%v) used for plain secret. unable to "+
-				"convert to kube secret. only resources with fields of type string are supported for the plain secret client.", resources.Kind(resource))
-		}
-	}
-
-	meta := kubeutils.ToKubeMeta(resource.GetMetadata())
-	if meta.Annotations == nil {
-		meta.Annotations = make(map[string]string)
-	}
-	meta.Annotations[annotationKey] = rc.Kind()
-	return &v1.Secret{
-		ObjectMeta: meta,
-		Data:       kubeSecretData,
-	}, nil
-}
-
 type ResourceClient struct {
-	kube         kubernetes.Interface
+	common.KubeCoreResourceClient
 	ownerLabel   string
 	resourceName string
-	resourceType resources.Resource
-	kubeCache    cache.KubeCoreCache
 	// should we marshal/unmarshal these secrets assuming their structure is map[string]string ?
 	// custom logic to convert the secret to a resource
 	secretConverter SecretConverter
@@ -171,27 +106,17 @@ func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resourc
 func NewResourceClientWithSecretConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, sc SecretConverter) (*ResourceClient, error) {
 
 	return &ResourceClient{
-		kube:            kube,
+		KubeCoreResourceClient: common.KubeCoreResourceClient{
+			Kube:         kube,
+			Cache:        kubeCache,
+			ResourceType: resourceType,
+		},
 		resourceName:    reflect.TypeOf(resourceType).String(),
-		resourceType:    resourceType,
-		kubeCache:       kubeCache,
 		secretConverter: sc,
 	}, nil
 }
 
 var _ clients.ResourceClient = &ResourceClient{}
-
-func (rc *ResourceClient) Kind() string {
-	return resources.Kind(rc.resourceType)
-}
-
-func (rc *ResourceClient) NewResource() resources.Resource {
-	return resources.Clone(rc.resourceType)
-}
-
-func (rc *ResourceClient) Register() error {
-	return nil
-}
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
@@ -202,7 +127,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	// TODO(yuval-k): do NOT use the lister on read. As Read is mainly called after write, to
 	// refresh the object. In theory we could use the object returned from the write call to kubernetes
 	// but that requres further investigation.
-	secret, err := rc.kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := rc.Kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -255,11 +180,11 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.kube.CoreV1().Secrets(secret.Namespace).Update(secret); err != nil {
+		if _, err := rc.Kube.CoreV1().Secrets(secret.Namespace).Update(secret); err != nil {
 			return nil, errors.Wrapf(err, "updating kube secret %v", secret.Name)
 		}
 	} else {
-		if _, err := rc.kube.CoreV1().Secrets(secret.Namespace).Create(secret); err != nil {
+		if _, err := rc.Kube.CoreV1().Secrets(secret.Namespace).Create(secret); err != nil {
 			return nil, errors.Wrapf(err, "creating kube secret %v", secret.Name)
 		}
 	}
@@ -277,7 +202,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 		return nil
 	}
 
-	if err := rc.kube.CoreV1().Secrets(namespace).Delete(name, nil); err != nil {
+	if err := rc.Kube.CoreV1().Secrets(namespace).Delete(name, nil); err != nil {
 		return errors.Wrapf(err, "deleting secret %v", name)
 	}
 	return nil
@@ -286,7 +211,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	secretList, err := rc.kubeCache.SecretLister().Secrets(namespace).List(labels.SelectorFromSet(opts.Selector))
+	secretList, err := rc.Cache.SecretLister().Secrets(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing secrets in %v", namespace)
 	}
@@ -323,10 +248,10 @@ func (rc *ResourceClient) fromKubeResource(ctx context.Context, secret *v1.Secre
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	return common.KubeResourceWatch(rc.kubeCache, rc.List, namespace, opts)
+	return common.KubeResourceWatch(rc.Cache, rc.List, namespace, opts)
 }
 
 func (rc *ResourceClient) exist(namespace, name string) bool {
-	_, err := rc.kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	_, err := rc.Kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	return err == nil
 }

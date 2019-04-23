@@ -28,11 +28,11 @@ var _ = Describe("Namespace base client", func() {
 		return
 	}
 	var (
-		namespace string
-		cfg       *rest.Config
-		client    *sknamespace.NamespaceResourceClient
-		kube      kubernetes.Interface
-		kubeCache cache.KubeCoreCache
+		namespace    string
+		cfg          *rest.Config
+		client       *sknamespace.NamespaceResourceClient
+		kube         kubernetes.Interface
+		kubeCache    cache.KubeCoreCache
 		namespaceObj *kubev1.Namespace
 	)
 

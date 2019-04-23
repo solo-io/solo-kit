@@ -15,18 +15,6 @@
       "type": "KubeNamespace",
       "plural_name": "kubenamespaces",
       "short_name": "kn"
-    },
-    {
-      "package": "github.com/solo-io/solo-kit/api/external/kubernetes/configmap",
-      "type": "ConfigMap",
-      "plural_name": "configmaps",
-      "short_name": "cm"
-    },
-    {
-      "package": "github.com/solo-io/solo-kit/api/external/kubernetes/secret",
-      "type": "Secret",
-      "plural_name": "secrets",
-      "short_name": "s"
     }
   ]
 }

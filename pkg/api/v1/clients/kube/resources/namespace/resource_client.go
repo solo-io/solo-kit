@@ -7,7 +7,7 @@ import (
 	kubenamespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/common"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/resources/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
@@ -25,8 +25,8 @@ type NamespaceResourceClient struct {
 func NewResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *NamespaceResourceClient {
 	return &NamespaceResourceClient{
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
-			Kube:  kube,
-			Cache: cache,
+			Kube:         kube,
+			Cache:        cache,
 			ResourceType: &skkube.KubeNamespace{},
 		},
 	}

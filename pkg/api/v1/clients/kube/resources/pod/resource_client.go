@@ -5,7 +5,7 @@ import (
 
 	kubepod "github.com/solo-io/solo-kit/api/external/kubernetes/pod"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/common"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/resources/common"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	kubev1 "k8s.io/api/core/v1"
 
@@ -55,7 +55,6 @@ func ToKubePod(resource resources.Resource) (*kubev1.Pod, error) {
 }
 
 var _ clients.ResourceClient = &PodResourceClient{}
-
 
 func (rc *PodResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
