@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -18,12 +19,10 @@ import (
 const annotationKey = "resource_kind"
 
 type ResourceClient struct {
+	common.KubeCoreResourceClient
 	apiexts      apiexts.Interface
-	kube         kubernetes.Interface
 	ownerLabel   string
 	resourceName string
-	resourceType resources.Resource
-	kubeCache    cache.KubeCoreCache
 	// custom logic to convert the configmap to a resource
 	converter ConfigMapConverter
 }
@@ -38,27 +37,17 @@ func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resourc
 
 func NewResourceClientWithConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, secretConverter ConfigMapConverter) (*ResourceClient, error) {
 	return &ResourceClient{
-		kube:         kube,
+		KubeCoreResourceClient: common.KubeCoreResourceClient{
+			Kube:         kube,
+			ResourceType: resourceType,
+			Cache:        kubeCache,
+		},
 		resourceName: reflect.TypeOf(resourceType).String(),
-		resourceType: resourceType,
-		kubeCache:    kubeCache,
 		converter:    secretConverter,
 	}, nil
 }
 
 var _ clients.ResourceClient = &ResourceClient{}
-
-func (rc *ResourceClient) Kind() string {
-	return resources.Kind(rc.resourceType)
-}
-
-func (rc *ResourceClient) NewResource() resources.Resource {
-	return resources.Clone(rc.resourceType)
-}
-
-func (rc *ResourceClient) Register() error {
-	return nil
-}
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
@@ -66,7 +55,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 	opts = opts.WithDefaults()
 
-	configMap, err := rc.kube.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
+	configMap, err := rc.Kube.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -108,11 +97,11 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.kube.CoreV1().ConfigMaps(configMap.Namespace).Update(configMap); err != nil {
+		if _, err := rc.Kube.CoreV1().ConfigMaps(configMap.Namespace).Update(configMap); err != nil {
 			return nil, errors.Wrapf(err, "updating kube configMap %v", configMap.Name)
 		}
 	} else {
-		if _, err := rc.kube.CoreV1().ConfigMaps(configMap.Namespace).Create(configMap); err != nil {
+		if _, err := rc.Kube.CoreV1().ConfigMaps(configMap.Namespace).Create(configMap); err != nil {
 			return nil, errors.Wrapf(err, "creating kube configMap %v", configMap.Name)
 		}
 	}
@@ -130,7 +119,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 		return nil
 	}
 
-	if err := rc.kube.CoreV1().ConfigMaps(namespace).Delete(name, nil); err != nil {
+	if err := rc.Kube.CoreV1().ConfigMaps(namespace).Delete(name, nil); err != nil {
 		return errors.Wrapf(err, "deleting configMap %v", name)
 	}
 	return nil
@@ -139,7 +128,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	configMapList, err := rc.kubeCache.ConfigMapLister().ConfigMaps(namespace).List(labels.SelectorFromSet(opts.Selector))
+	configMapList, err := rc.Cache.ConfigMapLister().ConfigMaps(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing configMaps in %v", namespace)
 	}
@@ -163,56 +152,10 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	opts = opts.WithDefaults()
-	watch := rc.kubeCache.Subscribe()
-
-	resourcesChan := make(chan resources.ResourceList)
-	errs := make(chan error)
-
-	// prevent flooding the channel with duplicates
-	var previous *resources.ResourceList
-	updateResourceList := func() {
-		list, err := rc.List(namespace, clients.ListOpts{
-			Ctx:      opts.Ctx,
-			Selector: opts.Selector,
-		})
-		if err != nil {
-			errs <- err
-			return
-		}
-		if previous != nil {
-			if list.Equal(*previous) {
-				return
-			}
-		}
-		previous = &list
-		resourcesChan <- list
-	}
-
-	go func() {
-		defer rc.kubeCache.Unsubscribe(watch)
-		defer close(resourcesChan)
-		defer close(errs)
-
-		// watch should open up with an initial read
-		updateResourceList()
-		for {
-			select {
-			case _, ok := <-watch:
-				if !ok {
-					return
-				}
-				updateResourceList()
-			case <-opts.Ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return resourcesChan, errs, nil
+	return common.KubeResourceWatch(rc.Cache, rc.List, namespace, opts)
 }
 
 func (rc *ResourceClient) exist(namespace, name string) bool {
-	_, err := rc.kube.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
+	_, err := rc.Kube.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 	return err == nil
 }

@@ -1,0 +1,20 @@
+{
+  "title": "solo-kit",
+  "name": "kubernetes.solo.io",
+  "version": "kubernetes",
+  "go_package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes",
+  "custom_resources": [
+    {
+      "package": "github.com/solo-io/solo-kit/api/external/kubernetes/pod",
+      "type": "Pod",
+      "plural_name": "pods",
+      "short_name": "p"
+    },
+    {
+      "package": "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
+      "type": "KubeNamespace",
+      "plural_name": "kubenamespaces",
+      "short_name": "kn"
+    }
+  ]
+}
