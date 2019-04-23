@@ -10,8 +10,12 @@ package {{ .Project.ProjectConfig.Version }}
 
 {{- /* we need to know if the tests require a crd client or a regular clientset */ -}}
 {{- $clients := new_str_slice }}
+{{- $need_kube_config := false }}
 {{- range .Resources}}
 {{- $clients := (append_str_slice $clients (printf "%vClient"  (lower_camel .Name))) }}
+{{- if .HasStatus }}
+{{- $need_kube_config = true }}
+{{- end}}
 {{- end}}
 {{- $clients := (join_str_slice $clients ", ") }}
 
@@ -49,7 +53,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		namespace1          string
 		namespace2          string
 		name1, name2        = "angela"+helpers.RandString(3), "bob"+helpers.RandString(3)
+{{- if $need_kube_config }}
 		cfg                *rest.Config
+{{- end}}
 		emitter            {{ .GoName }}Emitter
 {{- range .Resources }}
 		{{ lower_camel .Name }}Client {{ .ImportPrefix }}{{ .Name }}Client
@@ -60,8 +66,10 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		var err error
+{{- if $need_kube_config }}
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
+{{- end}}
 		err = setup.SetupKubeForTest(namespace1)
 		Expect(err).NotTo(HaveOccurred())
 		err = setup.SetupKubeForTest(namespace2)

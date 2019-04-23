@@ -48,7 +48,7 @@ steps:
     id: 'build-codegen'
     waitFor: ['test']
 
-timeout: 900s
+timeout: 1200s
 tags: ['solo-kit']
 options:
   machineType: 'N1_HIGHCPU_8'

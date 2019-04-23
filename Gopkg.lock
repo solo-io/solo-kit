@@ -579,12 +579,15 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:4a5b267a6929e4c3980066d745f87993c118f7797373a43537fdc69b3ee2d37e"
+  digest = "1:9722da3087a20af195633d50ec7d9f0c948fa9d5fbeb43a900feb4a066d59f2f"
   name = "github.com/solo-io/go-utils"
   packages = [
     "contextutils",
     "errors",
+    "kubeinstallutils",
     "kubeutils",
+    "logger",
+    "testutils",
   ]
   pruneopts = "UT"
   revision = "a27432d89f419897df796a17456410e49a9727c3"
@@ -1218,7 +1221,9 @@
     "github.com/pkg/errors",
     "github.com/radovskyb/watcher",
     "github.com/solo-io/go-utils/contextutils",
+    "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/kubeutils",
+    "github.com/solo-io/go-utils/testutils",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
