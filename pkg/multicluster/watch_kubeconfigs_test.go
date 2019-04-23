@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var _ = Describe("KubeConfigHandler", func() {
+var _ = Describe("WatchKubeconfigs", func() {
 	var (
 		namespace string
 	)
@@ -29,7 +29,7 @@ var _ = Describe("KubeConfigHandler", func() {
 	AfterEach(func() {
 		setup.TeardownKube(namespace)
 	})
-	It("calls a callback for watched kube configs", func() {
+	It("returns a channel of kubeconfigs", func() {
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		kubeClient, err := kubernetes.NewForConfig(cfg)
@@ -70,8 +70,8 @@ var _ = Describe("KubeConfigHandler", func() {
 			}
 		}, time.Minute).Should(HaveLen(2))
 
-		readKc1 := allKubeConfigs[ClusterId(kubeCfg1.Metadata.Name)].KubeConfig.KubeConfig
-		readKc2 := allKubeConfigs[ClusterId(kubeCfg2.Metadata.Name)].KubeConfig.KubeConfig
+		readKc1 := allKubeConfigs[ClusterId(kubeCfg1.Metadata.Ref())].KubeConfig.KubeConfig
+		readKc2 := allKubeConfigs[ClusterId(kubeCfg2.Metadata.Ref())].KubeConfig.KubeConfig
 		Expect(readKc1.Clusters).To(Equal(kubeCfg1.KubeConfig.KubeConfig.Clusters))
 		Expect(readKc2.Clusters).To(Equal(kubeCfg2.KubeConfig.KubeConfig.Clusters))
 	})

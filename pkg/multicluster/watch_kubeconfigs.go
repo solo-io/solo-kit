@@ -5,12 +5,13 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/multicluster/secretconverter"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-type ClusterId string
+type ClusterId core.ResourceRef
 
 type KubeConfigs map[ClusterId]*v1.KubeConfig
 
@@ -41,7 +42,7 @@ func (s *kubeConfigSyncer) Sync(_ context.Context, snap *v1.KubeconfigsSnapshot)
 	cfgs := snap.Kubeconfigs.List()
 	kubeConfigs := make(KubeConfigs)
 	for _, cfg := range cfgs {
-		kubeConfigs[ClusterId(cfg.GetMetadata().Name)] = cfg
+		kubeConfigs[ClusterId(cfg.GetMetadata().Ref())] = cfg
 	}
 	s.kubeConfigsChan <- kubeConfigs
 	return nil
