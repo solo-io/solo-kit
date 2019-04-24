@@ -37,7 +37,6 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (code_gen
 			continue
 		}
 
-
 		fs, err := generateFilesForResource(res)
 		if err != nil {
 			return nil, err

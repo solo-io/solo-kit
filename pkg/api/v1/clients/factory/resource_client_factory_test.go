@@ -1,6 +1,8 @@
 package factory_test
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -8,13 +10,14 @@ import (
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
 	"k8s.io/client-go/rest"
-	"os"
 
 	"context"
+	"log"
+
 	"github.com/solo-io/go-utils/kubeutils"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"log"
+
 	// import k8s client pugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )

@@ -26,7 +26,6 @@ import (
 
 type DocsOptions = options.DocsOptions
 
-
 func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customImports, skipDirs []string) error {
 	skipDirs = append(skipDirs, "vendor/")
 	absoluteRoot, err := filepath.Abs(relativeRoot)
@@ -81,7 +80,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 
 	for _, projectConfig := range projectConfigs {
 		importedResources, err := importCustomResources(projectConfig.Imports)
-		if err  != nil {
+		if err != nil {
 			return err
 		}
 
@@ -406,7 +405,6 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 	}
 	return &desc, nil
 }
-
 
 func importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
 	var results []model.CustomResourceConfig
