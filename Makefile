@@ -43,6 +43,7 @@ install-codegen-deps:
 	go get -v -u github.com/gogo/protobuf/jsonpb
 	go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
 	go get -v -u github.com/gogo/protobuf/gogoproto
+	go get -v -u golang.org/x/tools/cmd/goimports
 
 #----------------------------------------------------------------------------------
 # Kubernetes Clientsets
@@ -70,6 +71,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
+	mkdir -p ${OUTPUT_DIR}
 	go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
