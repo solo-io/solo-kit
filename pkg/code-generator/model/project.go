@@ -29,6 +29,9 @@ type ProjectConfig struct {
 	// as the api group for the crd
 	CrdGroupOverride string `json:"crd_group_override"`
 
+	// imported solokit projects
+	Imports []string `json:"imports"`
+
 	// define custom resources here
 	CustomResources []CustomResourceConfig `json:"custom_resources"`
 
@@ -54,6 +57,9 @@ type CustomResourceConfig struct {
 	PluralName    string `json:"plural_name"`
 	ShortName     string `json:"short_name"`
 	ClusterScoped bool   `json:"cluster_scoped"`
+
+	// set by load
+	Imported bool
 }
 
 type Project struct {

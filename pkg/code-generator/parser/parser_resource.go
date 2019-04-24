@@ -116,9 +116,17 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 			if err != nil {
 				return nil, nil, err
 			}
+
+			var importPrefix string
 			if resource.ProtoPackage != project.ProtoPackage && !resource.IsCustom {
-				importPrefix := strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
-				resource.ImportPrefix = importPrefix
+				importPrefix = resource.ProtoPackage
+			} else if resource.IsCustom && resource.CustomResource.Imported {
+				// If is custom resource from a different project use import prefix
+				importPrefix = resource.CustomImportPrefix
+			}
+
+			if importPrefix != "" {
+				resource.ImportPrefix = strings.Replace(importPrefix, ".", "_", -1) + "."
 			}
 			resourcesForGroup = append(resourcesForGroup, resource)
 		}

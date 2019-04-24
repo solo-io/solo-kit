@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -78,6 +79,12 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 	}())
 
 	for _, projectConfig := range projectConfigs {
+		importedResources, err := importCustomResources(projectConfig.Imports)
+		if err != nil {
+			return err
+		}
+
+		projectConfig.CustomResources = append(projectConfig.CustomResources, importedResources...)
 
 		// Build a 'Project' object that contains a resource for each message that:
 		// - is contained in the FileDescriptor and
@@ -396,4 +403,32 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 		return nil, errors.Wrapf(err, "unmarshalling tmp file as descriptors")
 	}
 	return &desc, nil
+}
+
+func importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
+	var results []model.CustomResourceConfig
+	for _, imp := range imports {
+		imp = filepath.Join(gopathSrc(), imp)
+		if !strings.HasSuffix(imp, model.ProjectConfigFilename) {
+			imp = filepath.Join(imp, model.ProjectConfigFilename)
+		}
+		byt, err := ioutil.ReadFile(imp)
+		if err != nil {
+			return nil, err
+		}
+		var projectConfig model.ProjectConfig
+		err = json.Unmarshal(byt, &projectConfig)
+		if err != nil {
+			return nil, err
+		}
+		var customResources []model.CustomResourceConfig
+		for _, v := range projectConfig.CustomResources {
+			v.Package = projectConfig.GoPackage
+			v.Imported = true
+			customResources = append(customResources, v)
+		}
+		results = append(results, customResources...)
+	}
+
+	return results, nil
 }

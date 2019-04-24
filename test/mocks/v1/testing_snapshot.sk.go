@@ -5,6 +5,8 @@ package v1
 import (
 	"fmt"
 
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -15,6 +17,7 @@ type TestingSnapshot struct {
 	Anothermockresources AnothermockresourcesByNamespace
 	Clusterresources     ClusterResourceList
 	Mcts                 MctsByNamespace
+	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodsByNamespace
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
@@ -24,6 +27,7 @@ func (s TestingSnapshot) Clone() TestingSnapshot {
 		Anothermockresources: s.Anothermockresources.Clone(),
 		Clusterresources:     s.Clusterresources.Clone(),
 		Mcts:                 s.Mcts.Clone(),
+		Pods:                 s.Pods.Clone(),
 	}
 }
 
@@ -34,6 +38,7 @@ func (s TestingSnapshot) Hash() uint64 {
 		s.hashAnothermockresources(),
 		s.hashClusterresources(),
 		s.hashMcts(),
+		s.hashPods(),
 	)
 }
 
@@ -57,6 +62,10 @@ func (s TestingSnapshot) hashMcts() uint64 {
 	return hashutils.HashAll(s.Mcts.List().AsInterfaces()...)
 }
 
+func (s TestingSnapshot) hashPods() uint64 {
+	return hashutils.HashAll(s.Pods.List().AsInterfaces()...)
+}
+
 func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	fields = append(fields, zap.Uint64("mocks", s.hashMocks()))
@@ -64,6 +73,7 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	fields = append(fields, zap.Uint64("anothermockresources", s.hashAnothermockresources()))
 	fields = append(fields, zap.Uint64("clusterresources", s.hashClusterresources()))
 	fields = append(fields, zap.Uint64("mcts", s.hashMcts()))
+	fields = append(fields, zap.Uint64("pods", s.hashPods()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
 }
@@ -75,6 +85,7 @@ type TestingSnapshotStringer struct {
 	Anothermockresources []string
 	Clusterresources     []string
 	Mcts                 []string
+	Pods                 []string
 }
 
 func (ss TestingSnapshotStringer) String() string {
@@ -105,6 +116,11 @@ func (ss TestingSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  Pods %v\n", len(ss.Pods))
+	for _, name := range ss.Pods {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	return s
 }
 
@@ -116,5 +132,6 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 		Anothermockresources: s.Anothermockresources.List().NamespacesDotNames(),
 		Clusterresources:     s.Clusterresources.Names(),
 		Mcts:                 s.Mcts.List().NamespacesDotNames(),
+		Pods:                 s.Pods.List().NamespacesDotNames(),
 	}
 }

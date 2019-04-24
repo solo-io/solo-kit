@@ -180,6 +180,14 @@
   revision = "24818f796faf91cd76ec7bddd72458fbced7a6c1"
 
 [[projects]]
+  digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
+  version = "v1.1.1"
+
+[[projects]]
   digest = "1:65c4414eeb350c47b8de71110150d0ea8a281835b1f386eacaa3ad7325929c21"
   name = "github.com/googleapis/gnostic"
   packages = [
@@ -618,7 +626,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:9722da3087a20af195633d50ec7d9f0c948fa9d5fbeb43a900feb4a066d59f2f"
+  digest = "1:705d66c57d864d11e800b9a7699ed41379c92f931755d29e7eb019f6b188282d"
   name = "github.com/solo-io/go-utils"
   packages = [
     "contextutils",
@@ -627,6 +635,7 @@
     "kubeutils",
     "logger",
     "testutils",
+    "testutils/clusterlock",
   ]
   pruneopts = "UT"
   revision = "a27432d89f419897df796a17456410e49a9727c3"
@@ -1261,12 +1270,14 @@
     "github.com/mitchellh/hashstructure",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
+    "github.com/onsi/gomega/format",
     "github.com/pkg/errors",
     "github.com/radovskyb/watcher",
     "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/testutils",
+    "github.com/solo-io/go-utils/testutils/clusterlock",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
