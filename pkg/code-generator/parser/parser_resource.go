@@ -116,7 +116,7 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 			if err != nil {
 				return nil, nil, err
 			}
-			
+
 			var importPrefix string
 			if resource.ProtoPackage != project.ProtoPackage && !resource.IsCustom {
 				importPrefix = resource.ProtoPackage
