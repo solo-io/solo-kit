@@ -6,27 +6,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-
-	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/consul"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/file"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/vault"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -64,9 +62,9 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		// 2. Error if namespace list contains the empty string plus other values
 		namespaceWhitelist := opts.NamespaceWhitelist
 		if len(namespaceWhitelist) == 0 {
-			namespaceWhitelist = []string{metaV1.NamespaceAll}
+			namespaceWhitelist = []string{metav1.NamespaceAll}
 		}
-		if len(namespaceWhitelist) > 1 && stringutils.ContainsString(metaV1.NamespaceAll, namespaceWhitelist) {
+		if len(namespaceWhitelist) > 1 && stringutils.ContainsString(metav1.NamespaceAll, namespaceWhitelist) {
 			return nil, fmt.Errorf("the kube resource client namespace list must contain either "+
 				"the empty string (all namespaces) or multiple non-empty strings. Found both: %v", namespaceWhitelist)
 		}
@@ -80,12 +78,20 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 			if err := opts.Crd.Register(apiExts); err != nil {
 				return nil, err
 			}
+			if err := kubeutils.WaitForCrdActive(apiExts, opts.Crd.FullName()); err != nil {
+				return nil, err
+			}
 		}
 
-		// Create clientset for solo resources
+		// Create clientset for crd
 		crdClient, err := versioned.NewForConfig(kubeCfg, opts.Crd)
 		if err != nil {
 			return nil, errors.Wrapf(err, "creating crd client")
+		}
+
+		// verify the crd is registered and we have cluster-scope List permission
+		if _, err := crdClient.ResourcesV1().Resources("").List(metav1.ListOptions{}); err != nil {
+			return nil, errors.Wrapf(err, "list check failed")
 		}
 
 		return kube.NewResourceClient(
