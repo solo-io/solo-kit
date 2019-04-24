@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
@@ -18,6 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -363,14 +362,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
-func matchesTargetNamespace(targetNs, resourceNs string) bool {
-	// "" == all namespaces are valid
-	if targetNs == "" {
-		return true
-	}
-	return targetNs == resourceNs
-}
-
 // Checks whether the type of the given resource matches the one of the client's underlying CRD:
 // 1. the kind name must match that of CRD
 // 2. the version must match the CRD GroupVersion (in the form <GROUP_NAME>/<VERSION>)
@@ -415,4 +406,12 @@ func (rc *ResourceClient) validateNamespace(namespace string) error {
 			"Allowed namespaces are %v", namespace, rc.namespaceWhitelist)
 	}
 	return nil
+}
+
+func matchesTargetNamespace(targetNs, resourceNs string) bool {
+	// "" == all namespaces are valid
+	if targetNs == "" {
+		return true
+	}
+	return targetNs == resourceNs
 }

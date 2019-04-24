@@ -234,6 +234,8 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 		// Fail if the caches have not synchronized after 10 seconds. This prevents the controller from hanging forever.
 		var err error
 		select {
+		case <-ctx.Done():
+			return
 		case err = <-runResult:
 		case <-time.After(cacheSyncTimeout):
 			err = errors.Errorf("timed out while waiting for informer caches to sync")
