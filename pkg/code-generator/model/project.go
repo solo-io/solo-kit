@@ -50,10 +50,11 @@ type CustomResourceConfig struct {
 	// the import path for the Go Type
 	Package string `json:"package"`
 	// the name of the Go Type
-	Type          string `json:"type"`
-	PluralName    string `json:"plural_name"`
-	ShortName     string `json:"short_name"`
-	ClusterScoped bool   `json:"cluster_scoped"`
+	Type            string `json:"type"`
+	PluralName      string `json:"plural_name"`
+	ShortName       string `json:"short_name"`
+	ClusterScoped   bool   `json:"cluster_scoped"`
+	SkipResourceGen bool   `json:"skip_resource_gen"`
 }
 
 type Project struct {

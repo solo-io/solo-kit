@@ -100,7 +100,7 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 			CustomImportPrefix: impPrefix,
 			SkipDocsGen:        true,
 			Project:            project,
-			IsCustom:           true,
+			IsCustom:           !custom.SkipResourceGen,
 			CustomResource:     custom,
 		})
 	}
@@ -117,7 +117,13 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 				return nil, nil, err
 			}
 			if resource.ProtoPackage != project.ProtoPackage && !resource.IsCustom {
-				importPrefix := strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
+				var importPrefix string
+				if resource.CustomImportPrefix != "" {
+					importPrefix = strings.Replace(resource.CustomImportPrefix, ".", "_", -1) + "."
+				} else {
+					importPrefix = strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
+				}
+
 				resource.ImportPrefix = importPrefix
 			}
 			resourcesForGroup = append(resourcesForGroup, resource)

@@ -16,6 +16,18 @@ steps:
     env:
       - 'GOPATH=/workspace/gopath'
 
+  # check code gen for kubernetes custom resources, should be no diff
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.7'
+    entrypoint: 'bash'
+    args: ['ci/check-code-gen.sh']
+    env:
+      - 'PROJECT_ROOT=github.com/solo-io/supergloo'
+      - 'GOPATH=/workspace/gopath'
+      - 'TAGGED_VERSION=$TAG_NAME'
+    dir: './gopath/src/github.com/solo-io/solo-kit'
+    waitFor: ['dep']
+    id: 'check-code-and-docs-gen'
+
   # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
   # sets up redis, consul, kubectl, go with required environment variables
   # need to use the provided entrypoint

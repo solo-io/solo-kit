@@ -10,6 +10,13 @@
       "type": "MockCustomType",
       "plural_name": "mcts",
       "short_name": "mct"
+    },
+    {
+      "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes",
+      "type": "Pod",
+      "plural_name": "pods",
+      "short_name": "p",
+      "skip_resource_gen": true
     }
   ],
   "resource_groups": {
@@ -33,6 +40,10 @@
       {
         "name": "MockCustomType",
         "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
+      },
+      {
+        "name": "Pod",
+        "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
       }
     ]
   }
