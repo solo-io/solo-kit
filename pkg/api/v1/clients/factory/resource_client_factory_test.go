@@ -3,6 +3,7 @@ package factory_test
 import (
 	"fmt"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,6 +11,7 @@ import (
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"k8s.io/apimachinery/pkg/api/errors"
+	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
 	"context"
@@ -73,6 +75,10 @@ var _ = Describe("ResourceClientFactory", func() {
 					IsErrType:       errors.IsNotFound,
 				})
 			}
+			Eventually(func() bool {
+				_, err := apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(v1.MockResourceCrd.FullName(), v12.GetOptions{})
+				return err != nil && errors.IsNotFound(err)
+			}, time.Minute, time.Second*5).Should(BeTrue())
 
 		})
 
