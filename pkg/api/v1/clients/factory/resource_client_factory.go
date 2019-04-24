@@ -89,9 +89,12 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 			return nil, errors.Wrapf(err, "creating crd client")
 		}
 
-		// verify the crd is registered and we have cluster-scope List permission
-		if _, err := crdClient.ResourcesV1().Resources("").List(metav1.ListOptions{}); err != nil {
-			return nil, errors.Wrapf(err, "list check failed")
+		for _, ns := range namespaceWhitelist {
+			// verify the crd is registered and we have List permission
+			// for the given namespaces
+			if _, err := crdClient.ResourcesV1().Resources(ns).List(metav1.ListOptions{}); err != nil {
+				return nil, errors.Wrapf(err, "list check failed")
+			}
 		}
 
 		return kube.NewResourceClient(
