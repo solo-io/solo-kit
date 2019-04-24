@@ -40,8 +40,6 @@ type ProjectConfig struct {
 
 	// set by load
 	ProjectFile string
-	// Useful for telling which are imported and which are not
-	ImportedCustomResources []CustomResourceConfig
 }
 
 type ResourceConfig struct {
@@ -59,6 +57,9 @@ type CustomResourceConfig struct {
 	PluralName    string `json:"plural_name"`
 	ShortName     string `json:"short_name"`
 	ClusterScoped bool   `json:"cluster_scoped"`
+
+	// set by load
+	Imported bool
 }
 
 type Project struct {

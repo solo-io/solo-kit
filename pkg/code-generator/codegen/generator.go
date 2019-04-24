@@ -30,7 +30,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles bool) (code_gen
 				"clients for resource %v.%v, "+
 				"resource proto package must match project proto package %v", res.ProtoPackage, res.Name, project.ProtoPackage)
 			continue
-		} else if res.IsCustom && model.CustomResourcesIncludesResource(project.ProjectConfig.ImportedCustomResources, res) {
+		} else if res.IsCustom && res.CustomResource.Imported {
 			log.Printf("not generating solo-kit "+
 				"clients for resource %v.%v, "+
 				"custom resources from a different project are not generated", res.GoPackage, res.Name, project.ProjectConfig.GoPackage)

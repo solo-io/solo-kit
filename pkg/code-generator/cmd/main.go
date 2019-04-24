@@ -84,8 +84,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 			return err
 		}
 
-		projectConfig.ImportedCustomResources = append(projectConfig.ImportedCustomResources, importedResources...)
-		projectConfig.CustomResources = append(projectConfig.CustomResources, projectConfig.ImportedCustomResources...)
+		projectConfig.CustomResources = append(projectConfig.CustomResources, importedResources...)
 
 		// Build a 'Project' object that contains a resource for each message that:
 		// - is contained in the FileDescriptor and
@@ -425,6 +424,7 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 		var customResources []model.CustomResourceConfig
 		for _, v := range projectConfig.CustomResources {
 			v.Package = projectConfig.GoPackage
+			v.Imported = true
 			customResources = append(customResources, v)
 		}
 		results = append(results, customResources...)

@@ -120,7 +120,7 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 				importPrefix := strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
 
 				resource.ImportPrefix = importPrefix
-			} else if resource.IsCustom && model.CustomResourcesIncludesResource(project.ProjectConfig.ImportedCustomResources, resource) {
+			} else if resource.IsCustom && resource.CustomResource.Imported {
 				// If is custom resource from a different project use import prefix
 				importPrefix := strings.Replace(resource.CustomImportPrefix, ".", "_", -1) + "."
 
