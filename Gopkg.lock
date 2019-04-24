@@ -1261,6 +1261,7 @@
     "github.com/mitchellh/hashstructure",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
+    "github.com/onsi/gomega/format",
     "github.com/pkg/errors",
     "github.com/radovskyb/watcher",
     "github.com/solo-io/go-utils/contextutils",

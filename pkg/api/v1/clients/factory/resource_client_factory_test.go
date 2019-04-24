@@ -1,14 +1,15 @@
 package factory_test
 
 import (
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 
 	"context"
@@ -22,6 +23,28 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
+type BeErrTypeMatcher struct {
+	ExpectedErrType string
+	IsErrType       func(error) bool
+}
+
+func (matcher BeErrTypeMatcher) Match(actual interface{}) (bool, error) {
+	err, ok := actual.(error)
+	if !ok {
+		return false, fmt.Errorf("Expected a boolean.  Got:\n%s", format.Object(actual, 1))
+	}
+
+	return matcher.IsErrType(err), nil
+}
+
+func (matcher BeErrTypeMatcher) FailureMessage(actual interface{}) (message string) {
+	return format.Message(actual, "to be %v", matcher.ExpectedErrType)
+}
+
+func (matcher BeErrTypeMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+	return format.Message(actual, "not to be %v", matcher.ExpectedErrType)
+}
+
 var _ = Describe("ResourceClientFactory", func() {
 
 	Describe("CrdClient when the CRD has not been registered", func() {
@@ -31,14 +54,10 @@ var _ = Describe("ResourceClientFactory", func() {
 			return
 		}
 		var (
-			namespace string
-			cfg       *rest.Config
+			cfg *rest.Config
 		)
 		BeforeEach(func() {
-			namespace = helpers.RandString(8)
-			err := setup.SetupKubeForTest(namespace)
-			Expect(err).NotTo(HaveOccurred())
-
+			var err error
 			cfg, err = kubeutils.GetConfig("", "")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -47,7 +66,13 @@ var _ = Describe("ResourceClientFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// ensure the crd is not registered
-			apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(v1.MockResourceCrd.FullName(), nil)
+			err = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(v1.MockResourceCrd.FullName(), nil)
+			if err != nil {
+				Expect(err).To(BeErrTypeMatcher{
+					ExpectedErrType: "not found",
+					IsErrType:       errors.IsNotFound,
+				})
+			}
 
 		})
 
@@ -68,7 +93,7 @@ var _ = Describe("ResourceClientFactory", func() {
 			})
 		})
 		Context("and SkipCrdCreation=false", func() {
-			It("returns a CrdNotRegistered error", func() {
+			It("does not error", func() {
 				factory := KubeResourceClientFactory{
 					Crd:         v1.MockResourceCrd,
 					Cfg:         cfg,
