@@ -100,7 +100,7 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 			CustomImportPrefix: impPrefix,
 			SkipDocsGen:        true,
 			Project:            project,
-			IsCustom:           !custom.SkipResourceGen,
+			IsCustom:           true,
 			CustomResource:     custom,
 		})
 	}
@@ -117,12 +117,12 @@ func getResources(project *model.Project, messages []ProtoMessageWrapper) ([]*mo
 				return nil, nil, err
 			}
 			if resource.ProtoPackage != project.ProtoPackage && !resource.IsCustom {
-				var importPrefix string
-				if resource.CustomImportPrefix != "" {
-					importPrefix = strings.Replace(resource.CustomImportPrefix, ".", "_", -1) + "."
-				} else {
-					importPrefix = strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
-				}
+				importPrefix := strings.Replace(resource.ProtoPackage, ".", "_", -1) + "."
+
+				resource.ImportPrefix = importPrefix
+			} else if resource.IsCustom && model.CustomResourcesIncludesResource(project.ProjectConfig.ImportedCustomResources, resource) {
+				// If is custom resource from a different project use import prefix
+				importPrefix := strings.Replace(resource.CustomImportPrefix, ".", "_", -1) + "."
 
 				resource.ImportPrefix = importPrefix
 			}

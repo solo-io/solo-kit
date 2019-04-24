@@ -4,19 +4,15 @@
   "version": "v1",
   "docs_dir": "../doc",
   "crd_group_override": "crds.testing.solo.io",
+  "imports": [
+    "github.com/solo-io/solo-kit/api/external/kubernetes"
+  ],
   "custom_resources": [
     {
       "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype",
       "type": "MockCustomType",
       "plural_name": "mcts",
       "short_name": "mct"
-    },
-    {
-      "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes",
-      "type": "Pod",
-      "plural_name": "pods",
-      "short_name": "p",
-      "skip_resource_gen": true
     }
   ],
   "resource_groups": {
