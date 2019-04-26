@@ -3,6 +3,8 @@ package multicluster_test
 import (
 	"context"
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -13,7 +15,6 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"time"
 
 	. "github.com/solo-io/solo-kit/pkg/multicluster"
 )

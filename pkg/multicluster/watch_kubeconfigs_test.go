@@ -2,10 +2,11 @@ package multicluster_test
 
 import (
 	"context"
+	"time"
+
 	v12 "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

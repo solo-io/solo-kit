@@ -626,11 +626,12 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:705d66c57d864d11e800b9a7699ed41379c92f931755d29e7eb019f6b188282d"
+  digest = "1:564784f10fe0821e5a59142f2a3e1bd636361ec0bd3b47ee287f89af45cdd62f"
   name = "github.com/solo-io/go-utils"
   packages = [
     "contextutils",
     "errors",
+    "errutils",
     "kubeinstallutils",
     "kubeutils",
     "logger",
@@ -1275,6 +1276,7 @@
     "github.com/radovskyb/watcher",
     "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/errors",
+    "github.com/solo-io/go-utils/errutils",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/testutils",
     "github.com/solo-io/go-utils/testutils/clusterlock",

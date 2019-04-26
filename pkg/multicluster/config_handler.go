@@ -2,13 +2,14 @@ package multicluster
 
 import (
 	"context"
+	"sync"
+
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"sync"
 )
 
 type RestConfigs map[string]*rest.Config
