@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func GetCustomResourceDefinition(skCrd crd.Crd, labels map[string]string) *v1beta1.CustomResourceDefinition {
+func GetHelmCustomResourceDefinition(skCrd crd.Crd, labels map[string]string) *v1beta1.CustomResourceDefinition {
 	scope := v1beta1.NamespaceScoped
 	if skCrd.ClusterScoped {
 		scope = v1beta1.ClusterScoped
