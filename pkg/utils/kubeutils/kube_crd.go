@@ -6,7 +6,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// The standard CRD we use for helm charts, based on the solo kit CRD
 func GetCustomResourceDefinition(skCrd crd.Crd, labels map[string]string) *v1beta1.CustomResourceDefinition {
 	scope := v1beta1.NamespaceScoped
 	if skCrd.ClusterScoped {
