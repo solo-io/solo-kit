@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Added utility for converting Solo Kit CRD to Kube CRD.
+    
