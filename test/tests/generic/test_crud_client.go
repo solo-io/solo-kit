@@ -201,6 +201,7 @@ func postRead(callbacks []Callback, res resources.Resource) {
 		}
 	}
 }
+
 func postWrite(callbacks []Callback, res resources.Resource) {
 	for _, cb := range callbacks {
 		if cb.PostWriteFunc != nil {

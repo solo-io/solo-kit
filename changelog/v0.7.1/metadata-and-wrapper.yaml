@@ -4,5 +4,5 @@ changelog:
      sets the `cluster` on a resource.
   - type: NEW_FEATURE
     description: >
-      unimplemented API: solo-kit core Metadta now contains a cluster field for specifying the resource cluster
+      unimplemented API: solo-kit core Metadata now contains a cluster field for specifying the resource cluster
     issueLink: https://github.com/solo-io/solo-kit/issues/151
