@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Implement client wrapppers package with wrapper that
+     sets the `cluster` on a resource.
+  - type: NEW_FEATURE
+    description: >
+      unimplemented API: solo-kit core Metadta now contains a cluster field for specifying the resource cluster
+    issueLink: https://github.com/solo-io/solo-kit/issues/151

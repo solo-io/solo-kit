@@ -16,7 +16,7 @@ import (
 )
 
 // Call within "It"
-func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Duration) {
+func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Duration, callbacks ...Callback) {
 	foo := "foo"
 	input := v1.NewMockResource(namespace, foo)
 	data := "hello: goodbye"
@@ -29,6 +29,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
+	postWrite(callbacks, r1)
 
 	_, err = client.Write(input, clients.WriteOpts{})
 	Expect(err).To(HaveOccurred())
@@ -65,6 +66,8 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 
 	read, err := client.Read(writtenNamespace, foo, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
+	postRead(callbacks, read)
+
 	// it should update the resource version on the new write
 	Expect(read.GetMetadata().ResourceVersion).NotTo(Equal(oldRv))
 	Expect(read).To(Equal(r1))
@@ -90,6 +93,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(list).To(ContainElement(r1))
+	postList(callbacks, list)
 	Expect(list).NotTo(ContainElement(r2))
 
 	// without
@@ -97,6 +101,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	Expect(err).NotTo(HaveOccurred())
 	Expect(list).To(ContainElement(r1))
 	Expect(list).To(ContainElement(r2))
+	postList(callbacks, list)
 
 	err = client.Delete(writtenNamespace, "adsfw", clients.DeleteOpts{})
 	Expect(err).To(HaveOccurred())
@@ -177,7 +182,34 @@ drain:
 		}
 	}
 
+	postList(callbacks, list)
 	Expect(list).To(ContainElement(r1))
 	Expect(list).To(ContainElement(r2))
 	Expect(list).To(ContainElement(r3))
+}
+
+func postList(callbacks []Callback, list resources.ResourceList) {
+	for _, el := range list {
+		postRead(callbacks, el)
+	}
+}
+
+func postRead(callbacks []Callback, res resources.Resource) {
+	for _, cb := range callbacks {
+		if cb.PostReadFunc != nil {
+			cb.PostReadFunc(res)
+		}
+	}
+}
+func postWrite(callbacks []Callback, res resources.Resource) {
+	for _, cb := range callbacks {
+		if cb.PostWriteFunc != nil {
+			cb.PostWriteFunc(res)
+		}
+	}
+}
+
+type Callback struct {
+	PostReadFunc  func(res resources.Resource)
+	PostWriteFunc func(res resources.Resource)
 }
