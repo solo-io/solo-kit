@@ -12,7 +12,11 @@ import (
 // which are parsed from kubernetes secrets
 type KubeConfig struct {
 	Metadata core.Metadata
-	api.Config
+	// the actual kubeconfig
+	Config api.Config
+	// expected to be used as an identifier string for a cluster
+	// stored as the key for the kubeconfig data in a kubernetes secret
+	Cluster string
 }
 
 func (c *KubeConfig) GetMetadata() core.Metadata {
@@ -30,6 +34,6 @@ func (c *KubeConfig) Equal(that interface{}) bool {
 func (c *KubeConfig) Clone() *KubeConfig {
 	meta := proto.Clone(&c.Metadata).(*core.Metadata)
 	innerClone := c.Config.DeepCopy()
-	clone := KubeConfig{Metadata: *meta, Config: *innerClone}
+	clone := KubeConfig{Metadata: *meta, Config: *innerClone, Cluster: c.Cluster}
 	return &clone
 }

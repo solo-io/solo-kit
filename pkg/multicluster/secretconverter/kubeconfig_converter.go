@@ -2,6 +2,7 @@ package secretconverter
 
 import (
 	"context"
+	"github.com/solo-io/go-utils/errors"
 
 	apiv1 "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
@@ -10,35 +11,43 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
 	kubev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
-const (
-	kubeConfigKey = "kubeconfig"
-)
+const KubeCfgType kubev1.SecretType = "solo.io/kubeconfig"
 
-func KubeCfgFromSecret(kubeSecret *kubev1.Secret) (*v1.KubeConfig, error) {
-	rawKubeConfig, ok := kubeSecret.Data[kubeConfigKey]
-	if !ok {
+func KubeCfgFromSecret(secret *kubev1.Secret) (*v1.KubeConfig, error) {
+	if secret.Type != KubeCfgType {
 		// not a kubeconfig secret
 		return nil, kubesecret.NotOurResource
 	}
-	baseConfig, err := clientcmd.Load(rawKubeConfig)
+	var keys []string
+	for k := range secret.Data {
+		keys = append(keys, k)
+	}
+	if len(keys) != 1 {
+		return nil, errors.Errorf("kubeconfig secret data must contain exactly one value")
+	}
+	// cluster name is set from the key the user uses for their kubeconfig
+	cluster := keys[0]
+	baseConfig, err := clientcmd.Load(secret.Data[cluster])
 	if err != nil {
 		return nil, err
 	}
-	meta := kubeutils.FromKubeMeta(kubeSecret.ObjectMeta)
-	return &v1.KubeConfig{KubeConfig: apiv1.KubeConfig{Metadata: meta, Config: *baseConfig}}, nil
+	meta := kubeutils.FromKubeMeta(secret.ObjectMeta)
+	return &v1.KubeConfig{KubeConfig: apiv1.KubeConfig{Metadata: meta, Config: *baseConfig, Cluster: cluster}}, nil
 }
 
-func KubeConfigToSecret(meta metav1.ObjectMeta, kubeconfig *clientcmdapi.Config) (*kubev1.Secret, error) {
-	rawKubeConfig, err := clientcmd.Write(*kubeconfig)
+func KubeConfigToSecret(kc *v1.KubeConfig) (*kubev1.Secret, error) {
+	rawKubeConfig, err := clientcmd.Write(kc.Config)
 	if err != nil {
 		return nil, err
 	}
-	return &kubev1.Secret{ObjectMeta: meta, Data: map[string][]byte{kubeConfigKey: rawKubeConfig}}, nil
+	return &kubev1.Secret{
+		ObjectMeta: kubeutils.ToKubeMeta(kc.Metadata),
+		Type:       KubeCfgType,
+		Data:       map[string][]byte{kc.Cluster: rawKubeConfig},
+	}, nil
 }
 
 type KubeConfigSecretConverter struct{}
@@ -52,5 +61,5 @@ func (t *KubeConfigSecretConverter) ToKubeSecret(ctx context.Context, rc *kubese
 	if !ok {
 		return nil, kubesecret.NotOurResource
 	}
-	return KubeConfigToSecret(kubeutils.ToKubeMeta(kc.Metadata), &kc.KubeConfig.Config)
+	return KubeConfigToSecret(kc)
 }
