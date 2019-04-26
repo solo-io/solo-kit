@@ -8,6 +8,10 @@ import (
 
 // The standard CRD we use for helm charts, based on the solo kit CRD
 func GetCustomResourceDefinition(skCrd crd.Crd, labels map[string]string) *v1beta1.CustomResourceDefinition {
+	scope := v1beta1.NamespaceScoped
+	if skCrd.ClusterScoped {
+		scope = v1beta1.ClusterScoped
+	}
 	return &v1beta1.CustomResourceDefinition{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CustomResourceDefinition",
@@ -28,7 +32,7 @@ func GetCustomResourceDefinition(skCrd crd.Crd, labels map[string]string) *v1bet
 				Plural:     skCrd.Plural,
 				ShortNames: []string{skCrd.ShortName},
 			},
-			Scope:   "Namespaced",
+			Scope:   scope,
 			Version: "v1",
 		},
 	}
