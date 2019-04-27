@@ -18,8 +18,8 @@ steps:
     env:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
       - 'GOPATH=/workspace/gopath'
-      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
     dir: './gopath/src/github.com/solo-io/solo-kit'
     args: ['build', '-r', 'cli/pkg', 'pkg', 'test/e2e']
     waitFor: ['dep']
