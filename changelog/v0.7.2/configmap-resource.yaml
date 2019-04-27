@@ -1,3 +1,4 @@
 changelog:
-  - type: NON_USER_FACING
+  - type: NEW_FEATURE
     description: Added config map solo-kit kube resource for event loops.
+    issueLink: https://github.com/solo-io/solo-kit/issues/156
