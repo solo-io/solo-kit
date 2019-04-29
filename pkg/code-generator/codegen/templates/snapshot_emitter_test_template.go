@@ -9,15 +9,21 @@ var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_grou
 package {{ .Project.ProjectConfig.Version }}
 
 {{- /* we need to know if the tests require a crd client or a regular clientset */ -}}
+{{- $client_declarations := new_str_slice }}
 {{- $clients := new_str_slice }}
+{{- $namespaces := new_str_slice }}
 {{- $need_kube_config := false }}
-{{- range .Resources}}
+{{- range $index, $val :=  .Resources}}
 {{- $clients := (append_str_slice $clients (printf "%vClient"  (lower_camel .Name))) }}
+{{- $client_declarations := (append_str_slice $client_declarations (printf "%vClient %v%vClient"  (lower_camel .Name) .ImportPrefix .Name)) }}
+{{- $namespaces := (append_str_slice $namespaces (printf "namespace%v"  ($index))) }}
 {{- if .HasStatus }}
 {{- $need_kube_config = true }}
 {{- end}}
 {{- end}}
+{{- $client_declarations := (join_str_slice $client_declarations ", ") }}
 {{- $clients := (join_str_slice $clients ", ") }}
+{{- $namespaces := (join_str_slice $namespaces ", ") }}
 
 import (
 	"context"
@@ -25,6 +31,8 @@ import (
 	"time"
 
 	{{ .Imports }}
+	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
+	"golang.org/x/sync/errgroup"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -35,6 +43,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/go-utils/kubeutils"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	// Needed to run tests in GKE
@@ -50,29 +59,34 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		return
 	}
 	var (
-		namespace1          string
-		namespace2          string
-		name1, name2        = "angela"+helpers.RandString(3), "bob"+helpers.RandString(3)
+{{- range $index, $value := .Resources }}
+		namespace{{ $index }}          string
+{{- end }}
+{{- range $index, $value := .Resources }}
+		name{{ $index }} = helpers.RandString(8)
+{{- end }}
 {{- if $need_kube_config }}
 		cfg                *rest.Config
 {{- end}}
 		emitter            {{ .GoName }}Emitter
+		kube 			   kubernetes.Interface
 {{- range .Resources }}
 		{{ lower_camel .Name }}Client {{ .ImportPrefix }}{{ .Name }}Client
 {{- end}}
 	)
 
 	BeforeEach(func() {
-		namespace1 = helpers.RandString(8)
-		namespace2 = helpers.RandString(8)
+{{- range $index, $value := .Resources }}
+		namespace{{ $index }} = helpers.RandString(8)
+{{- end }}
 		var err error
 {{- if $need_kube_config }}
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 {{- end}}
-		err = setup.SetupKubeForTest(namespace1)
-		Expect(err).NotTo(HaveOccurred())
-		err = setup.SetupKubeForTest(namespace2)
+
+		kube = kubernetes.NewForConfigOrDie(cfg)
+		err = setup.CreateNamespacesInParallel(kube, {{ $namespaces }})
 		Expect(err).NotTo(HaveOccurred())
 
 {{- range .Resources }}
@@ -96,271 +110,167 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		emitter = New{{ .GoName }}Emitter({{ $clients }})
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace1)
-		setup.TeardownKube(namespace2)
-{{- range .Resources }}
-{{- if .ClusterScoped }}
-		{{ lower_camel .Name }}Client.Delete(name1, clients.DeleteOpts{})
-		{{ lower_camel .Name }}Client.Delete(name2, clients.DeleteOpts{})
-{{- end }}
-{{- end }}
+		setup.DeleteNamespacesInParallel(kube, {{ $namespaces}} )
 	})
-	It("tracks snapshots on changes to any resource", func() {
+
+	var getAllNamespaces = func() []string {
+		return []string{
+		{{- range $index, $value := .Resources }}
+			namespace{{ $index }},
+		{{- end }}
+		}
+	}
+
+	var getAllNames = func() []string {
+		return []string{
+		{{- range $index, $value := .Resources }}
+			name{{ $index }},
+		{{- end }}
+		}
+	}
+
+	var {{ lower_camel .GoName }}EmitterTest = func(watchNamespaces *clients.NamespacesByResourceWatcher) {
+		var (
+			namespaces []string
+			ok bool
+		)
 		ctx := context.Background()
 		err := emitter.Register()
 		Expect(err).NotTo(HaveOccurred())
+	
+		snapshots, errs, err := emitter.Snapshots(watchNamespaces, clients.WatchOpts{
+			Ctx: ctx,
+			RefreshRate: time.Second,
+		})
+		Expect(err).NotTo(HaveOccurred())
+	
+		var snap *{{ .GoName }}Snapshot
+		
+		if watchNamespaces == nil {
+			watchNamespaces = clients.NewNamespacesByResourceWatcher()
+		}
+	
+{{- range .Resources }}
 
+		/*
+			{{ .Name }}
+		*/
+
+		namespaces, ok = watchNamespaces.Get({{ lower_camel .Name }}Client.BaseWatcher())
+		if !ok || namespaces == nil {
+			namespaces = []string{""}
+		}
+		
+		assertSnapshot{{ .PluralName }} := func(expect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List, unexpect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expect{{ .PluralName }} {
+{{- if .ClusterScoped }}
+						if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+{{- else }}
+						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+{{- end }}
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpect{{ .PluralName }} {
+{{- if .ClusterScoped }}
+						if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+{{- else }}
+						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+{{- end }}
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+{{- if .ClusterScoped }}
+					nsList, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
+					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
+						"": nsList,
+					}
+{{- else }}
+					combined := make({{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace)
+					for _, namespace := range namespaces {
+						nsList, err := {{ lower_camel .Name }}Client.List(namespace, clients.ListOpts{})
+						Expect(err).NotTo(HaveOccurred())
+						combined[namespace] = nsList
+					}
+{{- end }}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+
+		var expected{{ .Name }}s {{ .ImportPrefix }}{{ .Name }}List
+		for _, name := range getAllNames() {
+{{- if (not .ClusterScoped) }}
+			for _, namespace := range getAllNamespaces() {
+{{ else }}
+				namespace := ""
+{{- end }}
+				{{ lower_camel .Name }}, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace, name), clients.WriteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				if stringutils.ContainsString(namespace, namespaces) || (len(namespaces) == 1 && namespaces[0] == "") {
+					expected{{ .Name }}s = append(expected{{ .Name }}s, {{ lower_camel .Name }})
+				}
+{{- if (not .ClusterScoped) }}
+			}
+{{- end }}
+		}
+		assertSnapshot{{ .PluralName }}(expected{{ .Name }}s, nil)
+
+		for _, expectedVal := range expected{{ .Name }}s {
+{{- if .ClusterScoped }}
+			err = {{ lower_camel .Name }}Client.Delete(expectedVal.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+
+{{ else }}
+			err = {{ lower_camel .Name }}Client.Delete(expectedVal.GetMetadata().Namespace, expectedVal.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+
+{{- end }}
+			Expect(err).NotTo(HaveOccurred())
+		}
+		assertSnapshot{{ .PluralName }}(nil, expected{{ .Name }}s)
+
+{{- end}}
+	}
+
+
+	It("tracks snapshots on changes to any resource", func() {
 		namespaces := clients.NewNamespacesByResourceWatcher()
 		
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
-		namespaces.Set({{ lower_camel .Name }}Client.BaseWatcher(), []string{namespace1, namespace2})
+		namespaces.Set({{ lower_camel .Name }}Client.BaseWatcher(), getAllNamespaces())
 {{- end }}
 {{- end }}
 
-		snapshots, errs, err := emitter.Snapshots(namespaces, clients.WatchOpts{
-			Ctx: ctx,
-			RefreshRate: time.Second,
-		})
-		Expect(err).NotTo(HaveOccurred())
+		{{ lower_camel .GoName }}EmitterTest(namespaces)
 
-		var snap *{{ .GoName }}Snapshot
-{{- range .Resources }}
-
-		/*
-			{{ .Name }}
-		*/
-		
-		assertSnapshot{{ .PluralName }} := func(expect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List, unexpect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expect{{ .PluralName }} {
-{{- if .ClusterScoped }}
-						if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- end }}
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpect{{ .PluralName }} {
-{{- if .ClusterScoped }}
-						if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- end }}
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-{{- if .ClusterScoped }}
-					nsList, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
-					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
-						"": nsList,
-					}
-{{- else }}
-					nsList1, _ := {{ lower_camel .Name }}Client.List(namespace1, clients.ListOpts{})
-					nsList2, _ := {{ lower_camel .Name }}Client.List(namespace2, clients.ListOpts{})
-					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
-{{- end }}
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}	
-
-{{- if .ClusterScoped }}
-		{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }, nil)
-{{- else }}
-		{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }, nil)
-{{- end }}
-
-{{- if .ClusterScoped }}
-		{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}2a }, nil)
-{{- else }}
-		{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		{{ lower_camel .Name }}2b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b,  {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b  }, nil)
-{{- end }}
-
-{{- if .ClusterScoped }}
-
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a })
-{{- else }}
-
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2a.GetMetadata().Namespace, {{ lower_camel .Name }}2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2b.GetMetadata().Namespace, {{ lower_camel .Name }}2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b })
-{{- end }}
-
-{{- if .ClusterScoped }}
-
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}(nil, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}2a })
-{{- else }}
-
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1a.GetMetadata().Namespace, {{ lower_camel .Name }}1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1b.GetMetadata().Namespace, {{ lower_camel .Name }}1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}(nil, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b, {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b })
-{{- end }}
-{{- end}}
 	})
+
+	It("tracks snapshots on changes to different resources in different namespaces", func() {
+		namespaces := clients.NewNamespacesByResourceWatcher()
+		
+{{- range $index, $val := .Resources }}
+{{- if (not .ClusterScoped) }}
+		namespaces.Set({{ lower_camel .Name }}Client.BaseWatcher(), []string{namespace{{ $index }}})
+{{- end }}
+{{- end }}
+
+		{{ lower_camel .GoName }}EmitterTest(namespaces)
+
+	})
+
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
-		ctx := context.Background()
-		err := emitter.Register()
-		Expect(err).NotTo(HaveOccurred())
-
-		snapshots, errs, err := emitter.Snapshots(nil, clients.WatchOpts{
-			Ctx: ctx,
-			RefreshRate: time.Second,
-		})
-		Expect(err).NotTo(HaveOccurred())
-
-		var snap *{{ .GoName }}Snapshot
-{{- range .Resources }}
-
-		/*
-			{{ .Name }}
-		*/
-		
-		assertSnapshot{{ .PluralName }} := func(expect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List, unexpect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expect{{ .PluralName }} {
-{{- if .ClusterScoped }}
-						if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- end }}
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpect{{ .PluralName }} {
-{{- if .ClusterScoped }}
-						if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- end }}
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-{{- if .ClusterScoped }}
-					nsList, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
-					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
-						"": nsList,
-					}
-{{- else }}
-					nsList1, _ := {{ lower_camel .Name }}Client.List(namespace1, clients.ListOpts{})
-					nsList2, _ := {{ lower_camel .Name }}Client.List(namespace2, clients.ListOpts{})
-					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
-{{- end }}
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}	
-
-{{- if .ClusterScoped }}
-		{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }, nil)
-{{- else }}
-		{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }, nil)
-{{- end }}
-
-{{- if .ClusterScoped }}
-		{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}2a }, nil)
-{{- else }}
-		{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		{{ lower_camel .Name }}2b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b,  {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b  }, nil)
-{{- end }}
-
-{{- if .ClusterScoped }}
-
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a })
-{{- else }}
-
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2a.GetMetadata().Namespace, {{ lower_camel .Name }}2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2b.GetMetadata().Namespace, {{ lower_camel .Name }}2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b })
-{{- end }}
-
-{{- if .ClusterScoped }}
-
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}(nil, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}2a })
-{{- else }}
-
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1a.GetMetadata().Namespace, {{ lower_camel .Name }}1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1b.GetMetadata().Namespace, {{ lower_camel .Name }}1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshot{{ .PluralName }}(nil, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b, {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b })
-{{- end }}
-{{- end}}
+		{{ lower_camel .GoName }}EmitterTest(nil)
 	})
+
+	
 })
 
 `))

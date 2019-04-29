@@ -42,6 +42,8 @@ type MockResource struct {
 	Metadata      core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
 	Data          string        `protobuf:"bytes,1,opt,name=data,json=data.json,proto3" json:"data.json"`
 	SomeDumbField string        `protobuf:"bytes,100,opt,name=some_dumb_field,json=someDumbField,proto3" json:"some_dumb_field,omitempty"`
+	// comments that go above the basic field in our docs=
+	//
 	// Types that are valid to be assigned to TestOneofFields:
 	//	*MockResource_OneofOne
 	//	*MockResource_OneofTwo

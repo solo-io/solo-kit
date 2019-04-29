@@ -26,15 +26,14 @@ import (
 
 var _ = Describe("TestingEventLoop", func() {
 	var (
-		namespace                 string
-		err                       error
-		emitter                   TestingEmitter
-		mockResourceClient        MockResourceClient
-		fakeResourceClient        FakeResourceClient
-		anotherMockResourceClient AnotherMockResourceClient
-		clusterResourceClient     ClusterResourceClient
-		mockCustomTypeClient      MockCustomTypeClient
-		podClient                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
+		namespace             string
+		err                   error
+		emitter               TestingEmitter
+		mockResourceClient    MockResourceClient
+		fakeResourceClient    FakeResourceClient
+		clusterResourceClient ClusterResourceClient
+		mockCustomTypeClient  MockCustomTypeClient
+		podClient             github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 	)
 
 	BeforeEach(func() {
@@ -49,12 +48,6 @@ var _ = Describe("TestingEventLoop", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		fakeResourceClient, err = NewFakeResourceClient(fakeResourceClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-
-		anotherMockResourceClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
-		anotherMockResourceClient, err = NewAnotherMockResourceClient(anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		clusterResourceClientFactory := &factory.MemoryResourceClientFactory{
@@ -75,14 +68,12 @@ var _ = Describe("TestingEventLoop", func() {
 		podClient, err = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(podClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
+		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 	})
 	It("runs sync function on a new snapshot", func() {
 		mockResourceClient.Write(NewMockResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		fakeResourceClient.Write(NewFakeResource(namespace, "jerry"), clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		anotherMockResourceClient.Write(NewAnotherMockResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		clusterResourceClient.Write(NewClusterResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())

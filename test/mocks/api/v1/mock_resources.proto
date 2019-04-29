@@ -49,6 +49,7 @@ message MockResource {
     string data = 1 [json_name="data.json", (gogoproto.jsontag) = "data.json"];
     string some_dumb_field = 100 [(core.solo.io.skip_hashing) = true];
 
+    // comments that go above the basic field in our docs=
     oneof test_oneof_fields {
         string oneof_one = 3;
         bool oneof_two = 2;

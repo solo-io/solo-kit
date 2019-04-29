@@ -26,10 +26,6 @@
         "package": "testing.solo.io"
       },
       {
-        "name": "AnotherMockResource",
-        "package": "testing.solo.io"
-      },
-      {
         "name": "ClusterResource",
         "package": "testing.solo.io"
       },

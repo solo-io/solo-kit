@@ -45,37 +45,34 @@ type TestingEmitter interface {
 	Register() error
 	MockResource() MockResourceWatcher
 	FakeResource() FakeResourceWatcher
-	AnotherMockResource() AnotherMockResourceWatcher
 	ClusterResource() ClusterResourceWatcher
 	MockCustomType() MockCustomTypeWatcher
 	Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodWatcher
 	Snapshots(watchNamespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
-	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, make(chan struct{}))
+func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
+	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
-		mockResource:        mockResourceClient,
-		fakeResource:        fakeResourceClient,
-		anotherMockResource: anotherMockResourceClient,
-		clusterResource:     clusterResourceClient,
-		mockCustomType:      mockCustomTypeClient,
-		pod:                 podClient,
-		forceEmit:           emit,
+		mockResource:    mockResourceClient,
+		fakeResource:    fakeResourceClient,
+		clusterResource: clusterResourceClient,
+		mockCustomType:  mockCustomTypeClient,
+		pod:             podClient,
+		forceEmit:       emit,
 	}
 }
 
 type testingEmitter struct {
-	forceEmit           <-chan struct{}
-	mockResource        MockResourceWatcher
-	fakeResource        FakeResourceWatcher
-	anotherMockResource AnotherMockResourceWatcher
-	clusterResource     ClusterResourceWatcher
-	mockCustomType      MockCustomTypeWatcher
-	pod                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodWatcher
+	forceEmit       <-chan struct{}
+	mockResource    MockResourceWatcher
+	fakeResource    FakeResourceWatcher
+	clusterResource ClusterResourceWatcher
+	mockCustomType  MockCustomTypeWatcher
+	pod             github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodWatcher
 }
 
 func (c *testingEmitter) Register() error {
@@ -83,9 +80,6 @@ func (c *testingEmitter) Register() error {
 		return err
 	}
 	if err := c.fakeResource.Register(); err != nil {
-		return err
-	}
-	if err := c.anotherMockResource.Register(); err != nil {
 		return err
 	}
 	if err := c.clusterResource.Register(); err != nil {
@@ -106,10 +100,6 @@ func (c *testingEmitter) MockResource() MockResourceWatcher {
 
 func (c *testingEmitter) FakeResource() FakeResourceWatcher {
 	return c.fakeResource
-}
-
-func (c *testingEmitter) AnotherMockResource() AnotherMockResourceWatcher {
-	return c.anotherMockResource
 }
 
 func (c *testingEmitter) ClusterResource() ClusterResourceWatcher {
@@ -145,12 +135,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces *clients.NamespacesByResource
 		namespace string
 	}
 	fakeResourceChan := make(chan fakeResourceListWithNamespace)
-	/* Create channel for AnotherMockResource */
-	type anotherMockResourceListWithNamespace struct {
-		list      AnotherMockResourceList
-		namespace string
-	}
-	anotherMockResourceChan := make(chan anotherMockResourceListWithNamespace)
 	/* Create channel for ClusterResource */
 	/* Create channel for MockCustomType */
 	type mockCustomTypeListWithNamespace struct {
@@ -237,45 +221,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces *clients.NamespacesByResource
 					case <-ctx.Done():
 						return
 					case fakeResourceChan <- fakeResourceListWithNamespace{list: fakeResourceList, namespace: namespace}:
-					}
-				}
-			}
-		}(namespace)
-	}
-
-	anotherMockResourceNamespaces, ok := watchNamespaces.Get(c.AnotherMockResource().BaseWatcher())
-	if !ok || anotherMockResourceNamespaces == nil {
-		anotherMockResourceNamespaces = []string{""}
-	}
-	for _, namespace := range anotherMockResourceNamespaces {
-		if namespace == "" && len(anotherMockResourceNamespaces) > 1 {
-			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
-				"specific namespaces or \"\" AllNamespaces, but not both.")
-		}
-		done.Add(1)
-		/* Setup namespaced watch for AnotherMockResource */
-		anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-anothermockresources")
-		}(namespace)
-
-		/* Watch for changes and update snapshot */
-		go func(namespace string) {
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case anotherMockResourceList := <-anotherMockResourceNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case anotherMockResourceChan <- anotherMockResourceListWithNamespace{list: anotherMockResourceList, namespace: namespace}:
 					}
 				}
 			}
@@ -415,13 +360,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces *clients.NamespacesByResource
 				fakeResourceList := fakeResourceNamespacedList.list
 
 				currentSnapshot.Fakes[namespace] = fakeResourceList
-			case anotherMockResourceNamespacedList := <-anotherMockResourceChan:
-				record()
-
-				namespace := anotherMockResourceNamespacedList.namespace
-				anotherMockResourceList := anotherMockResourceNamespacedList.list
-
-				currentSnapshot.Anothermockresources[namespace] = anotherMockResourceList
 			case clusterResourceList := <-clusterResourceChan:
 				record()
 				currentSnapshot.Clusterresources = clusterResourceList

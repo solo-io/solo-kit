@@ -12,22 +12,20 @@ import (
 )
 
 type TestingSnapshot struct {
-	Mocks                MocksByNamespace
-	Fakes                FakesByNamespace
-	Anothermockresources AnothermockresourcesByNamespace
-	Clusterresources     ClusterResourceList
-	Mcts                 MctsByNamespace
-	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodsByNamespace
+	Mocks            MocksByNamespace
+	Fakes            FakesByNamespace
+	Clusterresources ClusterResourceList
+	Mcts             MctsByNamespace
+	Pods             github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodsByNamespace
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
 	return TestingSnapshot{
-		Mocks:                s.Mocks.Clone(),
-		Fakes:                s.Fakes.Clone(),
-		Anothermockresources: s.Anothermockresources.Clone(),
-		Clusterresources:     s.Clusterresources.Clone(),
-		Mcts:                 s.Mcts.Clone(),
-		Pods:                 s.Pods.Clone(),
+		Mocks:            s.Mocks.Clone(),
+		Fakes:            s.Fakes.Clone(),
+		Clusterresources: s.Clusterresources.Clone(),
+		Mcts:             s.Mcts.Clone(),
+		Pods:             s.Pods.Clone(),
 	}
 }
 
@@ -35,7 +33,6 @@ func (s TestingSnapshot) Hash() uint64 {
 	return hashutils.HashAll(
 		s.hashMocks(),
 		s.hashFakes(),
-		s.hashAnothermockresources(),
 		s.hashClusterresources(),
 		s.hashMcts(),
 		s.hashPods(),
@@ -48,10 +45,6 @@ func (s TestingSnapshot) hashMocks() uint64 {
 
 func (s TestingSnapshot) hashFakes() uint64 {
 	return hashutils.HashAll(s.Fakes.List().AsInterfaces()...)
-}
-
-func (s TestingSnapshot) hashAnothermockresources() uint64 {
-	return hashutils.HashAll(s.Anothermockresources.List().AsInterfaces()...)
 }
 
 func (s TestingSnapshot) hashClusterresources() uint64 {
@@ -70,7 +63,6 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	fields = append(fields, zap.Uint64("mocks", s.hashMocks()))
 	fields = append(fields, zap.Uint64("fakes", s.hashFakes()))
-	fields = append(fields, zap.Uint64("anothermockresources", s.hashAnothermockresources()))
 	fields = append(fields, zap.Uint64("clusterresources", s.hashClusterresources()))
 	fields = append(fields, zap.Uint64("mcts", s.hashMcts()))
 	fields = append(fields, zap.Uint64("pods", s.hashPods()))
@@ -79,13 +71,12 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 }
 
 type TestingSnapshotStringer struct {
-	Version              uint64
-	Mocks                []string
-	Fakes                []string
-	Anothermockresources []string
-	Clusterresources     []string
-	Mcts                 []string
-	Pods                 []string
+	Version          uint64
+	Mocks            []string
+	Fakes            []string
+	Clusterresources []string
+	Mcts             []string
+	Pods             []string
 }
 
 func (ss TestingSnapshotStringer) String() string {
@@ -98,11 +89,6 @@ func (ss TestingSnapshotStringer) String() string {
 
 	s += fmt.Sprintf("  Fakes %v\n", len(ss.Fakes))
 	for _, name := range ss.Fakes {
-		s += fmt.Sprintf("    %v\n", name)
-	}
-
-	s += fmt.Sprintf("  Anothermockresources %v\n", len(ss.Anothermockresources))
-	for _, name := range ss.Anothermockresources {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
@@ -126,12 +112,11 @@ func (ss TestingSnapshotStringer) String() string {
 
 func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 	return TestingSnapshotStringer{
-		Version:              s.Hash(),
-		Mocks:                s.Mocks.List().NamespacesDotNames(),
-		Fakes:                s.Fakes.List().NamespacesDotNames(),
-		Anothermockresources: s.Anothermockresources.List().NamespacesDotNames(),
-		Clusterresources:     s.Clusterresources.Names(),
-		Mcts:                 s.Mcts.List().NamespacesDotNames(),
-		Pods:                 s.Pods.List().NamespacesDotNames(),
+		Version:          s.Hash(),
+		Mocks:            s.Mocks.List().NamespacesDotNames(),
+		Fakes:            s.Fakes.List().NamespacesDotNames(),
+		Clusterresources: s.Clusterresources.Names(),
+		Mcts:             s.Mcts.List().NamespacesDotNames(),
+		Pods:             s.Pods.List().NamespacesDotNames(),
 	}
 }
