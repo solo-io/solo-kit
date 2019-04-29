@@ -9,14 +9,19 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type MockCustomTypeWatcher interface {
+	BaseWatcher() clients.ResourceWatcher
+	Register() error
+	Watch(namespace string, opts clients.WatchOpts) (<-chan MockCustomTypeList, <-chan error, error)
+}
+
 type MockCustomTypeClient interface {
 	BaseClient() clients.ResourceClient
-	Register() error
 	Read(namespace, name string, opts clients.ReadOpts) (*MockCustomType, error)
 	Write(resource *MockCustomType, opts clients.WriteOpts) (*MockCustomType, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (MockCustomTypeList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan MockCustomTypeList, <-chan error, error)
+	MockCustomTypeWatcher
 }
 
 type mockCustomTypeClient struct {
@@ -45,6 +50,10 @@ func NewMockCustomTypeClientWithBase(rc clients.ResourceClient) MockCustomTypeCl
 }
 
 func (client *mockCustomTypeClient) BaseClient() clients.ResourceClient {
+	return client.rc
+}
+
+func (client *mockCustomTypeClient) BaseWatcher() clients.ResourceWatcher {
 	return client.rc
 }
 

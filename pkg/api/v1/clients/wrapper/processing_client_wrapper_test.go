@@ -13,7 +13,7 @@ import (
 )
 
 var _ = Describe("ClientWrapper", func() {
-	var cluster *Client
+	var cluster *ProcessingClient
 	clusterName := "clustr"
 	BeforeEach(func() {
 		base := memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})

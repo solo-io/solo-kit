@@ -43,13 +43,13 @@ func init() {
 
 type TestingEmitter interface {
 	Register() error
-	MockResource() MockResourceClient
-	FakeResource() FakeResourceClient
-	AnotherMockResource() AnotherMockResourceClient
-	ClusterResource() ClusterResourceClient
-	MockCustomType() MockCustomTypeClient
-	Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
+	MockResource() MockResourceWatcher
+	FakeResource() FakeResourceWatcher
+	AnotherMockResource() AnotherMockResourceWatcher
+	ClusterResource() ClusterResourceWatcher
+	MockCustomType() MockCustomTypeWatcher
+	Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodWatcher
+	Snapshots(watchNamespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
 }
 
 func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
@@ -70,12 +70,12 @@ func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResour
 
 type testingEmitter struct {
 	forceEmit           <-chan struct{}
-	mockResource        MockResourceClient
-	fakeResource        FakeResourceClient
-	anotherMockResource AnotherMockResourceClient
-	clusterResource     ClusterResourceClient
-	mockCustomType      MockCustomTypeClient
-	pod                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
+	mockResource        MockResourceWatcher
+	fakeResource        FakeResourceWatcher
+	anotherMockResource AnotherMockResourceWatcher
+	clusterResource     ClusterResourceWatcher
+	mockCustomType      MockCustomTypeWatcher
+	pod                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodWatcher
 }
 
 func (c *testingEmitter) Register() error {
@@ -100,41 +100,34 @@ func (c *testingEmitter) Register() error {
 	return nil
 }
 
-func (c *testingEmitter) MockResource() MockResourceClient {
+func (c *testingEmitter) MockResource() MockResourceWatcher {
 	return c.mockResource
 }
 
-func (c *testingEmitter) FakeResource() FakeResourceClient {
+func (c *testingEmitter) FakeResource() FakeResourceWatcher {
 	return c.fakeResource
 }
 
-func (c *testingEmitter) AnotherMockResource() AnotherMockResourceClient {
+func (c *testingEmitter) AnotherMockResource() AnotherMockResourceWatcher {
 	return c.anotherMockResource
 }
 
-func (c *testingEmitter) ClusterResource() ClusterResourceClient {
+func (c *testingEmitter) ClusterResource() ClusterResourceWatcher {
 	return c.clusterResource
 }
 
-func (c *testingEmitter) MockCustomType() MockCustomTypeClient {
+func (c *testingEmitter) MockCustomType() MockCustomTypeWatcher {
 	return c.mockCustomType
 }
 
-func (c *testingEmitter) Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient {
+func (c *testingEmitter) Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodWatcher {
 	return c.pod
 }
 
-func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error) {
+func (c *testingEmitter) Snapshots(watchNamespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error) {
 
-	if len(watchNamespaces) == 0 {
-		watchNamespaces = []string{""}
-	}
-
-	for _, ns := range watchNamespaces {
-		if ns == "" && len(watchNamespaces) > 1 {
-			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
-				"specific namespaces or \"\" AllNamespaces, but not both.")
-		}
+	if watchNamespaces == nil {
+		watchNamespaces = clients.NewNamespacesByResourceWatcher()
 	}
 
 	errs := make(chan error)
@@ -172,7 +165,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 	podChan := make(chan podListWithNamespace)
 
-	for _, namespace := range watchNamespaces {
+	mockResourceNamespaces, ok := watchNamespaces.Get(c.MockResource().BaseWatcher())
+	if !ok || mockResourceNamespaces == nil {
+		mockResourceNamespaces = []string{""}
+	}
+	for _, namespace := range mockResourceNamespaces {
+		if namespace == "" && len(mockResourceNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+		done.Add(1)
 		/* Setup namespaced watch for MockResource */
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {
@@ -183,50 +185,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		go func(namespace string) {
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
-		}(namespace)
-		/* Setup namespaced watch for FakeResource */
-		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting FakeResource watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
-		}(namespace)
-		/* Setup namespaced watch for AnotherMockResource */
-		anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting AnotherMockResource watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-anothermockresources")
-		}(namespace)
-		/* Setup namespaced watch for MockCustomType */
-		mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting MockCustomType watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
-		}(namespace)
-		/* Setup namespaced watch for Pod */
-		podNamespacesChan, podErrs, err := c.pod.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Pod watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, podErrs, namespace+"-pods")
 		}(namespace)
 
 		/* Watch for changes and update snapshot */
@@ -241,24 +199,156 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						return
 					case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
 					}
+				}
+			}
+		}(namespace)
+	}
+
+	fakeResourceNamespaces, ok := watchNamespaces.Get(c.FakeResource().BaseWatcher())
+	if !ok || fakeResourceNamespaces == nil {
+		fakeResourceNamespaces = []string{""}
+	}
+	for _, namespace := range fakeResourceNamespaces {
+		if namespace == "" && len(fakeResourceNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+		done.Add(1)
+		/* Setup namespaced watch for FakeResource */
+		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
+		}(namespace)
+
+		/* Watch for changes and update snapshot */
+		go func(namespace string) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
 				case fakeResourceList := <-fakeResourceNamespacesChan:
 					select {
 					case <-ctx.Done():
 						return
 					case fakeResourceChan <- fakeResourceListWithNamespace{list: fakeResourceList, namespace: namespace}:
 					}
+				}
+			}
+		}(namespace)
+	}
+
+	anotherMockResourceNamespaces, ok := watchNamespaces.Get(c.AnotherMockResource().BaseWatcher())
+	if !ok || anotherMockResourceNamespaces == nil {
+		anotherMockResourceNamespaces = []string{""}
+	}
+	for _, namespace := range anotherMockResourceNamespaces {
+		if namespace == "" && len(anotherMockResourceNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+		done.Add(1)
+		/* Setup namespaced watch for AnotherMockResource */
+		anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-anothermockresources")
+		}(namespace)
+
+		/* Watch for changes and update snapshot */
+		go func(namespace string) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
 				case anotherMockResourceList := <-anotherMockResourceNamespacesChan:
 					select {
 					case <-ctx.Done():
 						return
 					case anotherMockResourceChan <- anotherMockResourceListWithNamespace{list: anotherMockResourceList, namespace: namespace}:
 					}
+				}
+			}
+		}(namespace)
+	}
+
+	mockCustomTypeNamespaces, ok := watchNamespaces.Get(c.MockCustomType().BaseWatcher())
+	if !ok || mockCustomTypeNamespaces == nil {
+		mockCustomTypeNamespaces = []string{""}
+	}
+	for _, namespace := range mockCustomTypeNamespaces {
+		if namespace == "" && len(mockCustomTypeNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+		done.Add(1)
+		/* Setup namespaced watch for MockCustomType */
+		mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
+		}(namespace)
+
+		/* Watch for changes and update snapshot */
+		go func(namespace string) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
 				case mockCustomTypeList := <-mockCustomTypeNamespacesChan:
 					select {
 					case <-ctx.Done():
 						return
 					case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
 					}
+				}
+			}
+		}(namespace)
+	}
+
+	podNamespaces, ok := watchNamespaces.Get(c.Pod().BaseWatcher())
+	if !ok || podNamespaces == nil {
+		podNamespaces = []string{""}
+	}
+	for _, namespace := range podNamespaces {
+		if namespace == "" && len(podNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+		done.Add(1)
+		/* Setup namespaced watch for Pod */
+		podNamespacesChan, podErrs, err := c.pod.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, podErrs, namespace+"-pods")
+		}(namespace)
+
+		/* Watch for changes and update snapshot */
+		go func(namespace string) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
 				case podList := <-podNamespacesChan:
 					select {
 					case <-ctx.Done():

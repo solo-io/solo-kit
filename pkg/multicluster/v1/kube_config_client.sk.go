@@ -9,14 +9,19 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type KubeConfigWatcher interface {
+	BaseWatcher() clients.ResourceWatcher
+	Register() error
+	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeConfigList, <-chan error, error)
+}
+
 type KubeConfigClient interface {
 	BaseClient() clients.ResourceClient
-	Register() error
 	Read(namespace, name string, opts clients.ReadOpts) (*KubeConfig, error)
 	Write(resource *KubeConfig, opts clients.WriteOpts) (*KubeConfig, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (KubeConfigList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeConfigList, <-chan error, error)
+	KubeConfigWatcher
 }
 
 type kubeConfigClient struct {
@@ -45,6 +50,10 @@ func NewKubeConfigClientWithBase(rc clients.ResourceClient) KubeConfigClient {
 }
 
 func (client *kubeConfigClient) BaseClient() clients.ResourceClient {
+	return client.rc
+}
+
+func (client *kubeConfigClient) BaseWatcher() clients.ResourceWatcher {
 	return client.rc
 }
 

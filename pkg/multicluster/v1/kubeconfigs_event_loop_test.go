@@ -14,13 +14,20 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+
+	// Needed to run tests in GKE
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var _ = Describe("KubeconfigsEventLoop", func() {
 	var (
-		namespace string
-		emitter   KubeconfigsEmitter
-		err       error
+		namespace        string
+		err              error
+		emitter          KubeconfigsEmitter
+		kubeConfigClient KubeConfigClient
 	)
 
 	BeforeEach(func() {
@@ -28,17 +35,17 @@ var _ = Describe("KubeconfigsEventLoop", func() {
 		kubeConfigClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		kubeConfigClient, err := NewKubeConfigClient(kubeConfigClientFactory)
+		kubeConfigClient, err = NewKubeConfigClient(kubeConfigClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)
 	})
 	It("runs sync function on a new snapshot", func() {
-		_, err = emitter.KubeConfig().Write(NewKubeConfig(namespace, "jerry"), clients.WriteOpts{})
+		kubeConfigClient.Write(NewKubeConfig(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockKubeconfigsSyncer{}
 		el := NewKubeconfigsEventLoop(emitter, sync)
-		_, err := el.Run([]string{namespace}, clients.WatchOpts{})
+		_, err := el.Run(nil, clients.WatchOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(sync.Synced, 5*time.Second).Should(BeTrue())
 	})

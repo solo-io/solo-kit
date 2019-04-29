@@ -6,15 +6,15 @@ import (
 )
 
 /*
-A wrapper.Client wraps a ResourceClient, applying a
+A wrapper.ProcessingClient wraps a ResourceClient, applying a
 Processing function to each read and written resource
 */
-type Client struct {
+type ProcessingClient struct {
 	clients.ResourceClient
 	ProcessResource func(resource resources.Resource)
 }
 
-func (c *Client) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
+func (c *ProcessingClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	res, err := c.ResourceClient.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -23,12 +23,12 @@ func (c *Client) Read(namespace, name string, opts clients.ReadOpts) (resources.
 	return res, nil
 }
 
-func (c *Client) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+func (c *ProcessingClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	c.ProcessResource(resource)
 	return c.ResourceClient.Write(resource, opts)
 }
 
-func (c *Client) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+func (c *ProcessingClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	list, err := c.ResourceClient.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (c *Client) List(namespace string, opts clients.ListOpts) (resources.Resour
 	return list, nil
 }
 
-func (c *Client) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
+func (c *ProcessingClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
 	resourceLists, errs, err := c.ResourceClient.Watch(namespace, opts)
 	if err != nil {

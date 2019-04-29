@@ -6,8 +6,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func NewClusterClient(base clients.ResourceClient, cluster string) *Client {
-	return &Client{
+func NewClusterClient(base clients.ResourceClient, cluster string) *ProcessingClient {
+	return &ProcessingClient{
 		ResourceClient: base,
 		ProcessResource: func(resource resources.Resource) {
 			resources.UpdateMetadata(resource, func(meta *core.Metadata) {

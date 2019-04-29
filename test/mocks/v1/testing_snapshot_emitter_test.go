@@ -120,7 +120,14 @@ var _ = Describe("V1Emitter", func() {
 		err := emitter.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		snapshots, errs, err := emitter.Snapshots([]string{namespace1, namespace2}, clients.WatchOpts{
+		namespaces := clients.NewNamespacesByResourceWatcher()
+		namespaces.Set(mockResourceClient.BaseWatcher(), []string{namespace1, namespace2})
+		namespaces.Set(fakeResourceClient.BaseWatcher(), []string{namespace1, namespace2})
+		namespaces.Set(anotherMockResourceClient.BaseWatcher(), []string{namespace1, namespace2})
+		namespaces.Set(mockCustomTypeClient.BaseWatcher(), []string{namespace1, namespace2})
+		namespaces.Set(podClient.BaseWatcher(), []string{namespace1, namespace2})
+
+		snapshots, errs, err := emitter.Snapshots(namespaces, clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second,
 		})
@@ -483,7 +490,7 @@ var _ = Describe("V1Emitter", func() {
 		err := emitter.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+		snapshots, errs, err := emitter.Snapshots(nil, clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second,
 		})

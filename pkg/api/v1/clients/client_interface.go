@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -19,16 +20,46 @@ func DefaultNamespaceIfEmpty(namespace string) string {
 	return namespace
 }
 
+type ResourceWatcher interface {
+	// Deprecated: implemented only by the kubernetes resource client. Will be removed from the interface.
+	Register() error
+	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
+}
+
+type namespacesByResourceWatcher map[ResourceWatcher][]string
+
+type NamespacesByResourceWatcher struct {
+	watchers namespacesByResourceWatcher
+	rwlock   sync.RWMutex
+}
+
+func NewNamespacesByResourceWatcher() *NamespacesByResourceWatcher {
+	watchers := make(namespacesByResourceWatcher)
+	return &NamespacesByResourceWatcher{watchers: watchers}
+}
+
+func (rw *NamespacesByResourceWatcher) Get(key ResourceWatcher) ([]string, bool) {
+	rw.rwlock.RLock()
+	defer rw.rwlock.RUnlock()
+	val, ok := rw.watchers[key]
+	return val, ok
+}
+
+func (rw *NamespacesByResourceWatcher) Set(key ResourceWatcher, value []string) {
+	rw.rwlock.Lock()
+	defer rw.rwlock.Unlock()
+	rw.watchers[key] = value
+}
+
 type ResourceClient interface {
 	Kind() string
 	NewResource() resources.Resource
-	// Deprecated: implemented only by the kubernetes resource client. Will be removed from the interface.
-	Register() error
 	Read(namespace, name string, opts ReadOpts) (resources.Resource, error)
 	Write(resource resources.Resource, opts WriteOpts) (resources.Resource, error)
 	Delete(namespace, name string, opts DeleteOpts) error
 	List(namespace string, opts ListOpts) (resources.ResourceList, error)
-	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
+
+	ResourceWatcher
 }
 
 type ResourceClients map[string]ResourceClient

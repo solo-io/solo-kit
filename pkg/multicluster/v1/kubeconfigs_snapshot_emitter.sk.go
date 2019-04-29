@@ -41,8 +41,8 @@ func init() {
 
 type KubeconfigsEmitter interface {
 	Register() error
-	KubeConfig() KubeConfigClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *KubeconfigsSnapshot, <-chan error, error)
+	KubeConfig() KubeConfigWatcher
+	Snapshots(watchNamespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan *KubeconfigsSnapshot, <-chan error, error)
 }
 
 func NewKubeconfigsEmitter(kubeConfigClient KubeConfigClient) KubeconfigsEmitter {
@@ -58,7 +58,7 @@ func NewKubeconfigsEmitterWithEmit(kubeConfigClient KubeConfigClient, emit <-cha
 
 type kubeconfigsEmitter struct {
 	forceEmit  <-chan struct{}
-	kubeConfig KubeConfigClient
+	kubeConfig KubeConfigWatcher
 }
 
 func (c *kubeconfigsEmitter) Register() error {
@@ -68,21 +68,14 @@ func (c *kubeconfigsEmitter) Register() error {
 	return nil
 }
 
-func (c *kubeconfigsEmitter) KubeConfig() KubeConfigClient {
+func (c *kubeconfigsEmitter) KubeConfig() KubeConfigWatcher {
 	return c.kubeConfig
 }
 
-func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *KubeconfigsSnapshot, <-chan error, error) {
+func (c *kubeconfigsEmitter) Snapshots(watchNamespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan *KubeconfigsSnapshot, <-chan error, error) {
 
-	if len(watchNamespaces) == 0 {
-		watchNamespaces = []string{""}
-	}
-
-	for _, ns := range watchNamespaces {
-		if ns == "" && len(watchNamespaces) > 1 {
-			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
-				"specific namespaces or \"\" AllNamespaces, but not both.")
-		}
+	if watchNamespaces == nil {
+		watchNamespaces = clients.NewNamespacesByResourceWatcher()
 	}
 
 	errs := make(chan error)
@@ -95,11 +88,20 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	}
 	kubeConfigChan := make(chan kubeConfigListWithNamespace)
 
-	for _, namespace := range watchNamespaces {
+	kubeConfigNamespaces, ok := watchNamespaces.Get(c.KubeConfig().BaseWatcher())
+	if !ok || kubeConfigNamespaces == nil {
+		kubeConfigNamespaces = []string{""}
+	}
+	for _, namespace := range kubeConfigNamespaces {
+		if namespace == "" && len(kubeConfigNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+		done.Add(1)
 		/* Setup namespaced watch for KubeConfig */
 		kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting KubeConfig watch")
+			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
 		}
 
 		done.Add(1)

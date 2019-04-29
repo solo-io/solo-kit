@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var ResourceClientTemplate = template.Must(template.New("resource_reconciler").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
+var ResourceClientTemplate = template.Must(template.New("resource_client").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
 
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -13,9 +13,18 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type {{ .Name }}Watcher interface {
+	BaseWatcher() clients.ResourceWatcher
+	Register() error
+{{- if .ClusterScoped }}
+	Watch(opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
+{{- else }}
+	Watch(namespace string, opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
+{{- end }}
+}
+
 type {{ .Name }}Client interface {
 	BaseClient() clients.ResourceClient
-	Register() error
 {{- if .ClusterScoped }}
 	Read(name string, opts clients.ReadOpts) (*{{ .Name }}, error)
 {{- else }}
@@ -25,12 +34,11 @@ type {{ .Name }}Client interface {
 {{- if .ClusterScoped }}
 	Delete(name string, opts clients.DeleteOpts) error
 	List(opts clients.ListOpts) ({{ .Name }}List, error)
-	Watch(opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
 {{- else }}
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) ({{ .Name }}List, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
 {{- end }}
+	{{ .Name }}Watcher
 }
 
 type {{ lower_camel .Name }}Client struct {
@@ -61,6 +69,11 @@ func New{{ .Name }}ClientWithBase(rc clients.ResourceClient) {{ .Name }}Client {
 func (client *{{ lower_camel .Name }}Client) BaseClient() clients.ResourceClient {
 	return client.rc
 }
+
+func (client *{{ lower_camel .Name }}Client) BaseWatcher() clients.ResourceWatcher {
+	return client.rc
+}
+
 
 func (client *{{ lower_camel .Name }}Client) Register() error {
 	return client.rc.Register()

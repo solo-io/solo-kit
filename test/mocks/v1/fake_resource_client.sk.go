@@ -9,14 +9,19 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type FakeResourceWatcher interface {
+	BaseWatcher() clients.ResourceWatcher
+	Register() error
+	Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error)
+}
+
 type FakeResourceClient interface {
 	BaseClient() clients.ResourceClient
-	Register() error
 	Read(namespace, name string, opts clients.ReadOpts) (*FakeResource, error)
 	Write(resource *FakeResource, opts clients.WriteOpts) (*FakeResource, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (FakeResourceList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error)
+	FakeResourceWatcher
 }
 
 type fakeResourceClient struct {
@@ -45,6 +50,10 @@ func NewFakeResourceClientWithBase(rc clients.ResourceClient) FakeResourceClient
 }
 
 func (client *fakeResourceClient) BaseClient() clients.ResourceClient {
+	return client.rc
+}
+
+func (client *fakeResourceClient) BaseWatcher() clients.ResourceWatcher {
 	return client.rc
 }
 

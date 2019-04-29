@@ -6,5 +6,5 @@ import (
 
 // common interface for event loops
 type EventLoop interface {
-	Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error)
+	Run(namespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan error, error)
 }

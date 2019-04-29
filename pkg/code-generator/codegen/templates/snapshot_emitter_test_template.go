@@ -110,7 +110,15 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		err := emitter.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		snapshots, errs, err := emitter.Snapshots([]string{namespace1, namespace2}, clients.WatchOpts{
+		namespaces := clients.NewNamespacesByResourceWatcher()
+		
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }}
+		namespaces.Set({{ lower_camel .Name }}Client.BaseWatcher(), []string{namespace1, namespace2})
+{{- end }}
+{{- end }}
+
+		snapshots, errs, err := emitter.Snapshots(namespaces, clients.WatchOpts{
 			Ctx: ctx,
 			RefreshRate: time.Second,
 		})
@@ -234,7 +242,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		err := emitter.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+		snapshots, errs, err := emitter.Snapshots(nil, clients.WatchOpts{
 			Ctx: ctx,
 			RefreshRate: time.Second,
 		})

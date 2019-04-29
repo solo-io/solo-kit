@@ -44,7 +44,7 @@ func NewKubeconfigsEventLoop(emitter KubeconfigsEmitter, syncer KubeconfigsSynce
 	}
 }
 
-func (el *kubeconfigsEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error) {
+func (el *kubeconfigsEventLoop) Run(namespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan error, error) {
 	opts = opts.WithDefaults()
 	opts.Ctx = contextutils.WithLogger(opts.Ctx, "v1.event_loop")
 	logger := contextutils.LoggerFrom(opts.Ctx)

@@ -59,9 +59,9 @@ func init() {
 type {{ .GoName }}Emitter interface {
 	Register() error
 {{- range .Resources}}
-	{{ .Name }}() {{ .ImportPrefix }}{{ .Name }}Client
+	{{ .Name }}() {{ .ImportPrefix }}{{ .Name }}Watcher
 {{- end}}
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error)
+	Snapshots(watchNamespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error)
 }
 
 func New{{ .GoName }}Emitter({{ $client_declarations }}) {{ .GoName }}Emitter {
@@ -80,7 +80,7 @@ func New{{ .GoName }}EmitterWithEmit({{ $client_declarations }}, emit <-chan str
 type {{ lower_camel .GoName }}Emitter struct {
 	forceEmit <- chan struct{}
 {{- range .Resources}}
-	{{ lower_camel .Name }} {{ .ImportPrefix }}{{ .Name }}Client
+	{{ lower_camel .Name }} {{ .ImportPrefix }}{{ .Name }}Watcher
 {{- end}}
 }
 
@@ -95,22 +95,15 @@ func (c *{{ lower_camel .GoName }}Emitter) Register() error {
 
 {{- range .Resources}}
 
-func (c *{{ lower_camel $.GoName }}Emitter) {{ .Name }}() {{ .ImportPrefix }}{{ .Name }}Client {
+func (c *{{ lower_camel $.GoName }}Emitter) {{ .Name }}() {{ .ImportPrefix }}{{ .Name }}Watcher {
 	return c.{{ lower_camel .Name }}
 }
 {{- end}}
 
-func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error) {
+func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces *clients.NamespacesByResourceWatcher, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error) {
 
-	if len(watchNamespaces) == 0 {
-		watchNamespaces = []string{""}
-	}
-
-	for _, ns := range watchNamespaces {
-		if ns == "" && len(watchNamespaces) > 1 {
-			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for "+
-				"specific namespaces or \"\" AllNamespaces, but not both.")
-		}
+	if watchNamespaces == nil {
+		watchNamespaces = clients.NewNamespacesByResourceWatcher()
 	}
 
 	errs := make(chan error)
@@ -129,13 +122,23 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- end }}
 {{- end}}
 
-	for _, namespace := range watchNamespaces {
 {{- range .Resources}}
 {{- if (not .ClusterScoped) }}
+
+	{{ lower_camel .Name }}Namespaces, ok := watchNamespaces.Get(c.{{ .Name }}().BaseWatcher())
+	if !ok || {{ lower_camel .Name }}Namespaces == nil {
+		{{ lower_camel .Name }}Namespaces = []string{""}
+	}
+	for _, namespace := range {{ lower_camel .Name }}Namespaces {
+		if namespace == "" && len({{ lower_camel .Name }}Namespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+		done.Add(1)
 		/* Setup namespaced watch for {{ .Name }} */
 		{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting {{ .Name }} watch")
+			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
 		}
 
 		done.Add(1)
@@ -144,30 +147,25 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-{{ lower_camel .PluralName }}")
 		}(namespace)
 
-{{- end }}
-{{- end}}
-
-
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
 			for {
 				select {
 				case <-ctx.Done():
 					return
-{{- range .Resources}}
-{{- if (not .ClusterScoped) }}
-				case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}NamespacesChan:
+				case {{ lower_camel .Name }}List := <-{{ lower_camel .Name }}NamespacesChan:
 					select {
 					case <-ctx.Done():
 						return
-					case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list:{{ lower_camel .Name }}List, namespace:namespace}:
+					case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ lower_camel .Name }}List, namespace: namespace}:
 					}
-{{- end }}
-{{- end}}
 				}
 			}
 		}(namespace)
 	}
+{{- end }}
+{{- end}}
+
 
 {{- range .Resources}}
 {{- if .ClusterScoped }}
