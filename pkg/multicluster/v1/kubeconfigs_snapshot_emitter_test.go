@@ -56,7 +56,8 @@ var _ = Describe("V1Emitter", func() {
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)
 	})
 	AfterEach(func() {
-		setup.DeleteNamespacesInParallel(kube, namespace0)
+		err := setup.DeleteNamespacesInParallelBlocking(kube, namespace0)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	var getAllNamespaces = func() []string {

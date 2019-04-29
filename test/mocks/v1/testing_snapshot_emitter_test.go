@@ -110,7 +110,8 @@ var _ = Describe("V1Emitter", func() {
 		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 	})
 	AfterEach(func() {
-		setup.DeleteNamespacesInParallel(kube, namespace0, namespace1, namespace2, namespace3, namespace4)
+		err := setup.DeleteNamespacesInParallelBlocking(kube, namespace0, namespace1, namespace2, namespace3, namespace4)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	var getAllNamespaces = func() []string {

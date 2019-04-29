@@ -105,7 +105,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		emitter = New{{ .GoName }}Emitter({{ $clients }})
 	})
 	AfterEach(func() {
-		setup.DeleteNamespacesInParallel(kube, {{ $namespaces}} )
+		err := setup.DeleteNamespacesInParallelBlocking(kube, {{ $namespaces}} )
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	var getAllNamespaces = func() []string {
