@@ -75,10 +75,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		namespace{{ $index }} = helpers.RandString(8)
 {{- end }}
 		var err error
-{{- if $need_kube_config }}
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
-{{- end}}
 
 		kube = kubernetes.NewForConfigOrDie(cfg)
 		err = setup.CreateNamespacesInParallel(kube, {{ $namespaces }})
