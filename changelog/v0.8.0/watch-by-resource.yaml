@@ -1,0 +1,9 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Currently solo-kit event loops have the limitation where they need to watch the same namespaces for all resources
+      in the event loop. However, for resources with more jitter, the ability to specify namespaces for each resources
+      can reduce greatly the input jitter in the system. This PR adds an object to the EventLoop Run function which takes
+      a map of resource watchers to namespaces.
+    issueLink: https://github.com/solo-io/solo-kit/issues/158
+
