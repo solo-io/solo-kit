@@ -13,13 +13,15 @@ import (
 	{{ $.CustomImportPrefix }} "{{ $.CustomResource.Package }}"
 {{- end }}
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
+{{- if not $.IsCustom }}
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+{{- end }}
 )
 
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {

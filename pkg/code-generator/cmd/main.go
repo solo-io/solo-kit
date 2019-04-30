@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -99,6 +101,8 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 			return err
 		}
 
+
+
 		if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
 			docs, err := docgen.GenerateFiles(project, genDocs)
 			if err != nil {
@@ -134,9 +138,41 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 				return errors.Wrapf(err, "goimports failed: %s", out)
 			}
 		}
+
+		// Generate mocks
+		// need to run after to make sure all resources have already been written
+		if err := genMocks(code, outDir); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func genMocks(code code_generator.Files, outDir string) error {
+	if err := os.MkdirAll(filepath.Join(outDir, "mocks"), 0777); err != nil {
+		return err
+	}
+	eg := errgroup.Group{}
+	for _, file := range code {
+		file := file
+		eg.Go(func() error {
+			if out, err := genMockForFile(file, outDir); err != nil {
+				return errors.Wrapf(err, "mockgen failed: %s", out)
+			}
+			return nil
+		})
+	}
+	return eg.Wait()
+}
+
+func genMockForFile(file code_generator.File, outDir string) ([]byte, error) {
+	if strings.Contains( file.Filename, "test") {
+		return nil, nil
+	}
+	path := filepath.Join(outDir, file.Filename)
+	dest := filepath.Join(outDir, "mocks", file.Filename)
+	return exec.Command("mockgen", fmt.Sprintf("-source=%s", path), fmt.Sprintf("-destination=%s", dest)).CombinedOutput()
 }
 
 func gopathSrc() string {
