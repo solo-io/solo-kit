@@ -139,7 +139,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 
 		// Generate mocks
 		// need to run after to make sure all resources have already been written
-		if err := genMocks(code, outDir); err != nil {
+		if err := genMocks(code, outDir, absoluteRoot); err != nil {
 			return err
 		}
 	}
@@ -155,7 +155,7 @@ var (
 	}
 )
 
-func genMocks(code code_generator.Files, outDir string) error {
+func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
 	if err := os.MkdirAll(filepath.Join(outDir, "mocks"), 0777); err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func genMocks(code code_generator.Files, outDir string) error {
 	for _, file := range code {
 		file := file
 		eg.Go(func() error {
-			if out, err := genMockForFile(file, outDir); err != nil {
+			if out, err := genMockForFile(file, outDir, absoluteRoot); err != nil {
 				return errors.Wrapf(err, "mockgen failed: %s", out)
 			}
 			return nil
@@ -172,12 +172,14 @@ func genMocks(code code_generator.Files, outDir string) error {
 	return eg.Wait()
 }
 
-func genMockForFile(file code_generator.File, outDir string) ([]byte, error) {
+func genMockForFile(file code_generator.File, outDir, absoluteRoot string) ([]byte, error) {
 	if strings.Contains(file.Filename, "_test") || !containsAny(file.Filename, validMockingInterfaces) {
 		return nil, nil
 	}
 	path := filepath.Join(outDir, file.Filename)
 	dest := filepath.Join(outDir, "mocks", file.Filename)
+	path = strings.Replace(path, absoluteRoot, ".", 1)
+	dest = strings.Replace(dest, absoluteRoot, ".", 1)
 	return exec.Command("mockgen", fmt.Sprintf("-source=%s", path), fmt.Sprintf("-destination=%s", dest), "-package=mocks").CombinedOutput()
 }
 
