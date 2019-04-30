@@ -5,10 +5,11 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
-	reflect "reflect"
 )
 
 // MockAnotherMockResourceReconciler is a mock of AnotherMockResourceReconciler interface

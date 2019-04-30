@@ -16,11 +16,11 @@ import (
 var _ = Describe("examples using mocks", func() {
 
 	var (
-		ctrl    *gomock.Controller
-		ctx     context.Context
-		cancel  context.CancelFunc
-		syncer  *mocks.MockTestingSyncer
-		emitter *mocks.MockTestingEmitter
+		ctrl         *gomock.Controller
+		ctx          context.Context
+		cancel       context.CancelFunc
+		syncer       *mocks.MockTestingSyncer
+		emitter      *mocks.MockTestingEmitter
 		exampleError = fmt.Errorf("example error")
 	)
 
@@ -60,14 +60,13 @@ var _ = Describe("examples using mocks", func() {
 
 		el := v1.NewTestingEventLoop(emitter, syncer)
 
-
 		_, err := el.Run(watchNamespaces, clients.WatchOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		// send snap to el
 		watch <- snap
 		Eventually(func() bool {
 			return syncerHasBeenCalled
-		}, time.Second*2, time.Millisecond * 100).Should(BeTrue())
+		}, time.Second*2, time.Millisecond*100).Should(BeTrue())
 		cancel()
 	})
 
@@ -82,7 +81,6 @@ var _ = Describe("examples using mocks", func() {
 
 		el := v1.NewTestingEventLoop(emitter, syncer)
 
-
 		errs, err := el.Run(watchNamespaces, clients.WatchOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		// send snap to el
@@ -90,11 +88,10 @@ var _ = Describe("examples using mocks", func() {
 
 		// wait for error to be returned
 		select {
-		case err, ok := <- errs:
+		case err, ok := <-errs:
 			Expect(ok).To(BeTrue())
 			Expect(err.Error()).To(ContainSubstring(exampleError.Error()))
 		}
-
 
 		cancel()
 	})
