@@ -32,7 +32,6 @@ const (
 	TestMode = "TEST_MODE"
 )
 
-
 func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customImports, skipDirs []string) error {
 	skipDirs = append(skipDirs, "vendor/")
 	absoluteRoot, err := filepath.Abs(relativeRoot)
