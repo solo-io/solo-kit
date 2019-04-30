@@ -5,11 +5,10 @@
 package mocks
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	reflect "reflect"
 )
 
 // MockPodReconciler is a mock of PodReconciler interface
