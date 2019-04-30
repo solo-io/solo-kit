@@ -14,7 +14,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	"github.com/solo-io/solo-kit/pkg/code-generator"
+	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -101,8 +101,6 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 			return err
 		}
 
-
-
 		if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
 			docs, err := docgen.GenerateFiles(project, genDocs)
 			if err != nil {
@@ -167,12 +165,12 @@ func genMocks(code code_generator.Files, outDir string) error {
 }
 
 func genMockForFile(file code_generator.File, outDir string) ([]byte, error) {
-	if strings.Contains( file.Filename, "test") {
+	if strings.Contains(file.Filename, "test") {
 		return nil, nil
 	}
 	path := filepath.Join(outDir, file.Filename)
 	dest := filepath.Join(outDir, "mocks", file.Filename)
-	return exec.Command("mockgen", fmt.Sprintf("-source=%s", path), fmt.Sprintf("-destination=%s", dest)).CombinedOutput()
+	return exec.Command("mockgen", fmt.Sprintf("-source=%s", path), fmt.Sprintf("-destination=%s", dest), "-package=mocks").CombinedOutput()
 }
 
 func gopathSrc() string {

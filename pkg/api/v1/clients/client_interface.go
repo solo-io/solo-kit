@@ -8,6 +8,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+//go:generate mockgen -destination=./mocks/client_interface.go -source client_interface.go -package mocks
+
 const DefaultNamespace = "default"
 
 var DefaultRefreshRate = time.Second * 30
