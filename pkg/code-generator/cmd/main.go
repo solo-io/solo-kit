@@ -159,17 +159,13 @@ func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
 	if err := os.MkdirAll(filepath.Join(outDir, "mocks"), 0777); err != nil {
 		return err
 	}
-	eg := errgroup.Group{}
 	for _, file := range code {
-		file := file
-		eg.Go(func() error {
-			if out, err := genMockForFile(file, outDir, absoluteRoot); err != nil {
-				return errors.Wrapf(err, "mockgen failed: %s", out)
-			}
-			return nil
-		})
+		if out, err := genMockForFile(file, outDir, absoluteRoot); err != nil {
+			return errors.Wrapf(err, "mockgen failed: %s", out)
+		}
+
 	}
-	return eg.Wait()
+	return nil
 }
 
 func genMockForFile(file code_generator.File, outDir, absoluteRoot string) ([]byte, error) {
