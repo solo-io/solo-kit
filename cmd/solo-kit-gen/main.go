@@ -31,7 +31,6 @@ func main() {
 		"(repeated flag, specify as many times as desired)")
 	flag.Var(&skipDirs, "s", "skip generating for this directory "+
 		"(repeated flag, specify as many times as desired)")
-
 	flag.Parse()
 
 	var docOptions *cmd.DocsOptions
