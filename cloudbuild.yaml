@@ -64,6 +64,7 @@ steps:
       - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
       - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
       - 'RUN_KUBE_TESTS=1'
+      - 'TEST_MODE=1'
       - 'CLOUD_BUILD=1'
       - 'GOPATH=/workspace/gopath'
     args: ['-r', '-v', '-tags', 'solokit']
