@@ -18,6 +18,8 @@ const (
 	testrunner = "testrunner"
 )
 
+// Deprecated: This function is slower than it's go client counterpart, and
+// changes the kube context which can have unintended consequences
 func SetupKubeForTest(namespace string) error {
 	context := os.Getenv("KUBECTL_CONTEXT")
 	if context == "" {
@@ -35,6 +37,9 @@ func SetupKubeForTest(namespace string) error {
 	return Kubectl("create", "namespace", namespace)
 }
 
+// Deprecated: This function is much slower than it's go client counterpart
+// because it is blocking. If that is the intended behavior, go ahead and
+// and use this function, but just no that it is quite slow.
 func TeardownKube(namespace string) error {
 	return Kubectl("delete", "namespace", namespace)
 }

@@ -1,4 +1,4 @@
-package tests_test
+package tests
 
 import (
 	"testing"
@@ -7,7 +7,12 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var (
+	T *testing.T
+)
+
 func TestTests(t *testing.T) {
+	T = t
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Tests Suite")
 }

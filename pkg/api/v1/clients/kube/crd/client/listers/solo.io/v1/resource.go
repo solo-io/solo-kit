@@ -83,6 +83,7 @@ func (s resourceNamespaceLister) List(selector labels.Selector) (ret []*v1.Resou
 
 // Get retrieves the Resource from the indexer for a given namespace and name.
 func (s resourceNamespaceLister) Get(name string) (*v1.Resource, error) {
+	// TODO(EItanya): Do something with this code, it doesn't compile
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err

@@ -1,6 +1,7 @@
 package vault_test
 
 import (
+	"context"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -33,6 +34,13 @@ var _ = Describe("Base", func() {
 		vault.Logical().Delete(rootKey)
 	})
 	It("CRUDs secrets", func() {
-		generic.TestCrudClient("", secrets, time.Second/8)
+		selector := map[string]string{
+			helpers.TestLabel: helpers.RandString(8),
+		}
+		generic.TestCrudClient("", secrets, clients.WatchOpts{
+			Selector:    selector,
+			Ctx:         context.TODO(),
+			RefreshRate: time.Second / 8,
+		})
 	})
 })
