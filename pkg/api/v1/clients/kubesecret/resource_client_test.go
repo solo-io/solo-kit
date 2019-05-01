@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	testhelpers "github.com/solo-io/solo-kit/test/testutils/helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -40,7 +39,7 @@ var _ = Describe("Base", func() {
 	BeforeEach(func() {
 		ns1 = helpers.RandString(8)
 		localTestLabel = helpers.RandString(8)
-		kube = testhelpers.MustKubeClient()
+		kube = helpers.MustKubeClient()
 		err := kubeutils.CreateNamespacesInParallel(kube, ns1)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
@@ -52,7 +51,14 @@ var _ = Describe("Base", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("CRUDs resources", func() {
-		generic.TestCrudClient(ns1, client, time.Minute)
+		selectors := map[string]string{
+			helpers.TestLabel: localTestLabel,
+		}
+		generic.TestCrudClient(ns1, client, clients.WatchOpts{
+			Ctx: context.TODO(),
+			Selector: selectors,
+			RefreshRate: time.Minute,
+		})
 	})
 
 	Context("multiple namespaces", func() {
@@ -77,7 +83,7 @@ var _ = Describe("Base", func() {
 		})
 		It("can watch resources across namespaces when using NamespaceAll", func() {
 			watchNamespace := ""
-			selectors := map[string]string{testhelpers.TestLabel: localTestLabel}
+			selectors := map[string]string{helpers.TestLabel: localTestLabel}
 			boo := "hoo"
 			goo := "goo"
 			data := "hi"

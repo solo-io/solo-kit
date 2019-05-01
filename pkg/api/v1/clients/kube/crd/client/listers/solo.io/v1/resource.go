@@ -20,7 +20,6 @@ package v1
 
 import (
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 )
@@ -83,12 +82,14 @@ func (s resourceNamespaceLister) List(selector labels.Selector) (ret []*v1.Resou
 
 // Get retrieves the Resource from the indexer for a given namespace and name.
 func (s resourceNamespaceLister) Get(name string) (*v1.Resource, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("resource"), name)
-	}
-	return obj.(*v1.Resource), nil
+	// TODO(EItanya): uncomment code, it doesnt compile as is
+	panic("not implemented properly")
+	// obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if !exists {
+	// 	return nil, errors.NewNotFound(v1.Resource("resource"), name)
+	// }
+	// return obj.(*v1.Resource), nil
 }

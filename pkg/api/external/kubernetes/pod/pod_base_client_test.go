@@ -5,19 +5,16 @@ import (
 	"log"
 	"os"
 
-	"github.com/solo-io/go-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 var _ = Describe("PodBaseClient", func() {
@@ -27,7 +24,6 @@ var _ = Describe("PodBaseClient", func() {
 	}
 	var (
 		namespace string
-		cfg       *rest.Config
 		client    *podResourceClient
 		kube      kubernetes.Interface
 		kubeCache cache.KubeCoreCache
@@ -35,19 +31,16 @@ var _ = Describe("PodBaseClient", func() {
 
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
-		err := setup.SetupKubeForTest(namespace)
-		Expect(err).NotTo(HaveOccurred())
-		cfg, err = kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-		kube, err = kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
+		kube = helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	It("converts a kubernetes pod to solo-kit resource", func() {
 

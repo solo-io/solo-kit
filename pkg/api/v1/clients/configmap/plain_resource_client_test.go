@@ -7,7 +7,7 @@ import (
 
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	testhelpers "github.com/solo-io/solo-kit/test/testutils/helpers"
+
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +38,7 @@ var _ = Describe("PlainConfigmap", func() {
 	)
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
-		kube = testhelpers.MustKubeClient()
+		kube = helpers.MustKubeClient()
 		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
@@ -50,7 +50,14 @@ var _ = Describe("PlainConfigmap", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("CRUDs resources", func() {
-		generic.TestCrudClient(namespace, client, time.Minute)
+		selector := map[string]string{
+			helpers.TestLabel: helpers.RandString(8),
+		}
+		generic.TestCrudClient(namespace, client, clients.WatchOpts{
+			Selector: selector,
+			Ctx: context.TODO(),
+			RefreshRate: time.Minute,
+		})
 	})
 	It("does not escape string fields", func() {
 		foo := "test-data-keys"

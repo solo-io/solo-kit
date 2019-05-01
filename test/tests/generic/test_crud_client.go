@@ -16,12 +16,17 @@ import (
 )
 
 // Call within "It"
-func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Duration, callbacks ...Callback) {
+func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
+	selectors := opts.Selector
 	foo := "foo"
 	input := v1.NewMockResource(namespace, foo)
 	data := "hello: goodbye"
 	input.Data = data
 	labels := map[string]string{"pick": "me"}
+	// add individual selectors
+	for key, value := range selectors {
+		labels[key] = value
+	}
 	input.Metadata.Labels = labels
 
 	err := client.Register()
@@ -82,6 +87,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 		Metadata: core.Metadata{
 			Name:      boo,
 			Namespace: namespace,
+			Labels:    selectors,
 		},
 	}
 	r2, err := client.Write(input, clients.WriteOpts{})
@@ -126,7 +132,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
 
-	w, errs, err := client.Watch(namespace, clients.WatchOpts{RefreshRate: refreshRate})
+	w, errs, err := client.Watch(namespace, opts)
 	Expect(err).NotTo(HaveOccurred())
 
 	var r3 resources.Resource
@@ -147,6 +153,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 			Metadata: core.Metadata{
 				Name:      "goo",
 				Namespace: namespace,
+				Labels:    selectors,
 			},
 		}
 		r3, err = client.Write(input, clients.WriteOpts{})
@@ -168,44 +175,19 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 
 	go func() {
 		defer GinkgoRecover()
-		var timesDrained int
-	drain:
 		for {
 			select {
-			case list = <-w:
-				timesDrained++
-				if timesDrained > 50 {
-					Fail("drained the watch channel 50 times, something is wrong")
-				}
 			case err := <-errs:
 				Expect(err).NotTo(HaveOccurred())
 			case <-time.After(time.Second / 4):
-				break drain
+				return
 			}
 		}
 	}()
 
 	postList(callbacks, list)
 
- 	Expect(<-w).Should(ConsistOf(r1, r2, r3))
-	// Eventually(func() error {
-	// 	_, err := list.Find(r1.GetMetadata().Namespace, r1.GetMetadata().Name)
-	// 	return err
-	// }, time.Second*4, time.Millisecond*50).ShouldNot(HaveOccurred())
-	//
-	// Eventually(func() error {
-	// 	_, err := list.Find(r2.GetMetadata().Namespace, r2.GetMetadata().Name)
-	// 	return err
-	// }, time.Second*4, time.Millisecond*50).ShouldNot(HaveOccurred())
-	//
-	// Eventually(func() error {
-	// 	_, err := list.Find(r3.GetMetadata().Namespace, r3.GetMetadata().Name)
-	// 	return err
-	// }, time.Second*4, time.Millisecond*50).ShouldNot(HaveOccurred())
-
-	// Eventually(list, time.Second*4, time.Millisecond*50).Should(ContainElement(r1))
-	// Eventually(list, time.Second*4, time.Millisecond*50).Should(ContainElement(r2))
-	// Eventually(list, time.Second*4, time.Millisecond*50).Should(ContainElement(r3))
+	Eventually(w, time.Second*5, time.Second/10).Should(Receive(ConsistOf(r1, r2, r3)))
 }
 
 func postList(callbacks []Callback, list resources.ResourceList) {

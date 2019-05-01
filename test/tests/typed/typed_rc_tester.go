@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/test/testutils/helpers"
+	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 
