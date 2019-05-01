@@ -29,7 +29,7 @@ import (
 type DocsOptions = options.DocsOptions
 
 const (
-	TestMode = "TEST_MODE"
+	SkipMockGen = "SKIP_MOCK_GEN"
 )
 
 func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customImports, skipDirs []string) error {
@@ -144,7 +144,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 		// Generate mocks
 		// need to run after to make sure all resources have already been written
 		// Set this env var during tests so that mocks are not generated
-		if os.Getenv(TestMode) != "1" {
+		if os.Getenv(SkipMockGen) != "1" {
 			if err := genMocks(code, outDir, absoluteRoot); err != nil {
 				return err
 			}
