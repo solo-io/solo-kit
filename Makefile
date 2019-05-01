@@ -44,6 +44,8 @@ install-codegen-deps:
 	go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
 	go get -v -u github.com/gogo/protobuf/gogoproto
 	go get -v -u golang.org/x/tools/cmd/goimports
+	go get -v -u github.com/golang/mock/gomock
+	go install github.com/golang/mock/mockgen
 
 #----------------------------------------------------------------------------------
 # Kubernetes Clientsets

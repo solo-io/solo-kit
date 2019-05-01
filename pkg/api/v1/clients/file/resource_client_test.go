@@ -1,10 +1,13 @@
 package file_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/test/helpers"
 
 	"io/ioutil"
 	"os"
@@ -29,6 +32,13 @@ var _ = Describe("Base", func() {
 		os.RemoveAll(tmpDir)
 	})
 	It("CRUDs resources", func() {
-		generic.TestCrudClient("", client, time.Millisecond)
+		selector := map[string]string{
+			helpers.TestLabel: helpers.RandString(8),
+		}
+		generic.TestCrudClient("", client, clients.WatchOpts{
+			Selector:    selector,
+			Ctx:         context.TODO(),
+			RefreshRate: time.Millisecond,
+		})
 	})
 })

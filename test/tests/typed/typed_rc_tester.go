@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/setup"
-	"k8s.io/client-go/kubernetes"
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -60,7 +60,8 @@ func (rct *KubeRcTester) Skip() bool {
 
 func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	if namespace != "" {
-		err := setup.SetupKubeForTest(namespace)
+		kubeClient := helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	}
 	cfg, err := kubeutils.GetConfig("", "")
@@ -73,7 +74,9 @@ func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
 }
 
 func (rct *KubeRcTester) Teardown(namespace string) {
-	setup.TeardownKube(namespace)
+	kubeClient := helpers.MustKubeClient()
+	err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 /*
@@ -194,22 +197,21 @@ func (rct *KubeConfigMapRcTester) Skip() bool {
 }
 
 func (rct *KubeConfigMapRcTester) Setup(namespace string) factory.ResourceClientFactory {
-	err := setup.SetupKubeForTest(namespace)
+	kubeClient := helpers.MustKubeClient()
+	err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
-	cfg, err := kubeutils.GetConfig("", "")
-	Expect(err).NotTo(HaveOccurred())
-	kube, err := kubernetes.NewForConfig(cfg)
-	Expect(err).NotTo(HaveOccurred())
-	kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.KubeConfigMapClientFactory{
-		Clientset: kube,
+		Clientset: kubeClient,
 		Cache:     kcache,
 	}
 }
 
 func (rct *KubeConfigMapRcTester) Teardown(namespace string) {
-	setup.TeardownKube(namespace)
+	kubeClient := helpers.MustKubeClient()
+	err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 /*
@@ -228,22 +230,21 @@ func (rct *KubeSecretRcTester) Skip() bool {
 }
 
 func (rct *KubeSecretRcTester) Setup(namespace string) factory.ResourceClientFactory {
-	err := setup.SetupKubeForTest(namespace)
+	kubeClient := helpers.MustKubeClient()
+	err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
-	cfg, err := kubeutils.GetConfig("", "")
-	Expect(err).NotTo(HaveOccurred())
-	kube, err := kubernetes.NewForConfig(cfg)
-	Expect(err).NotTo(HaveOccurred())
-	kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.KubeSecretClientFactory{
-		Clientset: kube,
+		Clientset: kubeClient,
 		Cache:     kcache,
 	}
 }
 
 func (rct *KubeSecretRcTester) Teardown(namespace string) {
-	setup.TeardownKube(namespace)
+	kubeClient := helpers.MustKubeClient()
+	err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 /*

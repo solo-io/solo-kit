@@ -16,10 +16,8 @@ import (
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
-	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	// Needed to run tests in GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -33,62 +31,60 @@ var _ = Describe("Base", func() {
 	})
 
 	var (
-		namespace string
-		cfg       *rest.Config
-		client    *ResourceClient
-		kubeCache cache.KubeCoreCache
+		ns1            string
+		kube           kubernetes.Interface
+		client         *ResourceClient
+		kubeCache      cache.KubeCoreCache
+		localTestLabel string
 	)
 	BeforeEach(func() {
-		namespace = helpers.RandString(8)
-		err := setup.SetupKubeForTest(namespace)
-		Expect(err).NotTo(HaveOccurred())
-		cfg, err = kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-		kube, err := kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
+		ns1 = helpers.RandString(8)
+		localTestLabel = helpers.RandString(8)
+		kube = helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kube, ns1)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client, err = NewResourceClient(kube, &v1.MockResource{}, false, kubeCache)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns1)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	It("CRUDs resources", func() {
-		generic.TestCrudClient(namespace, client, time.Minute)
+		selectors := map[string]string{
+			helpers.TestLabel: localTestLabel,
+		}
+		generic.TestCrudClient(ns1, client, clients.WatchOpts{
+			Ctx:         context.TODO(),
+			Selector:    selectors,
+			RefreshRate: time.Minute,
+		})
 	})
 
 	Context("multiple namespaces", func() {
 		var (
-			ns1, ns2 string
-			cfg      *rest.Config
-			client   *ResourceClient
+			ns2 string
 		)
 		BeforeEach(func() {
-			ns1 = helpers.RandString(8)
 			ns2 = helpers.RandString(8)
-			err := setup.SetupKubeForTest(ns1)
-			Expect(err).NotTo(HaveOccurred())
-			err = setup.SetupKubeForTest(ns2)
+
+			err := kubeutils.CreateNamespacesInParallel(kube, ns2)
 			Expect(err).NotTo(HaveOccurred())
 
-			cfg, err = kubeutils.GetConfig("", "")
+			kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 			Expect(err).NotTo(HaveOccurred())
-
-			clientset, err := kubernetes.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			kubeCache, err = cache.NewKubeCoreCache(context.TODO(), clientset)
-			Expect(err).NotTo(HaveOccurred())
-			client, err = NewResourceClient(clientset, &v1.MockResource{}, false, kubeCache)
+			client, err = NewResourceClient(kube, &v1.MockResource{}, false, kubeCache)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			setup.TeardownKube(ns1)
-			setup.TeardownKube(ns2)
+			err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns2)
+			Expect(err).NotTo(HaveOccurred())
 		})
 		It("can watch resources across namespaces when using NamespaceAll", func() {
-			namespace := ""
+			watchNamespace := ""
+			selectors := map[string]string{helpers.TestLabel: localTestLabel}
 			boo := "hoo"
 			goo := "goo"
 			data := "hi"
@@ -96,7 +92,7 @@ var _ = Describe("Base", func() {
 			err := client.Register()
 			Expect(err).NotTo(HaveOccurred())
 
-			w, errs, err := client.Watch(namespace, clients.WatchOpts{Ctx: context.TODO()})
+			w, errs, err := client.Watch(watchNamespace, clients.WatchOpts{Ctx: context.TODO(), Selector: selectors})
 			Expect(err).NotTo(HaveOccurred())
 
 			var r1, r2 resources.Resource
@@ -111,6 +107,7 @@ var _ = Describe("Base", func() {
 					Metadata: core.Metadata{
 						Name:      boo,
 						Namespace: ns1,
+						Labels:    selectors,
 					},
 				}, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -120,6 +117,7 @@ var _ = Describe("Base", func() {
 					Metadata: core.Metadata{
 						Name:      goo,
 						Namespace: ns2,
+						Labels:    selectors,
 					},
 				}, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -130,7 +128,9 @@ var _ = Describe("Base", func() {
 				Fail("expected wait to be closed before 5s")
 			}
 
-			list, err := client.List(namespace, clients.ListOpts{})
+			list, err := client.List(watchNamespace, clients.ListOpts{
+				Selector: selectors,
+			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(list).To(ContainElement(r1))
 			Expect(list).To(ContainElement(r2))
@@ -143,24 +143,19 @@ var _ = Describe("Base", func() {
 				Fail("expected a message in channel")
 			}
 
-			var timesDrained int
-		drain:
-			for {
-				select {
-				case list = <-w:
-					timesDrained++
-					if timesDrained > 50 {
-						Fail("drained the watch channel 50 times, something is wrong")
+			go func() {
+				defer GinkgoRecover()
+				for {
+					select {
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second / 4):
+						return
 					}
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second / 4):
-					break drain
 				}
-			}
+			}()
 
-			Expect(list).To(ContainElement(r1))
-			Expect(list).To(ContainElement(r2))
+			Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r2))))
 		})
 	})
 })

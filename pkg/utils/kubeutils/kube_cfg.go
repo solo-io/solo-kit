@@ -9,6 +9,7 @@ import (
 )
 
 // GetConfig gets the kubernetes client config
+// Deprecated: in favor of go-utils version
 func GetConfig(masterURL, kubeconfigPath string) (*rest.Config, error) {
 	envVarName := clientcmd.RecommendedConfigPathEnvVar
 	if kubeconfigPath == "" && masterURL == "" && os.Getenv(envVarName) == "" {

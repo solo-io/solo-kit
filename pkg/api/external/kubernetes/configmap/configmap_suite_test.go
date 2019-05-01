@@ -9,5 +9,5 @@ import (
 
 func TestNamespace(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Namespace Suite")
+	RunSpecs(t, "Configmap Suite")
 }
