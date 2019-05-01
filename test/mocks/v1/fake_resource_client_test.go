@@ -177,5 +177,5 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 		}
 	}()
 
-	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r2), ContainElement(r3))))
+	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }

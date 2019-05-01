@@ -69,7 +69,7 @@ steps:
       - 'GOPATH=/workspace/gopath'
     args: ['-r', '-v', '-tags', 'solokit']
     id: 'test'
-    waitFor: ['install-codegen-deps']
+    waitFor: ['check-code-and-docs-gen']
 
   - name: 'gcr.io/cloud-builders/go'
     args: ['build', '-o', 'solo-kit-gen', 'github.com/solo-io/solo-kit/cmd/cli']
