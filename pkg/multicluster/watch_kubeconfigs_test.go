@@ -20,7 +20,7 @@ import (
 var _ = Describe("WatchKubeconfigs", func() {
 	var (
 		namespace string
-		kube kubernetes.Interface
+		kube      kubernetes.Interface
 	)
 	BeforeEach(func() {
 		namespace = "kubeconfighandler" + testutils.RandString(6)
