@@ -2,7 +2,6 @@ package apiserver
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
@@ -254,7 +253,6 @@ func (s *ApiServer) Watch(req *WatchRequest, watch ApiServer_WatchServer) error 
 
 				resourceListResponse = append(resourceListResponse, data)
 			}
-			fmt.Printf("%v\n", resourceList)
 			if err := watch.Send(&ListResponse{
 				ResourceList: resourceListResponse,
 			}); err != nil {
