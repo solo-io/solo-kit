@@ -3,10 +3,9 @@ package kubeinstallutils_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeinstallutils"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/testutils"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,14 +13,19 @@ import (
 )
 
 var _ = Describe("InstallKubeManifest", func() {
-	var namespace string
+	var (
+		namespace string
+		kube      kubernetes.Interface
+	)
 	BeforeEach(func() {
 		namespace = "install-kube-manifest-" + helpers.RandString(8)
-		err := setup.SetupKubeForTest(namespace)
+		kube = helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	It("installs arbitrary kube manifests", func() {
 		err := deployNginx(namespace)

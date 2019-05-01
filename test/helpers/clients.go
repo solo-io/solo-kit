@@ -1,15 +1,14 @@
 package helpers
 
-
 import (
 	"os"
 
+	"github.com/solo-io/go-utils/kubeutils"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -53,7 +52,6 @@ func UseMemoryClients() {
 	}
 	fakeKubeClientset = fake.NewSimpleClientset()
 }
-
 
 func MustKubeClient() kubernetes.Interface {
 	client, err := KubeClient()

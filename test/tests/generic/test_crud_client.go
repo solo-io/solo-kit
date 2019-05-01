@@ -105,8 +105,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	// without
 	list, err = client.List(namespace, clients.ListOpts{})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
+	Expect(list).To(And(ContainElement(r1), ContainElement(r2)))
 	postList(callbacks, list)
 
 	err = client.Delete(writtenNamespace, "adsfw", clients.DeleteOpts{})

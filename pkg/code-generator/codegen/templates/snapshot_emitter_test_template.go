@@ -25,6 +25,7 @@ import (
 	"time"
 
 	{{ .Imports }}
+	"k8s.io/client-go/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -56,6 +57,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- if $need_kube_config }}
 		cfg                *rest.Config
 {{- end}}
+		kube                      kubernetes.Interface
 		emitter            {{ .GoName }}Emitter
 {{- range .Resources }}
 		{{ lower_camel .Name }}Client {{ .ImportPrefix }}{{ .Name }}Client
@@ -65,15 +67,13 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 	BeforeEach(func() {
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
-		var err error
+		kube = helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kube, namespace1, namespace2)
+		Expect(err).NotTo(HaveOccurred())
 {{- if $need_kube_config }}
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 {{- end}}
-		err = setup.SetupKubeForTest(namespace1)
-		Expect(err).NotTo(HaveOccurred())
-		err = setup.SetupKubeForTest(namespace2)
-		Expect(err).NotTo(HaveOccurred())
 
 {{- range .Resources }}
 		// {{ .Name }} Constructor
@@ -96,8 +96,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		emitter = New{{ .GoName }}Emitter({{ $clients }})
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace1)
-		setup.TeardownKube(namespace2)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
+		Expect(err).NotTo(HaveOccurred())
 {{- range .Resources }}
 {{- if .ClusterScoped }}
 		{{ lower_camel .Name }}Client.Delete(name1, clients.DeleteOpts{})

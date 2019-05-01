@@ -18,6 +18,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/kubernetes"
+
 	// Needed to run tests in GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -55,8 +56,8 @@ var _ = Describe("Base", func() {
 			helpers.TestLabel: localTestLabel,
 		}
 		generic.TestCrudClient(ns1, client, clients.WatchOpts{
-			Ctx: context.TODO(),
-			Selector: selectors,
+			Ctx:         context.TODO(),
+			Selector:    selectors,
 			RefreshRate: time.Minute,
 		})
 	})

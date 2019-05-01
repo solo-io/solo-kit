@@ -3,8 +3,8 @@ package kubeinstallutils_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeinstallutils"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"

@@ -76,9 +76,9 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			return
 		}
 		var (
-			namespace  string
-			cfg        *rest.Config
-			client     *kube.ResourceClient
+			namespace string
+			cfg       *rest.Config
+			client    *kube.ResourceClient
 		)
 		BeforeEach(func() {
 			namespace = helpers.RandString(8)
@@ -182,7 +182,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Metadata: core.Metadata{
 						Name:      boo,
 						Namespace: ns1,
-						Labels: selectors,
+						Labels:    selectors,
 					},
 				}, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -192,7 +192,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Metadata: core.Metadata{
 						Name:      goo,
 						Namespace: ns2,
-						Labels: selectors,
+						Labels:    selectors,
 					},
 				}, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())

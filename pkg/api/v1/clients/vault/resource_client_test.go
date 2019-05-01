@@ -40,7 +40,7 @@ var _ = Describe("Base", func() {
 		generic.TestCrudClient("", secrets, clients.WatchOpts{
 			Selector:    selector,
 			Ctx:         context.TODO(),
-			RefreshRate: time.Second/8,
+			RefreshRate: time.Second / 8,
 		})
 	})
 })

@@ -20,7 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	// Needed to run tests in GKE
@@ -40,6 +40,7 @@ var _ = Describe("V1Emitter", func() {
 		namespace2                string
 		name1, name2              = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg                       *rest.Config
+		kube                      kubernetes.Interface
 		emitter                   TestingEmitter
 		mockResourceClient        MockResourceClient
 		fakeResourceClient        FakeResourceClient
@@ -52,12 +53,10 @@ var _ = Describe("V1Emitter", func() {
 	BeforeEach(func() {
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
-		var err error
+		kube = helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kube, namespace1, namespace2)
+		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-		err = setup.SetupKubeForTest(namespace1)
-		Expect(err).NotTo(HaveOccurred())
-		err = setup.SetupKubeForTest(namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		// MockResource Constructor
 		mockResourceClientFactory := &factory.KubeResourceClientFactory{
@@ -110,8 +109,8 @@ var _ = Describe("V1Emitter", func() {
 		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace1)
-		setup.TeardownKube(namespace2)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
+		Expect(err).NotTo(HaveOccurred())
 		clusterResourceClient.Delete(name1, clients.DeleteOpts{})
 		clusterResourceClient.Delete(name2, clients.DeleteOpts{})
 	})

@@ -32,9 +32,9 @@ var _ = Describe("Namespace base client", func() {
 	)
 
 	BeforeEach(func() {
+		var err error
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = newResourceClient(kube, kubeCache)
@@ -51,7 +51,7 @@ var _ = Describe("Namespace base client", func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
-	It("converts a kubernetes pod to solo-kit resource", func() {
+	It("converts a kubernetes namespace to solo-kit resource", func() {
 
 		Eventually(func() bool {
 			namespaces, err := client.List("", clients.ListOpts{})

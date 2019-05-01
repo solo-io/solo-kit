@@ -25,7 +25,7 @@ var _ = Describe("ClientWrapper", func() {
 	It("applies the process func to resources upon CRUD", func() {
 		opts := clients.WatchOpts{
 			RefreshRate: time.Minute,
-			Ctx: context.TODO(),
+			Ctx:         context.TODO(),
 			Selector: map[string]string{
 				helpers.TestLabel: helpers.RandString(8),
 			},

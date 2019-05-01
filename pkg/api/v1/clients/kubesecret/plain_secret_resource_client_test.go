@@ -7,7 +7,6 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/kubernetes"
+
 	// Needed to run tests in GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -31,9 +31,9 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		return
 	}
 	var (
-		namespace      string
-		client         *ResourceClient
-		kube           kubernetes.Interface
+		namespace string
+		client    *ResourceClient
+		kube      kubernetes.Interface
 	)
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
@@ -54,8 +54,8 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		}
 		generic.TestCrudClient(namespace, client, clients.WatchOpts{
 			RefreshRate: time.Minute,
-			Selector: selectors,
-			Ctx: context.TODO(),
+			Selector:    selectors,
+			Ctx:         context.TODO(),
 		})
 	})
 	It("does not escape string fields", func() {
