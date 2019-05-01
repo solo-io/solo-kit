@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/test/setup"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/mocks/util"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
-	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
@@ -39,6 +39,34 @@ import (
 	// Needed to run tests in GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
+
+var (
+	kubeClient kubernetes.Interface
+	cfg        *rest.Config
+	client     *kube.ResourceClient
+	clientset  *versioned.Clientset
+)
+
+var _ = BeforeSuite(func() {
+	var err error
+	cfg, err = kubeutils.GetConfig("", "")
+	Expect(err).NotTo(HaveOccurred())
+
+	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Create the CRD in the cluster
+	apiExts, err := apiext.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = v1.MockResourceCrd.Register(apiExts)
+	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	err := setup.DeleteCrd(v1.MockResourceCrd.FullName())
+	Expect(err).NotTo(HaveOccurred())
+})
 
 var _ = Describe("Test Kube ResourceClient", func() {
 
@@ -65,9 +93,11 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				"someDumbField": dumbValue,
 			},
 		}
-
-		kubeClient kubernetes.Interface
 	)
+
+	BeforeEach(func() {
+		client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(context.TODO()), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
+	})
 
 	Context("integrations tests", func() {
 
@@ -77,36 +107,16 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		}
 		var (
 			namespace string
-			cfg       *rest.Config
-			client    *kube.ResourceClient
 		)
 		BeforeEach(func() {
 			namespace = helpers.RandString(8)
 			kubeClient = helpers.MustKubeClient()
 			err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
 			Expect(err).NotTo(HaveOccurred())
-
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-
-			clientset, err := versioned.NewForConfig(cfg, v1.MockResourceCrd)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Create the CRD in the cluster
-			apiExts, err := apiext.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = v1.MockResourceCrd.Register(apiExts)
-			Expect(err).NotTo(HaveOccurred())
-
-			client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(context.TODO()), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
 			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
-			Expect(err).NotTo(HaveOccurred())
-			err = setup.DeleteCrd(v1.MockResourceCrd.FullName())
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -125,8 +135,6 @@ var _ = Describe("Test Kube ResourceClient", func() {
 	Context("multiple namespaces", func() {
 		var (
 			ns1, ns2       string
-			cfg            *rest.Config
-			client         *kube.ResourceClient
 			localTestLabel string
 		)
 		BeforeEach(func() {
@@ -134,28 +142,11 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			ns2 = helpers.RandString(8)
 			kubeClient = helpers.MustKubeClient()
 			err := kubeutils.CreateNamespacesInParallel(kubeClient, ns1, ns2)
-
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-
-			clientset, err := versioned.NewForConfig(cfg, v1.MockResourceCrd)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Create the CRD in the cluster
-			apiExts, err := apiext.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = v1.MockResourceCrd.Register(apiExts)
-			Expect(err).NotTo(HaveOccurred())
-
-			client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(context.TODO()), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
 			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, ns1, ns2)
-			Expect(err).NotTo(HaveOccurred())
-			err = setup.DeleteCrd(v1.MockResourceCrd.FullName())
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("can watch resources across namespaces when using NamespaceAll", func() {

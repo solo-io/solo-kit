@@ -104,7 +104,9 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	Expect(list).NotTo(ContainElement(r2))
 
 	// without
-	list, err = client.List(namespace, clients.ListOpts{})
+	list, err = client.List(namespace, clients.ListOpts{
+		Selector: selectors,
+	})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(list).To(And(ContainElement(r1), ContainElement(r2)))
 	postList(callbacks, list)
@@ -122,12 +124,16 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	Expect(err).NotTo(HaveOccurred())
 
 	Eventually(func() resources.ResourceList {
-		list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(namespace, clients.ListOpts{
+			Selector: selectors,
+		})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(ContainElement(r1))
 	Eventually(func() resources.ResourceList {
-		list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(namespace, clients.ListOpts{
+			Selector: selectors,
+		})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))

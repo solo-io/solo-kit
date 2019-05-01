@@ -150,7 +150,10 @@ var _ = Describe("Base", func() {
 				Fail("expected wait to be closed before 5s")
 			}
 
-			list, err := client.List(watchNamespace, clients.ListOpts{})
+			list, err := client.List(watchNamespace, clients.ListOpts{
+				Selector: selectors,
+				Ctx:      context.TODO(),
+			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(list).To(ContainElement(r1))
 			Expect(list).To(ContainElement(r2))

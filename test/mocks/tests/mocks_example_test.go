@@ -32,6 +32,7 @@ var _ = Describe("examples using mocks", func() {
 	})
 	AfterEach(func() {
 		ctrl.Finish()
+		cancel()
 	})
 
 	It("can create an event loop with a mock emitter and syncer, and error out", func() {
@@ -44,30 +45,41 @@ var _ = Describe("examples using mocks", func() {
 		_, err := el.Run(watchNamespaces, clients.WatchOpts{})
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring(exampleError.Error()))
-		cancel()
 	})
 	It("can simulate a real event loop with a mocked channel", func() {
 
 		watchNamespaces := []string{"namespace1"}
 
-		watch := make(chan *v1.TestingSnapshot)
+		watch := make(chan *v1.TestingSnapshot, 10)
 		snap := &v1.TestingSnapshot{}
 		emitter.EXPECT().Snapshots(watchNamespaces, gomock.Any()).Times(1).Return(watch, nil, nil)
-		syncerHasBeenCalled := false
-		syncer.EXPECT().Sync(gomock.Any(), snap).Return(nil).Do(func(ctx context.Context, snap *v1.TestingSnapshot) {
-			syncerHasBeenCalled = true
+		ackChan := make(chan bool, 10)
+		syncer.EXPECT().Sync(gomock.Any(), snap).DoAndReturn(func(ctx context.Context, snap *v1.TestingSnapshot) error {
+			select {
+			case ackChan <- true:
+			case <-time.After(1 * time.Second):
+				Fail("waited to long to send message on channel")
+			}
+			return nil
 		}).Times(1)
 
 		el := v1.NewTestingEventLoop(emitter, syncer)
 
 		_, err := el.Run(watchNamespaces, clients.WatchOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
+
 		// send snap to el
-		watch <- snap
-		Eventually(func() bool {
-			return syncerHasBeenCalled
-		}, time.Second*2, time.Millisecond*100).Should(BeTrue())
-		cancel()
+
+		go func() {
+			defer GinkgoRecover()
+			select {
+			case watch <- snap:
+			case <-time.After(1 * time.Second):
+				Fail("could not send message to channel within one second")
+			}
+		}()
+
+		Eventually(ackChan, time.Second*2, time.Millisecond*100).Should(Receive(Equal(true)))
 	})
 
 	It("can simulate an error happening in the sync function", func() {
@@ -84,15 +96,22 @@ var _ = Describe("examples using mocks", func() {
 		errs, err := el.Run(watchNamespaces, clients.WatchOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		// send snap to el
-		watch <- snap
+		go func() {
+			defer GinkgoRecover()
+			select {
+			case watch <- snap:
+			case <-time.After(1 * time.Second):
+				Fail("could not send message to channel within one second")
+			}
+		}()
 
 		// wait for error to be returned
 		select {
 		case err, ok := <-errs:
 			Expect(ok).To(BeTrue())
 			Expect(err.Error()).To(ContainSubstring(exampleError.Error()))
+		case <-time.After(2 * time.Second):
+			Fail("waited to long for error to appear")
 		}
-
-		cancel()
 	})
 })
