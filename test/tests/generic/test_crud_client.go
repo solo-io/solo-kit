@@ -3,6 +3,7 @@ package generic
 import (
 	"time"
 
+	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -22,7 +23,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	input := v1.NewMockResource(namespace, foo)
 	data := "hello: goodbye"
 	input.Data = data
-	labels := map[string]string{"pick": "me"}
+	labels := map[string]string{"pickme": helpers.RandString(8)}
 	// add individual selectors
 	for key, value := range selectors {
 		labels[key] = value
