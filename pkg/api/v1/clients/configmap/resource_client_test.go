@@ -165,24 +165,17 @@ var _ = Describe("Base", func() {
 
 			go func() {
 				defer GinkgoRecover()
-				var timesDrained int
-			drain:
 				for {
 					select {
-					case list = <-w:
-						timesDrained++
-						if timesDrained > 50 {
-							Fail("drained the watch channel 50 times, something is wrong")
-						}
 					case err := <-errs:
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second / 4):
-						break drain
+						return
 					}
 				}
 			}()
 
-			Expect(<-w).To(And(ContainElement(r1), ContainElement(r2)))
+			Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r2))))
 		})
 	})
 })
