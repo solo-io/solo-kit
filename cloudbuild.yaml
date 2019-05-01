@@ -61,8 +61,8 @@ steps:
     dir: './gopath/src/github.com/solo-io/solo-kit'
     env:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
       - 'RUN_KUBE_TESTS=1'
       - 'CLOUD_BUILD=1'
       - 'GOPATH=/workspace/gopath'

@@ -37,6 +37,9 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 }
 
 func Key(resource Resource) string {
+	if cluster := resource.GetMetadata().Cluster; cluster != "" {
+		return fmt.Sprintf("%v%v%v%v%v%v%v", Kind(resource), delim, resource.GetMetadata().Cluster, delim, resource.GetMetadata().Namespace, delim, resource.GetMetadata().Name)
+	}
 	return fmt.Sprintf("%v%v%v%v%v", Kind(resource), delim, resource.GetMetadata().Namespace, delim,
 		resource.GetMetadata().Name)
 }
@@ -67,11 +70,7 @@ func (m ResourcesById) List() ResourceList {
 	for _, res := range m {
 		all = append(all, res)
 	}
-	// sort by type
-	sort.SliceStable(all, func(i, j int) bool {
-		return Key(all[i]) < Key(all[j])
-	})
-	return all
+	return all.Sort()
 }
 
 func (m ResourcesByKind) Add(resources ...Resource) {
@@ -79,20 +78,19 @@ func (m ResourcesByKind) Add(resources ...Resource) {
 		m[Kind(resource)] = append(m[Kind(resource)], resource)
 	}
 }
+
 func (m ResourcesByKind) Get(resource Resource) []Resource {
 	return m[Kind(resource)]
 }
+
 func (m ResourcesByKind) List() ResourceList {
 	var all ResourceList
 	for _, list := range m {
 		all = append(all, list...)
 	}
-	// sort by type
-	sort.SliceStable(all, func(i, j int) bool {
-		return Key(all[i]) < Key(all[j])
-	})
-	return all
+	return all.Sort()
 }
+
 func (list ResourceList) Contains(list2 ResourceList) bool {
 	for _, res2 := range list2 {
 		var found bool
@@ -108,6 +106,7 @@ func (list ResourceList) Contains(list2 ResourceList) bool {
 	}
 	return true
 }
+
 func (list ResourceList) Copy() ResourceList {
 	var cpy ResourceList
 	for _, res := range list {
@@ -115,6 +114,18 @@ func (list ResourceList) Copy() ResourceList {
 	}
 	return cpy
 }
+
+func (list ResourceList) Sort() ResourceList {
+	var sorted ResourceList
+	for _, res := range list {
+		sorted = append(sorted, Clone(res))
+	}
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return Key(sorted[i]) < Key(sorted[j])
+	})
+	return sorted
+}
+
 func (list ResourceList) Equal(list2 ResourceList) bool {
 	if len(list) != len(list2) {
 		return false
@@ -126,6 +137,7 @@ func (list ResourceList) Equal(list2 ResourceList) bool {
 	}
 	return true
 }
+
 func (list ResourceList) FilterByNames(names []string) ResourceList {
 	var filtered ResourceList
 	for _, resource := range list {
@@ -138,6 +150,7 @@ func (list ResourceList) FilterByNames(names []string) ResourceList {
 	}
 	return filtered
 }
+
 func (list ResourceList) FilterByNamespaces(namespaces []string) ResourceList {
 	var filtered ResourceList
 	for _, resource := range list {
@@ -150,6 +163,7 @@ func (list ResourceList) FilterByNamespaces(namespaces []string) ResourceList {
 	}
 	return filtered
 }
+
 func (list ResourceList) FilterByKind(kind string) ResourceList {
 	var resourcesOfKind ResourceList
 	for _, res := range list {
@@ -159,9 +173,11 @@ func (list ResourceList) FilterByKind(kind string) ResourceList {
 	}
 	return resourcesOfKind
 }
+
 func (list ResourceList) FilterByList(list2 ResourceList) ResourceList {
 	return list.FilterByNamespaces(list2.Namespaces()).FilterByNames(list.Names())
 }
+
 func (list ResourceList) Names() []string {
 	var names []string
 	for _, resource := range list {
@@ -169,6 +185,33 @@ func (list ResourceList) Names() []string {
 	}
 	return names
 }
+
+func (list ResourceList) Each(do func(resource Resource)) {
+	for i, resource := range list {
+		do(resource)
+		list[i] = resource
+	}
+}
+
+func (list ResourceList) EachErr(do func(resource Resource) error) error {
+	for i, resource := range list {
+		if err := do(resource); err != nil {
+			return err
+		}
+		list[i] = resource
+	}
+	return nil
+}
+
+func (list ResourceList) ByCluster() map[string]ResourceList {
+	byCluster := make(map[string]ResourceList)
+	list.Each(func(resource Resource) {
+		byCluster[resource.GetMetadata().Cluster] = append(
+			byCluster[resource.GetMetadata().Cluster], resource)
+	})
+	return byCluster
+}
+
 func (list ResourceList) Find(namespace, name string) (Resource, error) {
 	for _, resource := range list {
 		if resource.GetMetadata().Name == name {
@@ -347,6 +390,15 @@ func UpdateMetadata(resource Resource, updateFunc func(meta *core.Metadata)) {
 	meta := resource.GetMetadata()
 	updateFunc(&meta)
 	resource.SetMetadata(meta)
+}
+
+func UpdateListMetadata(resources ResourceList, updateFunc func(meta *core.Metadata)) {
+	for i, resource := range resources {
+		meta := resource.GetMetadata()
+		updateFunc(&meta)
+		resource.SetMetadata(meta)
+		resources[i] = resource
+	}
 }
 
 func UpdateStatus(resource InputResource, updateFunc func(status *core.Status)) {

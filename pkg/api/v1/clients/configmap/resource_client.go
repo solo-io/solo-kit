@@ -35,7 +35,7 @@ func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resourc
 	return NewResourceClientWithConverter(kube, resourceType, kubeCache, configmapConverter)
 }
 
-func NewResourceClientWithConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, secretConverter ConfigMapConverter) (*ResourceClient, error) {
+func NewResourceClientWithConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, configMapConverter ConfigMapConverter) (*ResourceClient, error) {
 	return &ResourceClient{
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			Kube:         kube,
@@ -43,7 +43,7 @@ func NewResourceClientWithConverter(kube kubernetes.Interface, resourceType reso
 			Cache:        kubeCache,
 		},
 		resourceName: reflect.TypeOf(resourceType).String(),
-		converter:    secretConverter,
+		converter:    configMapConverter,
 	}, nil
 }
 

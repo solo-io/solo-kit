@@ -21,6 +21,11 @@ message Metadata {
     // Namespace is used for the namespacing of resources.
     string namespace = 3;
 
+    // Cluster indicates the cluster this resource belongs to
+    // Cluster is only applicable in certain contexts, e.g. Kubernetes
+    // An empty string here refers to the local cluster
+    string cluster = 7;
+
     // An opaque value that represents the internal version of this object that can
     // be used by clients to determine when objects have changed.
     string resource_version = 4 [(gogoproto.moretags) = "testdiff:\"ignore\""];
