@@ -71,6 +71,20 @@ steps:
     id: 'test'
     waitFor: ['install-codegen-deps']
 
+#  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+#    dir: './gopath/src/github.com/solo-io/solo-kit'
+#    env:
+#      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
+#      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
+#      - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
+#      - 'RUN_KUBE_TESTS=1'
+#      - 'TEST_MODE=1'
+#      - 'CLOUD_BUILD=1'
+#      - 'GOPATH=/workspace/gopath'
+#    args: ['build', '-r', '-v', '-tags', 'solokit']
+#    id: 'test'
+#    waitFor: ['install-codegen-deps']
+
   - name: 'gcr.io/cloud-builders/go'
     args: ['build', '-o', 'solo-kit-gen', 'github.com/solo-io/solo-kit/cmd/cli']
     env:

@@ -166,26 +166,46 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 		Fail("expected a message in channel")
 	}
 
-	var timesDrained int
-drain:
-	for {
-		select {
-		case list = <-w:
-			timesDrained++
-			if timesDrained > 50 {
-				Fail("drained the watch channel 50 times, something is wrong")
+	go func() {
+		defer GinkgoRecover()
+		var timesDrained int
+	drain:
+		for {
+			select {
+			case list = <-w:
+				timesDrained++
+				if timesDrained > 50 {
+					Fail("drained the watch channel 50 times, something is wrong")
+				}
+			case err := <-errs:
+				Expect(err).NotTo(HaveOccurred())
+			case <-time.After(time.Second / 4):
+				break drain
 			}
-		case err := <-errs:
-			Expect(err).NotTo(HaveOccurred())
-		case <-time.After(time.Second / 4):
-			break drain
 		}
-	}
+	}()
 
 	postList(callbacks, list)
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
-	Expect(list).To(ContainElement(r3))
+
+ 	Expect(<-w).Should(ConsistOf(r1, r2, r3))
+	// Eventually(func() error {
+	// 	_, err := list.Find(r1.GetMetadata().Namespace, r1.GetMetadata().Name)
+	// 	return err
+	// }, time.Second*4, time.Millisecond*50).ShouldNot(HaveOccurred())
+	//
+	// Eventually(func() error {
+	// 	_, err := list.Find(r2.GetMetadata().Namespace, r2.GetMetadata().Name)
+	// 	return err
+	// }, time.Second*4, time.Millisecond*50).ShouldNot(HaveOccurred())
+	//
+	// Eventually(func() error {
+	// 	_, err := list.Find(r3.GetMetadata().Namespace, r3.GetMetadata().Name)
+	// 	return err
+	// }, time.Second*4, time.Millisecond*50).ShouldNot(HaveOccurred())
+
+	// Eventually(list, time.Second*4, time.Millisecond*50).Should(ContainElement(r1))
+	// Eventually(list, time.Second*4, time.Millisecond*50).Should(ContainElement(r2))
+	// Eventually(list, time.Second*4, time.Millisecond*50).Should(ContainElement(r3))
 }
 
 func postList(callbacks []Callback, list resources.ResourceList) {
