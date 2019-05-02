@@ -634,12 +634,13 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:40725fe08f622e0fd2f8000b325440f9b799b6b3c7a3c2ec42e5f9ed5c554ec7"
+  digest = "1:c09b0814a0a740a3be2ec0d4ec1f54201a76692c4ae059dbf0e01c178fbc4586"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
     "contextutils",
     "errors",
+    "errutils",
     "kubeinstallutils",
     "kubeutils",
     "logger",
@@ -1318,6 +1319,7 @@
     "github.com/radovskyb/watcher",
     "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/errors",
+    "github.com/solo-io/go-utils/errutils",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/testutils",
     "github.com/solo-io/go-utils/testutils/clusterlock",
