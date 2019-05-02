@@ -21,6 +21,10 @@ func DefaultNamespaceIfEmpty(namespace string) string {
 	return namespace
 }
 
+type ResourceWatcher interface {
+	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
+}
+
 type ResourceClient interface {
 	Kind() string
 	NewResource() resources.Resource
@@ -30,7 +34,7 @@ type ResourceClient interface {
 	Write(resource resources.Resource, opts WriteOpts) (resources.Resource, error)
 	Delete(namespace, name string, opts DeleteOpts) error
 	List(namespace string, opts ListOpts) (resources.ResourceList, error)
-	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
+	ResourceWatcher
 }
 
 type ResourceClients map[string]ResourceClient
