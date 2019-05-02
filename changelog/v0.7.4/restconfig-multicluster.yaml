@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Implement helpers to watch and parse kubeconfigs from secrets
+    issueLink: https://github.com/solo-io/solo-kit/issues/152
