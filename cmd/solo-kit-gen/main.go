@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
 type arrayFlags []string

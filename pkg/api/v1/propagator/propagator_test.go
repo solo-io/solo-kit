@@ -103,7 +103,7 @@ package propagator_test
 //			case <-time.After(time.Second * 3):
 //				break l
 //			case err := <-errs:
-//				log.Print(err)
+//				logger.Print(err)
 //				Expect(err.Error()).NotTo(ContainSubstring("resource version error"))
 //			}
 //		}
@@ -177,7 +177,7 @@ package propagator_test
 //			case <-time.After(time.Second * 3):
 //				break le
 //			case err := <-errs:
-//				log.Print(err)
+//				logger.Print(err)
 //				Expect(err.Error()).NotTo(ContainSubstring("resource version error"))
 //			}
 //		}
@@ -255,7 +255,7 @@ package propagator_test
 //			case <-time.After(time.Second * 3):
 //				break lep
 //			case err := <-errs:
-//				log.Print(err)
+//				logger.Print(err)
 //				Expect(err).NotTo(BeNil())
 //				Expect(err.Error()).NotTo(ContainSubstring("resource version error"))
 //			}

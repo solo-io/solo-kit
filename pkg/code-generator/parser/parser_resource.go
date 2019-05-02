@@ -7,10 +7,10 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protokit"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
 const (

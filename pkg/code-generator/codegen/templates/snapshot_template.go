@@ -12,7 +12,7 @@ import (
 
 	{{ .Imports }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
 

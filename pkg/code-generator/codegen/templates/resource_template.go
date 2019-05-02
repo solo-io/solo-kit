@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
+	"github.com/solo-io/go-utils/hashutils"
 {{- if not $.IsCustom }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"k8s.io/apimachinery/pkg/runtime"

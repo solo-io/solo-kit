@@ -14,10 +14,10 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/setup"
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31

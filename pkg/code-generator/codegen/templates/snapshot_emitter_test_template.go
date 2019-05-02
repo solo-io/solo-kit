@@ -28,7 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"

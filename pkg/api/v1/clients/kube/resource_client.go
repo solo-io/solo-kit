@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
@@ -16,7 +17,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
