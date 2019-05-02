@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/solo-io/solo-kit/pkg/errors"
+
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
@@ -110,7 +112,7 @@ func parseRestConfigs(local *rest.Config, kcs v1.KubeConfigList) (RestConfigs, e
 		}
 		restCfg, err := clientcmd.RESTConfigFromKubeConfig(raw)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to construct *rest.Config from kubeconfig %v", kc.Metadata.Ref())
 		}
 		cfgs[kc.Cluster] = restCfg
 	}
