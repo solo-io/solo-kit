@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	. "github.com/solo-io/solo-kit/pkg/multicluster"
 	"github.com/solo-io/solo-kit/pkg/multicluster/secretconverter"
-	"github.com/solo-io/solo-kit/test/setup"
+	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -20,14 +20,17 @@ import (
 var _ = Describe("WatchKubeconfigs", func() {
 	var (
 		namespace string
+		kube      kubernetes.Interface
 	)
 	BeforeEach(func() {
 		namespace = "kubeconfighandler" + testutils.RandString(6)
-		err := setup.SetupKubeForTest(namespace)
+		kube = helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	It("returns a channel of kubeconfigs", func() {
 		cfg, err := kubeutils.GetConfig("", "")

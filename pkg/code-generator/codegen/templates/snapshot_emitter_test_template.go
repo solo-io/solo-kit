@@ -33,6 +33,7 @@ import (
 	{{ .Imports }}
 	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/client-go/kubernetes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -62,7 +63,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- range $index, $value := .Resources }}
 		name{{ $index }} = helpers.RandString(8)
 {{- end }}
+{{- if $need_kube_config }}
 		cfg                *rest.Config
+{{- end}}
 		emitter            {{ .GoName }}Emitter
 		kube 			   kubernetes.Interface
 {{- range .Resources }}
@@ -75,13 +78,13 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		namespace{{ $index }} = helpers.RandString(8)
 {{- end }}
 		var err error
+{{- if $need_kube_config }}
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
-
+{{- end}}
 		kube = kubernetes.NewForConfigOrDie(cfg)
 		err = setup.CreateNamespacesInParallel(kube, {{ $namespaces }})
 		Expect(err).NotTo(HaveOccurred())
-
 {{- range .Resources }}
 		// {{ .Name }} Constructor
 
@@ -105,6 +108,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 	AfterEach(func() {
 		err := setup.DeleteNamespacesInParallelBlocking(kube, {{ $namespaces}} )
 		Expect(err).NotTo(HaveOccurred())
+
 	})
 
 	var getAllNamespaces = func() []string {

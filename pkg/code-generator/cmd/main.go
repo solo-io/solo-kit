@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -25,6 +27,10 @@ import (
 )
 
 type DocsOptions = options.DocsOptions
+
+const (
+	SkipMockGen = "SKIP_MOCK_GEN"
+)
 
 func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customImports, skipDirs []string) error {
 	skipDirs = append(skipDirs, "vendor/")
@@ -134,9 +140,59 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 				return errors.Wrapf(err, "goimports failed: %s", out)
 			}
 		}
+
+		// Generate mocks
+		// need to run after to make sure all resources have already been written
+		// Set this env var during tests so that mocks are not generated
+		if os.Getenv(SkipMockGen) != "1" {
+			if err := genMocks(code, outDir, absoluteRoot); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
+}
+
+var (
+	validMockingInterfaces = []string{
+		"_client",
+		"_reconciler",
+		"_emitter",
+	}
+)
+
+func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
+	if err := os.MkdirAll(filepath.Join(outDir, "mocks"), 0777); err != nil {
+		return err
+	}
+	for _, file := range code {
+		if out, err := genMockForFile(file, outDir, absoluteRoot); err != nil {
+			return errors.Wrapf(err, "mockgen failed: %s", out)
+		}
+
+	}
+	return nil
+}
+
+func genMockForFile(file code_generator.File, outDir, absoluteRoot string) ([]byte, error) {
+	if strings.Contains(file.Filename, "_test") || !containsAny(file.Filename, validMockingInterfaces) {
+		return nil, nil
+	}
+	path := filepath.Join(outDir, file.Filename)
+	dest := filepath.Join(outDir, "mocks", file.Filename)
+	path = strings.Replace(path, absoluteRoot, ".", 1)
+	dest = strings.Replace(dest, absoluteRoot, ".", 1)
+	return exec.Command("mockgen", fmt.Sprintf("-source=%s", path), fmt.Sprintf("-destination=%s", dest), "-package=mocks").CombinedOutput()
+}
+
+func containsAny(str string, slice []string) bool {
+	for _, val := range slice {
+		if strings.Contains(str, val) {
+			return true
+		}
+	}
+	return false
 }
 
 func gopathSrc() string {

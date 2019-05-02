@@ -64,11 +64,12 @@ steps:
       - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
       - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
       - 'RUN_KUBE_TESTS=1'
+      - 'SKIP_MOCK_GEN=1'
       - 'CLOUD_BUILD=1'
       - 'GOPATH=/workspace/gopath'
-    args: ['-r', '-v', '-tags', 'solokit']
+    args: ['-r', '-v', '-p', '-tags', 'solokit']
     id: 'test'
-    waitFor: ['install-codegen-deps']
+    waitFor: ['check-code-and-docs-gen']
 
   - name: 'gcr.io/cloud-builders/go'
     args: ['build', '-o', 'solo-kit-gen', 'github.com/solo-io/solo-kit/cmd/cli']

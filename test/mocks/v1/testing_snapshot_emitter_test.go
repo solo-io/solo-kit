@@ -64,7 +64,6 @@ var _ = Describe("V1Emitter", func() {
 		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
-
 		kube = kubernetes.NewForConfigOrDie(cfg)
 		err = setup.CreateNamespacesInParallel(kube, namespace0, namespace1, namespace2, namespace3, namespace4)
 		Expect(err).NotTo(HaveOccurred())
@@ -112,6 +111,7 @@ var _ = Describe("V1Emitter", func() {
 	AfterEach(func() {
 		err := setup.DeleteNamespacesInParallelBlocking(kube, namespace0, namespace1, namespace2, namespace3, namespace4)
 		Expect(err).NotTo(HaveOccurred())
+
 	})
 
 	var getAllNamespaces = func() []string {

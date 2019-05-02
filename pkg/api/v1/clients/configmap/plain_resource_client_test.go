@@ -18,10 +18,8 @@ import (
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	// Needed to run tests in GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -34,29 +32,32 @@ var _ = Describe("PlainConfigmap", func() {
 	}
 	var (
 		namespace string
-		cfg       *rest.Config
 		client    *ResourceClient
 		kube      kubernetes.Interface
 		kubeCache cache.KubeCoreCache
 	)
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
-		err := setup.SetupKubeForTest(namespace)
-		Expect(err).NotTo(HaveOccurred())
-		cfg, err = kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-		kube, err = kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
+		kube = helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client, err = NewResourceClient(kube, &v1.MockResource{}, kubeCache, true)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	It("CRUDs resources", func() {
-		generic.TestCrudClient(namespace, client, time.Minute)
+		selector := map[string]string{
+			helpers.TestLabel: helpers.RandString(8),
+		}
+		generic.TestCrudClient(namespace, client, clients.WatchOpts{
+			Selector:    selector,
+			Ctx:         context.TODO(),
+			RefreshRate: time.Minute,
+		})
 	})
 	It("does not escape string fields", func() {
 		foo := "test-data-keys"
