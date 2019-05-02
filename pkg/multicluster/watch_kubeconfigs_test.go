@@ -4,6 +4,10 @@ import (
 	"context"
 	"time"
 
+	v12 "github.com/solo-io/solo-kit/api/multicluster/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -13,7 +17,6 @@ import (
 	. "github.com/solo-io/solo-kit/pkg/multicluster"
 	"github.com/solo-io/solo-kit/pkg/multicluster/secretconverter"
 	"github.com/solo-io/solo-kit/test/helpers"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -40,14 +43,26 @@ var _ = Describe("WatchKubeconfigs", func() {
 
 		kubeConfig, err := kubeutils.GetKubeConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
-		kubeCfgSecret1, err := secretconverter.KubeConfigToSecret(v1.ObjectMeta{Name: "kubeconfig1", Namespace: namespace}, kubeConfig)
+		kubeCfgSecret1, err := secretconverter.KubeConfigToSecret(&v1.KubeConfig{
+			KubeConfig: v12.KubeConfig{
+				Metadata: core.Metadata{Namespace: namespace, Name: "kubeconfig1"},
+				Config:   *kubeConfig,
+				Cluster:  "remotecluster1",
+			},
+		})
 		Expect(err).NotTo(HaveOccurred())
 		kubeCfgSecret1, err = kubeClient.CoreV1().Secrets(namespace).Create(kubeCfgSecret1)
 		Expect(err).NotTo(HaveOccurred())
 		kubeCfg1, err := secretconverter.KubeCfgFromSecret(kubeCfgSecret1)
 		Expect(err).NotTo(HaveOccurred())
 
-		kubeCfgSecret2, err := secretconverter.KubeConfigToSecret(v1.ObjectMeta{Name: "kubeconfig2", Namespace: namespace}, kubeConfig)
+		kubeCfgSecret2, err := secretconverter.KubeConfigToSecret(&v1.KubeConfig{
+			KubeConfig: v12.KubeConfig{
+				Metadata: core.Metadata{Namespace: namespace, Name: "kubeconfig2"},
+				Config:   *kubeConfig,
+				Cluster:  "remotecluster2",
+			},
+		})
 		Expect(err).NotTo(HaveOccurred())
 		kubeCfgSecret2, err = kubeClient.CoreV1().Secrets(namespace).Create(kubeCfgSecret2)
 		Expect(err).NotTo(HaveOccurred())
@@ -60,8 +75,8 @@ var _ = Describe("WatchKubeconfigs", func() {
 		kubeConfigs, errs, err := WatchKubeConfigs(context.TODO(), kubeClient, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 
-		var allKubeConfigs KubeConfigs
-		Eventually(func() (KubeConfigs, error) {
+		var allKubeConfigs v1.KubeConfigList
+		Eventually(func() (v1.KubeConfigList, error) {
 			select {
 			case kcs := <-kubeConfigs:
 				allKubeConfigs = kcs
@@ -73,8 +88,10 @@ var _ = Describe("WatchKubeconfigs", func() {
 			}
 		}, time.Minute).Should(HaveLen(2))
 
-		readKc1 := allKubeConfigs[ClusterId(kubeCfg1.Metadata.Ref())].KubeConfig.Config
-		readKc2 := allKubeConfigs[ClusterId(kubeCfg2.Metadata.Ref())].KubeConfig.Config
+		readKc1 := allKubeConfigs[0].KubeConfig.Config
+		readKc2 := allKubeConfigs[1].KubeConfig.Config
+		Expect(kubeCfg1.Cluster).To(Equal("remotecluster1"))
+		Expect(kubeCfg2.Cluster).To(Equal("remotecluster2"))
 		Expect(readKc1.Clusters).To(Equal(kubeCfg1.KubeConfig.Config.Clusters))
 		Expect(readKc2.Clusters).To(Equal(kubeCfg2.KubeConfig.Config.Clusters))
 	})
