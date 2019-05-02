@@ -65,7 +65,11 @@ func (c *watchAggregator) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		ctx, cancel := context.WithCancel(opts.Ctx)
 
 		// start a watch for the watcher on this namespace
-		source, errs, err := watcher.Watch(namespace, clients.WatchOpts{Ctx: ctx, RefreshRate: opts.RefreshRate})
+		source, errs, err := watcher.Watch(namespace, clients.WatchOpts{
+			Ctx:         ctx,
+			RefreshRate: opts.RefreshRate,
+			Selector:    opts.Selector,
+		})
 		if err != nil {
 			return err
 		}
