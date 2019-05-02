@@ -12,6 +12,45 @@ import (
 	resources "github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
+// MockResourceWatcher is a mock of ResourceWatcher interface
+type MockResourceWatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockResourceWatcherMockRecorder
+}
+
+// MockResourceWatcherMockRecorder is the mock recorder for MockResourceWatcher
+type MockResourceWatcherMockRecorder struct {
+	mock *MockResourceWatcher
+}
+
+// NewMockResourceWatcher creates a new mock instance
+func NewMockResourceWatcher(ctrl *gomock.Controller) *MockResourceWatcher {
+	mock := &MockResourceWatcher{ctrl: ctrl}
+	mock.recorder = &MockResourceWatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockResourceWatcher) EXPECT() *MockResourceWatcherMockRecorder {
+	return m.recorder
+}
+
+// Watch mocks base method
+func (m *MockResourceWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Watch", namespace, opts)
+	ret0, _ := ret[0].(<-chan resources.ResourceList)
+	ret1, _ := ret[1].(<-chan error)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Watch indicates an expected call of Watch
+func (mr *MockResourceWatcherMockRecorder) Watch(namespace, opts interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockResourceWatcher)(nil).Watch), namespace, opts)
+}
+
 // MockResourceClient is a mock of ResourceClient interface
 type MockResourceClient struct {
 	ctrl     *gomock.Controller
