@@ -30,4 +30,5 @@ func LockingSuite() bool {
 		Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
 	})
 
+	return true
 }

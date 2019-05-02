@@ -48,25 +48,34 @@ var (
 	clientset  *versioned.Clientset
 	lock       *clusterlock.TestClusterLocker
 )
-
-var _ = BeforeSuite(func() {
-	var err error
-	cfg, err = kubeutils.GetConfig("", "")
+var _ = SynchronizedBeforeSuite(func() []byte {
+	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 
-	kubeClient, err = kubernetes.NewForConfig(cfg)
+	kubeClient, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
-	lock, err = clusterlock.NewTestClusterLocker(kubeClient, clusterlock.Options{})
+
+	lock, err = clusterlock.NewTestClusterLocker(kubeClient, clusterlock.Options{
+		IdPrefix: "solo-kit-crd-client-test-",
+	})
 	Expect(lock.AcquireLock()).NotTo(HaveOccurred())
-
-	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
-	Expect(err).NotTo(HaveOccurred())
 
 	// Create the CRD in the cluster
 	apiExts, err := apiext.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = v1.MockResourceCrd.Register(apiExts)
+	Expect(err).NotTo(HaveOccurred())
+	return nil
+}, func(data []byte) {
+	var err error
+	cfg, err = kubeutils.GetConfig("", "")
+	Expect(err).NotTo(HaveOccurred())
+
+	kubeClient, err = kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
 	Expect(err).NotTo(HaveOccurred())
 })
 
