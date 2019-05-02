@@ -11,8 +11,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/fake"
 	solov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
-	"github.com/solo-io/solo-kit/test/mocks/util"
 	mocksv1 "github.com/solo-io/solo-kit/test/mocks/v1"
+	"github.com/solo-io/solo-kit/test/util"
 )
 
 var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
