@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/solo-io/go-utils/errors"
-
 	apiv1 "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -36,7 +35,11 @@ func KubeCfgFromSecret(secret *kubev1.Secret) (*v1.KubeConfig, error) {
 		return nil, err
 	}
 	meta := kubeutils.FromKubeMeta(secret.ObjectMeta)
-	return &v1.KubeConfig{KubeConfig: apiv1.KubeConfig{Metadata: meta, Config: *baseConfig, Cluster: cluster}}, nil
+	return &v1.KubeConfig{
+		KubeConfig: apiv1.KubeConfig{Metadata: meta,
+			Config:  *baseConfig,
+			Cluster: cluster,
+		}}, nil
 }
 
 func KubeConfigToSecret(kc *v1.KubeConfig) (*kubev1.Secret, error) {
