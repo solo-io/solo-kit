@@ -580,6 +580,7 @@
     "contextutils",
     "errors",
     "errutils",
+    "hashutils",
     "kubeinstallutils",
     "kubeutils",
     "log",
