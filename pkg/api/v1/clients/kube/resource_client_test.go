@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/test/setup"
 
@@ -45,12 +46,18 @@ var (
 	cfg        *rest.Config
 	client     *kube.ResourceClient
 	clientset  *versioned.Clientset
+	lock       *clusterlock.TestClusterLocker
 )
 
 var _ = BeforeSuite(func() {
 	var err error
 	cfg, err = kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
+
+	kubeClient, err = kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	lock, err = clusterlock.NewTestClusterLocker(kubeClient, clusterlock.Options{})
+	Expect(lock.AcquireLock()).NotTo(HaveOccurred())
 
 	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
 	Expect(err).NotTo(HaveOccurred())
@@ -65,6 +72,7 @@ var _ = BeforeSuite(func() {
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	err := setup.DeleteCrd(v1.MockResourceCrd.FullName())
+	Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
 	Expect(err).NotTo(HaveOccurred())
 })
 
