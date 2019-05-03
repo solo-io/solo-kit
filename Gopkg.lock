@@ -634,7 +634,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:c09b0814a0a740a3be2ec0d4ec1f54201a76692c4ae059dbf0e01c178fbc4586"
+  digest = "1:e51bc2f82ee9dde5c88e543349c52f30d7442975cc1122a119b880944c99ce6b"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
@@ -646,6 +646,7 @@
     "logger",
     "testutils",
     "testutils/clusterlock",
+    "testutils/kube",
   ]
   pruneopts = "UT"
   revision = "a8a059dfc7f702f1a8136fd3f96f60958a15d8c0"
@@ -1323,12 +1324,14 @@
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/testutils",
     "github.com/solo-io/go-utils/testutils/clusterlock",
+    "github.com/solo-io/go-utils/testutils/kube",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
     "go.opencensus.io/trace",
     "go.opencensus.io/zpages",
+    "go.uber.org/multierr",
     "go.uber.org/zap",
     "golang.org/x/sync/errgroup",
     "google.golang.org/genproto/googleapis/api/annotations",
