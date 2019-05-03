@@ -7,10 +7,10 @@ import (
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_pod "github.com/solo-io/solo-kit/api/external/kubernetes/pod"
 
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 )
 
 func NewPod(namespace, name string) *Pod {

@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
+	"github.com/solo-io/go-utils/log"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -15,7 +16,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"context"
-	"log"
 
 	"github.com/solo-io/go-utils/kubeutils"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"

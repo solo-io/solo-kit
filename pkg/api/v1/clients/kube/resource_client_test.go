@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/test/setup"
 
@@ -15,6 +16,7 @@ import (
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
@@ -23,7 +25,6 @@ import (
 	solov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/tests/generic"
@@ -45,15 +46,19 @@ var (
 	cfg        *rest.Config
 	client     *kube.ResourceClient
 	clientset  *versioned.Clientset
+	lock       *clusterlock.TestClusterLocker
 )
-
-var _ = BeforeSuite(func() {
-	var err error
-	cfg, err = kubeutils.GetConfig("", "")
+var _ = SynchronizedBeforeSuite(func() []byte {
+	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 
-	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
+	kubeClient, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
+
+	lock, err = clusterlock.NewTestClusterLocker(kubeClient, clusterlock.Options{
+		IdPrefix: "solo-kit-crd-client-test-",
+	})
+	Expect(lock.AcquireLock()).NotTo(HaveOccurred())
 
 	// Create the CRD in the cluster
 	apiExts, err := apiext.NewForConfig(cfg)
@@ -61,10 +66,22 @@ var _ = BeforeSuite(func() {
 
 	err = v1.MockResourceCrd.Register(apiExts)
 	Expect(err).NotTo(HaveOccurred())
+	return nil
+}, func(data []byte) {
+	var err error
+	cfg, err = kubeutils.GetConfig("", "")
+	Expect(err).NotTo(HaveOccurred())
+
+	kubeClient, err = kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	err := setup.DeleteCrd(v1.MockResourceCrd.FullName())
+	Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
 	Expect(err).NotTo(HaveOccurred())
 })
 

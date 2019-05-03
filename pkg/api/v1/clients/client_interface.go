@@ -23,6 +23,7 @@ func DefaultNamespaceIfEmpty(namespace string) string {
 }
 
 type ResourceWatcher interface {
+<<<<<<< HEAD
 	// Deprecated: implemented only by the kubernetes resource client. Will be removed from the interface.
 	Register() error
 	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
@@ -53,6 +54,11 @@ func (rw *NamespacesByResourceWatcher) Set(key ResourceWatcher, value []string) 
 	rw.watchers[key] = value
 }
 
+=======
+	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
+}
+
+>>>>>>> 384dbdaa27e3754a07a4cc65f9331e2f5a0d7d20
 type ResourceClient interface {
 	Kind() string
 	NewResource() resources.Resource
@@ -60,7 +66,10 @@ type ResourceClient interface {
 	Write(resource resources.Resource, opts WriteOpts) (resources.Resource, error)
 	Delete(namespace, name string, opts DeleteOpts) error
 	List(namespace string, opts ListOpts) (resources.ResourceList, error)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 384dbdaa27e3754a07a4cc65f9331e2f5a0d7d20
 	ResourceWatcher
 }
 

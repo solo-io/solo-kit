@@ -11,11 +11,15 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"github.com/pkg/errors"
+<<<<<<< HEAD
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+=======
+	"github.com/solo-io/go-utils/log"
+>>>>>>> 384dbdaa27e3754a07a4cc65f9331e2f5a0d7d20
 )
 
 const (

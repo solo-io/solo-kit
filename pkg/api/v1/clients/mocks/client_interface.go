@@ -35,6 +35,7 @@ func (m *MockResourceWatcher) EXPECT() *MockResourceWatcherMockRecorder {
 	return m.recorder
 }
 
+<<<<<<< HEAD
 // Register mocks base method
 func (m *MockResourceWatcher) Register() error {
 	m.ctrl.T.Helper()
@@ -49,6 +50,8 @@ func (mr *MockResourceWatcherMockRecorder) Register() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockResourceWatcher)(nil).Register))
 }
 
+=======
+>>>>>>> 384dbdaa27e3754a07a4cc65f9331e2f5a0d7d20
 // Watch mocks base method
 func (m *MockResourceWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	m.ctrl.T.Helper()

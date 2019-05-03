@@ -7,10 +7,10 @@ import (
 
 	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
 
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 )
 
 func NewMockCustomType(namespace, name string) *MockCustomType {

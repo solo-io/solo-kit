@@ -1,10 +1,11 @@
 package v1
 
 import (
+	"reflect"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/tools/clientcmd/api"
-	"reflect"
 )
 
 // represents a kubernetes rest.Config for a local or remote cluster
