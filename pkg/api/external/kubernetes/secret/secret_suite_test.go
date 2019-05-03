@@ -1,4 +1,4 @@
-package configmap_test
+package secret_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestNamespace(t *testing.T) {
+func TestSecret(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Configmap Suite")
+	RunSpecs(t, "Secret Suite")
 }

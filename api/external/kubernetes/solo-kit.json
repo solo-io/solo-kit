@@ -21,6 +21,12 @@
       "type": "ConfigMap",
       "plural_name": "configmaps",
       "short_name": "cm"
+    },
+    {
+      "package": "github.com/solo-io/solo-kit/api/external/kubernetes/secret",
+      "type": "Secret",
+      "plural_name": "secrets",
+      "short_name": "s"
     }
   ]
 }

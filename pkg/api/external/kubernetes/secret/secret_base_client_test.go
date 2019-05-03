@@ -1,4 +1,4 @@
-package configmap
+package secret
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var _ = Describe("Configmap base client", func() {
+var _ = Describe("secret base client", func() {
 
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
@@ -26,10 +26,10 @@ var _ = Describe("Configmap base client", func() {
 	}
 	var (
 		namespace string
-		client    kubernetes2.ConfigMapClient
+		client    kubernetes2.SecretClient
 		kube      kubernetes.Interface
 		kubeCache cache.KubeCoreCache
-		cmObj     *kubev1.ConfigMap
+		secretObj *kubev1.Secret
 	)
 
 	BeforeEach(func() {
@@ -38,9 +38,9 @@ var _ = Describe("Configmap base client", func() {
 		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
-		client = NewConfigMapClient(kube, kubeCache)
+		client = NewSecretClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
-		cmObj, err = kube.CoreV1().ConfigMaps(namespace).Create(&kubev1.ConfigMap{
+		secretObj, err = kube.CoreV1().Secrets(namespace).Create(&kubev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Name:      namespace,
@@ -55,15 +55,15 @@ var _ = Describe("Configmap base client", func() {
 	It("converts a kubernetes pod to solo-kit resource", func() {
 
 		Eventually(func() bool {
-			configmaps, err := client.List("", clients.ListOpts{})
+			secrets, err := client.List("", clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
-			foundCm := false
-			for _, v := range configmaps {
-				if v.GetMetadata().Name == cmObj.Name {
-					foundCm = true
+			foundSecret := false
+			for _, v := range secrets {
+				if v.GetMetadata().Name == secretObj.Name {
+					foundSecret = true
 				}
 			}
-			return foundCm
+			return foundSecret
 		}, time.Minute, time.Second*15).Should(BeTrue())
 
 	})
