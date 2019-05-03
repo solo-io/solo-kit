@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: create the ability to aggregate watches for resources into a single stream of lists on a single Watch function
+    issueLink: https://github.com/solo-io/solo-kit/issues/161
