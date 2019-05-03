@@ -587,6 +587,7 @@
     "stringutils",
     "testutils",
     "testutils/clusterlock",
+    "testutils/kube",
   ]
   pruneopts = "UT"
   revision = "eb5f54fdd0bd467e180f5db3a6f1855aa3d32058"
@@ -1261,10 +1262,12 @@
     "github.com/solo-io/go-utils/stringutils",
     "github.com/solo-io/go-utils/testutils",
     "github.com/solo-io/go-utils/testutils/clusterlock",
+    "github.com/solo-io/go-utils/testutils/kube",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
     "go.opencensus.io/trace",
+    "go.uber.org/multierr",
     "go.uber.org/zap",
     "golang.org/x/sync/errgroup",
     "google.golang.org/genproto/googleapis/api/annotations",
