@@ -21,6 +21,8 @@ func DefaultNamespaceIfEmpty(namespace string) string {
 	return namespace
 }
 
+type ResourceWatch func(ctx context.Context) (<-chan resources.ResourceList, <-chan error, error)
+
 type ResourceWatcher interface {
 	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
 }
