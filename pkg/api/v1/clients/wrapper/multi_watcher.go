@@ -88,12 +88,13 @@ func (c *watchAggregator) Watch(namespace string, opts clients.WatchOpts) (<-cha
 					// if the source starts returning errors, remove its list from the snasphot
 					access.Lock()
 					delete(listsByWatcher, watcher)
+					mergedList := listsByWatcher.merge()
 					access.Unlock()
 					aggregatedErrs <- err
 					select {
 					case <-ctx.Done():
 						return
-					case out <- listsByWatcher.merge():
+					case out <- mergedList:
 					}
 				case list, ok := <-source:
 					if !ok {
