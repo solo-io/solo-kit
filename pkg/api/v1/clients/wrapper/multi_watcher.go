@@ -32,6 +32,17 @@ type watchAggregator struct {
 	watchersAccess sync.RWMutex
 }
 
+/*
+warning to users:
+The Watch Aggregator sends snapshots composed from multiple source watches
+If a source watch fails to deliver resource lists and/or is returning errors on
+the watch channel, resources from that watcher will be removed from the merged
+resource list.
+
+Syncers should be aware that resources may be missing from snapshots if one
+of the source watches is not sending snapshots, e.g. on an unreachable remote cluster.
+We should be careful when invalidating user config or potentially removing resources in these cases
+*/
 func NewWatchAggregator() WatchAggregator {
 	sources := make(map[clients.ResourceWatcher][]removeWatch)
 	sinks := make(map[resourceSink]addWatch)
