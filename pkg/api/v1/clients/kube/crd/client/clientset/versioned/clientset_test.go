@@ -5,12 +5,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/log"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/solo-io/go-utils/kubeutils"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	mocksv1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"

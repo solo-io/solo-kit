@@ -14,6 +14,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/go-utils/stringutils"
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
@@ -21,8 +23,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
-	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 	"golang.org/x/sync/errgroup"
 )
 

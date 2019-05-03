@@ -15,8 +15,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/log"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/kubernetes"
