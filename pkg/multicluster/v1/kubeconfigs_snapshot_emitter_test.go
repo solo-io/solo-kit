@@ -82,12 +82,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectkubeconfigs {
-						if _, err := snap.Kubeconfigs.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Kubeconfigs.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectkubeconfigs {
-						if _, err := snap.Kubeconfigs.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Kubeconfigs.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -155,12 +155,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectkubeconfigs {
-						if _, err := snap.Kubeconfigs.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Kubeconfigs.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectkubeconfigs {
-						if _, err := snap.Kubeconfigs.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Kubeconfigs.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}

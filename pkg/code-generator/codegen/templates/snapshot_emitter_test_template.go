@@ -129,20 +129,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expect{{ .PluralName }} {
-{{- if .ClusterScoped }}
 						if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- end }}
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpect{{ .PluralName }} {
-{{- if .ClusterScoped }}
 						if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- end }}
 							continue drain
 						}
 					}
@@ -253,20 +245,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expect{{ .PluralName }} {
-{{- if .ClusterScoped }}
 						if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- end }}
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpect{{ .PluralName }} {
-{{- if .ClusterScoped }}
 						if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- end }}
 							continue drain
 						}
 					}

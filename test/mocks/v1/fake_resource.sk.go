@@ -37,7 +37,6 @@ func (r *FakeResource) Hash() uint64 {
 }
 
 type FakeResourceList []*FakeResource
-type FakesByNamespace map[string]FakeResourceList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list FakeResourceList) Find(namespace, name string) (*FakeResource, error) {
@@ -102,32 +101,6 @@ func (list FakeResourceList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace FakesByNamespace) Add(fakeResource ...*FakeResource) {
-	for _, item := range fakeResource {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace FakesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace FakesByNamespace) List() FakeResourceList {
-	var list FakeResourceList
-	for _, fakeResourceList := range byNamespace {
-		list = append(list, fakeResourceList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace FakesByNamespace) Clone() FakesByNamespace {
-	cloned := make(FakesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &FakeResource{}

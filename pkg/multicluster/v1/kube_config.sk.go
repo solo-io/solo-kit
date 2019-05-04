@@ -50,7 +50,6 @@ func (r *KubeConfig) Hash() uint64 {
 }
 
 type KubeConfigList []*KubeConfig
-type KubeconfigsByNamespace map[string]KubeConfigList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list KubeConfigList) Find(namespace, name string) (*KubeConfig, error) {
@@ -115,30 +114,4 @@ func (list KubeConfigList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace KubeconfigsByNamespace) Add(kubeConfig ...*KubeConfig) {
-	for _, item := range kubeConfig {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace KubeconfigsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace KubeconfigsByNamespace) List() KubeConfigList {
-	var list KubeConfigList
-	for _, kubeConfigList := range byNamespace {
-		list = append(list, kubeConfigList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace KubeconfigsByNamespace) Clone() KubeconfigsByNamespace {
-	cloned := make(KubeconfigsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }

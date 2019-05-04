@@ -50,7 +50,6 @@ func (r *KubeNamespace) Hash() uint64 {
 }
 
 type KubeNamespaceList []*KubeNamespace
-type KubenamespacesByNamespace map[string]KubeNamespaceList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list KubeNamespaceList) Find(namespace, name string) (*KubeNamespace, error) {
@@ -115,30 +114,4 @@ func (list KubeNamespaceList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace KubenamespacesByNamespace) Add(kubeNamespace ...*KubeNamespace) {
-	for _, item := range kubeNamespace {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace KubenamespacesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace KubenamespacesByNamespace) List() KubeNamespaceList {
-	var list KubeNamespaceList
-	for _, kubeNamespaceList := range byNamespace {
-		list = append(list, kubeNamespaceList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace KubenamespacesByNamespace) Clone() KubenamespacesByNamespace {
-	cloned := make(KubenamespacesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }

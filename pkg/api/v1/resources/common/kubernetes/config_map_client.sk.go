@@ -9,6 +9,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type ConfigMapWatcher interface {
+	Watch(namespace string, opts clients.WatchOpts) (<-chan ConfigMapList, <-chan error, error)
+}
+
 type ConfigMapClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +20,7 @@ type ConfigMapClient interface {
 	Write(resource *ConfigMap, opts clients.WriteOpts) (*ConfigMap, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (ConfigMapList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan ConfigMapList, <-chan error, error)
+	ConfigMapWatcher
 }
 
 type configMapClient struct {

@@ -50,7 +50,6 @@ func (r *ConfigMap) Hash() uint64 {
 }
 
 type ConfigMapList []*ConfigMap
-type ConfigmapsByNamespace map[string]ConfigMapList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ConfigMapList) Find(namespace, name string) (*ConfigMap, error) {
@@ -115,30 +114,4 @@ func (list ConfigMapList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace ConfigmapsByNamespace) Add(configMap ...*ConfigMap) {
-	for _, item := range configMap {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace ConfigmapsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace ConfigmapsByNamespace) List() ConfigMapList {
-	var list ConfigMapList
-	for _, configMapList := range byNamespace {
-		list = append(list, configMapList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace ConfigmapsByNamespace) Clone() ConfigmapsByNamespace {
-	cloned := make(ConfigmapsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }

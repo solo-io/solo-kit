@@ -140,6 +140,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		kubeconfigsByNamespace := make(map[string]KubeConfigList)
 
 		for {
 			record := func() { stats.Record(ctx, mKubeconfigsSnapshotIn.M(1)) }
@@ -159,9 +160,14 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				record()
 
 				namespace := kubeConfigNamespacedList.namespace
-				kubeConfigList := kubeConfigNamespacedList.list
 
-				currentSnapshot.Kubeconfigs[namespace] = kubeConfigList
+				// merge lists by namespace
+				kubeconfigsByNamespace[namespace] = kubeConfigNamespacedList.list
+				var kubeConfigList KubeConfigList
+				for _, kubeconfigs := range kubeconfigsByNamespace {
+					kubeConfigList = append(kubeConfigList, kubeconfigs...)
+				}
+				currentSnapshot.Kubeconfigs = kubeConfigList.Sort()
 			}
 		}
 	}()

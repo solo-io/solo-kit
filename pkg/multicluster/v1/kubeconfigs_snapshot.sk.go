@@ -10,7 +10,7 @@ import (
 )
 
 type KubeconfigsSnapshot struct {
-	Kubeconfigs KubeconfigsByNamespace
+	Kubeconfigs KubeConfigList
 }
 
 func (s KubeconfigsSnapshot) Clone() KubeconfigsSnapshot {
@@ -26,7 +26,7 @@ func (s KubeconfigsSnapshot) Hash() uint64 {
 }
 
 func (s KubeconfigsSnapshot) hashKubeconfigs() uint64 {
-	return hashutils.HashAll(s.Kubeconfigs.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Kubeconfigs.AsInterfaces()...)
 }
 
 func (s KubeconfigsSnapshot) HashFields() []zap.Field {
@@ -55,6 +55,6 @@ func (ss KubeconfigsSnapshotStringer) String() string {
 func (s KubeconfigsSnapshot) Stringer() KubeconfigsSnapshotStringer {
 	return KubeconfigsSnapshotStringer{
 		Version:     s.Hash(),
-		Kubeconfigs: s.Kubeconfigs.List().NamespacesDotNames(),
+		Kubeconfigs: s.Kubeconfigs.NamespacesDotNames(),
 	}
 }

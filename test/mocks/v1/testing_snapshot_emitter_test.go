@@ -137,12 +137,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectMocks {
-						if _, err := snap.Mocks.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectMocks {
-						if _, err := snap.Mocks.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -197,12 +197,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectFakes {
-						if _, err := snap.Fakes.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectFakes {
-						if _, err := snap.Fakes.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -257,12 +257,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectAnothermockresources {
-						if _, err := snap.Anothermockresources.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Anothermockresources.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectAnothermockresources {
-						if _, err := snap.Anothermockresources.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Anothermockresources.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -367,12 +367,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectmcts {
-						if _, err := snap.Mcts.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Mcts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectmcts {
-						if _, err := snap.Mcts.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Mcts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -427,12 +427,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectpods {
-						if _, err := snap.Pods.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Pods.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectpods {
-						if _, err := snap.Pods.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Pods.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -500,12 +500,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectMocks {
-						if _, err := snap.Mocks.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectMocks {
-						if _, err := snap.Mocks.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -560,12 +560,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectFakes {
-						if _, err := snap.Fakes.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectFakes {
-						if _, err := snap.Fakes.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -620,12 +620,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectAnothermockresources {
-						if _, err := snap.Anothermockresources.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Anothermockresources.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectAnothermockresources {
-						if _, err := snap.Anothermockresources.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Anothermockresources.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -730,12 +730,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectmcts {
-						if _, err := snap.Mcts.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Mcts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectmcts {
-						if _, err := snap.Mcts.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Mcts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -790,12 +790,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectpods {
-						if _, err := snap.Pods.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Pods.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectpods {
-						if _, err := snap.Pods.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Pods.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}

@@ -18,11 +18,7 @@ import (
 
 type {{ .GoName }}Snapshot struct {
 {{- range .Resources}}
-{{- if .ClusterScoped }}
 	{{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List
-{{- else }}
-	{{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace
-{{- end }}
 {{- end}}
 }
 
@@ -46,11 +42,7 @@ func (s {{ .GoName }}Snapshot) Hash() uint64 {
 {{- range .Resources }}
 
 func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}() uint64 {
-{{- if .ClusterScoped }}
 	return hashutils.HashAll(s.{{ upper_camel .PluralName }}.AsInterfaces()...)
-{{- else }}
-	return hashutils.HashAll(s.{{ upper_camel .PluralName }}.List().AsInterfaces()...)
-{{- end }}
 }
 {{- end}}
 
@@ -91,7 +83,7 @@ func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
 {{- if .ClusterScoped }}
 		{{ upper_camel .PluralName }}: s.{{ upper_camel .PluralName }}.Names(),
 {{- else }}
-		{{ upper_camel .PluralName }}: s.{{ upper_camel .PluralName }}.List().NamespacesDotNames(),
+		{{ upper_camel .PluralName }}: s.{{ upper_camel .PluralName }}.NamespacesDotNames(),
 {{- end }}
 {{- end}}
 	}

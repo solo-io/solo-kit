@@ -98,7 +98,6 @@ func (r *{{ .Name }}) Hash() uint64 {
 {{- end }}
 
 type {{ .Name }}List []*{{ .Name }}
-type {{ upper_camel .PluralName }}ByNamespace map[string]{{ .Name }}List
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list {{ .Name }}List) Find(namespace, name string) (*{{ .Name }}, error) {
@@ -173,32 +172,6 @@ func (list {{ .Name }}List) AsInterfaces() []interface{}{
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace {{ upper_camel .PluralName }}ByNamespace) Add({{ lower_camel .Name }} ... *{{ .Name }}) {
-	for _, item := range {{ lower_camel .Name }} {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace {{ upper_camel .PluralName }}ByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace {{ upper_camel .PluralName }}ByNamespace) List() {{ .Name }}List {
-	var list {{ .Name }}List
-	for _, {{ lower_camel .Name }}List := range byNamespace {
-		list = append(list, {{ lower_camel .Name }}List...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace {{ upper_camel .PluralName }}ByNamespace) Clone() {{ upper_camel .PluralName }}ByNamespace {
-	cloned := make({{ upper_camel .PluralName }}ByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 {{- if not $.IsCustom }}
