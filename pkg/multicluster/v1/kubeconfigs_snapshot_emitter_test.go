@@ -97,10 +97,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := kubeConfigClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := kubeConfigClient.List(namespace2, clients.ListOpts{})
-					combined := KubeconfigsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -170,10 +167,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := kubeConfigClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := kubeConfigClient.List(namespace2, clients.ListOpts{})
-					combined := KubeconfigsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
