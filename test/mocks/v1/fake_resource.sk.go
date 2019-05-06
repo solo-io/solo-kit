@@ -95,6 +95,12 @@ func (list FakeResourceList) Each(f func(element *FakeResource)) {
 	}
 }
 
+func (list FakeResourceList) EachResource(f func(element resources.Resource)) {
+	for _, fakeResource := range list {
+		f(fakeResource)
+	}
+}
+
 func (list FakeResourceList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *FakeResource) {

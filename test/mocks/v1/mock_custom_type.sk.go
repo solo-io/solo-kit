@@ -108,6 +108,12 @@ func (list MockCustomTypeList) Each(f func(element *MockCustomType)) {
 	}
 }
 
+func (list MockCustomTypeList) EachResource(f func(element resources.Resource)) {
+	for _, mockCustomType := range list {
+		f(mockCustomType)
+	}
+}
+
 func (list MockCustomTypeList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *MockCustomType) {

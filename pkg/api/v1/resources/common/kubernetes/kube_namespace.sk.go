@@ -108,6 +108,12 @@ func (list KubeNamespaceList) Each(f func(element *KubeNamespace)) {
 	}
 }
 
+func (list KubeNamespaceList) EachResource(f func(element resources.Resource)) {
+	for _, kubeNamespace := range list {
+		f(kubeNamespace)
+	}
+}
+
 func (list KubeNamespaceList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *KubeNamespace) {

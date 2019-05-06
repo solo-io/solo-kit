@@ -108,6 +108,12 @@ func (list ConfigMapList) Each(f func(element *ConfigMap)) {
 	}
 }
 
+func (list ConfigMapList) EachResource(f func(element resources.Resource)) {
+	for _, configMap := range list {
+		f(configMap)
+	}
+}
+
 func (list ConfigMapList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *ConfigMap) {
