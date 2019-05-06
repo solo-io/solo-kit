@@ -101,7 +101,11 @@ func (c *watchAggregator) Watch(namespace string, opts clients.WatchOpts) (<-cha
 					delete(listsByWatcher, watcher)
 					mergedList := listsByWatcher.merge()
 					access.Unlock()
-					aggregatedErrs <- err
+					select {
+					case <-ctx.Done():
+						return
+					case aggregatedErrs <- err:
+					}
 					select {
 					case <-ctx.Done():
 						return
