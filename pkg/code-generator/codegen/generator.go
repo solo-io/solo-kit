@@ -115,6 +115,7 @@ func generateFilesForResourceGroup(rg *model.ResourceGroup) (code_generator.File
 		"_snapshot_emitter.sk.go":        templates.ResourceGroupEmitterTemplate,
 		"_snapshot_emitter_test.go":      templates.ResourceGroupEmitterTestTemplate,
 		"_event_loop.sk.go":              templates.ResourceGroupEventLoopTemplate,
+		"_simple_event_loop.sk.go":       templates.SimpleEventLoopTemplate,
 		"_event_loop_test.go":            templates.ResourceGroupEventLoopTestTemplate,
 	} {
 		content, err := generateResourceGroupFile(rg, tmpl)
