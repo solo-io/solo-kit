@@ -8,6 +8,26 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
+// predefine the options for starting a watch
+type ClientWatchOpts struct {
+	// the watch client to start the watch
+	BaseClient clients.ResourceWatcher
+	// the namespace to watch
+	// will be ignored if the resource
+	// is cluster-scoped
+	Namespace string
+	// the label selector to apply to the watch
+	Selector map[string]string
+}
+
+func AggregatedWatchFromClients(clientOpts ...ClientWatchOpts) clients.ResourceWatch {
+	var watches []clients.ResourceWatch
+	for _, opt := range clientOpts {
+		watches = append(watches, ResourceWatch(opt.BaseClient, opt.Namespace, opt.Selector))
+	}
+	return AggregatedWatch(watches...)
+}
+
 func ResourceWatch(rw clients.ResourceWatcher, namespace string, selector map[string]string) clients.ResourceWatch {
 	return func(ctx context.Context) (<-chan resources.ResourceList, <-chan error, error) {
 		return rw.Watch(namespace, clients.WatchOpts{
