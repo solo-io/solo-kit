@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add a new generated type - SimpleEventLoop
+    issueLink: https://github.com/solo-io/go-utils/issues/171

@@ -107,21 +107,21 @@ func newResourcesByWatchIndex() *resourcesByWatchIndex {
 	return &resourcesByWatchIndex{resources: make(map[int]resources.ResourceList)}
 }
 
-func (rbw resourcesByWatchIndex) set(key int, val resources.ResourceList) resourcesByWatchIndex {
+func (rbw *resourcesByWatchIndex) set(key int, val resources.ResourceList) *resourcesByWatchIndex {
 	rbw.access.Lock()
 	rbw.resources[key] = val
 	rbw.access.Unlock()
 	return rbw
 }
 
-func (rbw resourcesByWatchIndex) delete(key int) resourcesByWatchIndex {
+func (rbw *resourcesByWatchIndex) delete(key int) *resourcesByWatchIndex {
 	rbw.access.Lock()
 	delete(rbw.resources, key)
 	rbw.access.Unlock()
 	return rbw
 }
 
-func (rbw resourcesByWatchIndex) merge() resources.ResourceList {
+func (rbw *resourcesByWatchIndex) merge() resources.ResourceList {
 	rbw.access.RLock()
 	var merged resources.ResourceList
 	for _, list := range rbw.resources {
