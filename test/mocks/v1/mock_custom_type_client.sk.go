@@ -10,6 +10,7 @@ import (
 )
 
 type MockCustomTypeWatcher interface {
+	// watch namespace-scoped mcts
 	Watch(namespace string, opts clients.WatchOpts) (<-chan MockCustomTypeList, <-chan error, error)
 }
 

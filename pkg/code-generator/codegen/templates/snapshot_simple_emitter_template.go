@@ -43,7 +43,8 @@ type {{ lower_camel .GoName }}SimpleEmitter struct {
 }
 
 func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) (<-chan *{{ .GoName }}Snapshot, <-chan error, error) {
-
+	snapshots := make(chan *{{ .GoName }}Snapshot)
+	errs := make(chan error)
 	
 	untyped, watchErrs, err := c.aggregatedWatch(ctx)
 	if err != nil {
@@ -53,7 +54,7 @@ func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) 
 	go errutils.AggregateErrs(ctx, errs, watchErrs, "{{ lower_camel .GoName }}-emitter")
 
 	go func() {
-		originalSnapshot := TestingSnapshot{}
+		originalSnapshot := {{ .GoName }}Snapshot{}
 		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
 		sync := func() {
@@ -61,7 +62,7 @@ func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) 
 				return
 			}
 
-			stats.Record(ctx, mTestingSnapshotOut.M(1))
+			stats.Record(ctx, m{{ .GoName }}SnapshotOut.M(1))
 			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
@@ -73,7 +74,7 @@ func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) 
 		}()
 
 		for {
-			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }
+			record := func() { stats.Record(ctx, m{{ .GoName }}SnapshotIn.M(1)) }
 
 			select {
 			case <-timer.C:
@@ -86,16 +87,16 @@ func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) 
 			case untypedList := <-untyped:
 				record()
 
-				currentSnapshot = TestingSnapshot{}
+				currentSnapshot = {{ .GoName }}Snapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
 {{- range .Resources}}
 					case *{{ .ImportPrefix }}{{ .Name }}:
-						snap.{{ upper_camel .PluralName }} = append(snap.{{ upper_camel .PluralName }}, typed)
+						currentSnapshot.{{ upper_camel .PluralName }} = append(currentSnapshot.{{ upper_camel .PluralName }}, typed)
 {{- end}}
 					default:
 						select {
-						case errs <- fmt.Errorf("TestingSnapshotEmitter "+
+						case errs <- fmt.Errorf("{{ .GoName }}SnapshotEmitter "+
 							"cannot process resource %v of type %T", res.GetMetadata().Ref(), res):
 						case <-ctx.Done():
 							return
