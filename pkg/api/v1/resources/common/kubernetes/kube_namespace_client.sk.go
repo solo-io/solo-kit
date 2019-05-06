@@ -10,7 +10,6 @@ import (
 )
 
 type KubeNamespaceWatcher interface {
-	// watch namespace-scoped kubenamespaces
 	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error)
 }
 

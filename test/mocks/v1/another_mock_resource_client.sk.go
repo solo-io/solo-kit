@@ -10,7 +10,6 @@ import (
 )
 
 type AnotherMockResourceWatcher interface {
-	// watch namespace-scoped Anothermockresources
 	Watch(namespace string, opts clients.WatchOpts) (<-chan AnotherMockResourceList, <-chan error, error)
 }
 
