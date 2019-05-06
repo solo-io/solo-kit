@@ -107,6 +107,12 @@ func (list ClusterResourceList) Each(f func(element *ClusterResource)) {
 	}
 }
 
+func (list ClusterResourceList) EachResource(f func(element resources.Resource)) {
+	for _, clusterResource := range list {
+		f(clusterResource)
+	}
+}
+
 func (list ClusterResourceList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *ClusterResource) {

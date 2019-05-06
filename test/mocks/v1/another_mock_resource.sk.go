@@ -107,6 +107,12 @@ func (list AnotherMockResourceList) Each(f func(element *AnotherMockResource)) {
 	}
 }
 
+func (list AnotherMockResourceList) EachResource(f func(element resources.Resource)) {
+	for _, anotherMockResource := range list {
+		f(anotherMockResource)
+	}
+}
+
 func (list AnotherMockResourceList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *AnotherMockResource) {

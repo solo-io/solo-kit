@@ -110,11 +110,12 @@ func generateFilesForResource(resource *model.Resource) (code_generator.Files, e
 func generateFilesForResourceGroup(rg *model.ResourceGroup) (code_generator.Files, error) {
 	var v code_generator.Files
 	for suffix, tmpl := range map[string]*template.Template{
-		"_snapshot.sk.go":           templates.ResourceGroupSnapshotTemplate,
-		"_snapshot_emitter.sk.go":   templates.ResourceGroupEmitterTemplate,
-		"_snapshot_emitter_test.go": templates.ResourceGroupEmitterTestTemplate,
-		"_event_loop.sk.go":         templates.ResourceGroupEventLoopTemplate,
-		"_event_loop_test.go":       templates.ResourceGroupEventLoopTestTemplate,
+		"_snapshot.sk.go":                templates.ResourceGroupSnapshotTemplate,
+		"_snapshot_simple_emitter.sk.go": templates.SimpleEmitterTemplate,
+		"_snapshot_emitter.sk.go":        templates.ResourceGroupEmitterTemplate,
+		"_snapshot_emitter_test.go":      templates.ResourceGroupEmitterTestTemplate,
+		"_event_loop.sk.go":              templates.ResourceGroupEventLoopTemplate,
+		"_event_loop_test.go":            templates.ResourceGroupEventLoopTestTemplate,
 	} {
 		content, err := generateResourceGroupFile(rg, tmpl)
 		if err != nil {

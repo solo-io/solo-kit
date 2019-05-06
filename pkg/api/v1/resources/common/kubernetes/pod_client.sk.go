@@ -10,6 +10,7 @@ import (
 )
 
 type PodWatcher interface {
+	// watch namespace-scoped pods
 	Watch(namespace string, opts clients.WatchOpts) (<-chan PodList, <-chan error, error)
 }
 

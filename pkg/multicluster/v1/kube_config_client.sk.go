@@ -10,6 +10,7 @@ import (
 )
 
 type KubeConfigWatcher interface {
+	// watch namespace-scoped kubeconfigs
 	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeConfigList, <-chan error, error)
 }
 

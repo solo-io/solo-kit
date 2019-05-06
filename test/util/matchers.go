@@ -10,3 +10,9 @@ func ZeroResourceVersion(resource resources.Resource) {
 		meta.ResourceVersion = ""
 	})
 }
+
+func ZeroResourceVersions(resources ...resources.Resource) {
+	for _, res := range resources {
+		ZeroResourceVersion(res)
+	}
+}

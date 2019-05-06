@@ -108,6 +108,12 @@ func (list KubeConfigList) Each(f func(element *KubeConfig)) {
 	}
 }
 
+func (list KubeConfigList) EachResource(f func(element resources.Resource)) {
+	for _, kubeConfig := range list {
+		f(kubeConfig)
+	}
+}
+
 func (list KubeConfigList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *KubeConfig) {

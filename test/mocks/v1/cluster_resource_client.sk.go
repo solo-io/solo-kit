@@ -10,6 +10,7 @@ import (
 )
 
 type ClusterResourceWatcher interface {
+	// watch cluster-scoped Clusterresources
 	Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error)
 }
 

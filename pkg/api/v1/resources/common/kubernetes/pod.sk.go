@@ -108,6 +108,12 @@ func (list PodList) Each(f func(element *Pod)) {
 	}
 }
 
+func (list PodList) EachResource(f func(element resources.Resource)) {
+	for _, pod := range list {
+		f(pod)
+	}
+}
+
 func (list PodList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Pod) {

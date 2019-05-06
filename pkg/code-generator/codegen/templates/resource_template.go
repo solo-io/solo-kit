@@ -166,6 +166,12 @@ func (list {{ .Name }}List) Each(f func(element *{{ .Name }})) {
 	}
 }
 
+func (list {{ .Name }}List) EachResource(f func(element resources.Resource)) {
+	for _, {{ lower_camel .Name }} := range list {
+		f({{ lower_camel .Name }})
+	}
+}
+
 func (list {{ .Name }}List) AsInterfaces() []interface{}{
 	var asInterfaces []interface{}
 	list.Each(func(element *{{ .Name }}) {
