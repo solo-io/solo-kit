@@ -207,24 +207,24 @@ func newResourcesByWatcher() *resourcesByWatcher {
 
 func (rbw resourcesByWatcher) set(key clients.ResourceWatcher, val resources.ResourceList) resourcesByWatcher {
 	rbw.access.Lock()
-	defer rbw.access.Unlock()
 	rbw.resources[key] = val
+	rbw.access.Unlock()
 	return rbw
 }
 
 func (rbw resourcesByWatcher) delete(key clients.ResourceWatcher) resourcesByWatcher {
 	rbw.access.Lock()
-	defer rbw.access.Unlock()
 	delete(rbw.resources, key)
+	rbw.access.Unlock()
 	return rbw
 }
 
 func (rbw resourcesByWatcher) merge() resources.ResourceList {
 	rbw.access.RLock()
-	defer rbw.access.RUnlock()
 	var merged resources.ResourceList
 	for _, list := range rbw.resources {
 		merged = append(merged, list...)
 	}
+	rbw.access.RUnlock()
 	return merged.Sort()
 }

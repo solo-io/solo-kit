@@ -89,24 +89,24 @@ func newResourcesByWatchIndex() *resourcesByWatchIndex {
 
 func (rbw resourcesByWatchIndex) set(key int, val resources.ResourceList) resourcesByWatchIndex {
 	rbw.access.Lock()
-	defer rbw.access.Unlock()
 	rbw.resources[key] = val
+	rbw.access.Unlock()
 	return rbw
 }
 
 func (rbw resourcesByWatchIndex) delete(key int) resourcesByWatchIndex {
 	rbw.access.Lock()
-	defer rbw.access.Unlock()
 	delete(rbw.resources, key)
+	rbw.access.Unlock()
 	return rbw
 }
 
 func (rbw resourcesByWatchIndex) merge() resources.ResourceList {
 	rbw.access.RLock()
-	defer rbw.access.RUnlock()
 	var merged resources.ResourceList
 	for _, list := range rbw.resources {
 		merged = append(merged, list...)
 	}
+	rbw.access.RUnlock()
 	return merged.Sort()
 }
