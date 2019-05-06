@@ -12,6 +12,45 @@ import (
 	kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
+// MockPodWatcher is a mock of PodWatcher interface
+type MockPodWatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockPodWatcherMockRecorder
+}
+
+// MockPodWatcherMockRecorder is the mock recorder for MockPodWatcher
+type MockPodWatcherMockRecorder struct {
+	mock *MockPodWatcher
+}
+
+// NewMockPodWatcher creates a new mock instance
+func NewMockPodWatcher(ctrl *gomock.Controller) *MockPodWatcher {
+	mock := &MockPodWatcher{ctrl: ctrl}
+	mock.recorder = &MockPodWatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockPodWatcher) EXPECT() *MockPodWatcherMockRecorder {
+	return m.recorder
+}
+
+// Watch mocks base method
+func (m *MockPodWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan kubernetes.PodList, <-chan error, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Watch", namespace, opts)
+	ret0, _ := ret[0].(<-chan kubernetes.PodList)
+	ret1, _ := ret[1].(<-chan error)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Watch indicates an expected call of Watch
+func (mr *MockPodWatcherMockRecorder) Watch(namespace, opts interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockPodWatcher)(nil).Watch), namespace, opts)
+}
+
 // MockPodClient is a mock of PodClient interface
 type MockPodClient struct {
 	ctrl     *gomock.Controller

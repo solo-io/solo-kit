@@ -12,6 +12,45 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 )
 
+// MockKubeConfigWatcher is a mock of KubeConfigWatcher interface
+type MockKubeConfigWatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockKubeConfigWatcherMockRecorder
+}
+
+// MockKubeConfigWatcherMockRecorder is the mock recorder for MockKubeConfigWatcher
+type MockKubeConfigWatcherMockRecorder struct {
+	mock *MockKubeConfigWatcher
+}
+
+// NewMockKubeConfigWatcher creates a new mock instance
+func NewMockKubeConfigWatcher(ctrl *gomock.Controller) *MockKubeConfigWatcher {
+	mock := &MockKubeConfigWatcher{ctrl: ctrl}
+	mock.recorder = &MockKubeConfigWatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockKubeConfigWatcher) EXPECT() *MockKubeConfigWatcherMockRecorder {
+	return m.recorder
+}
+
+// Watch mocks base method
+func (m *MockKubeConfigWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.KubeConfigList, <-chan error, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Watch", namespace, opts)
+	ret0, _ := ret[0].(<-chan v1.KubeConfigList)
+	ret1, _ := ret[1].(<-chan error)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Watch indicates an expected call of Watch
+func (mr *MockKubeConfigWatcherMockRecorder) Watch(namespace, opts interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockKubeConfigWatcher)(nil).Watch), namespace, opts)
+}
+
 // MockKubeConfigClient is a mock of KubeConfigClient interface
 type MockKubeConfigClient struct {
 	ctrl     *gomock.Controller

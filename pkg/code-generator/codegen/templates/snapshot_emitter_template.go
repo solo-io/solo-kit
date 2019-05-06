@@ -201,6 +201,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+{{- range .Resources}}
+{{- if not .ClusterScoped }}
+		{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
+{{- end }}
+{{- end }}
 
 		for {
 			record := func(){stats.Record(ctx, m{{ .GoName }}SnapshotIn.M(1))}
@@ -226,9 +231,14 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				record()
 
 				namespace := {{ lower_camel .Name }}NamespacedList.namespace
-				{{ lower_camel .Name }}List := {{ lower_camel .Name }}NamespacedList.list
 
-				currentSnapshot.{{ upper_camel .PluralName }}[namespace] = {{ lower_camel .Name }}List
+				// merge lists by namespace
+				{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .Name }}NamespacedList.list
+				var {{ lower_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List
+				for _, {{ lower_camel .PluralName }} := range {{ lower_camel .PluralName }}ByNamespace {
+					{{ lower_camel .Name }}List  = append({{ lower_camel .Name }}List, {{ lower_camel .PluralName }}...)
+				}
+				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List.Sort()
 {{- end }}
 {{- end}}
 			}

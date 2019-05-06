@@ -129,20 +129,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expect{{ .PluralName }} {
-{{- if .ClusterScoped }}
 						if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- end }}
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpect{{ .PluralName }} {
-{{- if .ClusterScoped }}
 						if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- end }}
 							continue drain
 						}
 					}
@@ -151,17 +143,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
 {{- if .ClusterScoped }}
-					nsList, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
-					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
-						"": nsList,
-					}
+					combined, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
 {{- else }}
 					nsList1, _ := {{ lower_camel .Name }}Client.List(namespace1, clients.ListOpts{})
 					nsList2, _ := {{ lower_camel .Name }}Client.List(namespace2, clients.ListOpts{})
-					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 {{- end }}
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
@@ -253,20 +239,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expect{{ .PluralName }} {
-{{- if .ClusterScoped }}
 						if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
-{{- end }}
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpect{{ .PluralName }} {
-{{- if .ClusterScoped }}
 						if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- else }}
-						if _, err := snap.{{ upper_camel .PluralName }}.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-{{- end }}
 							continue drain
 						}
 					}
@@ -275,17 +253,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
 {{- if .ClusterScoped }}
-					nsList, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
-					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
-						"": nsList,
-					}
+					combined, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
 {{- else }}
 					nsList1, _ := {{ lower_camel .Name }}Client.List(namespace1, clients.ListOpts{})
 					nsList2, _ := {{ lower_camel .Name }}Client.List(namespace2, clients.ListOpts{})
-					combined := {{ .ImportPrefix }}{{ upper_camel .PluralName }}ByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 {{- end }}
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}

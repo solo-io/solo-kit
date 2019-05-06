@@ -12,12 +12,12 @@ import (
 )
 
 type TestingSnapshot struct {
-	Mocks                MocksByNamespace
-	Fakes                FakesByNamespace
-	Anothermockresources AnothermockresourcesByNamespace
+	Mocks                MockResourceList
+	Fakes                FakeResourceList
+	Anothermockresources AnotherMockResourceList
 	Clusterresources     ClusterResourceList
-	Mcts                 MctsByNamespace
-	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodsByNamespace
+	Mcts                 MockCustomTypeList
+	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
@@ -43,15 +43,15 @@ func (s TestingSnapshot) Hash() uint64 {
 }
 
 func (s TestingSnapshot) hashMocks() uint64 {
-	return hashutils.HashAll(s.Mocks.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Mocks.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) hashFakes() uint64 {
-	return hashutils.HashAll(s.Fakes.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Fakes.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) hashAnothermockresources() uint64 {
-	return hashutils.HashAll(s.Anothermockresources.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Anothermockresources.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) hashClusterresources() uint64 {
@@ -59,11 +59,11 @@ func (s TestingSnapshot) hashClusterresources() uint64 {
 }
 
 func (s TestingSnapshot) hashMcts() uint64 {
-	return hashutils.HashAll(s.Mcts.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Mcts.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) hashPods() uint64 {
-	return hashutils.HashAll(s.Pods.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Pods.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) HashFields() []zap.Field {
@@ -127,11 +127,11 @@ func (ss TestingSnapshotStringer) String() string {
 func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 	return TestingSnapshotStringer{
 		Version:              s.Hash(),
-		Mocks:                s.Mocks.List().NamespacesDotNames(),
-		Fakes:                s.Fakes.List().NamespacesDotNames(),
-		Anothermockresources: s.Anothermockresources.List().NamespacesDotNames(),
+		Mocks:                s.Mocks.NamespacesDotNames(),
+		Fakes:                s.Fakes.NamespacesDotNames(),
+		Anothermockresources: s.Anothermockresources.NamespacesDotNames(),
 		Clusterresources:     s.Clusterresources.Names(),
-		Mcts:                 s.Mcts.List().NamespacesDotNames(),
-		Pods:                 s.Pods.List().NamespacesDotNames(),
+		Mcts:                 s.Mcts.NamespacesDotNames(),
+		Pods:                 s.Pods.NamespacesDotNames(),
 	}
 }

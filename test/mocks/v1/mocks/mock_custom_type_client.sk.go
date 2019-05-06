@@ -12,6 +12,45 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
+// MockMockCustomTypeWatcher is a mock of MockCustomTypeWatcher interface
+type MockMockCustomTypeWatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockMockCustomTypeWatcherMockRecorder
+}
+
+// MockMockCustomTypeWatcherMockRecorder is the mock recorder for MockMockCustomTypeWatcher
+type MockMockCustomTypeWatcherMockRecorder struct {
+	mock *MockMockCustomTypeWatcher
+}
+
+// NewMockMockCustomTypeWatcher creates a new mock instance
+func NewMockMockCustomTypeWatcher(ctrl *gomock.Controller) *MockMockCustomTypeWatcher {
+	mock := &MockMockCustomTypeWatcher{ctrl: ctrl}
+	mock.recorder = &MockMockCustomTypeWatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMockCustomTypeWatcher) EXPECT() *MockMockCustomTypeWatcherMockRecorder {
+	return m.recorder
+}
+
+// Watch mocks base method
+func (m *MockMockCustomTypeWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.MockCustomTypeList, <-chan error, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Watch", namespace, opts)
+	ret0, _ := ret[0].(<-chan v1.MockCustomTypeList)
+	ret1, _ := ret[1].(<-chan error)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Watch indicates an expected call of Watch
+func (mr *MockMockCustomTypeWatcherMockRecorder) Watch(namespace, opts interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockMockCustomTypeWatcher)(nil).Watch), namespace, opts)
+}
+
 // MockMockCustomTypeClient is a mock of MockCustomTypeClient interface
 type MockMockCustomTypeClient struct {
 	ctrl     *gomock.Controller

@@ -137,12 +137,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectMocks {
-						if _, err := snap.Mocks.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectMocks {
-						if _, err := snap.Mocks.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -152,10 +152,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
-					combined := MocksByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -197,12 +194,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectFakes {
-						if _, err := snap.Fakes.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectFakes {
-						if _, err := snap.Fakes.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -212,10 +209,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
-					combined := FakesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -257,12 +251,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectAnothermockresources {
-						if _, err := snap.Anothermockresources.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Anothermockresources.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectAnothermockresources {
-						if _, err := snap.Anothermockresources.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Anothermockresources.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -272,10 +266,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := anotherMockResourceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := anotherMockResourceClient.List(namespace2, clients.ListOpts{})
-					combined := AnothermockresourcesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -330,10 +321,7 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					nsList, _ := clusterResourceClient.List(clients.ListOpts{})
-					combined := ClusterresourcesByNamespace{
-						"": nsList,
-					}
+					combined, _ := clusterResourceClient.List(clients.ListOpts{})
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -367,12 +355,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectmcts {
-						if _, err := snap.Mcts.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Mcts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectmcts {
-						if _, err := snap.Mcts.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Mcts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -382,10 +370,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := mockCustomTypeClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := mockCustomTypeClient.List(namespace2, clients.ListOpts{})
-					combined := MctsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -427,12 +412,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectpods {
-						if _, err := snap.Pods.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Pods.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectpods {
-						if _, err := snap.Pods.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Pods.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -442,10 +427,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := podClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := podClient.List(namespace2, clients.ListOpts{})
-					combined := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -500,12 +482,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectMocks {
-						if _, err := snap.Mocks.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectMocks {
-						if _, err := snap.Mocks.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -515,10 +497,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
-					combined := MocksByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -560,12 +539,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectFakes {
-						if _, err := snap.Fakes.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectFakes {
-						if _, err := snap.Fakes.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -575,10 +554,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
-					combined := FakesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -620,12 +596,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectAnothermockresources {
-						if _, err := snap.Anothermockresources.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Anothermockresources.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectAnothermockresources {
-						if _, err := snap.Anothermockresources.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Anothermockresources.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -635,10 +611,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := anotherMockResourceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := anotherMockResourceClient.List(namespace2, clients.ListOpts{})
-					combined := AnothermockresourcesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -693,10 +666,7 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					nsList, _ := clusterResourceClient.List(clients.ListOpts{})
-					combined := ClusterresourcesByNamespace{
-						"": nsList,
-					}
+					combined, _ := clusterResourceClient.List(clients.ListOpts{})
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -730,12 +700,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectmcts {
-						if _, err := snap.Mcts.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Mcts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectmcts {
-						if _, err := snap.Mcts.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Mcts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -745,10 +715,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := mockCustomTypeClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := mockCustomTypeClient.List(namespace2, clients.ListOpts{})
-					combined := MctsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -790,12 +757,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectpods {
-						if _, err := snap.Pods.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Pods.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectpods {
-						if _, err := snap.Pods.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Pods.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -805,10 +772,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := podClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := podClient.List(namespace2, clients.ListOpts{})
-					combined := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}

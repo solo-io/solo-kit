@@ -57,8 +57,7 @@ func (c *watchAggregator) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	aggregatedErrs := make(chan error)
 
 	// a shared map that will be used to merge resources from different watchers
-	listsByWatcher := make(resourcesByWatcher)
-	access := sync.RWMutex{}
+	listsByWatcher := newResourcesByWatcher()
 
 	// create a wait group for sources
 	// so we can wait for all sources watches to close
@@ -90,36 +89,36 @@ func (c *watchAggregator) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		go func() {
 			defer cancel()
 			defer sourceWatches.Done()
+			defer listsByWatcher.delete(watcher)
 
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case err := <-errs:
+				case err, ok := <-errs:
+					if !ok {
+						return
+					}
 					// if the source starts returning errors, remove its list from the snasphot
-					access.Lock()
-					delete(listsByWatcher, watcher)
-					mergedList := listsByWatcher.merge()
-					access.Unlock()
-					aggregatedErrs <- err
 					select {
 					case <-ctx.Done():
 						return
-					case out <- mergedList:
+					case aggregatedErrs <- err:
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case out <- listsByWatcher.delete(watcher).merge():
 					}
 				case list, ok := <-source:
 					if !ok {
 						return
 					}
 					// add/update the list to the snapshot
-					access.Lock()
-					listsByWatcher[watcher] = list
-					mergedList := listsByWatcher.merge()
-					access.Unlock()
 					select {
 					case <-ctx.Done():
 						return
-					case out <- mergedList:
+					case out <- listsByWatcher.set(watcher, list).merge():
 					}
 				}
 			}
@@ -128,9 +127,7 @@ func (c *watchAggregator) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		// construct a function for removing this watcher from this sink
 		removeWatch := func() {
 			// remove the watcher+resources from the snapshot
-			access.Lock()
-			delete(listsByWatcher, watcher)
-			access.Unlock()
+			listsByWatcher.delete(watcher)
 			cancel()
 		}
 
@@ -199,12 +196,35 @@ func (c *watchAggregator) RemoveWatch(w clients.ResourceWatcher) {
 }
 
 // aggregate resources by the channel they were read from
-type resourcesByWatcher map[clients.ResourceWatcher]resources.ResourceList
+type resourcesByWatcher struct {
+	access    sync.RWMutex
+	resources map[clients.ResourceWatcher]resources.ResourceList
+}
+
+func newResourcesByWatcher() *resourcesByWatcher {
+	return &resourcesByWatcher{resources: make(map[clients.ResourceWatcher]resources.ResourceList)}
+}
+
+func (rbw resourcesByWatcher) set(key clients.ResourceWatcher, val resources.ResourceList) resourcesByWatcher {
+	rbw.access.Lock()
+	rbw.resources[key] = val
+	rbw.access.Unlock()
+	return rbw
+}
+
+func (rbw resourcesByWatcher) delete(key clients.ResourceWatcher) resourcesByWatcher {
+	rbw.access.Lock()
+	delete(rbw.resources, key)
+	rbw.access.Unlock()
+	return rbw
+}
 
 func (rbw resourcesByWatcher) merge() resources.ResourceList {
+	rbw.access.RLock()
 	var merged resources.ResourceList
-	for _, list := range rbw {
+	for _, list := range rbw.resources {
 		merged = append(merged, list...)
 	}
+	rbw.access.RUnlock()
 	return merged.Sort()
 }

@@ -41,7 +41,6 @@ func (r *ClusterResource) Hash() uint64 {
 }
 
 type ClusterResourceList []*ClusterResource
-type ClusterresourcesByNamespace map[string]ClusterResourceList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ClusterResourceList) Find(namespace, name string) (*ClusterResource, error) {
@@ -114,32 +113,6 @@ func (list ClusterResourceList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace ClusterresourcesByNamespace) Add(clusterResource ...*ClusterResource) {
-	for _, item := range clusterResource {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace ClusterresourcesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace ClusterresourcesByNamespace) List() ClusterResourceList {
-	var list ClusterResourceList
-	for _, clusterResourceList := range byNamespace {
-		list = append(list, clusterResourceList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace ClusterresourcesByNamespace) Clone() ClusterresourcesByNamespace {
-	cloned := make(ClusterresourcesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &ClusterResource{}

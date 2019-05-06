@@ -50,7 +50,6 @@ func (r *MockCustomType) Hash() uint64 {
 }
 
 type MockCustomTypeList []*MockCustomType
-type MctsByNamespace map[string]MockCustomTypeList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list MockCustomTypeList) Find(namespace, name string) (*MockCustomType, error) {
@@ -115,30 +114,4 @@ func (list MockCustomTypeList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace MctsByNamespace) Add(mockCustomType ...*MockCustomType) {
-	for _, item := range mockCustomType {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace MctsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace MctsByNamespace) List() MockCustomTypeList {
-	var list MockCustomTypeList
-	for _, mockCustomTypeList := range byNamespace {
-		list = append(list, mockCustomTypeList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace MctsByNamespace) Clone() MctsByNamespace {
-	cloned := make(MctsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }

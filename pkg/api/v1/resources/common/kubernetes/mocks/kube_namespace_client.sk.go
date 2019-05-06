@@ -12,6 +12,45 @@ import (
 	kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
+// MockKubeNamespaceWatcher is a mock of KubeNamespaceWatcher interface
+type MockKubeNamespaceWatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockKubeNamespaceWatcherMockRecorder
+}
+
+// MockKubeNamespaceWatcherMockRecorder is the mock recorder for MockKubeNamespaceWatcher
+type MockKubeNamespaceWatcherMockRecorder struct {
+	mock *MockKubeNamespaceWatcher
+}
+
+// NewMockKubeNamespaceWatcher creates a new mock instance
+func NewMockKubeNamespaceWatcher(ctrl *gomock.Controller) *MockKubeNamespaceWatcher {
+	mock := &MockKubeNamespaceWatcher{ctrl: ctrl}
+	mock.recorder = &MockKubeNamespaceWatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockKubeNamespaceWatcher) EXPECT() *MockKubeNamespaceWatcherMockRecorder {
+	return m.recorder
+}
+
+// Watch mocks base method
+func (m *MockKubeNamespaceWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan kubernetes.KubeNamespaceList, <-chan error, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Watch", namespace, opts)
+	ret0, _ := ret[0].(<-chan kubernetes.KubeNamespaceList)
+	ret1, _ := ret[1].(<-chan error)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Watch indicates an expected call of Watch
+func (mr *MockKubeNamespaceWatcherMockRecorder) Watch(namespace, opts interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockKubeNamespaceWatcher)(nil).Watch), namespace, opts)
+}
+
 // MockKubeNamespaceClient is a mock of KubeNamespaceClient interface
 type MockKubeNamespaceClient struct {
 	ctrl     *gomock.Controller

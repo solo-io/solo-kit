@@ -9,6 +9,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type KubeNamespaceWatcher interface {
+	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error)
+}
+
 type KubeNamespaceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +20,7 @@ type KubeNamespaceClient interface {
 	Write(resource *KubeNamespace, opts clients.WriteOpts) (*KubeNamespace, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (KubeNamespaceList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error)
+	KubeNamespaceWatcher
 }
 
 type kubeNamespaceClient struct {

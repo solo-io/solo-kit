@@ -9,6 +9,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type PodWatcher interface {
+	Watch(namespace string, opts clients.WatchOpts) (<-chan PodList, <-chan error, error)
+}
+
 type PodClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +20,7 @@ type PodClient interface {
 	Write(resource *Pod, opts clients.WriteOpts) (*Pod, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (PodList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan PodList, <-chan error, error)
+	PodWatcher
 }
 
 type podClient struct {

@@ -50,7 +50,6 @@ func (r *Pod) Hash() uint64 {
 }
 
 type PodList []*Pod
-type PodsByNamespace map[string]PodList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list PodList) Find(namespace, name string) (*Pod, error) {
@@ -115,30 +114,4 @@ func (list PodList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace PodsByNamespace) Add(pod ...*Pod) {
-	for _, item := range pod {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace PodsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace PodsByNamespace) List() PodList {
-	var list PodList
-	for _, podList := range byNamespace {
-		list = append(list, podList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace PodsByNamespace) Clone() PodsByNamespace {
-	cloned := make(PodsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }

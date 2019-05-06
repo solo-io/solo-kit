@@ -42,7 +42,6 @@ func (r *MockResource) Hash() uint64 {
 }
 
 type MockResourceList []*MockResource
-type MocksByNamespace map[string]MockResourceList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list MockResourceList) Find(namespace, name string) (*MockResource, error) {
@@ -115,32 +114,6 @@ func (list MockResourceList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace MocksByNamespace) Add(mockResource ...*MockResource) {
-	for _, item := range mockResource {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace MocksByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace MocksByNamespace) List() MockResourceList {
-	var list MockResourceList
-	for _, mockResourceList := range byNamespace {
-		list = append(list, mockResourceList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace MocksByNamespace) Clone() MocksByNamespace {
-	cloned := make(MocksByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &MockResource{}

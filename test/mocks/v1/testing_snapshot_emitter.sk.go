@@ -296,6 +296,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		mocksByNamespace := make(map[string]MockResourceList)
+		fakesByNamespace := make(map[string]FakeResourceList)
+		anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
+		mctsByNamespace := make(map[string]MockCustomTypeList)
+		podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
 
 		for {
 			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }
@@ -315,23 +320,38 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				record()
 
 				namespace := mockResourceNamespacedList.namespace
-				mockResourceList := mockResourceNamespacedList.list
 
-				currentSnapshot.Mocks[namespace] = mockResourceList
+				// merge lists by namespace
+				mocksByNamespace[namespace] = mockResourceNamespacedList.list
+				var mockResourceList MockResourceList
+				for _, mocks := range mocksByNamespace {
+					mockResourceList = append(mockResourceList, mocks...)
+				}
+				currentSnapshot.Mocks = mockResourceList.Sort()
 			case fakeResourceNamespacedList := <-fakeResourceChan:
 				record()
 
 				namespace := fakeResourceNamespacedList.namespace
-				fakeResourceList := fakeResourceNamespacedList.list
 
-				currentSnapshot.Fakes[namespace] = fakeResourceList
+				// merge lists by namespace
+				fakesByNamespace[namespace] = fakeResourceNamespacedList.list
+				var fakeResourceList FakeResourceList
+				for _, fakes := range fakesByNamespace {
+					fakeResourceList = append(fakeResourceList, fakes...)
+				}
+				currentSnapshot.Fakes = fakeResourceList.Sort()
 			case anotherMockResourceNamespacedList := <-anotherMockResourceChan:
 				record()
 
 				namespace := anotherMockResourceNamespacedList.namespace
-				anotherMockResourceList := anotherMockResourceNamespacedList.list
 
-				currentSnapshot.Anothermockresources[namespace] = anotherMockResourceList
+				// merge lists by namespace
+				anothermockresourcesByNamespace[namespace] = anotherMockResourceNamespacedList.list
+				var anotherMockResourceList AnotherMockResourceList
+				for _, anothermockresources := range anothermockresourcesByNamespace {
+					anotherMockResourceList = append(anotherMockResourceList, anothermockresources...)
+				}
+				currentSnapshot.Anothermockresources = anotherMockResourceList.Sort()
 			case clusterResourceList := <-clusterResourceChan:
 				record()
 				currentSnapshot.Clusterresources = clusterResourceList
@@ -339,16 +359,26 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				record()
 
 				namespace := mockCustomTypeNamespacedList.namespace
-				mockCustomTypeList := mockCustomTypeNamespacedList.list
 
-				currentSnapshot.Mcts[namespace] = mockCustomTypeList
+				// merge lists by namespace
+				mctsByNamespace[namespace] = mockCustomTypeNamespacedList.list
+				var mockCustomTypeList MockCustomTypeList
+				for _, mcts := range mctsByNamespace {
+					mockCustomTypeList = append(mockCustomTypeList, mcts...)
+				}
+				currentSnapshot.Mcts = mockCustomTypeList.Sort()
 			case podNamespacedList := <-podChan:
 				record()
 
 				namespace := podNamespacedList.namespace
-				podList := podNamespacedList.list
 
-				currentSnapshot.Pods[namespace] = podList
+				// merge lists by namespace
+				podsByNamespace[namespace] = podNamespacedList.list
+				var podList github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
+				for _, pods := range podsByNamespace {
+					podList = append(podList, pods...)
+				}
+				currentSnapshot.Pods = podList.Sort()
 			}
 		}
 	}()
