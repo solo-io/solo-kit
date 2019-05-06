@@ -15,8 +15,10 @@ import (
 
 type {{ .Name }}Watcher interface {
 {{- if .ClusterScoped }}
+	// watch cluster-scoped {{ .PluralName }}
 	Watch(opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
 {{- else }}
+	// watch namespace-scoped {{ .PluralName }}
 	Watch(namespace string, opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
 {{- end }}
 }
