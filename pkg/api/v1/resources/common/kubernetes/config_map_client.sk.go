@@ -10,6 +10,7 @@ import (
 )
 
 type ConfigMapWatcher interface {
+	// watch namespace-scoped configmaps
 	Watch(namespace string, opts clients.WatchOpts) (<-chan ConfigMapList, <-chan error, error)
 }
 

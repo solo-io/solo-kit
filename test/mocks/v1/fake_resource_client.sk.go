@@ -10,6 +10,7 @@ import (
 )
 
 type FakeResourceWatcher interface {
+	// watch namespace-scoped Fakes
 	Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error)
 }
 
