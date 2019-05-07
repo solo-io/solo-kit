@@ -205,21 +205,21 @@ func newResourcesByWatcher() *resourcesByWatcher {
 	return &resourcesByWatcher{resources: make(map[clients.ResourceWatcher]resources.ResourceList)}
 }
 
-func (rbw resourcesByWatcher) set(key clients.ResourceWatcher, val resources.ResourceList) resourcesByWatcher {
+func (rbw *resourcesByWatcher) set(key clients.ResourceWatcher, val resources.ResourceList) *resourcesByWatcher {
 	rbw.access.Lock()
 	rbw.resources[key] = val
 	rbw.access.Unlock()
 	return rbw
 }
 
-func (rbw resourcesByWatcher) delete(key clients.ResourceWatcher) resourcesByWatcher {
+func (rbw *resourcesByWatcher) delete(key clients.ResourceWatcher) *resourcesByWatcher {
 	rbw.access.Lock()
 	delete(rbw.resources, key)
 	rbw.access.Unlock()
 	return rbw
 }
 
-func (rbw resourcesByWatcher) merge() resources.ResourceList {
+func (rbw *resourcesByWatcher) merge() resources.ResourceList {
 	rbw.access.RLock()
 	var merged resources.ResourceList
 	for _, list := range rbw.resources {
