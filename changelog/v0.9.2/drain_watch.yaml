@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fixes - "timed out after waiting for 1s for watch to receive event on resource"
+    issueLink: https://github.com/solo-io/solo-kit/pull/176
