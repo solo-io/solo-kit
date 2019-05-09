@@ -14,9 +14,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/eventloop"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/utils/errutils"
+	"github.com/solo-io/go-utils/errutils"
 )
 
 type {{ .GoName }}Syncer interface {
@@ -35,16 +36,12 @@ func (s {{ .GoName }}Syncers) Sync(ctx context.Context, snapshot *{{ .GoName }}S
 	return multiErr.ErrorOrNil()
 }
 
-type {{ .GoName }}EventLoop interface {
-	Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error)
-}
-
 type {{ lower_camel .GoName }}EventLoop struct {
 	emitter {{ .GoName }}Emitter
 	syncer  {{ .GoName }}Syncer
 }
 
-func New{{ .GoName }}EventLoop(emitter {{ .GoName }}Emitter, syncer {{ .GoName }}Syncer) {{ .GoName }}EventLoop {
+func New{{ .GoName }}EventLoop(emitter {{ .GoName }}Emitter, syncer {{ .GoName }}Syncer) eventloop.EventLoop {
 	return &{{ lower_camel .GoName }}EventLoop{
 		emitter: emitter,
 		syncer:  syncer,

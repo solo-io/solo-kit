@@ -9,24 +9,67 @@ var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
+{{- if $.IsCustom }}
+	{{ $.CustomImportPrefix }} "{{ $.CustomResource.Package }}"
+{{- end }}
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
+	"github.com/solo-io/go-utils/hashutils"
+{{- if not $.IsCustom }}
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+{{- end }}
 )
 
-// TODO: modify as needed to populate additional fields
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {
-	return &{{ .Name }}{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
+	{{ lowercase .Name }} := &{{ .Name }}{}
+{{- if $.IsCustom }}
+	{{ lowercase .Name }}.{{ $.Name }}.SetMetadata(core.Metadata{
+{{- else }}
+	{{ lowercase .Name }}.SetMetadata(core.Metadata{
+{{- end }}
+		Name:      name,
+		Namespace: namespace,
+	})
+	return {{ lowercase .Name }}
+}
+
+{{- if $.IsCustom }}
+
+// require custom resource to implement Clone() as well as resources.Resource interface
+
+type Cloneable{{ $.Name }} interface {
+	resources.Resource
+	Clone() *{{ $.CustomImportPrefix}}.{{ $.Name }}
+}
+
+var _ Cloneable{{ $.Name }} = &{{ $.CustomImportPrefix}}.{{ $.Name }}{}
+
+type {{ $.Name }} struct {
+	{{ $.CustomImportPrefix}}.{{ $.Name }}
+}
+
+func (r *{{ .Name }}) Clone() resources.Resource {
+	return &{{ .Name }}{ {{ .Name }}: *r.{{ .Name }}.Clone() }
+}
+
+func (r *{{ .Name }}) Hash() uint64 {
+	clone := r.{{ .Name }}.Clone()
+
+	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
+		meta.ResourceVersion = ""
+	})
+
+	return hashutils.HashAll(clone)
+}
+
+{{- else }}
+
+func (r *{{ .Name }}) SetMetadata(meta core.Metadata) {
+	r.Metadata = meta
 }
 
 {{- if $.HasStatus }}
@@ -35,10 +78,6 @@ func (r *{{ .Name }}) SetStatus(status core.Status) {
 	r.Status = status
 }
 {{- end }}
-
-func (r *{{ .Name }}) SetMetadata(meta core.Metadata) {
-	r.Metadata = meta
-}
 
 func (r *{{ .Name }}) Hash() uint64 {
 	metaCopy := r.GetMetadata()
@@ -56,14 +95,15 @@ func (r *{{ .Name }}) Hash() uint64 {
 	)
 }
 
+{{- end }}
+
 type {{ .Name }}List []*{{ .Name }}
-type {{ .PluralName }}ByNamespace map[string]{{ .Name }}List
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list {{ .Name }}List) Find(namespace, name string) (*{{ .Name }}, error) {
 	for _, {{ lower_camel .Name }} := range list {
-		if {{ lower_camel .Name }}.Metadata.Name == name {
-			if namespace == "" || {{ lower_camel .Name }}.Metadata.Namespace == namespace {
+		if {{ lower_camel .Name }}.GetMetadata().Name == name {
+			if namespace == "" || {{ lower_camel .Name }}.GetMetadata().Namespace == namespace {
 				return {{ lower_camel .Name }}, nil
 			}
 		}
@@ -92,7 +132,7 @@ func (list {{ .Name }}List) AsInputResources() resources.InputResourceList {
 func (list {{ .Name }}List) Names() []string {
 	var names []string
 	for _, {{ lower_camel .Name }} := range list {
-		names = append(names, {{ lower_camel .Name }}.Metadata.Name)
+		names = append(names, {{ lower_camel .Name }}.GetMetadata().Name)
 	}
 	return names
 }
@@ -100,14 +140,14 @@ func (list {{ .Name }}List) Names() []string {
 func (list {{ .Name }}List) NamespacesDotNames() []string {
 	var names []string
 	for _, {{ lower_camel .Name }} := range list {
-		names = append(names, {{ lower_camel .Name }}.Metadata.Namespace + "." + {{ lower_camel .Name }}.Metadata.Name)
+		names = append(names, {{ lower_camel .Name }}.GetMetadata().Namespace + "." + {{ lower_camel .Name }}.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list {{ .Name }}List) Sort() {{ .Name }}List {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -115,12 +155,18 @@ func (list {{ .Name }}List) Sort() {{ .Name }}List {
 func (list {{ .Name }}List) Clone() {{ .Name }}List {
 	var {{ lower_camel .Name }}List {{ .Name }}List
 	for _, {{ lower_camel .Name }} := range list {
-		{{ lower_camel .Name }}List = append({{ lower_camel .Name }}List, proto.Clone({{ lower_camel .Name }}).(*{{ .Name }}))
+		{{ lower_camel .Name }}List = append({{ lower_camel .Name }}List, resources.Clone({{ lower_camel .Name }}).(*{{ .Name }}))
 	}
 	return {{ lower_camel .Name }}List 
 }
 
 func (list {{ .Name }}List) Each(f func(element *{{ .Name }})) {
+	for _, {{ lower_camel .Name }} := range list {
+		f({{ lower_camel .Name }})
+	}
+}
+
+func (list {{ .Name }}List) EachResource(f func(element resources.Resource)) {
 	for _, {{ lower_camel .Name }} := range list {
 		f({{ lower_camel .Name }})
 	}
@@ -134,31 +180,7 @@ func (list {{ .Name }}List) AsInterfaces() []interface{}{
 	return asInterfaces
 }
 
-func (byNamespace {{ .PluralName }}ByNamespace) Add({{ lower_camel .Name }} ... *{{ .Name }}) {
-	for _, item := range {{ lower_camel .Name }} {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
-	}
-}
-
-func (byNamespace {{ .PluralName }}ByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace {{ .PluralName }}ByNamespace) List() {{ .Name }}List {
-	var list {{ .Name }}List
-	for _, {{ lower_camel .Name }}List := range byNamespace {
-		list = append(list, {{ lower_camel .Name }}List...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace {{ .PluralName }}ByNamespace) Clone() {{ .PluralName }}ByNamespace {
-	cloned := make({{ .PluralName }}ByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
-}
+{{- if not $.IsCustom }}
 
 var _ resources.Resource = &{{ .Name }}{}
 
@@ -186,4 +208,6 @@ var {{ .Name }}Crd = crd.NewCrd("{{ $crdGroupName }}",
 	"{{ .ShortName }}",
 	{{ .ClusterScoped }},
 	&{{ .Name }}{})
+
+{{- end}}
 `))

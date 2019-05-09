@@ -7,9 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
-
-	"github.com/gogo/protobuf/proto"
+	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
@@ -32,7 +30,7 @@ var (
 	CreateCountView = &view.View{
 		Name:        "kube/creates-count",
 		Measure:     MCreates,
-		Description: "The number of list calls",
+		Description: "The number of create calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -42,7 +40,7 @@ var (
 	UpdateCountView = &view.View{
 		Name:        "kube/updates-count",
 		Measure:     MUpdates,
-		Description: "The number of list calls",
+		Description: "The number of update calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -53,7 +51,7 @@ var (
 	DeleteCountView = &view.View{
 		Name:        "kube/deletes-count",
 		Measure:     MDeletes,
-		Description: "The number of list calls",
+		Description: "The number of delete calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -66,12 +64,11 @@ var (
 	InFlightSumView = &view.View{
 		Name:        "kube/req-in-flight",
 		Measure:     MInFlight,
-		Description: "The number of list calls",
+		Description: "The number of requests in flight",
 		Aggregation: view.Sum(),
 		TagKeys: []tag.Key{
 			KeyOpKind,
 			KeyKind,
-			KeyNamespaceKind,
 		},
 	}
 
@@ -87,6 +84,17 @@ var (
 func init() {
 	view.Register(CreateCountView, UpdateCountView, DeleteCountView, InFlightSumView, EventsCountView)
 }
+
+// Kuberenetes specific write options.
+// Allows modifing a resource just before it is written.
+// This allows to make kubernetes specific changes, like adding an owner reference.
+type KubeWriteOpts struct {
+	PreWriteCallback func(r *v1.Resource)
+}
+
+func (*KubeWriteOpts) StorageWriteOptsTag() {}
+
+var _ clients.StorageWriteOpts = new(KubeWriteOpts)
 
 // lazy start in list & watch
 // register informers in register
@@ -184,13 +192,19 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// mutate and return clone
-	clone := proto.Clone(resource).(resources.InputResource)
+	clone := resources.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
 	resourceCrd := rc.crd.KubeResource(clone)
 
 	ctx := opts.Ctx
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName), tag.Insert(KeyOpKind, "write")); err == nil {
 		ctx = ctxWithTags
+	}
+
+	if opts.StorageWriteOpts != nil {
+		if kubeOpts, ok := opts.StorageWriteOpts.(*KubeWriteOpts); ok {
+			kubeOpts.PreWriteCallback(resourceCrd)
+		}
 	}
 
 	if rc.exist(ctx, meta.Namespace, meta.Name) {
@@ -348,14 +362,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
-func matchesTargetNamespace(targetNs, resourceNs string) bool {
-	// "" == all namespaces are valid
-	if targetNs == "" {
-		return true
-	}
-	return targetNs == resourceNs
-}
-
 // Checks whether the type of the given resource matches the one of the client's underlying CRD:
 // 1. the kind name must match that of CRD
 // 2. the version must match the CRD GroupVersion (in the form <GROUP_NAME>/<VERSION>)
@@ -400,4 +406,12 @@ func (rc *ResourceClient) validateNamespace(namespace string) error {
 			"Allowed namespaces are %v", namespace, rc.namespaceWhitelist)
 	}
 	return nil
+}
+
+func matchesTargetNamespace(targetNs, resourceNs string) bool {
+	// "" == all namespaces are valid
+	if targetNs == "" {
+		return true
+	}
+	return targetNs == resourceNs
 }

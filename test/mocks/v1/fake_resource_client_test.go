@@ -59,7 +59,7 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 
 	name := name1
 	input := NewFakeResource(namespace, name)
-	input.Metadata.Namespace = namespace
+
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -70,8 +70,8 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 	Expect(r1).To(BeAssignableToTypeOf(&FakeResource{}))
 	Expect(r1.GetMetadata().Name).To(Equal(name))
 	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
-	Expect(r1.Metadata.ResourceVersion).NotTo(Equal(input.Metadata.ResourceVersion))
-	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
+	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
+	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 	Expect(r1.Count).To(Equal(input.Count))
 
 	_, err = client.Write(input, clients.WriteOpts{
@@ -79,7 +79,9 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 	})
 	Expect(err).To(HaveOccurred())
 
-	input.Metadata.ResourceVersion = r1.GetMetadata().ResourceVersion
+	resources.UpdateMetadata(input, func(meta *core.Metadata) {
+		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
+	})
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
@@ -94,10 +96,10 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 	name = name2
 	input = &FakeResource{}
 
-	input.Metadata = core.Metadata{
+	input.SetMetadata(core.Metadata{
 		Name:      name,
 		Namespace: namespace,
-	}
+	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -145,10 +147,10 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 		name = name3
 		input = &FakeResource{}
 		Expect(err).NotTo(HaveOccurred())
-		input.Metadata = core.Metadata{
+		input.SetMetadata(core.Metadata{
 			Name:      name,
 			Namespace: namespace,
-		}
+		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -163,18 +165,17 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 		Fail("expected a message in channel")
 	}
 
-drain:
-	for {
-		select {
-		case list = <-w:
-		case err := <-errs:
-			Expect(err).NotTo(HaveOccurred())
-		case <-time.After(time.Millisecond * 500):
-			break drain
+	go func() {
+		defer GinkgoRecover()
+		for {
+			select {
+			case err := <-errs:
+				Expect(err).NotTo(HaveOccurred())
+			case <-time.After(time.Second / 4):
+				return
+			}
 		}
-	}
+	}()
 
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
-	Expect(list).To(ContainElement(r3))
+	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }

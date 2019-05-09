@@ -51,6 +51,7 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 
 	name := name1
 	input := NewClusterResource("", name)
+
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -60,8 +61,8 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 
 	Expect(r1).To(BeAssignableToTypeOf(&ClusterResource{}))
 	Expect(r1.GetMetadata().Name).To(Equal(name))
-	Expect(r1.Metadata.ResourceVersion).NotTo(Equal(input.Metadata.ResourceVersion))
-	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
+	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
+	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 	Expect(r1.Status).To(Equal(input.Status))
 	Expect(r1.BasicField).To(Equal(input.BasicField))
 
@@ -70,7 +71,9 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 	})
 	Expect(err).To(HaveOccurred())
 
-	input.Metadata.ResourceVersion = r1.GetMetadata().ResourceVersion
+	resources.UpdateMetadata(input, func(meta *core.Metadata) {
+		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
+	})
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
@@ -82,9 +85,9 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 	name = name2
 	input = &ClusterResource{}
 
-	input.Metadata = core.Metadata{
+	input.SetMetadata(core.Metadata{
 		Name: name,
-	}
+	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -132,9 +135,9 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 		name = name3
 		input = &ClusterResource{}
 		Expect(err).NotTo(HaveOccurred())
-		input.Metadata = core.Metadata{
+		input.SetMetadata(core.Metadata{
 			Name: name,
-		}
+		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -149,18 +152,17 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 		Fail("expected a message in channel")
 	}
 
-drain:
-	for {
-		select {
-		case list = <-w:
-		case err := <-errs:
-			Expect(err).NotTo(HaveOccurred())
-		case <-time.After(time.Millisecond * 500):
-			break drain
+	go func() {
+		defer GinkgoRecover()
+		for {
+			select {
+			case err := <-errs:
+				Expect(err).NotTo(HaveOccurred())
+			case <-time.After(time.Second / 4):
+				return
+			}
 		}
-	}
+	}()
 
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
-	Expect(list).To(ContainElement(r3))
+	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }

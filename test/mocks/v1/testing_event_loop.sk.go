@@ -10,9 +10,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/eventloop"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/errutils"
 )
 
 type TestingSyncer interface {
@@ -31,16 +32,12 @@ func (s TestingSyncers) Sync(ctx context.Context, snapshot *TestingSnapshot) err
 	return multiErr.ErrorOrNil()
 }
 
-type TestingEventLoop interface {
-	Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error)
-}
-
 type testingEventLoop struct {
 	emitter TestingEmitter
 	syncer  TestingSyncer
 }
 
-func NewTestingEventLoop(emitter TestingEmitter, syncer TestingSyncer) TestingEventLoop {
+func NewTestingEventLoop(emitter TestingEmitter, syncer TestingSyncer) eventloop.EventLoop {
 	return &testingEventLoop{
 		emitter: emitter,
 		syncer:  syncer,

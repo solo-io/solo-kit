@@ -5,32 +5,30 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewClusterResource(namespace, name string) *ClusterResource {
-	return &ClusterResource{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *ClusterResource) SetStatus(status core.Status) {
-	r.Status = status
+	clusterresource := &ClusterResource{}
+	clusterresource.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return clusterresource
 }
 
 func (r *ClusterResource) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *ClusterResource) SetStatus(status core.Status) {
+	r.Status = status
 }
 
 func (r *ClusterResource) Hash() uint64 {
@@ -43,13 +41,12 @@ func (r *ClusterResource) Hash() uint64 {
 }
 
 type ClusterResourceList []*ClusterResource
-type ClusterresourcesByNamespace map[string]ClusterResourceList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ClusterResourceList) Find(namespace, name string) (*ClusterResource, error) {
 	for _, clusterResource := range list {
-		if clusterResource.Metadata.Name == name {
-			if namespace == "" || clusterResource.Metadata.Namespace == namespace {
+		if clusterResource.GetMetadata().Name == name {
+			if namespace == "" || clusterResource.GetMetadata().Namespace == namespace {
 				return clusterResource, nil
 			}
 		}
@@ -76,7 +73,7 @@ func (list ClusterResourceList) AsInputResources() resources.InputResourceList {
 func (list ClusterResourceList) Names() []string {
 	var names []string
 	for _, clusterResource := range list {
-		names = append(names, clusterResource.Metadata.Name)
+		names = append(names, clusterResource.GetMetadata().Name)
 	}
 	return names
 }
@@ -84,14 +81,14 @@ func (list ClusterResourceList) Names() []string {
 func (list ClusterResourceList) NamespacesDotNames() []string {
 	var names []string
 	for _, clusterResource := range list {
-		names = append(names, clusterResource.Metadata.Namespace+"."+clusterResource.Metadata.Name)
+		names = append(names, clusterResource.GetMetadata().Namespace+"."+clusterResource.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list ClusterResourceList) Sort() ClusterResourceList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -99,12 +96,18 @@ func (list ClusterResourceList) Sort() ClusterResourceList {
 func (list ClusterResourceList) Clone() ClusterResourceList {
 	var clusterResourceList ClusterResourceList
 	for _, clusterResource := range list {
-		clusterResourceList = append(clusterResourceList, proto.Clone(clusterResource).(*ClusterResource))
+		clusterResourceList = append(clusterResourceList, resources.Clone(clusterResource).(*ClusterResource))
 	}
 	return clusterResourceList
 }
 
 func (list ClusterResourceList) Each(f func(element *ClusterResource)) {
+	for _, clusterResource := range list {
+		f(clusterResource)
+	}
+}
+
+func (list ClusterResourceList) EachResource(f func(element resources.Resource)) {
 	for _, clusterResource := range list {
 		f(clusterResource)
 	}
@@ -116,32 +119,6 @@ func (list ClusterResourceList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace ClusterresourcesByNamespace) Add(clusterResource ...*ClusterResource) {
-	for _, item := range clusterResource {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
-	}
-}
-
-func (byNamespace ClusterresourcesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace ClusterresourcesByNamespace) List() ClusterResourceList {
-	var list ClusterResourceList
-	for _, clusterResourceList := range byNamespace {
-		list = append(list, clusterResourceList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace ClusterresourcesByNamespace) Clone() ClusterresourcesByNamespace {
-	cloned := make(ClusterresourcesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &ClusterResource{}

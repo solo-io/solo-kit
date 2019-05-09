@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,14 +16,15 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/go-utils/stringutils"
+	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
-	"github.com/solo-io/solo-kit/pkg/utils/stringutils"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -33,6 +35,10 @@ type SoloKitContext struct {
 	SkipDirs      []string
 	CustomImports []string
 }
+
+const (
+	SkipMockGen = "SKIP_MOCK_GEN"
+)
 
 func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customImports, skipDirs []string) error {
 
@@ -235,6 +241,12 @@ func (r *Runner) Run() error {
 	}())
 
 	for _, projectConfig := range projectConfigs {
+		importedResources, err := r.importCustomResources(projectConfig.Imports)
+		if err != nil {
+			return err
+		}
+
+		projectConfig.CustomResources = append(projectConfig.CustomResources, importedResources...)
 
 		// Build a 'Project' object that contains a resource for each message that:
 		// - is contained in the FileDescriptor and
@@ -284,9 +296,59 @@ func (r *Runner) Run() error {
 				return errors.Wrapf(err, "goimports failed: %s", out)
 			}
 		}
+
+		// Generate mocks
+		// need to run after to make sure all resources have already been written
+		// Set this env var during tests so that mocks are not generated
+		if os.Getenv(SkipMockGen) != "1" {
+			if err := genMocks(code, outDir, r.AbsoluteRoot); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
+}
+
+var (
+	validMockingInterfaces = []string{
+		"_client",
+		"_reconciler",
+		"_emitter",
+	}
+)
+
+func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
+	if err := os.MkdirAll(filepath.Join(outDir, "mocks"), 0777); err != nil {
+		return err
+	}
+	for _, file := range code {
+		if out, err := genMockForFile(file, outDir, absoluteRoot); err != nil {
+			return errors.Wrapf(err, "mockgen failed: %s", out)
+		}
+
+	}
+	return nil
+}
+
+func genMockForFile(file code_generator.File, outDir, absoluteRoot string) ([]byte, error) {
+	if strings.Contains(file.Filename, "_test") || !containsAny(file.Filename, validMockingInterfaces) {
+		return nil, nil
+	}
+	path := filepath.Join(outDir, file.Filename)
+	dest := filepath.Join(outDir, "mocks", file.Filename)
+	path = strings.Replace(path, absoluteRoot, ".", 1)
+	dest = strings.Replace(dest, absoluteRoot, ".", 1)
+	return exec.Command("mockgen", fmt.Sprintf("-source=%s", path), fmt.Sprintf("-destination=%s", dest), "-package=mocks").CombinedOutput()
+}
+
+func containsAny(str string, slice []string) bool {
+	for _, val := range slice {
+		if strings.Contains(str, val) {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Runner) collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectConfig, error) {
@@ -548,4 +610,32 @@ func (r *Runner) readDescriptors(fromFile string) (*descriptor.FileDescriptorSet
 		return nil, errors.Wrapf(err, "unmarshalling tmp file as descriptors")
 	}
 	return &desc, nil
+}
+
+func (r *Runner) importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
+	var results []model.CustomResourceConfig
+	for _, imp := range imports {
+		imp = filepath.Join(r.BaseOutDir, imp)
+		if !strings.HasSuffix(imp, model.ProjectConfigFilename) {
+			imp = filepath.Join(imp, model.ProjectConfigFilename)
+		}
+		byt, err := ioutil.ReadFile(imp)
+		if err != nil {
+			return nil, err
+		}
+		var projectConfig model.ProjectConfig
+		err = json.Unmarshal(byt, &projectConfig)
+		if err != nil {
+			return nil, err
+		}
+		var customResources []model.CustomResourceConfig
+		for _, v := range projectConfig.CustomResources {
+			v.Package = projectConfig.GoPackage
+			v.Imported = true
+			customResources = append(customResources, v)
+		}
+		results = append(results, customResources...)
+	}
+
+	return results, nil
 }

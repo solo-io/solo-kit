@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"github.com/solo-io/go-utils/log"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -179,7 +179,7 @@ func (c *Controller) enqueueSync(t eventType, old, new interface{}) {
 		old:       old,
 		new:       new,
 	}
-	// log the meta key for the obj
+	// logger the meta key for the obj
 	// currently unused otherwise
 	var key string
 	var err error

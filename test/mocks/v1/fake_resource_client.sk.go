@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type FakeResourceWatcher interface {
+	// watch namespace-scoped Fakes
+	Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error)
+}
+
 type FakeResourceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type FakeResourceClient interface {
 	Write(resource *FakeResource, opts clients.WriteOpts) (*FakeResource, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (FakeResourceList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error)
+	FakeResourceWatcher
 }
 
 type fakeResourceClient struct {

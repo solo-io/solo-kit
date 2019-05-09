@@ -2,6 +2,7 @@ package kube
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -25,7 +26,7 @@ import (
 
 var (
 	MLists   = stats.Int64("kube/lists", "The number of lists", "1")
-	MWatches = stats.Int64("kube/lists", "The number of watches", "1")
+	MWatches = stats.Int64("kube/watches", "The number of watches", "1")
 
 	KeyKind, _          = tag.NewKey("kind")
 	KeyNamespaceKind, _ = tag.NewKey("ns")
@@ -43,7 +44,7 @@ var (
 	WatchCountView = &view.View{
 		Name:        "kube/watches-count",
 		Measure:     MWatches,
-		Description: "The number of list calls",
+		Description: "The number of watch calls",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			KeyKind,
@@ -53,7 +54,7 @@ var (
 )
 
 func init() {
-	view.Register(ListCountView)
+	view.Register(ListCountView, WatchCountView)
 }
 
 type SharedCache interface {
@@ -114,6 +115,13 @@ type ResourceClientSharedInformerFactory struct {
 	cacheUpdatedWatchersMutex sync.Mutex
 }
 
+func notEmpty(ns string) string {
+	if ns == "" {
+		return "<all>"
+	}
+	return ns
+}
+
 // Creates a new SharedIndexInformer and adds it to the factory's informer registry.
 // NOTE: Currently we cannot share informers between resource clients, because the listWatch functions are configured
 // with the client's specific token. Hence, we must enforce a one-to-one relationship between informers and clients.
@@ -148,8 +156,9 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 		}
 
-		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyNamespaceKind, ns)); err == nil {
-			ctx = ctxWithTags
+		nsCtx := ctx
+		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(KeyNamespaceKind, notEmpty(ns))); err == nil {
+			nsCtx = ctxWithTags
 		}
 
 		list := rc.crdClientset.ResourcesV1().Resources(ns).List
@@ -157,20 +166,22 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 		sharedInformer := cache.NewSharedIndexInformer(
 			&cache.ListWatch{
 				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-					if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyOpKind, "list")); err == nil {
-						ctx = ctxWithTags
+					listCtx := nsCtx
+					if ctxWithTags, err := tag.New(listCtx, tag.Insert(KeyOpKind, "list")); err == nil {
+						listCtx = ctxWithTags
 					}
-					stats.Record(ctx, MLists.M(1), MInFlight.M(1))
-					defer stats.Record(ctx, MInFlight.M(-1))
+					stats.Record(listCtx, MLists.M(1), MInFlight.M(1))
+					defer stats.Record(listCtx, MInFlight.M(-1))
 					return list(options)
 				},
 				WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
-					if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyOpKind, "watch")); err == nil {
-						ctx = ctxWithTags
+					watchCtx := nsCtx
+					if ctxWithTags, err := tag.New(watchCtx, tag.Insert(KeyOpKind, "watch")); err == nil {
+						watchCtx = ctxWithTags
 					}
 
-					stats.Record(ctx, MWatches.M(1), MInFlight.M(1))
-					defer stats.Record(ctx, MInFlight.M(-1))
+					stats.Record(watchCtx, MWatches.M(1), MInFlight.M(1))
+					defer stats.Record(watchCtx, MInFlight.M(-1))
 					return watch(options)
 				},
 			},
@@ -184,6 +195,18 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 	return nil
 }
+
+var cacheSyncTimeout = func() time.Duration {
+	timeout := time.Minute
+	if timeoutOverride := os.Getenv("SOLOKIT_CACHE_SYNC_TIMEOUT"); timeoutOverride != "" {
+		override, err := time.ParseDuration(timeoutOverride)
+		if err != nil {
+			panic(err)
+		}
+		timeout = override
+	}
+	return timeout
+}()
 
 // Starts all informers in the factory's registry (if they have not yet been started) and configures the factory to call
 // the updateCallback function whenever any of the resources associated with the informers changes.
@@ -211,8 +234,10 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 		// Fail if the caches have not synchronized after 10 seconds. This prevents the controller from hanging forever.
 		var err error
 		select {
+		case <-ctx.Done():
+			return
 		case err = <-runResult:
-		case <-time.After(10 * time.Second):
+		case <-time.After(cacheSyncTimeout):
 			err = errors.Errorf("timed out while waiting for informer caches to sync")
 		}
 

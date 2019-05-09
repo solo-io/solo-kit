@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added mock generation for solo-kit resources.
+    issueLink: https://github.com/solo-io/solo-kit/issues/160

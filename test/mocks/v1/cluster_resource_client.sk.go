@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type ClusterResourceWatcher interface {
+	// watch cluster-scoped Clusterresources
+	Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error)
+}
+
 type ClusterResourceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type ClusterResourceClient interface {
 	Write(resource *ClusterResource, opts clients.WriteOpts) (*ClusterResource, error)
 	Delete(name string, opts clients.DeleteOpts) error
 	List(opts clients.ListOpts) (ClusterResourceList, error)
-	Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error)
+	ClusterResourceWatcher
 }
 
 type clusterResourceClient struct {

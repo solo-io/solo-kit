@@ -3,7 +3,7 @@ package file_test
 import (
 	"testing"
 
-	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"github.com/solo-io/go-utils/log"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

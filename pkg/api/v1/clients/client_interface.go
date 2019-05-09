@@ -8,6 +8,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+//go:generate mockgen -destination=./mocks/client_interface.go -source client_interface.go -package mocks
+
 const DefaultNamespace = "default"
 
 var DefaultRefreshRate = time.Second * 30
@@ -19,6 +21,12 @@ func DefaultNamespaceIfEmpty(namespace string) string {
 	return namespace
 }
 
+type ResourceWatch func(ctx context.Context) (<-chan resources.ResourceList, <-chan error, error)
+
+type ResourceWatcher interface {
+	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
+}
+
 type ResourceClient interface {
 	Kind() string
 	NewResource() resources.Resource
@@ -28,7 +36,7 @@ type ResourceClient interface {
 	Write(resource resources.Resource, opts WriteOpts) (resources.Resource, error)
 	Delete(namespace, name string, opts DeleteOpts) error
 	List(namespace string, opts ListOpts) (resources.ResourceList, error)
-	Watch(namespace string, opts WatchOpts) (<-chan resources.ResourceList, <-chan error, error)
+	ResourceWatcher
 }
 
 type ResourceClients map[string]ResourceClient
@@ -62,9 +70,16 @@ func (o ReadOpts) WithDefaults() ReadOpts {
 	return o
 }
 
+type StorageWriteOpts interface {
+	StorageWriteOptsTag()
+}
+
 type WriteOpts struct {
 	Ctx               context.Context
 	OverwriteExisting bool
+
+	// Implementation dependant write opts
+	StorageWriteOpts StorageWriteOpts
 }
 
 func (o WriteOpts) WithDefaults() WriteOpts {

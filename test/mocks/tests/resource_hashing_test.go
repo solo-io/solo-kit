@@ -21,23 +21,21 @@ var _ = Describe("Resource Hashing", func() {
 
 func snapWithFields(hashSensitiveField, hashInsensitiveField string) *v1.TestingSnapshot {
 	return &v1.TestingSnapshot{
-		Mocks: map[string]v1.MockResourceList{
-			"": {
-				{
-					Metadata:      core.Metadata{Name: hashSensitiveField, Namespace: hashSensitiveField},
-					Data:          hashSensitiveField,
-					SomeDumbField: hashInsensitiveField,
-					TestOneofFields: &v1.MockResource_OneofOne{
-						OneofOne: hashSensitiveField,
-					},
+		Mocks: v1.MockResourceList{
+			{
+				Metadata:      core.Metadata{Name: hashSensitiveField, Namespace: hashSensitiveField},
+				Data:          hashSensitiveField,
+				SomeDumbField: hashInsensitiveField,
+				TestOneofFields: &v1.MockResource_OneofOne{
+					OneofOne: hashSensitiveField,
 				},
-				{
-					Metadata:      core.Metadata{Name: hashSensitiveField + "2", Namespace: hashSensitiveField},
-					Data:          hashSensitiveField,
-					SomeDumbField: hashInsensitiveField,
-					TestOneofFields: &v1.MockResource_OneofTwo{
-						OneofTwo: true,
-					},
+			},
+			{
+				Metadata:      core.Metadata{Name: hashSensitiveField + "2", Namespace: hashSensitiveField},
+				Data:          hashSensitiveField,
+				SomeDumbField: hashInsensitiveField,
+				TestOneofFields: &v1.MockResource_OneofTwo{
+					OneofTwo: true,
 				},
 			},
 		},

@@ -3,6 +3,8 @@ package apiclient_test
 import (
 	"context"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/test/helpers"
 	"google.golang.org/grpc"
 
 	"fmt"
@@ -80,6 +82,13 @@ var _ = Describe("Apiclient", func() {
 		cc.Close()
 	})
 	It("CRUDs resources", func() {
-		generic.TestCrudClient("test", client, time.Minute)
+		selector := map[string]string{
+			helpers.TestLabel: helpers.RandString(8),
+		}
+		generic.TestCrudClient("test", client, clients.WatchOpts{
+			Selector:    selector,
+			Ctx:         context.TODO(),
+			RefreshRate: time.Minute,
+		})
 	})
 })

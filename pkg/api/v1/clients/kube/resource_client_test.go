@@ -5,24 +5,30 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/test/setup"
+
+	"k8s.io/client-go/kubernetes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/fake"
+	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	solov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/mocks/util"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
-	"github.com/solo-io/solo-kit/test/setup"
 	"github.com/solo-io/solo-kit/test/tests/generic"
+	"github.com/solo-io/solo-kit/test/util"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +40,50 @@ import (
 	// Needed to run tests in GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
+
+var (
+	kubeClient kubernetes.Interface
+	cfg        *rest.Config
+	client     *kube.ResourceClient
+	clientset  *versioned.Clientset
+	lock       *clusterlock.TestClusterLocker
+)
+var _ = SynchronizedBeforeSuite(func() []byte {
+	cfg, err := kubeutils.GetConfig("", "")
+	Expect(err).NotTo(HaveOccurred())
+
+	kubeClient, err := kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	lock, err = clusterlock.NewTestClusterLocker(kubeClient, clusterlock.Options{
+		IdPrefix: "solo-kit-crd-client-test-",
+	})
+	Expect(lock.AcquireLock()).NotTo(HaveOccurred())
+
+	// Create the CRD in the cluster
+	apiExts, err := apiext.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = v1.MockResourceCrd.Register(apiExts)
+	Expect(err).NotTo(HaveOccurred())
+	return nil
+}, func(data []byte) {
+	var err error
+	cfg, err = kubeutils.GetConfig("", "")
+	Expect(err).NotTo(HaveOccurred())
+
+	kubeClient, err = kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
+	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	err := setup.DeleteCrd(v1.MockResourceCrd.FullName())
+	Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
+})
 
 var _ = Describe("Test Kube ResourceClient", func() {
 
@@ -62,6 +112,10 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		}
 	)
 
+	BeforeEach(func() {
+		client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(context.TODO()), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
+	})
+
 	Context("integrations tests", func() {
 
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
@@ -70,90 +124,58 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		}
 		var (
 			namespace string
-			cfg       *rest.Config
-			client    *kube.ResourceClient
 		)
 		BeforeEach(func() {
 			namespace = helpers.RandString(8)
-			err := setup.SetupKubeForTest(namespace)
-			Expect(err).NotTo(HaveOccurred())
-
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-
-			clientset, err := versioned.NewForConfig(cfg, v1.MockResourceCrd)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Create the CRD in the cluster
-			apiExts, err := apiext.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = v1.MockResourceCrd.Register(apiExts)
-			Expect(err).NotTo(HaveOccurred())
-
-			client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(context.TODO()), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
+			kubeClient = helpers.MustKubeClient()
+			err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			if err := setup.TeardownKube(namespace); err != nil {
-				panic(err)
-			}
-			if err := setup.DeleteCrd(v1.MockResourceCrd.FullName()); err != nil {
-				panic(err)
-			}
+			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("CRUDs resources", func() {
-			generic.TestCrudClient(namespace, client, time.Minute)
+			selector := map[string]string{
+				helpers.TestLabel: helpers.RandString(8),
+			}
+			generic.TestCrudClient(namespace, client, clients.WatchOpts{
+				Selector:    selector,
+				Ctx:         context.TODO(),
+				RefreshRate: time.Minute,
+			})
 		})
 	})
 
 	Context("multiple namespaces", func() {
 		var (
-			ns1, ns2 string
-			cfg      *rest.Config
-			client   *kube.ResourceClient
+			ns1, ns2       string
+			localTestLabel string
 		)
 		BeforeEach(func() {
 			ns1 = helpers.RandString(8)
 			ns2 = helpers.RandString(8)
-			err := setup.SetupKubeForTest(ns1)
-			Expect(err).NotTo(HaveOccurred())
-			err = setup.SetupKubeForTest(ns2)
-			Expect(err).NotTo(HaveOccurred())
-
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-
-			clientset, err := versioned.NewForConfig(cfg, v1.MockResourceCrd)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Create the CRD in the cluster
-			apiExts, err := apiext.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = v1.MockResourceCrd.Register(apiExts)
-			Expect(err).NotTo(HaveOccurred())
-
-			client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(context.TODO()), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
+			kubeClient = helpers.MustKubeClient()
+			err := kubeutils.CreateNamespacesInParallel(kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			setup.TeardownKube(ns1)
-			setup.TeardownKube(ns2)
-			setup.DeleteCrd(v1.MockResourceCrd.FullName())
+			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, ns1, ns2)
+			Expect(err).NotTo(HaveOccurred())
 		})
 		It("can watch resources across namespaces when using NamespaceAll", func() {
-			namespace := ""
+			watchNamespace := ""
+			selectors := map[string]string{helpers.TestLabel: localTestLabel}
 			boo := "hoo"
 			goo := "goo"
 
 			err := client.Register()
 			Expect(err).NotTo(HaveOccurred())
 
-			w, errs, err := client.Watch(namespace, clients.WatchOpts{Ctx: context.TODO()})
+			w, errs, err := client.Watch(watchNamespace, clients.WatchOpts{Ctx: context.TODO(), Selector: selectors})
 			Expect(err).NotTo(HaveOccurred())
 
 			var r1, r2 resources.Resource
@@ -168,6 +190,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Metadata: core.Metadata{
 						Name:      boo,
 						Namespace: ns1,
+						Labels:    selectors,
 					},
 				}, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -177,6 +200,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Metadata: core.Metadata{
 						Name:      goo,
 						Namespace: ns2,
+						Labels:    selectors,
 					},
 				}, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -187,7 +211,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Fail("expected wait to be closed before 5s")
 			}
 
-			list, err := client.List(namespace, clients.ListOpts{})
+			list, err := client.List(watchNamespace, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(list).To(ContainElement(r1))
 			Expect(list).To(ContainElement(r2))
@@ -200,24 +224,19 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Fail("expected a message in channel")
 			}
 
-			var timesDrained int
-		drain:
-			for {
-				select {
-				case list = <-w:
-					timesDrained++
-					if timesDrained > 50 {
-						Fail("drained the watch channel 50 times, something is wrong")
+			go func() {
+				defer GinkgoRecover()
+				for {
+					select {
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second / 4):
+						return
 					}
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second / 4):
-					break drain
 				}
-			}
+			}()
 
-			Expect(list).To(ContainElement(r1))
-			Expect(list).To(ContainElement(r2))
+			Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r2))))
 		})
 	})
 
@@ -357,6 +376,8 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Data:          data,
 					SomeDumbField: dumbValue,
 				}
+				ownerRef      metav1.OwnerReference
+				kubeWriteOpts *KubeWriteOpts
 			)
 
 			BeforeEach(func() {
@@ -368,6 +389,16 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
 				Expect(rc.Register()).NotTo(HaveOccurred())
+				ownerRef = metav1.OwnerReference{
+					APIVersion: "APIVersion",
+					Kind:       "Kind",
+					Name:       "Name",
+				}
+				kubeWriteOpts = &KubeWriteOpts{
+					PreWriteCallback: func(r *crdv1.Resource) {
+						r.ObjectMeta.OwnerReferences = []metav1.OwnerReference{ownerRef}
+					},
+				}
 			})
 
 			Context("resource does not exist", func() {
@@ -382,6 +413,16 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Expect(mockRes.Metadata.Namespace).To(BeEquivalentTo(resourceToCreate.Metadata.Namespace))
 					Expect(mockRes.Data).To(BeEquivalentTo(resourceToCreate.Data))
 					Expect(mockRes.SomeDumbField).To(BeEquivalentTo(resourceToCreate.SomeDumbField))
+				})
+
+				It("correctly applies the pre write callback", func() {
+					_, err := rc.Write(resourceToCreate, clients.WriteOpts{StorageWriteOpts: kubeWriteOpts})
+					Expect(err).NotTo(HaveOccurred())
+					r, err := clientset.ResourcesV1().Resources(namespace1).Get(resourceToCreate.Metadata.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(r.OwnerReferences).To(HaveLen(1))
+					Expect(r.OwnerReferences[0]).To(Equal(ownerRef))
 				})
 			})
 
@@ -399,6 +440,17 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Expect(ok).To(BeTrue())
 					Expect(checkMockRes.SomeDumbField).To(BeEquivalentTo(resourceToUpdate.SomeDumbField))
 				})
+
+				It("correctly applies the pre write callback", func() {
+					_, err := rc.Write(resourceToUpdate, clients.WriteOpts{OverwriteExisting: true, StorageWriteOpts: kubeWriteOpts})
+					Expect(err).NotTo(HaveOccurred())
+					r, err := clientset.ResourcesV1().Resources(namespace1).Get(resourceToUpdate.Metadata.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(r.OwnerReferences).To(HaveLen(1))
+					Expect(r.OwnerReferences[0]).To(Equal(ownerRef))
+				})
+
 			})
 
 			Context("resource exists and we don't want to overwrite", func() {

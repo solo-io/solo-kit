@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix the validation function for resource names
+    issueLink: https://github.com/solo-io/solo-kit/issues/137

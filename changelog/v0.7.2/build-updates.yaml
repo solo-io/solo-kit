@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update build with cache and code-gen.
+  - type: NEW_FEATURE
+    description: >
+      solo-kit now includes the ability to import other solo-kit projects custom resources via their solo-kit.json
+      These json files can now be imported via the solo-kit.json in a similar format to how go imports are done.
+    issueLink: https://github.com/solo-io/solo-kit/issues/150

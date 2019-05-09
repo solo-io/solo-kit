@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type AnotherMockResourceWatcher interface {
+	// watch namespace-scoped Anothermockresources
+	Watch(namespace string, opts clients.WatchOpts) (<-chan AnotherMockResourceList, <-chan error, error)
+}
+
 type AnotherMockResourceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type AnotherMockResourceClient interface {
 	Write(resource *AnotherMockResource, opts clients.WriteOpts) (*AnotherMockResource, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (AnotherMockResourceList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan AnotherMockResourceList, <-chan error, error)
+	AnotherMockResourceWatcher
 }
 
 type anotherMockResourceClient struct {

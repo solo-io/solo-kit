@@ -59,7 +59,7 @@ func AnotherMockResourceClientTest(namespace string, client AnotherMockResourceC
 
 	name := name1
 	input := NewAnotherMockResource(namespace, name)
-	input.Metadata.Namespace = namespace
+
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -70,8 +70,8 @@ func AnotherMockResourceClientTest(namespace string, client AnotherMockResourceC
 	Expect(r1).To(BeAssignableToTypeOf(&AnotherMockResource{}))
 	Expect(r1.GetMetadata().Name).To(Equal(name))
 	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
-	Expect(r1.Metadata.ResourceVersion).NotTo(Equal(input.Metadata.ResourceVersion))
-	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
+	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
+	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 	Expect(r1.Status).To(Equal(input.Status))
 	Expect(r1.BasicField).To(Equal(input.BasicField))
 
@@ -80,7 +80,9 @@ func AnotherMockResourceClientTest(namespace string, client AnotherMockResourceC
 	})
 	Expect(err).To(HaveOccurred())
 
-	input.Metadata.ResourceVersion = r1.GetMetadata().ResourceVersion
+	resources.UpdateMetadata(input, func(meta *core.Metadata) {
+		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
+	})
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
@@ -95,10 +97,10 @@ func AnotherMockResourceClientTest(namespace string, client AnotherMockResourceC
 	name = name2
 	input = &AnotherMockResource{}
 
-	input.Metadata = core.Metadata{
+	input.SetMetadata(core.Metadata{
 		Name:      name,
 		Namespace: namespace,
-	}
+	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -146,10 +148,10 @@ func AnotherMockResourceClientTest(namespace string, client AnotherMockResourceC
 		name = name3
 		input = &AnotherMockResource{}
 		Expect(err).NotTo(HaveOccurred())
-		input.Metadata = core.Metadata{
+		input.SetMetadata(core.Metadata{
 			Name:      name,
 			Namespace: namespace,
-		}
+		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -164,18 +166,17 @@ func AnotherMockResourceClientTest(namespace string, client AnotherMockResourceC
 		Fail("expected a message in channel")
 	}
 
-drain:
-	for {
-		select {
-		case list = <-w:
-		case err := <-errs:
-			Expect(err).NotTo(HaveOccurred())
-		case <-time.After(time.Millisecond * 500):
-			break drain
+	go func() {
+		defer GinkgoRecover()
+		for {
+			select {
+			case err := <-errs:
+				Expect(err).NotTo(HaveOccurred())
+			case <-time.After(time.Second / 4):
+				return
+			}
 		}
-	}
+	}()
 
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
-	Expect(list).To(ContainElement(r3))
+	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }

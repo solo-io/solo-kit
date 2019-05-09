@@ -13,6 +13,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type {{ .Name }}Watcher interface {
+{{- if .ClusterScoped }}
+	// watch cluster-scoped {{ .PluralName }}
+	Watch(opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
+{{- else }}
+	// watch namespace-scoped {{ .PluralName }}
+	Watch(namespace string, opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
+{{- end }}
+}
+
 type {{ .Name }}Client interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -25,12 +35,11 @@ type {{ .Name }}Client interface {
 {{- if .ClusterScoped }}
 	Delete(name string, opts clients.DeleteOpts) error
 	List(opts clients.ListOpts) ({{ .Name }}List, error)
-	Watch(opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
 {{- else }}
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) ({{ .Name }}List, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error)
 {{- end }}
+	{{ .Name }}Watcher
 }
 
 type {{ lower_camel .Name }}Client struct {

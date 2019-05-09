@@ -3,6 +3,7 @@ package generic
 import (
 	"time"
 
+	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -16,12 +17,17 @@ import (
 )
 
 // Call within "It"
-func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Duration) {
+func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
+	selectors := opts.Selector
 	foo := "foo"
 	input := v1.NewMockResource(namespace, foo)
 	data := "hello: goodbye"
 	input.Data = data
-	labels := map[string]string{"pick": "me"}
+	labels := map[string]string{"pickme": helpers.RandString(8)}
+	// add individual selectors
+	for key, value := range selectors {
+		labels[key] = value
+	}
 	input.Metadata.Labels = labels
 
 	err := client.Register()
@@ -29,6 +35,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
+	postWrite(callbacks, r1)
 
 	_, err = client.Write(input, clients.WriteOpts{})
 	Expect(err).To(HaveOccurred())
@@ -65,6 +72,8 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 
 	read, err := client.Read(writtenNamespace, foo, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
+	postRead(callbacks, read)
+
 	// it should update the resource version on the new write
 	Expect(read.GetMetadata().ResourceVersion).NotTo(Equal(oldRv))
 	Expect(read).To(Equal(r1))
@@ -79,6 +88,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 		Metadata: core.Metadata{
 			Name:      boo,
 			Namespace: namespace,
+			Labels:    selectors,
 		},
 	}
 	r2, err := client.Write(input, clients.WriteOpts{})
@@ -90,13 +100,16 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(list).To(ContainElement(r1))
+	postList(callbacks, list)
 	Expect(list).NotTo(ContainElement(r2))
 
 	// without
-	list, err = client.List(namespace, clients.ListOpts{})
+	list, err = client.List(namespace, clients.ListOpts{
+		Selector: selectors,
+	})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
+	Expect(list).To(And(ContainElement(r1), ContainElement(r2)))
+	postList(callbacks, list)
 
 	err = client.Delete(writtenNamespace, "adsfw", clients.DeleteOpts{})
 	Expect(err).To(HaveOccurred())
@@ -111,17 +124,21 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 	Expect(err).NotTo(HaveOccurred())
 
 	Eventually(func() resources.ResourceList {
-		list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(namespace, clients.ListOpts{
+			Selector: selectors,
+		})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(ContainElement(r1))
 	Eventually(func() resources.ResourceList {
-		list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(namespace, clients.ListOpts{
+			Selector: selectors,
+		})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
 
-	w, errs, err := client.Watch(namespace, clients.WatchOpts{RefreshRate: refreshRate})
+	w, errs, err := client.Watch(namespace, opts)
 	Expect(err).NotTo(HaveOccurred())
 
 	var r3 resources.Resource
@@ -142,6 +159,7 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 			Metadata: core.Metadata{
 				Name:      "goo",
 				Namespace: namespace,
+				Labels:    selectors,
 			},
 		}
 		r3, err = client.Write(input, clients.WriteOpts{})
@@ -161,23 +179,46 @@ func TestCrudClient(namespace string, client ResourceClient, refreshRate time.Du
 		Fail("expected a message in channel")
 	}
 
-	var timesDrained int
-drain:
-	for {
-		select {
-		case list = <-w:
-			timesDrained++
-			if timesDrained > 50 {
-				Fail("drained the watch channel 50 times, something is wrong")
+	go func() {
+		defer GinkgoRecover()
+		for {
+			select {
+			case err := <-errs:
+				Expect(err).NotTo(HaveOccurred())
+			case <-time.After(time.Second / 4):
+				return
 			}
-		case err := <-errs:
-			Expect(err).NotTo(HaveOccurred())
-		case <-time.After(time.Second / 4):
-			break drain
+		}
+	}()
+
+	postList(callbacks, list)
+
+	Eventually(w, time.Second*5, time.Second/10).Should(Receive(ConsistOf(r1, r2, r3)))
+}
+
+func postList(callbacks []Callback, list resources.ResourceList) {
+	for _, el := range list {
+		postRead(callbacks, el)
+	}
+}
+
+func postRead(callbacks []Callback, res resources.Resource) {
+	for _, cb := range callbacks {
+		if cb.PostReadFunc != nil {
+			cb.PostReadFunc(res)
 		}
 	}
+}
 
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
-	Expect(list).To(ContainElement(r3))
+func postWrite(callbacks []Callback, res resources.Resource) {
+	for _, cb := range callbacks {
+		if cb.PostWriteFunc != nil {
+			cb.PostWriteFunc(res)
+		}
+	}
+}
+
+type Callback struct {
+	PostReadFunc  func(res resources.Resource)
+	PostWriteFunc func(res resources.Resource)
 }

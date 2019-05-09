@@ -1,0 +1,6 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: Remove the `ResourcesByNamespace` type from Solo-Kit
+    issueLink: https://github.com/solo-io/go-utils/issues/169
+  - type: NON_USER_FACING
+    description: Add util functions which wrap Client.Watch() calls

@@ -5,24 +5,22 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewFakeResource(namespace, name string) *FakeResource {
-	return &FakeResource{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
+	fakeresource := &FakeResource{}
+	fakeresource.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return fakeresource
 }
 
 func (r *FakeResource) SetMetadata(meta core.Metadata) {
@@ -39,13 +37,12 @@ func (r *FakeResource) Hash() uint64 {
 }
 
 type FakeResourceList []*FakeResource
-type FakesByNamespace map[string]FakeResourceList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list FakeResourceList) Find(namespace, name string) (*FakeResource, error) {
 	for _, fakeResource := range list {
-		if fakeResource.Metadata.Name == name {
-			if namespace == "" || fakeResource.Metadata.Namespace == namespace {
+		if fakeResource.GetMetadata().Name == name {
+			if namespace == "" || fakeResource.GetMetadata().Namespace == namespace {
 				return fakeResource, nil
 			}
 		}
@@ -64,7 +61,7 @@ func (list FakeResourceList) AsResources() resources.ResourceList {
 func (list FakeResourceList) Names() []string {
 	var names []string
 	for _, fakeResource := range list {
-		names = append(names, fakeResource.Metadata.Name)
+		names = append(names, fakeResource.GetMetadata().Name)
 	}
 	return names
 }
@@ -72,14 +69,14 @@ func (list FakeResourceList) Names() []string {
 func (list FakeResourceList) NamespacesDotNames() []string {
 	var names []string
 	for _, fakeResource := range list {
-		names = append(names, fakeResource.Metadata.Namespace+"."+fakeResource.Metadata.Name)
+		names = append(names, fakeResource.GetMetadata().Namespace+"."+fakeResource.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list FakeResourceList) Sort() FakeResourceList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -87,12 +84,18 @@ func (list FakeResourceList) Sort() FakeResourceList {
 func (list FakeResourceList) Clone() FakeResourceList {
 	var fakeResourceList FakeResourceList
 	for _, fakeResource := range list {
-		fakeResourceList = append(fakeResourceList, proto.Clone(fakeResource).(*FakeResource))
+		fakeResourceList = append(fakeResourceList, resources.Clone(fakeResource).(*FakeResource))
 	}
 	return fakeResourceList
 }
 
 func (list FakeResourceList) Each(f func(element *FakeResource)) {
+	for _, fakeResource := range list {
+		f(fakeResource)
+	}
+}
+
+func (list FakeResourceList) EachResource(f func(element resources.Resource)) {
 	for _, fakeResource := range list {
 		f(fakeResource)
 	}
@@ -104,32 +107,6 @@ func (list FakeResourceList) AsInterfaces() []interface{} {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace FakesByNamespace) Add(fakeResource ...*FakeResource) {
-	for _, item := range fakeResource {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
-	}
-}
-
-func (byNamespace FakesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace FakesByNamespace) List() FakeResourceList {
-	var list FakeResourceList
-	for _, fakeResourceList := range byNamespace {
-		list = append(list, fakeResourceList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace FakesByNamespace) Clone() FakesByNamespace {
-	cloned := make(FakesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &FakeResource{}

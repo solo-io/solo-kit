@@ -29,7 +29,9 @@ var _ = Describe("{{ .Name }}Client", func() {
 	)
 {{- end }}
 	for _, test := range []typed.ResourceClientTester{
+{{- if (not .IsCustom) }}
 		&typed.KubeRcTester{Crd: {{ .Name }}Crd},
+{{- end }}
 {{- /* cluster-scoped resources are currently only supported by crd client */}}
 {{- if (not .ClusterScoped) }}
 		&typed.ConsulRcTester{},
@@ -97,8 +99,8 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 	input := New{{ .Name }}("", name)
 {{- else }}
 	input := New{{ .Name }}(namespace, name)
-	input.Metadata.Namespace = namespace
 {{- end }}
+
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -112,8 +114,8 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- if (not .ClusterScoped) }}
 	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
 {{- end }}
-	Expect(r1.Metadata.ResourceVersion).NotTo(Equal(input.Metadata.ResourceVersion))
-	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
+	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
+	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 	{{- range .Fields }}
 		{{- if and (not (eq .Name "metadata")) (not .IsOneof) }}
 	Expect(r1.{{ upper_camel .Name }}).To(Equal(input.{{ upper_camel .Name }}))
@@ -125,7 +127,9 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 	})
 	Expect(err).To(HaveOccurred())
 
-	input.Metadata.ResourceVersion = r1.GetMetadata().ResourceVersion
+	resources.UpdateMetadata(input, func(meta *core.Metadata) {
+		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
+	})
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
@@ -150,12 +154,12 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 	name = name2
 	input = &{{ .Name }}{}
 
-	input.Metadata = core.Metadata{
+	input.SetMetadata(core.Metadata{
 		Name:      name,
 {{- if (not .ClusterScoped) }}
 		Namespace: namespace,
 {{- end }}
-	}
+	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -240,12 +244,12 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 		name = name3
 		input = &{{ .Name }}{}
 		Expect(err).NotTo(HaveOccurred())
-		input.Metadata = core.Metadata{
+		input.SetMetadata(core.Metadata{
 			Name:      name,
 {{- if (not .ClusterScoped) }}
 			Namespace: namespace,
 {{- end }}
-		}
+		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -260,19 +264,18 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 		Fail("expected a message in channel")
 	}
 
-drain:
-	for {
-		select {
-		case list = <-w:
-		case err := <-errs:
-			Expect(err).NotTo(HaveOccurred())
-		case <-time.After(time.Millisecond * 500):
-			break drain
+	go func() {
+		defer GinkgoRecover()
+		for {
+			select {
+			case err := <-errs:
+				Expect(err).NotTo(HaveOccurred())
+			case <-time.After(time.Second / 4):
+				return
+			}
 		}
-	}
+	}()
 
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
-	Expect(list).To(ContainElement(r3))
+	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }
 `))

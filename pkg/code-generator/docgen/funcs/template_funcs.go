@@ -12,7 +12,7 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"github.com/solo-io/go-utils/log"
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/iancoleman/strcase"
@@ -322,6 +322,9 @@ func linkForResource(project *model.Project, docsOptions *options.DocsOptions) f
 func resourceForMessage(project *model.Project) func(msg *protokit.Descriptor) (*model.Resource, error) {
 	return func(msg *protokit.Descriptor) (*model.Resource, error) {
 		for _, res := range project.Resources {
+			if res.SkipDocsGen {
+				continue
+			}
 			if res.Original.GetName() == msg.GetName() && res.Original.GetFile().GetName() == msg.GetFile().GetName() {
 				return res, nil
 			}
@@ -565,6 +568,9 @@ func getMessageSkippingInfo(project *model.Project) map[string]bool {
 	// Build map for quick lookup of SkipDocsGen flag
 	toSkip := make(map[string]bool)
 	for _, resource := range project.Resources {
+		if resource.SkipDocsGen {
+			continue
+		}
 		key := strings.Join([]string{resource.ProtoPackage, resource.Original.GetName()}, ".")
 		toSkip[key] = resource.SkipDocsGen
 	}

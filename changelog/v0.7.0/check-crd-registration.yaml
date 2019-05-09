@@ -1,0 +1,4 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: protect against panics by checking crd registration in crd client factory. change is potentially breaking as some users (projects) may not expect this verification check.
+    issueLink: https://github.com/solo-io/solo-kit/issues/146

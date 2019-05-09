@@ -27,7 +27,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/errutils"
+	"github.com/solo-io/go-utils/errutils"
 )
 
 var (
@@ -201,6 +201,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+{{- range .Resources}}
+{{- if not .ClusterScoped }}
+		{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
+{{- end }}
+{{- end }}
 
 		for {
 			record := func(){stats.Record(ctx, m{{ .GoName }}SnapshotIn.M(1))}
@@ -220,15 +225,20 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- if .ClusterScoped }}
 			case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}Chan:
 				record()
-				currentSnapshot.{{ .PluralName }} = {{ lower_camel .Name }}List
+				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List
 {{- else }}
 			case {{ lower_camel .Name }}NamespacedList := <- {{ lower_camel .Name }}Chan:
 				record()
 
 				namespace := {{ lower_camel .Name }}NamespacedList.namespace
-				{{ lower_camel .Name }}List := {{ lower_camel .Name }}NamespacedList.list
 
-				currentSnapshot.{{ .PluralName }}[namespace] = {{ lower_camel .Name }}List
+				// merge lists by namespace
+				{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .Name }}NamespacedList.list
+				var {{ lower_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List
+				for _, {{ lower_camel .PluralName }} := range {{ lower_camel .PluralName }}ByNamespace {
+					{{ lower_camel .Name }}List  = append({{ lower_camel .Name }}List, {{ lower_camel .PluralName }}...)
+				}
+				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List.Sort()
 {{- end }}
 {{- end}}
 			}
