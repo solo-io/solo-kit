@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Provide custom opts to gogoproto on pb generation
+    issueLink: https://github.com/solo-io/go-utils/issues/174
