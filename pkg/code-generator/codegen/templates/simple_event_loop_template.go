@@ -105,8 +105,10 @@ func (el *{{ lower_camel .GoName }}SimpleEventLoop) Run(ctx context.Context) (<-
 					}
 
 					syncerCancels[syncer] = canc
-					previousSnapshot = snapshot
 				}
+
+				previousSnapshot = snapshot
+
 			case <-ctx.Done():
 				return
 			}

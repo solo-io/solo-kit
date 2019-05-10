@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix setting the previous snapshot in the simple emitter
+    issueLink: https://github.com/solo-io/go-utils/issues/177
