@@ -44,6 +44,10 @@ var _ = Describe("SimpleEmitter", func() {
 		}, wrapper.ClientWatchOpts{
 			BaseClient: watcher,
 			Namespace:  "b",
+		}, wrapper.ClientWatchOpts{
+			BaseClient:   watcher,
+			Namespace:    "c",
+			ResourceName: "just-me",
 		})
 
 		emitter = v1.NewTestingSimpleEmitter(watch)
@@ -61,6 +65,10 @@ var _ = Describe("SimpleEmitter", func() {
 			_, err = clusterMocks2.Write(v1.NewMockResource("a", "a"), clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			_, err = clusterMocks2.Write(v1.NewMockResource("a", "b"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = clusterMocks2.Write(v1.NewMockResource("c", "not-me"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = clusterMocks2.Write(v1.NewMockResource("c", "just-me"), clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			err = watcher.AddWatch(clusterFakes3)
@@ -113,6 +121,13 @@ var _ = Describe("SimpleEmitter", func() {
 					Metadata: core.Metadata{
 						Name:      "b",
 						Namespace: "a",
+						Cluster:   "clustr2",
+					},
+				},
+				&v1.MockResource{
+					Metadata: core.Metadata{
+						Name:      "just-me",
+						Namespace: "c",
 						Cluster:   "clustr2",
 					},
 				},
@@ -187,6 +202,13 @@ var _ = Describe("SimpleEmitter", func() {
 					Metadata: core.Metadata{
 						Name:      "b",
 						Namespace: "a",
+						Cluster:   "clustr2",
+					},
+				},
+				&v1.MockResource{
+					Metadata: core.Metadata{
+						Name:      "just-me",
+						Namespace: "c",
 						Cluster:   "clustr2",
 					},
 				},
