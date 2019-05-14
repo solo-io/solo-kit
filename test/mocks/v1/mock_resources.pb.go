@@ -19,6 +19,8 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -601,6 +603,20 @@ type MockXdsResourceDiscoveryServiceServer interface {
 	StreamMockXdsResourceConfig(MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigServer) error
 	DeltaMockXdsResourceConfig(MockXdsResourceDiscoveryService_DeltaMockXdsResourceConfigServer) error
 	FetchMockXdsResourceConfig(context.Context, *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error)
+}
+
+// UnimplementedMockXdsResourceDiscoveryServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedMockXdsResourceDiscoveryServiceServer struct {
+}
+
+func (*UnimplementedMockXdsResourceDiscoveryServiceServer) StreamMockXdsResourceConfig(srv MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamMockXdsResourceConfig not implemented")
+}
+func (*UnimplementedMockXdsResourceDiscoveryServiceServer) DeltaMockXdsResourceConfig(srv MockXdsResourceDiscoveryService_DeltaMockXdsResourceConfigServer) error {
+	return status.Errorf(codes.Unimplemented, "method DeltaMockXdsResourceConfig not implemented")
+}
+func (*UnimplementedMockXdsResourceDiscoveryServiceServer) FetchMockXdsResourceConfig(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchMockXdsResourceConfig not implemented")
 }
 
 func RegisterMockXdsResourceDiscoveryServiceServer(s *grpc.Server, srv MockXdsResourceDiscoveryServiceServer) {
