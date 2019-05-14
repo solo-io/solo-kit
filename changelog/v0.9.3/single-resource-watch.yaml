@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add ability to watch a single resource in an emitter
+    issueLink: https://github.com/solo-io/solo-kit/issues/180
