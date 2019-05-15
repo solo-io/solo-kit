@@ -136,12 +136,12 @@ func (rc *namespaceResourceClient) Delete(namespace, name string, opts clients.D
 func (rc *namespaceResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	podObjList, err := rc.Cache.NamespaceLister().List(labels.SelectorFromSet(opts.Selector))
+	namespaceObjList, err := rc.Cache.NamespaceLister().List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
-		return nil, errors.Wrapf(err, "listing pods level")
+		return nil, errors.Wrapf(err, "listing namespaces level")
 	}
 	var resourceList resources.ResourceList
-	for _, namespaceObj := range podObjList {
+	for _, namespaceObj := range namespaceObjList {
 		resource := FromKubeNamespace(namespaceObj)
 
 		if resource == nil {
