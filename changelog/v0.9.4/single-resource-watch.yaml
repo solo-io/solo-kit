@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added kube service solo-kit kube resource for event loops.
+    issueLink: https://github.com/solo-io/solo-kit/issues/182

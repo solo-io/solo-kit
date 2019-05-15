@@ -25,8 +25,8 @@ func NewConfigMapClient(kube kubernetes.Interface, cache cache.KubeCoreCache) sk
 }
 func FromKubeConfigMap(cm *kubev1.ConfigMap) *skkube.ConfigMap {
 
-	podCopy := cm.DeepCopy()
-	kubeConfigMap := configmap.ConfigMap(*podCopy)
+	configMapCopy := cm.DeepCopy()
+	kubeConfigMap := configmap.ConfigMap(*configMapCopy)
 	resource := &skkube.ConfigMap{
 		ConfigMap: kubeConfigMap,
 	}
