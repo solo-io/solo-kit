@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added option to skip generation of tests
+    issueLink: https://github.com/solo-io/solo-kit/issues/185
