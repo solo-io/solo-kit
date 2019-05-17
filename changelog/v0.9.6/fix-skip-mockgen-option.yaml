@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fixed behavior of option to skip mock generation.
+    issueLink: https://github.com/solo-io/solo-kit/issues/187

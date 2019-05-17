@@ -573,7 +573,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:2011c21ec982cd8346e3b3d08036c85fbe2dedcf0bad2c9961f2ef34077a089a"
+  digest = "1:62209c4aec8a021a838f2d8b65bfcf565bc6623a354ac7508c50f90c96b9e005"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
