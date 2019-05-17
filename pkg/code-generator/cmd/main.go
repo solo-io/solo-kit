@@ -39,7 +39,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 		GenDocs:       genDocs,
 		CustomImports: customImports,
 		SkipDirs:      skipDirs,
-		SkipGenMocks:  os.Getenv(SkipMockGen) != "1",
+		SkipGenMocks:  os.Getenv(SkipMockGen) != "",
 	})
 }
 
@@ -175,7 +175,7 @@ func Generate(opts GenerateOptions) error {
 		// Generate mocks
 		// need to run after to make sure all resources have already been written
 		// Set this env var during tests so that mocks are not generated
-		if opts.SkipGenMocks {
+		if !opts.SkipGenMocks {
 			if err := genMocks(code, outDir, absoluteRoot); err != nil {
 				return err
 			}
