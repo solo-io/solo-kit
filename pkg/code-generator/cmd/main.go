@@ -39,6 +39,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 		GenDocs:       genDocs,
 		CustomImports: customImports,
 		SkipDirs:      skipDirs,
+		SkipGenMocks:  os.Getenv(SkipMockGen) != "1",
 	})
 }
 
@@ -50,6 +51,10 @@ type GenerateOptions struct {
 	SkipDirs      []string
 	// arguments for gogo_out=
 	CustomGogoOutArgs []string
+	// skip generated mocks
+	SkipGenMocks bool
+	// skip generated tests
+	SkipGeneratedTests bool
 }
 
 func Generate(opts GenerateOptions) error {
@@ -126,7 +131,7 @@ func Generate(opts GenerateOptions) error {
 			return err
 		}
 
-		code, err := codegen.GenerateFiles(project, true)
+		code, err := codegen.GenerateFiles(project, true, opts.SkipGeneratedTests)
 		if err != nil {
 			return err
 		}
@@ -170,7 +175,7 @@ func Generate(opts GenerateOptions) error {
 		// Generate mocks
 		// need to run after to make sure all resources have already been written
 		// Set this env var during tests so that mocks are not generated
-		if os.Getenv(SkipMockGen) != "1" {
+		if opts.SkipGenMocks {
 			if err := genMocks(code, outDir, absoluteRoot); err != nil {
 				return err
 			}
