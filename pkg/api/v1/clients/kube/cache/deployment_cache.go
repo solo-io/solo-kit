@@ -20,7 +20,7 @@ type KubeDeploymentCache interface {
 }
 
 type kubeDeploymentCache struct {
-	deploymentLister       kubelisters.DeploymentLister
+	deploymentLister kubelisters.DeploymentLister
 
 	cacheUpdatedWatchers      []chan struct{}
 	cacheUpdatedWatchersMutex sync.Mutex
@@ -35,7 +35,7 @@ func NewKubeDeploymentCache(ctx context.Context, client kubernetes.Interface) (*
 	deployments := kubeInformerFactory.Apps().V1().Deployments()
 
 	k := &kubeDeploymentCache{
-		deploymentLister:       deployments.Lister(),
+		deploymentLister: deployments.Lister(),
 	}
 
 	kubeController := controller.NewController("kube-plugin-controller",
