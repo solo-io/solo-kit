@@ -27,6 +27,12 @@
       "type": "Service",
       "plural_name": "services",
       "short_name": "svc"
+    },
+    {
+      "package": "github.com/solo-io/solo-kit/api/external/kubernetes/deployment",
+      "type": "Deployment",
+      "plural_name": "deployments",
+      "short_name": "dp "
     }
   ]
 }

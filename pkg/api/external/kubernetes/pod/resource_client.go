@@ -19,14 +19,15 @@ import (
 )
 
 type podResourceClient struct {
+	cache cache.KubeCoreCache
 	common.KubeCoreResourceClient
 }
 
 func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *podResourceClient {
 	return &podResourceClient{
+		cache: cache,
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			Kube:         kube,
-			Cache:        cache,
 			ResourceType: &skkube.Pod{},
 		},
 	}
@@ -138,7 +139,7 @@ func (rc *podResourceClient) Delete(namespace, name string, opts clients.DeleteO
 func (rc *podResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	podObjList, err := rc.Cache.PodLister().Pods(namespace).List(labels.SelectorFromSet(opts.Selector))
+	podObjList, err := rc.cache.PodLister().Pods(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing pods level")
 	}
@@ -160,7 +161,7 @@ func (rc *podResourceClient) List(namespace string, opts clients.ListOpts) (reso
 }
 
 func (rc *podResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	return common.KubeResourceWatch(rc.Cache, rc.List, namespace, opts)
+	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
 func (rc *podResourceClient) exist(namespace, name string) bool {

@@ -9,7 +9,6 @@ import (
 
 type KubeCoreResourceClient struct {
 	Kube         kubernetes.Interface
-	Cache        cache.KubeCoreCache
 	ResourceType resources.Resource
 }
 
@@ -27,7 +26,7 @@ func (rc *KubeCoreResourceClient) Register() error {
 
 type ResourceListFunc func(namespace string, opts clients.ListOpts) (resources.ResourceList, error)
 
-func KubeResourceWatch(cache cache.KubeCoreCache, listFunc ResourceListFunc, namespace string,
+func KubeResourceWatch(cache cache.Cache, listFunc ResourceListFunc, namespace string,
 	opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
 

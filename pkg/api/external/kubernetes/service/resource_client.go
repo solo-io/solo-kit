@@ -19,14 +19,15 @@ import (
 )
 
 type serviceResourceClient struct {
+	cache cache.KubeCoreCache
 	common.KubeCoreResourceClient
 }
 
 func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *serviceResourceClient {
 	return &serviceResourceClient{
+		cache: cache,
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			Kube:         kube,
-			Cache:        cache,
 			ResourceType: &skkube.Service{},
 		},
 	}
@@ -138,7 +139,7 @@ func (rc *serviceResourceClient) Delete(namespace, name string, opts clients.Del
 func (rc *serviceResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	serviceObjList, err := rc.Cache.ServiceLister().Services(namespace).List(labels.SelectorFromSet(opts.Selector))
+	serviceObjList, err := rc.cache.ServiceLister().Services(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing services level")
 	}
@@ -160,7 +161,7 @@ func (rc *serviceResourceClient) List(namespace string, opts clients.ListOpts) (
 }
 
 func (rc *serviceResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	return common.KubeResourceWatch(rc.Cache, rc.List, namespace, opts)
+	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
 func (rc *serviceResourceClient) exist(namespace, name string) bool {
