@@ -46,13 +46,16 @@ var _ = Describe("DeploymentBaseClient", func() {
 	})
 	It("converts a kubernetes deployment to solo-kit resource", func() {
 
+		labs := map[string]string{"a": "b"}
 		deployment, err := kube.AppsV1().Deployments(namespace).Create(&v1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "happy",
 				Namespace: namespace,
 			},
 			Spec: v1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{MatchLabels: labs},
 				Template: kubev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{Labels: labs},
 					Spec: kubev1.PodSpec{
 						Containers: []kubev1.Container{
 							{
