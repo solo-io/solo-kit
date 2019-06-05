@@ -13,14 +13,18 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+type Cache interface {
+	Subscribe() <-chan struct{}
+	Unsubscribe(<-chan struct{})
+}
+
 type KubeCoreCache interface {
+	Cache
 	PodLister() kubelisters.PodLister
 	ServiceLister() kubelisters.ServiceLister
 	ConfigMapLister() kubelisters.ConfigMapLister
 	SecretLister() kubelisters.SecretLister
 	NamespaceLister() kubelisters.NamespaceLister
-	Subscribe() <-chan struct{}
-	Unsubscribe(<-chan struct{})
 }
 
 type kubeCoreCaches struct {
