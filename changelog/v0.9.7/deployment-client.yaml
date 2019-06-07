@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add solo-kit client for kubernetes Deployments
+    issueLink: https://github.com/solo-io/solo-kit/issues/190

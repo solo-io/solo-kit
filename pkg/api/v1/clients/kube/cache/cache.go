@@ -13,17 +13,23 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type KubeCoreCache interface {
-	PodLister() kubelisters.PodLister
-	ConfigMapLister() kubelisters.ConfigMapLister
-	SecretLister() kubelisters.SecretLister
-	NamespaceLister() kubelisters.NamespaceLister
+type Cache interface {
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
 }
 
+type KubeCoreCache interface {
+	Cache
+	PodLister() kubelisters.PodLister
+	ServiceLister() kubelisters.ServiceLister
+	ConfigMapLister() kubelisters.ConfigMapLister
+	SecretLister() kubelisters.SecretLister
+	NamespaceLister() kubelisters.NamespaceLister
+}
+
 type kubeCoreCaches struct {
 	podLister       kubelisters.PodLister
+	serviceLister   kubelisters.ServiceLister
 	configMapLister kubelisters.ConfigMapLister
 	secretLister    kubelisters.SecretLister
 	namespaceLister kubelisters.NamespaceLister
@@ -39,12 +45,14 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, resyncDuration)
 
 	pods := kubeInformerFactory.Core().V1().Pods()
+	services := kubeInformerFactory.Core().V1().Services()
 	configMaps := kubeInformerFactory.Core().V1().ConfigMaps()
 	secrets := kubeInformerFactory.Core().V1().Secrets()
 	namespaces := kubeInformerFactory.Core().V1().Namespaces()
 
 	k := &kubeCoreCaches{
 		podLister:       pods.Lister(),
+		serviceLister:   services.Lister(),
 		configMapLister: configMaps.Lister(),
 		secretLister:    secrets.Lister(),
 		namespaceLister: namespaces.Lister(),
@@ -53,6 +61,7 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 	kubeController := controller.NewController("kube-plugin-controller",
 		controller.NewLockingSyncHandler(k.updatedOccured),
 		pods.Informer(),
+		services.Informer(),
 		configMaps.Informer(),
 		secrets.Informer(),
 		namespaces.Informer(),
@@ -69,6 +78,10 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 
 func (k *kubeCoreCaches) PodLister() kubelisters.PodLister {
 	return k.podLister
+}
+
+func (k *kubeCoreCaches) ServiceLister() kubelisters.ServiceLister {
+	return k.serviceLister
 }
 
 func (k *kubeCoreCaches) ConfigMapLister() kubelisters.ConfigMapLister {

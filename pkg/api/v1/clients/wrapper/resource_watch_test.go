@@ -60,6 +60,5 @@ var _ = Describe("ResourceWatch", func() {
 			&v1.MockResource{Metadata: core.Metadata{Namespace: "b", Name: "b"}},
 			&v1.MockResource{Metadata: core.Metadata{Namespace: "d", Name: "d"}},
 		}))
-
 	})
 })

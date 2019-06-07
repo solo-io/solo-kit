@@ -33,6 +33,37 @@ const (
 )
 
 func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customImports, skipDirs []string) error {
+	return Generate(GenerateOptions{
+		RelativeRoot:  relativeRoot,
+		CompileProtos: compileProtos,
+		GenDocs:       genDocs,
+		CustomImports: customImports,
+		SkipDirs:      skipDirs,
+		SkipGenMocks:  os.Getenv(SkipMockGen) != "",
+	})
+}
+
+type GenerateOptions struct {
+	RelativeRoot  string
+	CompileProtos bool
+	GenDocs       *DocsOptions
+	CustomImports []string
+	SkipDirs      []string
+	// arguments for gogo_out=
+	CustomGogoOutArgs []string
+	// skip generated mocks
+	SkipGenMocks bool
+	// skip generated tests
+	SkipGeneratedTests bool
+}
+
+func Generate(opts GenerateOptions) error {
+	relativeRoot := opts.RelativeRoot
+	compileProtos := opts.CompileProtos
+	genDocs := opts.GenDocs
+	customImports := opts.CustomImports
+	customGogoArgs := opts.CustomGogoOutArgs
+	skipDirs := opts.SkipDirs
 	skipDirs = append(skipDirs, "vendor/")
 	absoluteRoot, err := filepath.Abs(relativeRoot)
 	if err != nil {
@@ -69,7 +100,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 	}
 
 	// Create a FileDescriptorProto for all the proto files under 'absoluteRoot' and each of the 'customImports' paths
-	descriptors, err := collectDescriptorsFromRoot(absoluteRoot, customImports, skipDirs, compileProto)
+	descriptors, err := collectDescriptorsFromRoot(absoluteRoot, customImports, customGogoArgs, skipDirs, compileProto)
 	if err != nil {
 		return err
 	}
@@ -100,7 +131,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 			return err
 		}
 
-		code, err := codegen.GenerateFiles(project, true)
+		code, err := codegen.GenerateFiles(project, true, opts.SkipGeneratedTests)
 		if err != nil {
 			return err
 		}
@@ -144,7 +175,7 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 		// Generate mocks
 		// need to run after to make sure all resources have already been written
 		// Set this env var during tests so that mocks are not generated
-		if os.Getenv(SkipMockGen) != "1" {
+		if !opts.SkipGenMocks {
 			if err := genMocks(code, outDir, absoluteRoot); err != nil {
 				return err
 			}
@@ -232,7 +263,7 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectCon
 	return projects, nil
 }
 
-func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto), root, protoFile string, customImports []string, wantCompile func(string) bool) error {
+func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto), root, protoFile string, customImports, customGogoArgs []string, wantCompile func(string) bool) error {
 	log.Printf("processing proto file input %v", protoFile)
 	imports, err := importsForProtoFile(root, protoFile, customImports)
 	if err != nil {
@@ -254,7 +285,7 @@ func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto)
 	}
 	defer os.Remove(tmpFile.Name())
 
-	if err := writeDescriptors(protoFile, tmpFile.Name(), imports, compile); err != nil {
+	if err := writeDescriptors(protoFile, tmpFile.Name(), imports, customGogoArgs, compile); err != nil {
 		return errors.Wrapf(err, "writing descriptors")
 	}
 	desc, err := readDescriptors(tmpFile.Name())
@@ -269,7 +300,7 @@ func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto)
 	return nil
 }
 
-func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
+func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skipDirs []string, wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
 	var descriptors []*descriptor.FileDescriptorProto
 	var mutex sync.Mutex
 	addDescriptor := func(f *descriptor.FileDescriptorProto) {
@@ -309,7 +340,7 @@ func collectDescriptorsFromRoot(root string, customImports, skipDirs []string, w
 
 			// parallelize parsing the descriptors as each one requires file i/o and is slow
 			g.Go(func() error {
-				return addDescriptorsForFile(addDescriptor, absoluteDir, protoFile, customImports, wantCompile)
+				return addDescriptorsForFile(addDescriptor, absoluteDir, protoFile, customImports, customGogoArgs, wantCompile)
 			})
 			return nil
 		})
@@ -420,23 +451,29 @@ func findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImpo
 
 }
 
-func writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
+var defaultGogoArgs = []string{
+	"plugins=grpc",
+	"Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
+	"Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types",
+	"Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types",
+	"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types",
+	"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types",
+	"Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types",
+	"Menvoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
+}
+
+func writeDescriptors(protoFile, toFile string, imports, gogoArgs []string, compileProtos bool) error {
 	cmd := exec.Command("protoc")
 	for i := range imports {
 		imports[i] = "-I" + imports[i]
 	}
 	cmd.Args = append(cmd.Args, imports...)
 
+	gogoArgs = append(defaultGogoArgs, gogoArgs...)
+
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--gogo_out=plugins=grpc,"+
-				"Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor,"+
-				"Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,"+
-				"Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,"+
-				"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,"+
-				"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,"+
-				"Menvoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2"+
-				":"+gopathSrc())
+			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc())
 	}
 
 	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",

@@ -19,6 +19,7 @@ import (
 const annotationKey = "resource_kind"
 
 type ResourceClient struct {
+	cache cache.KubeCoreCache
 	common.KubeCoreResourceClient
 	apiexts      apiexts.Interface
 	ownerLabel   string
@@ -37,10 +38,10 @@ func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resourc
 
 func NewResourceClientWithConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, configMapConverter ConfigMapConverter) (*ResourceClient, error) {
 	return &ResourceClient{
+		cache: kubeCache,
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			Kube:         kube,
 			ResourceType: resourceType,
-			Cache:        kubeCache,
 		},
 		resourceName: reflect.TypeOf(resourceType).String(),
 		converter:    configMapConverter,
@@ -128,7 +129,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	configMapList, err := rc.Cache.ConfigMapLister().ConfigMaps(namespace).List(labels.SelectorFromSet(opts.Selector))
+	configMapList, err := rc.cache.ConfigMapLister().ConfigMaps(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing configMaps in %v", namespace)
 	}
@@ -152,7 +153,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	return common.KubeResourceWatch(rc.Cache, rc.List, namespace, opts)
+	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
 func (rc *ResourceClient) exist(namespace, name string) bool {

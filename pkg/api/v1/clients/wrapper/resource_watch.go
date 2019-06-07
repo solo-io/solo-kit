@@ -16,6 +16,12 @@ type ClientWatchOpts struct {
 	// will be ignored if the resource
 	// is cluster-scoped
 	Namespace string
+
+	// if provided, the watch will return lists
+	// containing only the single named resource
+	// or an empty list
+	ResourceName string
+
 	// the label selector to apply to the watch
 	Selector map[string]string
 }
@@ -23,7 +29,11 @@ type ClientWatchOpts struct {
 func AggregatedWatchFromClients(clientOpts ...ClientWatchOpts) clients.ResourceWatch {
 	var watches []clients.ResourceWatch
 	for _, opt := range clientOpts {
-		watches = append(watches, ResourceWatch(opt.BaseClient, opt.Namespace, opt.Selector))
+		watch := ResourceWatch(opt.BaseClient, opt.Namespace, opt.Selector)
+		if opt.ResourceName != "" {
+			watch = SingleResourceWatch(watch, opt.ResourceName)
+		}
+		watches = append(watches, watch)
 	}
 	return AggregatedWatch(watches...)
 }
@@ -34,6 +44,42 @@ func ResourceWatch(rw clients.ResourceWatcher, namespace string, selector map[st
 			Ctx:      ctx,
 			Selector: selector,
 		})
+	}
+}
+
+func SingleResourceWatch(rw clients.ResourceWatch, resourceName string) clients.ResourceWatch {
+	return func(ctx context.Context) (<-chan resources.ResourceList, <-chan error, error) {
+		unfiltered, errs, err := rw(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		out := make(chan resources.ResourceList)
+		go func() {
+			defer close(out)
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case list, ok := <-unfiltered:
+					if !ok {
+						return
+					}
+					var singleResourceList resources.ResourceList
+					for _, resource := range list {
+						if resource.GetMetadata().Name == resourceName {
+							singleResourceList = append(singleResourceList, resource)
+							break
+						}
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case out <- singleResourceList:
+					}
+				}
+			}
+		}()
+		return out, errs, nil
 	}
 }
 
