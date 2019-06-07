@@ -413,14 +413,6 @@
   version = "v2.3.0"
 
 [[projects]]
-  digest = "1:dfe5159383dfcd370555c35374ac99022906f987b55cc65a830fb9ced970b4b1"
-  name = "github.com/lyft/protoc-gen-validate"
-  packages = ["validate"]
-  pruneopts = "UT"
-  revision = "930a67cf7ba41b9d9436ad7a1be70a5d5ff6e1fc"
-  version = "v0.0.6"
-
-[[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
