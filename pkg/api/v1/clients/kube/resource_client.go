@@ -317,7 +317,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	rc.sharedCache.Start()
 
 	opts = opts.WithDefaults()
-	resourcesChan := make(chan resources.ResourceList)
+	resourcesChan := make(chan resources.ResourceList, 1)
 	errs := make(chan error)
 	ctx := opts.Ctx
 
@@ -330,7 +330,20 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 			errs <- err
 			return
 		}
-		resourcesChan <- list
+		select {
+		case resourcesChan <- list:
+		default:
+		Drainloop:
+			for {
+				select {
+				case <-resourcesChan:
+				default:
+					break Drainloop
+				}
+			}
+			// this will not block as we drained the channel.
+			resourcesChan <- list
+		}
 	}
 	// watch should open up with an initial read
 	cacheUpdated := rc.sharedCache.AddWatch(10)

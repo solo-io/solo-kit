@@ -171,12 +171,20 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 		Fail("expected wait to be closed before 5s")
 	}
 
-	select {
-	case err := <-errs:
-		Expect(err).NotTo(HaveOccurred())
-	case list = <-w:
-	case <-time.After(time.Millisecond * 5):
-		Fail("expected a message in channel")
+	list = nil
+	after := time.After(time.Millisecond * 5)
+Loop:
+	for {
+		select {
+		case err := <-errs:
+			Expect(err).NotTo(HaveOccurred())
+		case list = <-w:
+		case <-after:
+			if list == nil {
+				Fail("expected a message in channel")
+			}
+			break Loop
+		}
 	}
 
 	go func() {
@@ -193,7 +201,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 
 	postList(callbacks, list)
 
-	Eventually(w, time.Second*5, time.Second/10).Should(Receive(ConsistOf(r1, r2, r3)))
+	Expect(list).To(ConsistOf(r1, r2, r3))
 }
 
 func postList(callbacks []Callback, list resources.ResourceList) {
