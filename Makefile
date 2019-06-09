@@ -74,7 +74,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
 	mkdir -p ${OUTPUT_DIR}
-	go generate ./...
+	go generate -x ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	touch $@

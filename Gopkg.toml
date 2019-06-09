@@ -38,5 +38,5 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
   version = "0.8.0"
 
 [[constraint]]
-  version = ">=0.6.9"
+  version = ">=0.8.0"
   name = "github.com/envoyproxy/go-control-plane"
