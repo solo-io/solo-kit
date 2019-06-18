@@ -20,14 +20,15 @@ import (
 
 type deploymentResourceClient struct {
 	cache cache.KubeDeploymentCache
+	Kube  kubernetes.Interface
 	common.KubeCoreResourceClient
 }
 
 func newResourceClient(kube kubernetes.Interface, cache cache.KubeDeploymentCache) *deploymentResourceClient {
 	return &deploymentResourceClient{
 		cache: cache,
+		Kube:  kube,
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
-			Kube:         kube,
 			ResourceType: &skkube.Deployment{},
 		},
 	}

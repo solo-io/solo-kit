@@ -20,14 +20,15 @@ import (
 
 type namespaceResourceClient struct {
 	cache cache.KubeCoreCache
+	Kube  kubernetes.Interface
 	common.KubeCoreResourceClient
 }
 
 func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *namespaceResourceClient {
 	return &namespaceResourceClient{
 		cache: cache,
+		Kube:  kube,
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
-			Kube:         kube,
 			ResourceType: &skkube.KubeNamespace{},
 		},
 	}

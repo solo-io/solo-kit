@@ -33,6 +33,12 @@
       "type": "Deployment",
       "plural_name": "deployments",
       "short_name": "dp "
+    },
+    {
+      "package": "github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition",
+      "type": "CustomResourceDefinition",
+      "plural_name": "customresourcedefinition",
+      "short_name": "crd "
     }
   ]
 }
