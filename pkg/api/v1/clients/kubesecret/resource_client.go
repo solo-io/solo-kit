@@ -22,6 +22,7 @@ import (
 
 type ResourceClient struct {
 	cache cache.KubeCoreCache
+	Kube  kubernetes.Interface
 	common.KubeCoreResourceClient
 	ownerLabel   string
 	resourceName string
@@ -104,11 +105,10 @@ func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resourc
 }
 
 func NewResourceClientWithSecretConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, sc SecretConverter) (*ResourceClient, error) {
-
 	return &ResourceClient{
 		cache: kubeCache,
+		Kube:  kube,
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
-			Kube:         kube,
 			ResourceType: resourceType,
 		},
 		resourceName:    reflect.TypeOf(resourceType).String(),

@@ -5,13 +5,13 @@ import (
 
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/log"
-	"k8s.io/client-go/kubernetes/fake"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func MustGetNamespaces() []string {
@@ -70,4 +70,20 @@ func KubeClient() (kubernetes.Interface, error) {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
 	return kubernetes.NewForConfig(cfg)
+}
+
+func MustApiExtsClient() apiexts.Interface {
+	client, err := ApiExtsClient()
+	if err != nil {
+		log.Fatalf("failed to create api exts client: %v", err)
+	}
+	return client
+}
+
+func ApiExtsClient() (apiexts.Interface, error) {
+	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	return apiexts.NewForConfig(cfg)
 }

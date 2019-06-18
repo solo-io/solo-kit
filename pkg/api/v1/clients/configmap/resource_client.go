@@ -20,6 +20,7 @@ const annotationKey = "resource_kind"
 
 type ResourceClient struct {
 	cache cache.KubeCoreCache
+	Kube  kubernetes.Interface
 	common.KubeCoreResourceClient
 	apiexts      apiexts.Interface
 	ownerLabel   string
@@ -39,8 +40,8 @@ func NewResourceClient(kube kubernetes.Interface, resourceType resources.Resourc
 func NewResourceClientWithConverter(kube kubernetes.Interface, resourceType resources.Resource, kubeCache cache.KubeCoreCache, configMapConverter ConfigMapConverter) (*ResourceClient, error) {
 	return &ResourceClient{
 		cache: kubeCache,
+		Kube:  kube,
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
-			Kube:         kube,
 			ResourceType: resourceType,
 		},
 		resourceName: reflect.TypeOf(resourceType).String(),

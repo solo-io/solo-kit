@@ -20,14 +20,15 @@ import (
 
 type serviceResourceClient struct {
 	cache cache.KubeCoreCache
+	Kube  kubernetes.Interface
 	common.KubeCoreResourceClient
 }
 
 func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *serviceResourceClient {
 	return &serviceResourceClient{
 		cache: cache,
+		Kube:  kube,
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
-			Kube:         kube,
 			ResourceType: &skkube.Service{},
 		},
 	}
