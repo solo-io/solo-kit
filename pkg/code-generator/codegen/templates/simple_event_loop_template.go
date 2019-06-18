@@ -20,10 +20,12 @@ import (
 	"github.com/solo-io/go-utils/errutils"
 )
 
-// a Syncer which implements this interface 
+// SyncDeciders Syncer which implements this interface 
 // can make smarter decisions over whether 
 // it should be restarted (including having its context cancelled)
 // based on a diff of the previous and current snapshot
+
+// Deprecated: use {{ .GoName }}SyncDeciderWithContext
 type {{ .GoName }}SyncDecider interface {
 	{{ .GoName }}Syncer
 	ShouldSync(old, new *{{ .GoName }}Snapshot) bool

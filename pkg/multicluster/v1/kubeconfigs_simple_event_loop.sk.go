@@ -14,10 +14,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-// a Syncer which implements this interface
+// SyncDeciders Syncer which implements this interface
 // can make smarter decisions over whether
 // it should be restarted (including having its context cancelled)
 // based on a diff of the previous and current snapshot
+
+// Deprecated: use KubeconfigsSyncDeciderWithContext
 type KubeconfigsSyncDecider interface {
 	KubeconfigsSyncer
 	ShouldSync(old, new *KubeconfigsSnapshot) bool
