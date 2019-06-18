@@ -29,6 +29,11 @@ type {{ .GoName }}SyncDecider interface {
 	ShouldSync(old, new *{{ .GoName }}Snapshot) bool
 }
 
+type {{ .GoName }}SyncDeciderWithContext interface {
+	{{ .GoName }}Syncer
+	ShouldSync(ctx context.Context, old, new *{{ .GoName }}Snapshot) bool
+}
+
 type {{ lower_camel .GoName }}SimpleEventLoop struct {
 	emitter {{ .GoName }}SimpleEmitter
 	syncers  []{{ .GoName }}Syncer
@@ -83,7 +88,11 @@ func (el *{{ lower_camel .GoName }}SimpleEventLoop) Run(ctx context.Context) (<-
 						if shouldSync := syncDecider.ShouldSync(previousSnapshot, snapshot); !shouldSync {
 							continue // skip syncing this syncer
 						}
-					}
+					} else if syncDeciderWithContext, isDecider := syncer.({{ .GoName }}SyncDeciderWithContext); isDecider {
+						if shouldSync := syncDeciderWithContext.ShouldSync(ctx, previousSnapshot, snapshot); !shouldSync {
+							continue // skip syncing this syncer
+						}
+					}  
 
 					// if this syncer had a previous context, cancel it
 					cancel, ok := syncerCancels[syncer]

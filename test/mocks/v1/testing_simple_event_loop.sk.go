@@ -23,6 +23,11 @@ type TestingSyncDecider interface {
 	ShouldSync(old, new *TestingSnapshot) bool
 }
 
+type TestingSyncDeciderWithContext interface {
+	TestingSyncer
+	ShouldSync(ctx context.Context, old, new *TestingSnapshot) bool
+}
+
 type testingSimpleEventLoop struct {
 	emitter TestingSimpleEmitter
 	syncers []TestingSyncer
@@ -74,6 +79,10 @@ func (el *testingSimpleEventLoop) Run(ctx context.Context) (<-chan error, error)
 					// allow the syncer to decide if we should sync it + cancel its previous context
 					if syncDecider, isDecider := syncer.(TestingSyncDecider); isDecider {
 						if shouldSync := syncDecider.ShouldSync(previousSnapshot, snapshot); !shouldSync {
+							continue // skip syncing this syncer
+						}
+					} else if syncDeciderWithContext, isDecider := syncer.(TestingSyncDeciderWithContext); isDecider {
+						if shouldSync := syncDeciderWithContext.ShouldSync(ctx, previousSnapshot, snapshot); !shouldSync {
 							continue // skip syncing this syncer
 						}
 					}
