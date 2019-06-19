@@ -20,13 +20,20 @@ import (
 	"github.com/solo-io/go-utils/errutils"
 )
 
-// a Syncer which implements this interface 
+// SyncDeciders Syncer which implements this interface 
 // can make smarter decisions over whether 
 // it should be restarted (including having its context cancelled)
 // based on a diff of the previous and current snapshot
+
+// Deprecated: use {{ .GoName }}SyncDeciderWithContext
 type {{ .GoName }}SyncDecider interface {
 	{{ .GoName }}Syncer
 	ShouldSync(old, new *{{ .GoName }}Snapshot) bool
+}
+
+type {{ .GoName }}SyncDeciderWithContext interface {
+	{{ .GoName }}Syncer
+	ShouldSync(ctx context.Context, old, new *{{ .GoName }}Snapshot) bool
 }
 
 type {{ lower_camel .GoName }}SimpleEventLoop struct {
@@ -83,7 +90,11 @@ func (el *{{ lower_camel .GoName }}SimpleEventLoop) Run(ctx context.Context) (<-
 						if shouldSync := syncDecider.ShouldSync(previousSnapshot, snapshot); !shouldSync {
 							continue // skip syncing this syncer
 						}
-					}
+					} else if syncDeciderWithContext, isDecider := syncer.({{ .GoName }}SyncDeciderWithContext); isDecider {
+						if shouldSync := syncDeciderWithContext.ShouldSync(ctx, previousSnapshot, snapshot); !shouldSync {
+							continue // skip syncing this syncer
+						}
+					}  
 
 					// if this syncer had a previous context, cancel it
 					cancel, ok := syncerCancels[syncer]

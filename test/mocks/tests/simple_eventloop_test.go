@@ -9,41 +9,81 @@ import (
 )
 
 var _ = Describe("SimpleEventLoop", func() {
-	It("sends snapshots from a single aggregated watch", func() {
-		emitter := &mockEmitter{}
-		shouldSyncer := &mockSyncer{shouldSync: true}
-		shouldNotSyncer := &mockSyncer{}
+	Context("syncer implements SyncDecider", func() {
+		It("sends snapshots from a single aggregated watch", func() {
+			emitter := &mockEmitter{}
+			shouldSyncer := &mockSyncer{shouldSync: true}
+			shouldNotSyncer := &mockSyncer{}
 
-		eventLoop := v1.NewTestingSimpleEventLoop(emitter, shouldSyncer, shouldNotSyncer)
+			eventLoop := v1.NewTestingSimpleEventLoop(emitter, shouldSyncer, shouldNotSyncer)
 
-		ctx, cancel := context.WithCancel(context.TODO())
+			ctx, cancel := context.WithCancel(context.TODO())
 
-		go func() {
-			defer GinkgoRecover()
-			errs, err := eventLoop.Run(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(<-errs).NotTo(HaveOccurred())
-		}()
+			go func() {
+				defer GinkgoRecover()
+				errs, err := eventLoop.Run(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(<-errs).NotTo(HaveOccurred())
+			}()
 
-		Eventually(func() int {
-			return shouldSyncer.syncs
-		}).Should(Equal(50))
+			Eventually(func() int {
+				return shouldSyncer.syncs
+			}).Should(Equal(50))
 
-		Eventually(func() int {
-			return shouldSyncer.cancels
-		}).Should(Equal(49))
+			Eventually(func() int {
+				return shouldSyncer.cancels
+			}).Should(Equal(49))
 
-		cancel()
-		Eventually(func() int {
-			return shouldSyncer.cancels
-		}).Should(Equal(50))
+			cancel()
+			Eventually(func() int {
+				return shouldSyncer.cancels
+			}).Should(Equal(50))
 
-		Expect(shouldNotSyncer.syncs).To(Equal(0))
+			Expect(shouldNotSyncer.syncs).To(Equal(0))
+		})
+	})
+	Context("syncer implements SyncDecider", func() {
+		It("sends snapshots from a single aggregated watch", func() {
+			emitter := &mockEmitter{}
+			shouldSyncer := &mockSyncerCtx{shouldSync: true}
+			shouldNotSyncer := &mockSyncerCtx{}
+
+			eventLoop := v1.NewTestingSimpleEventLoop(emitter, shouldSyncer, shouldNotSyncer)
+
+			ctx, cancel := context.WithCancel(context.TODO())
+
+			go func() {
+				defer GinkgoRecover()
+				errs, err := eventLoop.Run(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(<-errs).NotTo(HaveOccurred())
+			}()
+
+			Eventually(func() int {
+				return shouldSyncer.syncs
+			}).Should(Equal(50))
+
+			Eventually(func() int {
+				return shouldSyncer.cancels
+			}).Should(Equal(49))
+
+			cancel()
+			Eventually(func() int {
+				return shouldSyncer.cancels
+			}).Should(Equal(50))
+
+			Expect(shouldNotSyncer.syncs).To(Equal(0))
+		})
 	})
 })
 
 type (
 	mockSyncer struct {
+		shouldSync bool
+		syncs      int
+		cancels    int
+	}
+	mockSyncerCtx struct {
 		shouldSync bool
 		syncs      int
 		cancels    int
@@ -81,5 +121,22 @@ func (m *mockSyncer) Sync(ctx context.Context, snap *v1.TestingSnapshot) error {
 }
 
 func (m *mockSyncer) ShouldSync(old, new *v1.TestingSnapshot) bool {
+	return m.shouldSync
+}
+
+func (m *mockSyncerCtx) Sync(ctx context.Context, snap *v1.TestingSnapshot) error {
+	go func() {
+		<-ctx.Done()
+		m.cancels++
+	}()
+	m.syncs++
+	// set a limit of 50
+	if m.syncs >= 50 {
+		m.shouldSync = false
+	}
+	return nil
+}
+
+func (m *mockSyncerCtx) ShouldSync(ctx context.Context, old, new *v1.TestingSnapshot) bool {
 	return m.shouldSync
 }
