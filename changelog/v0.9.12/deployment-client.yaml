@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: remove broken github.com/bxcodec/faker dependency
+    issueLink: https://github.com/solo-io/solo-kit/issues/198
