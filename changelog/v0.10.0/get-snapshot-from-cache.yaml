@@ -1,4 +1,4 @@
 changelog:
   - type: FIX
-    description: enable mulitple resource versioining in solo-kit
+    description: enable mulitple resource versioning in solo-kit
     issueLink: https://github.com/solo-io/solo-kit/issues/204

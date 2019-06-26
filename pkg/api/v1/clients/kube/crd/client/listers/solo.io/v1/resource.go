@@ -22,6 +22,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -89,7 +90,7 @@ func (s resourceNamespaceLister) Get(name string) (*v1.Resource, error) {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("resource"), name)
+		return nil, errors.NewNotFound(schema.GroupResource{}, name)
 	}
 	return obj.(*v1.Resource), nil
 }

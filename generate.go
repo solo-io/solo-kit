@@ -13,6 +13,7 @@ func main() {
 	if err := cmd.Generate(cmd.GenerateOptions{
 		RelativeRoot:  ".",
 		CompileProtos: true,
+		SkipGenMocks:  true,
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
