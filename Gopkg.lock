@@ -1230,6 +1230,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/plugin",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/protobuf/proto",
     "github.com/grpc-ecosystem/go-grpc-middleware",
     "github.com/grpc-ecosystem/go-grpc-middleware/auth",
     "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap",
