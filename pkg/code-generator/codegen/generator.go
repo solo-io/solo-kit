@@ -25,7 +25,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 	}
 	for _, res := range project.Resources {
 		// only generate files for the resources in our group, otherwise we import
-		if res.ProtoPackage != project.ProtoPackage && !res.IsCustom {
+		if !project.ProjectConfig.IsOurProto(res.Filename) && !res.IsCustom {
 			log.Printf("not generating solo-kit "+
 				"clients for resource %v.%v, "+
 				"resource proto package must match project proto package %v", res.ProtoPackage, res.Name, project.ProtoPackage)
@@ -55,7 +55,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 	}
 
 	for _, res := range project.XDSResources {
-		if skipOutOfPackageFiles && res.ProtoPackage != project.ProtoPackage && !strings.HasSuffix(res.ProtoPackage, "."+project.ProtoPackage) {
+		if skipOutOfPackageFiles && !project.ProjectConfig.IsOurProto(res.Filename) {
 			continue
 		}
 		fs, err := generateFilesForXdsResource(res)
