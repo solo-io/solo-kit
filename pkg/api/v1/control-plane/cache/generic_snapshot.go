@@ -128,7 +128,7 @@ func (s *GenericSnapshot) Clone() Snapshot {
 	for typeName, resources := range s.typedResources {
 		resourcesCopy := Resources{
 			Version: resources.Version,
-			Items:   make(map[string]Resource),
+			Items:   make(map[string]Resource, len(resources.Items)),
 		}
 		for k, v := range resources.Items {
 			resourcesCopy.Items[k] = proto.Clone(v.ResourceProto()).(Resource)
