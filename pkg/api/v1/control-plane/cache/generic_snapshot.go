@@ -17,6 +17,8 @@ package cache
 import (
 	"errors"
 	"fmt"
+
+	"github.com/golang/protobuf/proto"
 )
 
 type TypedResources map[string]Resources
@@ -66,10 +68,10 @@ func NewGenericSnapshot(resources TypedResources) *GenericSnapshot {
 		typedResources: resources,
 	}
 }
-func NewEasyGenericSnapshot(version string, resourceses ...[]Resource) *GenericSnapshot {
+func NewEasyGenericSnapshot(version string, resources ...[]Resource) *GenericSnapshot {
 	t := TypedResources{}
 
-	for _, resources := range resourceses {
+	for _, resources := range resources {
 		for _, resource := range resources {
 			r := t[resource.Self().Type]
 			if r.Items == nil {
@@ -119,4 +121,19 @@ func (s *GenericSnapshot) GetResources(typ string) Resources {
 	}
 
 	return s.typedResources[typ]
+}
+
+func (s *GenericSnapshot) Clone() Snapshot {
+	typedResourcesCopy := make(TypedResources)
+	for typeName, resources := range s.typedResources {
+		resourcesCopy := Resources{
+			Version: resources.Version,
+			Items:   make(map[string]Resource, len(resources.Items)),
+		}
+		for k, v := range resources.Items {
+			resourcesCopy.Items[k] = proto.Clone(v.ResourceProto()).(Resource)
+		}
+		typedResourcesCopy[typeName] = resourcesCopy
+	}
+	return &GenericSnapshot{typedResources: typedResourcesCopy}
 }

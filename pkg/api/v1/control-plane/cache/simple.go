@@ -125,7 +125,7 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
 	return nil
 }
 
-// GetSnapshots gets the snapshot for a node, and returns an error if not found.
+// Returns a copy of the snapshot for the given node, or an error if not found.
 func (cache *snapshotCache) GetSnapshot(node string) (Snapshot, error) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
@@ -134,7 +134,8 @@ func (cache *snapshotCache) GetSnapshot(node string) (Snapshot, error) {
 	if !ok {
 		return nil, fmt.Errorf("no snapshot found for node %s", node)
 	}
-	return snap, nil
+
+	return snap.Clone(), nil
 }
 
 // ClearSnapshot clears snapshot and info for a node.
