@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: enable mulitple resource versioning in solo-kit
+    issueLink: https://github.com/solo-io/solo-kit/issues/204
+  - type: BREAKING_CHANGE
+    description: remove deprecated feature to discover resource groups from magic comments
+    issueLink: https://github.com/solo-io/solo-kit/issues/204
