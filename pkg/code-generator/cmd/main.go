@@ -57,6 +57,30 @@ type GenerateOptions struct {
 	SkipGeneratedTests bool
 }
 
+type DescriptorWithPath struct {
+	*descriptor.FileDescriptorProto
+
+	// the absolute paths from which the proto file was read
+	// we use these to correlate messages with their respective solo-kit.json files
+	ProtoFilePaths []string
+	// Computed from all possible import paths
+	ProtoFilePath string
+}
+
+func (d *DescriptorWithPath) SelectProtoFilePath() {
+	switch len(d.ProtoFilePaths) {
+	case 1:
+		d.ProtoFilePath = d.ProtoFilePaths[0]
+	default:
+		for _, path := range d.ProtoFilePaths {
+			if path != "" && strings.Contains(path, d.GetName()) {
+				d.ProtoFilePath = path
+				break
+			}
+		}
+	}
+}
+
 func Generate(opts GenerateOptions) error {
 	relativeRoot := opts.RelativeRoot
 	compileProtos := opts.CompileProtos
@@ -105,6 +129,10 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 
+	for _, desc := range descriptors {
+		desc.SelectProtoFilePath()
+	}
+
 	log.Printf("collected descriptors: %v", func() []string {
 		var names []string
 		for _, desc := range descriptors {
@@ -115,6 +143,7 @@ func Generate(opts GenerateOptions) error {
 		return names
 	}())
 
+	var protoDescriptors []*descriptor.FileDescriptorProto
 	for _, projectConfig := range projectConfigs {
 		importedResources, err := importCustomResources(projectConfig.Imports)
 		if err != nil {
@@ -123,10 +152,21 @@ func Generate(opts GenerateOptions) error {
 
 		projectConfig.CustomResources = append(projectConfig.CustomResources, importedResources...)
 
+		for _, desc := range descriptors {
+			if filepath.Dir(desc.ProtoFilePath) == filepath.Dir(projectConfig.ProjectFile) {
+				projectConfig.ProjectProtos = append(projectConfig.ProjectProtos, desc.GetName())
+			}
+			protoDescriptors = append(protoDescriptors, desc.FileDescriptorProto)
+		}
+	}
+
+	for _, projectConfig := range projectConfigs {
+
 		// Build a 'Project' object that contains a resource for each message that:
 		// - is contained in the FileDescriptor and
 		// - is a solo kit resource (i.e. it has a field named 'metadata')
-		project, err := parser.ProcessDescriptors(projectConfig, descriptors)
+
+		project, err := parser.ProcessDescriptors(projectConfig, projectConfigs, protoDescriptors)
 		if err != nil {
 			return err
 		}
@@ -190,6 +230,12 @@ var (
 		"_client",
 		"_reconciler",
 		"_emitter",
+		"_event_loop",
+	}
+
+	invalidMockingInterface = []string{
+		"_simple_event_loop",
+		"_test",
 	}
 )
 
@@ -207,7 +253,7 @@ func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
 }
 
 func genMockForFile(file code_generator.File, outDir, absoluteRoot string) ([]byte, error) {
-	if strings.Contains(file.Filename, "_test") || !containsAny(file.Filename, validMockingInterfaces) {
+	if containsAny(file.Filename, invalidMockingInterface) || !containsAny(file.Filename, validMockingInterfaces) {
 		return nil, nil
 	}
 	path := filepath.Join(outDir, file.Filename)
@@ -230,8 +276,8 @@ func gopathSrc() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src")
 }
 
-func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectConfig, error) {
-	var projects []model.ProjectConfig
+func collectProjectsFromRoot(root string, skipDirs []string) ([]*model.ProjectConfig, error) {
+	var projects []*model.ProjectConfig
 
 	if err := filepath.Walk(root, func(projectFile string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -255,7 +301,7 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectCon
 		if err != nil {
 			return err
 		}
-		projects = append(projects, project)
+		projects = append(projects, &project)
 		return nil
 	}); err != nil {
 		return nil, err
@@ -263,7 +309,7 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]model.ProjectCon
 	return projects, nil
 }
 
-func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto), root, protoFile string, customImports, customGogoArgs []string, wantCompile func(string) bool) error {
+func addDescriptorsForFile(addDescriptor func(f DescriptorWithPath), root, protoFile string, customImports, customGogoArgs []string, wantCompile func(string) bool) error {
 	log.Printf("processing proto file input %v", protoFile)
 	imports, err := importsForProtoFile(root, protoFile, customImports)
 	if err != nil {
@@ -294,31 +340,33 @@ func addDescriptorsForFile(addDescriptor func(f *descriptor.FileDescriptorProto)
 	}
 
 	for _, f := range desc.File {
-		addDescriptor(f)
+		addDescriptor(DescriptorWithPath{FileDescriptorProto: f, ProtoFilePaths: []string{protoFile}})
 	}
 
 	return nil
 }
 
-func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skipDirs []string, wantCompile func(string) bool) ([]*descriptor.FileDescriptorProto, error) {
-	var descriptors []*descriptor.FileDescriptorProto
+func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skipDirs []string, wantCompile func(string) bool) ([]*DescriptorWithPath, error) {
+	var descriptors []*DescriptorWithPath
 	var mutex sync.Mutex
-	addDescriptor := func(f *descriptor.FileDescriptorProto) {
+	addDescriptor := func(f DescriptorWithPath) {
 		mutex.Lock()
 		defer mutex.Unlock()
 		// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
 		// with different import paths
 		for _, existing := range descriptors {
 			if existing.GetName() == f.GetName() {
+				existing.ProtoFilePaths = append(existing.ProtoFilePaths, f.ProtoFilePaths...)
 				return
 			}
-			existingCopy := proto.Clone(existing).(*descriptor.FileDescriptorProto)
+			existingCopy := proto.Clone(existing.FileDescriptorProto).(*descriptor.FileDescriptorProto)
 			existingCopy.Name = f.Name
-			if proto.Equal(existingCopy, f) {
+			if proto.Equal(existingCopy, f.FileDescriptorProto) {
+				existing.ProtoFilePaths = append(existing.ProtoFilePaths, f.ProtoFilePaths...)
 				return
 			}
 		}
-		descriptors = append(descriptors, f)
+		descriptors = append(descriptors, &f)
 	}
 	var g errgroup.Group
 	for _, dir := range append([]string{root}, customImports...) {
