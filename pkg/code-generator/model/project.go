@@ -39,12 +39,23 @@ type ProjectConfig struct {
 	GoPackage string `json:"go_package"`
 
 	// set by load
-	ProjectFile string
+	ProjectFile   string
+	ProjectProtos []string
+}
+
+func (p ProjectConfig) IsOurProto(protoFile string) bool {
+	for _, file := range p.ProjectProtos {
+		if protoFile == file {
+			return true
+		}
+	}
+	return false
 }
 
 type ResourceConfig struct {
 	ResourceName    string `json:"name"`
 	ResourcePackage string `json:"package"` // resource package doubles as the proto package or the go import package
+	ResourceVersion string `json:"version"` // version of the resource, used to distinguish when multiple versions of a resource exist
 }
 
 // Create a Solo-Kit backed resource from
@@ -100,6 +111,7 @@ type Resource struct {
 	Project *Project
 
 	Filename string // the proto file where this resource is contained
+	Version  string // set during parsing from this resource's solo-kit.json
 
 	// TODO (ilackarms): change to use descriptor.DescriptorProto
 	Original *protokit.Descriptor
@@ -133,6 +145,8 @@ type XDSResource struct {
 
 	Project      *Project
 	ProtoPackage string // eg. gloo.solo.io
+
+	Filename string // the proto file where this resource is contained
 }
 
 func LoadProjectConfig(path string) (ProjectConfig, error) {
