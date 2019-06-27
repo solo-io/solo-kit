@@ -70,34 +70,6 @@ func NewCrd(
 
 func (d Crd) Register(apiexts apiexts.Interface) error {
 	return GetRegistry().RegisterCrd(d.GroupVersionKind(), apiexts)
-	// scope := v1beta1.NamespaceScoped
-	// if d.ClusterScoped {
-	// 	scope = v1beta1.ClusterScoped
-	// }
-	// toRegister := &v1beta1.CustomResourceDefinition{
-	// 	ObjectMeta: metav1.ObjectMeta{Name: d.FullName()},
-	// 	Spec: v1beta1.CustomResourceDefinitionSpec{
-	// 		Group: d.Group,
-	// 		Scope: scope,
-	// 		Names: v1beta1.CustomResourceDefinitionNames{
-	// 			Plural:     d.Plural,
-	// 			Kind:       d.KindName,
-	// 			ShortNames: []string{d.ShortName},
-	// 		},
-	// 		Versions: []v1beta1.CustomResourceDefinitionVersion{
-	// 			{
-	// 				Name:    d.Version.Version,
-	// 				Storage: true,
-	// 				Served:  true,
-	// 			},
-	// 		},
-	// 	},
-	// }
-	// _, err := apiexts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister)
-	// if err != nil && !apierrors.IsAlreadyExists(err) {
-	// 	return fmt.Errorf("failed to register crd: %v", err)
-	// }
-	// return kubeutils.WaitForCrdActive(apiexts, toRegister.Name)
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
