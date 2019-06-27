@@ -138,7 +138,7 @@ func (o *ClusterResource) DeepCopyObject() runtime.Object {
 var (
 	ClusterResourceGVK = schema.GroupVersionKind{
 		Version: "v1",
-		Group:   "crds.testing.solo.io",
+		Group:   "testing.solo.io",
 		Kind:    "ClusterResource",
 	}
 	ClusterResourceCrd = crd.NewCrd(
