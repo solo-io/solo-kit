@@ -210,6 +210,12 @@ var (
 		"_client",
 		"_reconciler",
 		"_emitter",
+		"_event_loop",
+	}
+
+	invalidMockingInterface = []string{
+		"_simple_event_loop",
+		"_test",
 	}
 )
 
@@ -227,7 +233,7 @@ func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
 }
 
 func genMockForFile(file code_generator.File, outDir, absoluteRoot string) ([]byte, error) {
-	if strings.Contains(file.Filename, "_test") || !containsAny(file.Filename, validMockingInterfaces) {
+	if containsAny(file.Filename, invalidMockingInterface) || !containsAny(file.Filename, validMockingInterfaces) {
 		return nil, nil
 	}
 	path := filepath.Join(outDir, file.Filename)
