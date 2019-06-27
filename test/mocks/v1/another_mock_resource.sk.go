@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -134,11 +135,26 @@ func (o *AnotherMockResource) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*AnotherMockResource)
 }
 
-var AnotherMockResourceCrd = crd.NewCrd("crds.testing.solo.io",
-	"anothermockresources",
-	"crds.testing.solo.io",
-	"v1",
-	"AnotherMockResource",
-	"amr",
-	false,
-	&AnotherMockResource{})
+var (
+	AnotherMockResourceCrd crd.Crd
+	AnotherMockResourceGVK schema.GroupVersionKind
+)
+
+func init() {
+	AnotherMockResourceGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "crds.testing.solo.io",
+		Kind:    "AnotherMockResource",
+	}
+	AnotherMockResourceCrd = crd.NewCrd(
+		"anothermockresources",
+		AnotherMockResourceGVK.Group,
+		AnotherMockResourceGVK.Version,
+		AnotherMockResourceGVK.Kind,
+		"amr",
+		false,
+		&AnotherMockResource{})
+	if err := crd.GetRegistry().AddCrd(AnotherMockResourceCrd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}

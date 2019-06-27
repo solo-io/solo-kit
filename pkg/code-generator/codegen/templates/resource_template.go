@@ -200,14 +200,29 @@ func (o *{{ .Name }}) DeepCopyObject() runtime.Object {
 {{- $crdGroupName = .Project.ProjectConfig.CrdGroupOverride }}
 {{- end}}
 
-var {{ .Name }}Crd = crd.NewCrd("{{ $crdGroupName }}",
-	"{{ lowercase (upper_camel .PluralName) }}",
-	"{{ $crdGroupName }}",
-	"{{ .Project.ProjectConfig.Version }}",
-	"{{ .Name }}",
-	"{{ .ShortName }}",
-	{{ .ClusterScoped }},
-	&{{ .Name }}{})
+var (
+	{{ .Name }}Crd crd.Crd
+	{{ .Name }}GVK schema.GroupVersionKind
+)
+
+func init() {
+	{{ .Name }}GVK = schema.GroupVersionKind{
+		Version: "{{ .Project.ProjectConfig.Version }}",
+		Group: "{{ $crdGroupName }}",
+		Kind: "{{ .Name }}",
+	}
+	{{ .Name }}Crd = crd.NewCrd(
+		"{{ lowercase (upper_camel .PluralName) }}",
+		{{ .Name }}GVK.Group,
+		{{ .Name }}GVK.Version,
+		{{ .Name }}GVK.Kind,
+		"{{ .ShortName }}",
+		{{ .ClusterScoped }},
+		&{{ .Name }}{})
+	if err := crd.GetRegistry().AddCrd({{ .Name }}Crd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}
 
 {{- end}}
 `))

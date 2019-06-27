@@ -273,7 +273,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	// Will have no effect if the factory is already running
 	rc.sharedCache.Start()
 
-	lister, err := rc.sharedCache.GetLister(namespace, rc.crd.Type)
+	lister, err := rc.sharedCache.GetLister(namespace, rc.crd.Version.Type)
 	if err != nil {
 		return nil, err
 	}

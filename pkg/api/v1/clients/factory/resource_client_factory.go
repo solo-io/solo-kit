@@ -52,7 +52,7 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		if !ok {
 			return nil, errors.Errorf("the kubernetes crd client can only be used for input resources, received type %v", resources.Kind(resourceType))
 		}
-		if opts.Crd.Type == nil {
+		if opts.Crd.Version.Type == nil {
 			return nil, errors.Errorf("must provide a crd for the kube resource client")
 		}
 		if opts.SharedCache == nil {

@@ -562,7 +562,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:62209c4aec8a021a838f2d8b65bfcf565bc6623a354ac7508c50f90c96b9e005"
+  digest = "1:406e5580cc9ff927201b9271e6d854f49fef8665aba0801477ebe017e322d87e"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
@@ -579,8 +579,8 @@
     "testutils/kube",
   ]
   pruneopts = "UT"
-  revision = "eb5f54fdd0bd467e180f5db3a6f1855aa3d32058"
-  version = "v0.8.0"
+  revision = "a6132166b2352c8b446e43f6bf10dc0061ce1def"
+  version = "v0.8.23"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -763,6 +763,17 @@
   ]
   pruneopts = "UT"
   revision = "8a6051197512ff9cbf65108d80613b631fe0b4f3"
+
+[[projects]]
+  branch = "master"
+  digest = "1:c44a77760372a998be8d4656e8d3c865f68735ec4cad1743a245903a58f64249"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "UT"
+  revision = "3ee3066db522c6628d440a3a91c4abdd7f5ef22f"
 
 [[projects]]
   digest = "1:fa026a5c59bd2df343ec4a3538e6288dcf4e2ec5281d743ae82c120affe6926a"

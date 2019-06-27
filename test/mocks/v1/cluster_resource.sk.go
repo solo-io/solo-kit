@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -134,11 +135,26 @@ func (o *ClusterResource) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*ClusterResource)
 }
 
-var ClusterResourceCrd = crd.NewCrd("crds.testing.solo.io",
-	"clusterresources",
-	"crds.testing.solo.io",
-	"v1",
-	"ClusterResource",
-	"clr",
-	true,
-	&ClusterResource{})
+var (
+	ClusterResourceCrd crd.Crd
+	ClusterResourceGVK schema.GroupVersionKind
+)
+
+func init() {
+	ClusterResourceGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "crds.testing.solo.io",
+		Kind:    "ClusterResource",
+	}
+	ClusterResourceCrd = crd.NewCrd(
+		"clusterresources",
+		ClusterResourceGVK.Group,
+		ClusterResourceGVK.Version,
+		ClusterResourceGVK.Kind,
+		"clr",
+		true,
+		&ClusterResource{})
+	if err := crd.GetRegistry().AddCrd(ClusterResourceCrd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}

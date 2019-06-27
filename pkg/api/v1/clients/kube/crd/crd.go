@@ -21,34 +21,49 @@ import (
 // TODO(ilackarms): evaluate this fix for concurrent map access in k8s.io/apimachinery/pkg/runtime.SchemaBuider
 var registerLock sync.Mutex
 
-type Crd struct {
-	GroupName     string
+type CrdMeta struct {
 	Plural        string
 	Group         string
-	Version       string
 	KindName      string
 	ShortName     string
 	ClusterScoped bool
-	Type          runtime.Object
 }
 
-func NewCrd(GroupName string,
-	Plural string,
-	Group string,
-	Version string,
-	KindName string,
-	ShortName string,
-	ClusterScoped bool,
-	Type runtime.Object) Crd {
+type Version struct {
+	Version string
+	Type    runtime.Object
+}
+
+type Crd struct {
+	CrdMeta
+	Version Version
+}
+
+type CombinedCrd struct {
+	CrdMeta
+	Versions []Version
+}
+
+func NewCrd(
+	plural string,
+	group string,
+	version string,
+	kindName string,
+	shortName string,
+	clusterScoped bool,
+	objType runtime.Object) Crd {
 	c := Crd{
-		GroupName:     GroupName,
-		Plural:        Plural,
-		Group:         Group,
-		Version:       Version,
-		KindName:      KindName,
-		ShortName:     ShortName,
-		ClusterScoped: ClusterScoped,
-		Type:          Type,
+		CrdMeta: CrdMeta{
+			Plural:        plural,
+			Group:         group,
+			KindName:      kindName,
+			ShortName:     shortName,
+			ClusterScoped: clusterScoped,
+		},
+		Version: Version{
+			Version: version,
+			Type:    objType,
+		},
 	}
 	if err := c.AddToScheme(scheme.Scheme); err != nil {
 		log.Panicf("error while adding [%v] CRD to scheme: %v", c.FullName(), err)
@@ -64,13 +79,19 @@ func (d Crd) Register(apiexts apiexts.Interface) error {
 	toRegister := &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{Name: d.FullName()},
 		Spec: v1beta1.CustomResourceDefinitionSpec{
-			Group:   d.Group,
-			Version: d.Version,
-			Scope:   scope,
+			Group: d.Group,
+			Scope: scope,
 			Names: v1beta1.CustomResourceDefinitionNames{
 				Plural:     d.Plural,
 				Kind:       d.KindName,
 				ShortNames: []string{d.ShortName},
+			},
+			Versions: []v1beta1.CustomResourceDefinitionVersion{
+				{
+					Name:    d.Version.Version,
+					Storage: true,
+					Served:  true,
+				},
 			},
 		},
 	}
@@ -103,25 +124,29 @@ func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
 	}
 }
 
-func (d Crd) FullName() string {
+func (d CrdMeta) FullName() string {
 	return d.Plural + "." + d.Group
 }
 
 func (d Crd) TypeMeta() metav1.TypeMeta {
 	return metav1.TypeMeta{
 		Kind:       d.KindName,
-		APIVersion: d.Group + "/" + d.Version,
+		APIVersion: d.Group + "/" + d.Version.Version,
 	}
 }
 
 // SchemeGroupVersion is group version used to register these objects
 func (d Crd) SchemeGroupVersion() schema.GroupVersion {
-	return schema.GroupVersion{Group: d.GroupName, Version: d.Version}
+	return schema.GroupVersion{Group: d.Group, Version: d.Version.Version}
 }
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
 func (d Crd) Kind(kind string) schema.GroupKind {
 	return d.SchemeGroupVersion().WithKind(kind).GroupKind()
+}
+
+func (d CrdMeta) GroupKind() schema.GroupKind {
+	return schema.GroupKind{Group: d.Group, Kind: d.KindName}
 }
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource
