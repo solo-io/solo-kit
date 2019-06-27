@@ -60,9 +60,25 @@ type GenerateOptions struct {
 type DescriptorWithPath struct {
 	*descriptor.FileDescriptorProto
 
-	// the absolute path from which the proto file was read
-	// we use this to correlate messages with their respective solo-kit.json files
+	// the absolute paths from which the proto file was read
+	// we use these to correlate messages with their respective solo-kit.json files
+	ProtoFilePaths []string
+	// Computed from all possible import paths
 	ProtoFilePath string
+}
+
+func (d *DescriptorWithPath) SelectProtoFilePath() {
+	switch len(d.ProtoFilePaths) {
+	case 1:
+		d.ProtoFilePath = d.ProtoFilePaths[0]
+	default:
+		for _, path := range d.ProtoFilePaths {
+			if strings.Contains(path, d.GetName()) {
+				d.ProtoFilePath = path
+				break
+			}
+		}
+	}
 }
 
 func Generate(opts GenerateOptions) error {
@@ -111,6 +127,10 @@ func Generate(opts GenerateOptions) error {
 	descriptors, err := collectDescriptorsFromRoot(absoluteRoot, customImports, customGogoArgs, skipDirs, compileProto)
 	if err != nil {
 		return err
+	}
+
+	for _, desc := range descriptors {
+		desc.SelectProtoFilePath()
 	}
 
 	log.Printf("collected descriptors: %v", func() []string {
@@ -320,14 +340,14 @@ func addDescriptorsForFile(addDescriptor func(f DescriptorWithPath), root, proto
 	}
 
 	for _, f := range desc.File {
-		addDescriptor(DescriptorWithPath{FileDescriptorProto: f, ProtoFilePath: protoFile})
+		addDescriptor(DescriptorWithPath{FileDescriptorProto: f, ProtoFilePaths: []string{protoFile}})
 	}
 
 	return nil
 }
 
-func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skipDirs []string, wantCompile func(string) bool) ([]DescriptorWithPath, error) {
-	var descriptors []DescriptorWithPath
+func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skipDirs []string, wantCompile func(string) bool) ([]*DescriptorWithPath, error) {
+	var descriptors []*DescriptorWithPath
 	var mutex sync.Mutex
 	addDescriptor := func(f DescriptorWithPath) {
 		mutex.Lock()
@@ -336,15 +356,17 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 		// with different import paths
 		for _, existing := range descriptors {
 			if existing.GetName() == f.GetName() {
+				existing.ProtoFilePaths = append(existing.ProtoFilePaths, f.ProtoFilePaths...)
 				return
 			}
 			existingCopy := proto.Clone(existing.FileDescriptorProto).(*descriptor.FileDescriptorProto)
 			existingCopy.Name = f.Name
-			if proto.Equal(existingCopy, f) {
+			if proto.Equal(existingCopy, f.FileDescriptorProto) {
+				existing.ProtoFilePaths = append(existing.ProtoFilePaths, f.ProtoFilePaths...)
 				return
 			}
 		}
-		descriptors = append(descriptors, f)
+		descriptors = append(descriptors, &f)
 	}
 	var g errgroup.Group
 	for _, dir := range append([]string{root}, customImports...) {
