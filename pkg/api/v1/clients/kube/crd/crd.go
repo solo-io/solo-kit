@@ -36,7 +36,7 @@ type Crd struct {
 	Version Version
 }
 
-type CombinedCrd struct {
+type MultiVersionCrd struct {
 	CrdMeta
 	Versions []Version
 }

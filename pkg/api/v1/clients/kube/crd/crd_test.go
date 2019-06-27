@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -89,14 +90,14 @@ var _ = Describe("crd unit tests", func() {
 		})
 		It("can retrieve avilable crds", func() {
 			Expect(registry.AddCrd(baseCrd)).NotTo(HaveOccurred())
-			_, err := registry.GetCombinedCrd(baseCrd.GroupKind())
+			_, err := registry.GetMultiVersionCrd(baseCrd.GroupKind())
 			Expect(err).NotTo(HaveOccurred())
 			_, err = registry.GetCrd(baseCrd.GroupVersionKind())
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("will fail if crd isn't available", func() {
 			Expect(registry.AddCrd(baseCrd)).NotTo(HaveOccurred())
-			_, err := registry.GetCombinedCrd(schema.GroupKind{})
+			_, err := registry.GetMultiVersionCrd(schema.GroupKind{})
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NotFoundError(schema.GroupKind{}.String())))
 			gvk := baseCrd.GroupVersionKind()
@@ -105,6 +106,46 @@ var _ = Describe("crd unit tests", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NotFoundError(gvk.String())))
 		})
+	})
 
+	Context("CRD registration", func() {
+		It("will error out if the corresponding gvk is not present", func() {
+			Expect(registry.AddCrd(baseCrd)).NotTo(HaveOccurred())
+			gvk := baseCrd.GroupVersionKind()
+			gvk.Version = "hello"
+			mvCrd, err := registry.GetMultiVersionCrd(baseCrd.GroupKind())
+			Expect(err).NotTo(HaveOccurred())
+			_, err = registry.getKubeCrd(mvCrd, gvk)
+			Expect(err).To(HaveOccurred())
+		})
+		It("can build the proper crd from multiple versions", func() {
+			crdNumber := 3
+			crds := make([]Crd, crdNumber)
+			for i := 0; i < crdNumber; i++ {
+				crds[i] = baseCrd
+				crds[i].Version.Version = strconv.Itoa(i)
+			}
+			for _, v := range crds {
+				v := v
+				Expect(registry.AddCrd(v)).NotTo(HaveOccurred())
+			}
+			mvCrd, err := registry.GetMultiVersionCrd(baseCrd.GroupKind())
+			Expect(err).NotTo(HaveOccurred())
+			crd, err := registry.getKubeCrd(mvCrd, crds[2].GroupVersionKind())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(crd.Spec.Scope).To(Equal(v1beta1.NamespaceScoped))
+			Expect(crd.Spec.Group).To(Equal(mvCrd.Group))
+			Expect(crd.GetName()).To(Equal(mvCrd.FullName()))
+			Expect(crd.Spec.Versions).To(HaveLen(3))
+			for _, v := range crd.Spec.Versions {
+				if v.Name == "2" {
+					Expect(v.Storage).To(BeTrue())
+					Expect(v.Served).To(BeTrue())
+				} else {
+					Expect(v.Storage).To(BeFalse())
+					Expect(v.Served).To(BeFalse())
+				}
+			}
+		})
 	})
 })

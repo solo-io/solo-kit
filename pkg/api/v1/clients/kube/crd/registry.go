@@ -14,7 +14,7 @@ import (
 )
 
 type Registry struct {
-	crds []CombinedCrd
+	crds []MultiVersionCrd
 	mu   sync.RWMutex
 }
 
@@ -27,6 +27,10 @@ var (
 
 	NotFoundError = func(id string) error {
 		return errors.Errorf("could not find the combined crd for %v", id)
+	}
+
+	InvalidGVKError = func(gvk schema.GroupVersionKind) error {
+		return errors.Errorf("the following gvk %v does not correspond to a crd in the combined crd object", gvk)
 	}
 )
 
@@ -52,7 +56,7 @@ func (r *Registry) AddCrd(resource Crd) error {
 			return nil
 		}
 	}
-	r.crds = append(r.crds, CombinedCrd{
+	r.crds = append(r.crds, MultiVersionCrd{
 		Versions: []Version{resource.Version},
 		CrdMeta:  resource.CrdMeta,
 	})
@@ -62,7 +66,7 @@ func (r *Registry) AddCrd(resource Crd) error {
 func (r *Registry) GetCrd(gvk schema.GroupVersionKind) (Crd, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	combined, err := r.GetCombinedCrd(gvk.GroupKind())
+	combined, err := r.GetMultiVersionCrd(gvk.GroupKind())
 	if err != nil {
 		return Crd{}, err
 	}
@@ -77,7 +81,7 @@ func (r *Registry) GetCrd(gvk schema.GroupVersionKind) (Crd, error) {
 	return Crd{}, NotFoundError(gvk.String())
 }
 
-func (r *Registry) GetCombinedCrd(gk schema.GroupKind) (CombinedCrd, error) {
+func (r *Registry) GetMultiVersionCrd(gk schema.GroupKind) (MultiVersionCrd, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	for _, crd := range r.crds {
@@ -85,21 +89,34 @@ func (r *Registry) GetCombinedCrd(gk schema.GroupKind) (CombinedCrd, error) {
 			return crd, nil
 		}
 	}
-	return CombinedCrd{}, NotFoundError(gk.String())
+	return MultiVersionCrd{}, NotFoundError(gk.String())
 }
 
 func (r *Registry) RegisterCrd(gvk schema.GroupVersionKind, clientset apiexts.Interface) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	crd, err := r.GetCombinedCrd(gvk.GroupKind())
+	crd, err := r.GetMultiVersionCrd(gvk.GroupKind())
 	if err != nil {
 		return err
 	}
+	toRegister, err := r.getKubeCrd(crd, gvk)
+	if err != nil {
+		return err
+	}
+	_, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to register crd: %v", err)
+	}
+	return kubeutils.WaitForCrdActive(clientset, toRegister.Name)
+}
+
+func (r Registry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {
 	scope := v1beta1.NamespaceScoped
 	if crd.ClusterScoped {
 		scope = v1beta1.ClusterScoped
 	}
 	versions := make([]v1beta1.CustomResourceDefinitionVersion, len(crd.Versions))
+	validGvk := false
 	for i, version := range crd.Versions {
 		versionToAdd := v1beta1.CustomResourceDefinitionVersion{
 			Name: version.Version,
@@ -107,11 +124,14 @@ func (r *Registry) RegisterCrd(gvk schema.GroupVersionKind, clientset apiexts.In
 		if gvk.Version == version.Version {
 			versionToAdd.Served = true
 			versionToAdd.Storage = true
+			validGvk = true
 		}
 		versions[i] = versionToAdd
-
 	}
-	toRegister := &v1beta1.CustomResourceDefinition{
+	if !validGvk {
+		return nil, InvalidGVKError(gvk)
+	}
+	return &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{Name: crd.FullName()},
 		Spec: v1beta1.CustomResourceDefinitionSpec{
 			Group: crd.Group,
@@ -123,10 +143,5 @@ func (r *Registry) RegisterCrd(gvk schema.GroupVersionKind, clientset apiexts.In
 			},
 			Versions: versions,
 		},
-	}
-	_, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return fmt.Errorf("failed to register crd: %v", err)
-	}
-	return kubeutils.WaitForCrdActive(clientset, toRegister.Name)
+	}, nil
 }
