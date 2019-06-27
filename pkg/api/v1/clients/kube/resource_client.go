@@ -379,7 +379,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 // 1. the kind name must match that of CRD
 // 2. the version must match the CRD GroupVersion (in the form <GROUP_NAME>/<VERSION>)
 func (rc *ResourceClient) matchesClientKind(resource v1.Resource) bool {
-	return resource.Kind == rc.crd.KindName && resource.APIVersion == rc.crd.SchemeGroupVersion().String()
+	return resource.Kind == rc.crd.KindName && resource.APIVersion == rc.crd.GroupVersion().String()
 }
 
 func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {

@@ -5,14 +5,11 @@ import (
 	"log"
 	"sync"
 
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -72,34 +69,35 @@ func NewCrd(
 }
 
 func (d Crd) Register(apiexts apiexts.Interface) error {
-	scope := v1beta1.NamespaceScoped
-	if d.ClusterScoped {
-		scope = v1beta1.ClusterScoped
-	}
-	toRegister := &v1beta1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{Name: d.FullName()},
-		Spec: v1beta1.CustomResourceDefinitionSpec{
-			Group: d.Group,
-			Scope: scope,
-			Names: v1beta1.CustomResourceDefinitionNames{
-				Plural:     d.Plural,
-				Kind:       d.KindName,
-				ShortNames: []string{d.ShortName},
-			},
-			Versions: []v1beta1.CustomResourceDefinitionVersion{
-				{
-					Name:    d.Version.Version,
-					Storage: true,
-					Served:  true,
-				},
-			},
-		},
-	}
-	_, err := apiexts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return fmt.Errorf("failed to register crd: %v", err)
-	}
-	return kubeutils.WaitForCrdActive(apiexts, toRegister.Name)
+	return GetRegistry().RegisterCrd(d.GroupVersionKind(), apiexts)
+	// scope := v1beta1.NamespaceScoped
+	// if d.ClusterScoped {
+	// 	scope = v1beta1.ClusterScoped
+	// }
+	// toRegister := &v1beta1.CustomResourceDefinition{
+	// 	ObjectMeta: metav1.ObjectMeta{Name: d.FullName()},
+	// 	Spec: v1beta1.CustomResourceDefinitionSpec{
+	// 		Group: d.Group,
+	// 		Scope: scope,
+	// 		Names: v1beta1.CustomResourceDefinitionNames{
+	// 			Plural:     d.Plural,
+	// 			Kind:       d.KindName,
+	// 			ShortNames: []string{d.ShortName},
+	// 		},
+	// 		Versions: []v1beta1.CustomResourceDefinitionVersion{
+	// 			{
+	// 				Name:    d.Version.Version,
+	// 				Storage: true,
+	// 				Served:  true,
+	// 			},
+	// 		},
+	// 	},
+	// }
+	// _, err := apiexts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister)
+	// if err != nil && !apierrors.IsAlreadyExists(err) {
+	// 	return fmt.Errorf("failed to register crd: %v", err)
+	// }
+	// return kubeutils.WaitForCrdActive(apiexts, toRegister.Name)
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
@@ -135,14 +133,19 @@ func (d Crd) TypeMeta() metav1.TypeMeta {
 	}
 }
 
-// SchemeGroupVersion is group version used to register these objects
-func (d Crd) SchemeGroupVersion() schema.GroupVersion {
+// GroupVersion is group version used to register these objects
+func (d Crd) GroupVersion() schema.GroupVersion {
 	return schema.GroupVersion{Group: d.Group, Version: d.Version.Version}
+}
+
+// GroupVersionKing is the unique id of this crd
+func (d Crd) GroupVersionKind() schema.GroupVersionKind {
+	return schema.GroupVersionKind{Group: d.Group, Version: d.Version.Version, Kind: d.KindName}
 }
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
 func (d Crd) Kind(kind string) schema.GroupKind {
-	return d.SchemeGroupVersion().WithKind(kind).GroupKind()
+	return d.GroupVersion().WithKind(kind).GroupKind()
 }
 
 func (d CrdMeta) GroupKind() schema.GroupKind {
@@ -151,15 +154,15 @@ func (d CrdMeta) GroupKind() schema.GroupKind {
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource
 func (d Crd) Resource(resource string) schema.GroupResource {
-	return d.SchemeGroupVersion().WithResource(resource).GroupResource()
+	return d.GroupVersion().WithResource(resource).GroupResource()
 }
 
 func (d Crd) SchemeBuilder() runtime.SchemeBuilder {
 	return runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
-		scheme.AddKnownTypeWithName(d.SchemeGroupVersion().WithKind(d.KindName), &v1.Resource{})
-		scheme.AddKnownTypeWithName(d.SchemeGroupVersion().WithKind(d.KindName+"List"), &v1.ResourceList{})
+		scheme.AddKnownTypeWithName(d.GroupVersion().WithKind(d.KindName), &v1.Resource{})
+		scheme.AddKnownTypeWithName(d.GroupVersion().WithKind(d.KindName+"List"), &v1.ResourceList{})
 
-		metav1.AddToGroupVersion(scheme, d.SchemeGroupVersion())
+		metav1.AddToGroupVersion(scheme, d.GroupVersion())
 		return nil
 	})
 }
