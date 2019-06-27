@@ -327,7 +327,7 @@ func addDescriptorsForFile(addDescriptor func(f DescriptorWithPath), root, proto
 		if strings.HasSuffix(protoFile, f.GetName()) {
 			addDescriptor(DescriptorWithPath{FileDescriptorProto: f, ProtoFilePath: protoFile})
 		}
-			addDescriptor(DescriptorWithPath{FileDescriptorProto: f, ProtoFilePath: ""})
+		addDescriptor(DescriptorWithPath{FileDescriptorProto: f, ProtoFilePath: ""})
 	}
 
 	return nil
