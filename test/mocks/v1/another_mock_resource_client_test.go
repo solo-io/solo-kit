@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/test/tests/typed"
 )
 
-var _ = FDescribe("AnotherMockResourceClient", func() {
+var _ = Describe("AnotherMockResourceClient", func() {
 	var (
 		namespace string
 	)

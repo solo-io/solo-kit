@@ -124,11 +124,6 @@ func (o *FakeResource) DeepCopyObject() runtime.Object {
 }
 
 var (
-	FakeResourceCrd crd.Crd
-	FakeResourceGVK schema.GroupVersionKind
-)
-
-func init() {
 	FakeResourceGVK = schema.GroupVersionKind{
 		Version: "v1",
 		Group:   "crds.testing.solo.io",
@@ -142,6 +137,10 @@ func init() {
 		"fk",
 		false,
 		&FakeResource{})
+)
+
+func init() {
+
 	if err := crd.GetRegistry().AddCrd(FakeResourceCrd); err != nil {
 		log.Fatalf("could not add crd to global registry")
 	}

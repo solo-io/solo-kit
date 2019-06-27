@@ -136,11 +136,6 @@ func (o *AnotherMockResource) DeepCopyObject() runtime.Object {
 }
 
 var (
-	AnotherMockResourceCrd crd.Crd
-	AnotherMockResourceGVK schema.GroupVersionKind
-)
-
-func init() {
 	AnotherMockResourceGVK = schema.GroupVersionKind{
 		Version: "v1",
 		Group:   "crds.testing.solo.io",
@@ -154,6 +149,10 @@ func init() {
 		"amr",
 		false,
 		&AnotherMockResource{})
+)
+
+func init() {
+
 	if err := crd.GetRegistry().AddCrd(AnotherMockResourceCrd); err != nil {
 		log.Fatalf("could not add crd to global registry")
 	}

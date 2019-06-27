@@ -136,11 +136,6 @@ func (o *ClusterResource) DeepCopyObject() runtime.Object {
 }
 
 var (
-	ClusterResourceCrd crd.Crd
-	ClusterResourceGVK schema.GroupVersionKind
-)
-
-func init() {
 	ClusterResourceGVK = schema.GroupVersionKind{
 		Version: "v1",
 		Group:   "crds.testing.solo.io",
@@ -154,6 +149,10 @@ func init() {
 		"clr",
 		true,
 		&ClusterResource{})
+)
+
+func init() {
+
 	if err := crd.GetRegistry().AddCrd(ClusterResourceCrd); err != nil {
 		log.Fatalf("could not add crd to global registry")
 	}
