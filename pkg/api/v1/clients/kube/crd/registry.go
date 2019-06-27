@@ -25,8 +25,8 @@ var (
 		return errors.Errorf("tried adding version %s, but it already exists")
 	}
 
-	NotFoundError = func(gk schema.GroupKind) error {
-		return errors.Errorf("could not find the crd for %v", gk)
+	NotFoundError = func(id string) error {
+		return errors.Errorf("could not find the combined crd for %v", id)
 	}
 )
 
@@ -41,14 +41,14 @@ func GetRegistry() *Registry {
 func (r *Registry) AddCrd(resource Crd) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	for _, crd := range r.crds {
+	for i, crd := range r.crds {
 		if crd.GroupKind() == resource.GroupKind() {
 			for _, version := range crd.Versions {
 				if version.Version == resource.Version.Version {
 					return VersionExistsError(resource.Version.Version)
 				}
 			}
-			crd.Versions = append(crd.Versions, resource.Version)
+			r.crds[i].Versions = append(crd.Versions, resource.Version)
 			return nil
 		}
 	}
@@ -59,7 +59,25 @@ func (r *Registry) AddCrd(resource Crd) error {
 	return nil
 }
 
-func (r *Registry) GetCrd(gk schema.GroupKind) (CombinedCrd, error) {
+func (r *Registry) GetCrd(gvk schema.GroupVersionKind) (Crd, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	combined, err := r.GetCombinedCrd(gvk.GroupKind())
+	if err != nil {
+		return Crd{}, err
+	}
+	for _, version := range combined.Versions {
+		if version.Version == gvk.Version {
+			return Crd{
+				CrdMeta: combined.CrdMeta,
+				Version: version,
+			}, nil
+		}
+	}
+	return Crd{}, NotFoundError(gvk.String())
+}
+
+func (r *Registry) GetCombinedCrd(gk schema.GroupKind) (CombinedCrd, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	for _, crd := range r.crds {
@@ -67,13 +85,13 @@ func (r *Registry) GetCrd(gk schema.GroupKind) (CombinedCrd, error) {
 			return crd, nil
 		}
 	}
-	return CombinedCrd{}, NotFoundError(gk)
+	return CombinedCrd{}, NotFoundError(gk.String())
 }
 
 func (r *Registry) RegisterCrd(gvk schema.GroupVersionKind, clientset apiexts.Interface) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	crd, err := r.GetCrd(gvk.GroupKind())
+	crd, err := r.GetCombinedCrd(gvk.GroupKind())
 	if err != nil {
 		return err
 	}
