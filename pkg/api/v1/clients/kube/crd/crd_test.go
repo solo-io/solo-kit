@@ -88,7 +88,7 @@ var _ = Describe("crd unit tests", func() {
 				Expect(v.Versions).To(HaveLen(10))
 			}
 		})
-		It("can retrieve avilable crds", func() {
+		It("can retrieve available crds", func() {
 			Expect(registry.AddCrd(baseCrd)).NotTo(HaveOccurred())
 			_, err := registry.GetMultiVersionCrd(baseCrd.GroupKind())
 			Expect(err).NotTo(HaveOccurred())
@@ -117,6 +117,7 @@ var _ = Describe("crd unit tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 			_, err = registry.getKubeCrd(mvCrd, gvk)
 			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(InvalidGVKError(gvk)))
 		})
 		It("can build the proper crd from multiple versions", func() {
 			crdNumber := 3

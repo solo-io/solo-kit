@@ -55,7 +55,13 @@ var _ = Describe("DocsGen", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run code gen
-		err = cmd.Run(tempDir, true, new(cmd.DocsOptions), nil, nil)
+		opts := cmd.GenerateOptions{
+			RelativeRoot:  tempDir,
+			SkipGenMocks:  true,
+			CompileProtos: true,
+			GenDocs:       new(cmd.DocsOptions),
+		}
+		err = cmd.Generate(opts)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
