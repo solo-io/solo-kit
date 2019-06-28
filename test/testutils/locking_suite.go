@@ -28,7 +28,6 @@ func LockingSuiteEach() bool {
 	return true
 }
 
-
 // call this function with a var _ = in the test suite file
 // tests will panic if there's a previously defined BeforeSuite or AfterSuite
 func LockingSuite() bool {
