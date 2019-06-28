@@ -153,7 +153,7 @@ var (
 )
 
 func init() {
-	if err := crd.GetRegistry().AddCrd(MockResourceCrd); err != nil {
+	if err := crd.AddCrd(MockResourceCrd); err != nil {
 		log.Fatalf("could not add crd to global registry")
 	}
 }

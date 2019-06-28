@@ -13,13 +13,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type Registry struct {
+type crdRegistry struct {
 	crds []MultiVersionCrd
 	mu   sync.RWMutex
 }
 
 var (
-	registry *Registry
+	registry *crdRegistry
 
 	VersionExistsError = func(version string) error {
 		return errors.Errorf("tried adding version %s, but it already exists")
@@ -35,14 +35,18 @@ var (
 )
 
 func init() {
-	registry = &Registry{}
+	registry = &crdRegistry{}
 }
 
-func GetRegistry() *Registry {
+func getRegistry() *crdRegistry {
 	return registry
 }
 
-func (r *Registry) AddCrd(resource Crd) error {
+func AddCrd(resource Crd) error {
+	return getRegistry().addCrd(resource)
+}
+
+func (r *crdRegistry) addCrd(resource Crd) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for i, crd := range r.crds {
@@ -63,10 +67,10 @@ func (r *Registry) AddCrd(resource Crd) error {
 	return nil
 }
 
-func (r *Registry) GetCrd(gvk schema.GroupVersionKind) (Crd, error) {
+func (r *crdRegistry) getCrd(gvk schema.GroupVersionKind) (Crd, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	combined, err := r.GetMultiVersionCrd(gvk.GroupKind())
+	combined, err := r.getMultiVersionCrd(gvk.GroupKind())
 	if err != nil {
 		return Crd{}, err
 	}
@@ -81,7 +85,7 @@ func (r *Registry) GetCrd(gvk schema.GroupVersionKind) (Crd, error) {
 	return Crd{}, NotFoundError(gvk.String())
 }
 
-func (r *Registry) GetMultiVersionCrd(gk schema.GroupKind) (MultiVersionCrd, error) {
+func (r *crdRegistry) getMultiVersionCrd(gk schema.GroupKind) (MultiVersionCrd, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	for _, crd := range r.crds {
@@ -92,10 +96,10 @@ func (r *Registry) GetMultiVersionCrd(gk schema.GroupKind) (MultiVersionCrd, err
 	return MultiVersionCrd{}, NotFoundError(gk.String())
 }
 
-func (r *Registry) RegisterCrd(gvk schema.GroupVersionKind, clientset apiexts.Interface) error {
+func (r *crdRegistry) registerCrd(gvk schema.GroupVersionKind, clientset apiexts.Interface) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	crd, err := r.GetMultiVersionCrd(gvk.GroupKind())
+	crd, err := r.getMultiVersionCrd(gvk.GroupKind())
 	if err != nil {
 		return err
 	}
@@ -110,7 +114,7 @@ func (r *Registry) RegisterCrd(gvk schema.GroupVersionKind, clientset apiexts.In
 	return kubeutils.WaitForCrdActive(clientset, toRegister.Name)
 }
 
-func (r Registry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {
+func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {
 	scope := v1beta1.NamespaceScoped
 	if crd.ClusterScoped {
 		scope = v1beta1.ClusterScoped

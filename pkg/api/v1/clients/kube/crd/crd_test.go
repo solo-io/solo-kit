@@ -17,7 +17,7 @@ var _ = Describe("crd unit tests", func() {
 	)
 
 	BeforeEach(func() {
-		registry = &Registry{}
+		registry = &crdRegistry{}
 		baseCrd = Crd{
 			CrdMeta: CrdMeta{
 				KindName: "crdkind",
@@ -30,8 +30,8 @@ var _ = Describe("crd unit tests", func() {
 	})
 	Context("registry tests", func() {
 		It("Adding the same crd twice results in an error", func() {
-			Expect(registry.AddCrd(baseCrd)).NotTo(HaveOccurred())
-			err := registry.AddCrd(baseCrd)
+			Expect(registry.addCrd(baseCrd)).NotTo(HaveOccurred())
+			err := registry.addCrd(baseCrd)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(VersionExistsError(baseCrd.Version.Version)))
 		})
@@ -45,7 +45,7 @@ var _ = Describe("crd unit tests", func() {
 			}
 			for _, v := range crds {
 				v := v
-				Expect(registry.AddCrd(v)).NotTo(HaveOccurred())
+				Expect(registry.addCrd(v)).NotTo(HaveOccurred())
 			}
 			Expect(registry.crds).To(HaveLen(1))
 			Expect(registry.crds[0].Versions).To(HaveLen(3))
@@ -60,7 +60,7 @@ var _ = Describe("crd unit tests", func() {
 			}
 			for _, v := range crds {
 				v := v
-				Expect(registry.AddCrd(v)).NotTo(HaveOccurred())
+				Expect(registry.addCrd(v)).NotTo(HaveOccurred())
 			}
 			Expect(registry.crds).To(HaveLen(3))
 		})
@@ -79,7 +79,7 @@ var _ = Describe("crd unit tests", func() {
 			for _, v := range crds {
 				v := v
 				eg.Go(func() error {
-					return registry.AddCrd(v)
+					return registry.addCrd(v)
 				})
 			}
 			Expect(eg.Wait()).NotTo(HaveOccurred())
@@ -89,20 +89,20 @@ var _ = Describe("crd unit tests", func() {
 			}
 		})
 		It("can retrieve available crds", func() {
-			Expect(registry.AddCrd(baseCrd)).NotTo(HaveOccurred())
-			_, err := registry.GetMultiVersionCrd(baseCrd.GroupKind())
+			Expect(registry.addCrd(baseCrd)).NotTo(HaveOccurred())
+			_, err := registry.getMultiVersionCrd(baseCrd.GroupKind())
 			Expect(err).NotTo(HaveOccurred())
-			_, err = registry.GetCrd(baseCrd.GroupVersionKind())
+			_, err = registry.getCrd(baseCrd.GroupVersionKind())
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("will fail if crd isn't available", func() {
-			Expect(registry.AddCrd(baseCrd)).NotTo(HaveOccurred())
-			_, err := registry.GetMultiVersionCrd(schema.GroupKind{})
+			Expect(registry.addCrd(baseCrd)).NotTo(HaveOccurred())
+			_, err := registry.getMultiVersionCrd(schema.GroupKind{})
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NotFoundError(schema.GroupKind{}.String())))
 			gvk := baseCrd.GroupVersionKind()
 			gvk.Version = "hello"
-			_, err = registry.GetCrd(gvk)
+			_, err = registry.getCrd(gvk)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NotFoundError(gvk.String())))
 		})
@@ -110,10 +110,10 @@ var _ = Describe("crd unit tests", func() {
 
 	Context("CRD registration", func() {
 		It("will error out if the corresponding gvk is not present", func() {
-			Expect(registry.AddCrd(baseCrd)).NotTo(HaveOccurred())
+			Expect(registry.addCrd(baseCrd)).NotTo(HaveOccurred())
 			gvk := baseCrd.GroupVersionKind()
 			gvk.Version = "hello"
-			mvCrd, err := registry.GetMultiVersionCrd(baseCrd.GroupKind())
+			mvCrd, err := registry.getMultiVersionCrd(baseCrd.GroupKind())
 			Expect(err).NotTo(HaveOccurred())
 			_, err = registry.getKubeCrd(mvCrd, gvk)
 			Expect(err).To(HaveOccurred())
@@ -128,9 +128,9 @@ var _ = Describe("crd unit tests", func() {
 			}
 			for _, v := range crds {
 				v := v
-				Expect(registry.AddCrd(v)).NotTo(HaveOccurred())
+				Expect(registry.addCrd(v)).NotTo(HaveOccurred())
 			}
-			mvCrd, err := registry.GetMultiVersionCrd(baseCrd.GroupKind())
+			mvCrd, err := registry.getMultiVersionCrd(baseCrd.GroupKind())
 			Expect(err).NotTo(HaveOccurred())
 			crd, err := registry.getKubeCrd(mvCrd, crds[2].GroupVersionKind())
 			Expect(err).NotTo(HaveOccurred())

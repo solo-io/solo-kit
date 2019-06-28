@@ -217,7 +217,7 @@ var (
 )
 
 func init() {
-	if err := crd.GetRegistry().AddCrd({{ .Name }}Crd); err != nil {
+	if err := crd.AddCrd({{ .Name }}Crd); err != nil {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
