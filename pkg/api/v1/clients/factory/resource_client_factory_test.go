@@ -95,7 +95,7 @@ var _ = Describe("ResourceClientFactory", func() {
 					ResourceType: &v1.MockResource{},
 				})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("list check failed: the server could not find the requested resource (get mocks.crds.testing.solo.io)"))
+				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("list check failed: the server could not find the requested resource (get %s)", v1.MockResourceCrd.FullName())))
 			})
 		})
 		Context("and SkipCrdCreation=false", func() {
