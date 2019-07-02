@@ -12,6 +12,7 @@ import (
 	"github.com/iancoleman/strcase"
 	gendoc "github.com/ilackarms/protoc-gen-doc"
 	"github.com/ilackarms/protokit"
+	"github.com/solo-io/go-utils/stringutils"
 )
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
@@ -71,6 +72,15 @@ var Funcs = template.FuncMap{
 	"set_bool": func(v *bool, val bool) *bool {
 		*v = val
 		return v
+	},
+	"unique": func(vals []string) []string {
+		result := make([]string, 0, len(vals))
+		for _, v := range vals {
+			if !stringutils.ContainsString(v, result) {
+				result = append(result, v)
+			}
+		}
+		return result
 	},
 }
 

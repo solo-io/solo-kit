@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add more than one version to solo-kit crd resource
+  issueLink: https://github.com/solo-io/solo-kit/issues/207

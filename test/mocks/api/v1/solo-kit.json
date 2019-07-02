@@ -3,7 +3,6 @@
   "name": "testing.solo.io",
   "version": "v1",
   "docs_dir": "../doc",
-  "crd_group_override": "crds.testing.solo.io",
   "imports": [
     "github.com/solo-io/solo-kit/api/external/kubernetes"
   ],

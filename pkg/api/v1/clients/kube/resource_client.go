@@ -273,7 +273,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	// Will have no effect if the factory is already running
 	rc.sharedCache.Start()
 
-	lister, err := rc.sharedCache.GetLister(namespace, rc.crd.Type)
+	lister, err := rc.sharedCache.GetLister(namespace, rc.crd.Version.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +379,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 // 1. the kind name must match that of CRD
 // 2. the version must match the CRD GroupVersion (in the form <GROUP_NAME>/<VERSION>)
 func (rc *ResourceClient) matchesClientKind(resource v1.Resource) bool {
-	return resource.Kind == rc.crd.KindName && resource.APIVersion == rc.crd.SchemeGroupVersion().String()
+	return resource.Kind == rc.crd.KindName && resource.APIVersion == rc.crd.GroupVersion().String()
 }
 
 func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {

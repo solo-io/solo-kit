@@ -69,7 +69,7 @@ func New(c rest.Interface, def crd.Crd) *ResourcesV1Client {
 }
 
 func setConfigDefaults(config *rest.Config, def crd.Crd) error {
-	gv := def.SchemeGroupVersion()
+	gv := def.GroupVersion()
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
 	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}

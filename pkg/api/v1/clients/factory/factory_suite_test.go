@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/test/util"
+	"github.com/solo-io/solo-kit/test/testutils"
 )
 
 func TestFactory(t *testing.T) {
@@ -13,4 +13,4 @@ func TestFactory(t *testing.T) {
 	RunSpecs(t, "Factory Suite")
 }
 
-var _ = util.LockingSuite()
+var _ = testutils.LockingSuiteEach()

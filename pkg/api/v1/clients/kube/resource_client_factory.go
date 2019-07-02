@@ -138,7 +138,7 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 		ctx = ctxWithTags
 	}
 
-	resourceType := reflect.TypeOf(rc.crd.Type)
+	resourceType := reflect.TypeOf(rc.crd.Version.Type)
 	namespaces := rc.namespaceWhitelist // will always contain at least one element
 
 	resyncPeriod := f.defaultResync
