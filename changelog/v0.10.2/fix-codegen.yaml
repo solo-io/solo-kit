@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: fix codegen importing external protos
+  issueLink: https://github.com/solo-io/solo-kit/issues/210
