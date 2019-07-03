@@ -1,0 +1,6 @@
+changelog:
+  - dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.9.1
+    description: Update go-util to version v0.9.1.
+    type: DEPENDENCY_BUMP
