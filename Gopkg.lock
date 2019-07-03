@@ -562,7 +562,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:406e5580cc9ff927201b9271e6d854f49fef8665aba0801477ebe017e322d87e"
+  digest = "1:46b816b3c115aa07ca2537c0870e9e1f35c3b6920563b665dcbabaa510d1eb6c"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
@@ -579,8 +579,8 @@
     "testutils/kube",
   ]
   pruneopts = "UT"
-  revision = "a6132166b2352c8b446e43f6bf10dc0061ce1def"
-  version = "v0.8.23"
+  revision = "1c2dd400703ec1a7340609a6f5c00653ecf3d5c7"
+  version = "v0.9.1"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
