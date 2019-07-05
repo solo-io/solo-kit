@@ -1,7 +1,6 @@
 package crd
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
@@ -9,7 +8,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,7 +58,7 @@ func (m *MultiVersionCrd) GetVersion(requested string) (*Version, error) {
 
 type SoloKitCrd interface {
 	runtime.Object
-	resources.Resource
+	resources.InputResource
 }
 
 func NewCrd(
@@ -101,25 +99,9 @@ func (d Crd) Register(apiexts apiexts.Interface) error {
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
-	data, err := protoutils.MarshalMap(resource)
-	if err != nil {
-		panic(fmt.Sprintf("internal error: failed to marshal resource to map: %v", err))
-	}
-	delete(data, "metadata")
-	delete(data, "status")
-	spec := v1.Spec(data)
-	return &v1.Resource{
-		TypeMeta: d.TypeMeta(),
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       resource.GetMetadata().Namespace,
-			Name:            resource.GetMetadata().Name,
-			ResourceVersion: resource.GetMetadata().ResourceVersion,
-			Labels:          resource.GetMetadata().Labels,
-			Annotations:     resource.GetMetadata().Annotations,
-		},
-		Status: resource.GetStatus(),
-		Spec:   &spec,
-	}
+	res := KubeResource(resource)
+	res.TypeMeta = d.TypeMeta()
+	return res
 }
 
 func (d CrdMeta) FullName() string {

@@ -6,6 +6,9 @@ import (
 
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/kubeutils"
+	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -152,4 +155,25 @@ func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind
 			Versions: versions,
 		},
 	}, nil
+}
+
+func KubeResource(resource resources.InputResource) *v1.Resource {
+	data, err := protoutils.MarshalMap(resource)
+	if err != nil {
+		panic(fmt.Sprintf("internal error: failed to marshal resource to map: %v", err))
+	}
+	delete(data, "metadata")
+	delete(data, "status")
+	spec := v1.Spec(data)
+	return &v1.Resource{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       resource.GetMetadata().Namespace,
+			Name:            resource.GetMetadata().Name,
+			ResourceVersion: resource.GetMetadata().ResourceVersion,
+			Labels:          resource.GetMetadata().Labels,
+			Annotations:     resource.GetMetadata().Annotations,
+		},
+		Status: resource.GetStatus(),
+		Spec:   &spec,
+	}
 }

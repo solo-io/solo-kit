@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
@@ -33,13 +34,13 @@ type kubeWebhook struct {
 }
 
 type Converter interface {
-	Convert(src resources.Resource, dst resources.Resource) error
+	Convert(src resources.InputResource, dst resources.InputResource) error
 }
 
 type mockConverter struct {
 }
 
-func (m *mockConverter) Convert(src resources.Resource, dst resources.Resource) error {
+func (m *mockConverter) Convert(src resources.InputResource, dst resources.InputResource) error {
 	panic("implement me")
 }
 
@@ -121,7 +122,7 @@ func (k *kubeWebhook) handleConvertRequest(req *apix.ConversionRequest) (*apix.C
 			return nil, err
 		}
 
-		dst, err := k.allocateDstObject(req.DesiredAPIVersion, gvk.Kind)
+		dst, err := k.allocateDstObject(resourceDst, req.DesiredAPIVersion, gvk.Kind)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +138,7 @@ func (k *kubeWebhook) handleConvertRequest(req *apix.ConversionRequest) (*apix.C
 }
 
 // allocateDstObject returns an instance for a given GVK.
-func (k *kubeWebhook) allocateDstObject(apiVersion, kind string) (runtime.Object, error) {
+func (k *kubeWebhook) allocateDstObject(resource resources.InputResource, apiVersion, kind string) (runtime.Object, error) {
 	gvk := schema.FromAPIVersionAndKind(apiVersion, kind)
 
 	obj, err := k.scheme.New(gvk)
@@ -153,19 +154,20 @@ func (k *kubeWebhook) allocateDstObject(apiVersion, kind string) (runtime.Object
 	t.SetAPIVersion(apiVersion)
 	t.SetKind(kind)
 
-	return obj, nil
+	res := crd.KubeResource(resource)
+	return res, nil
 }
 
-func (k *kubeWebhook) translateDstObj(desiredGv schema.GroupVersion) (resources.Resource, error) {
+func (k *kubeWebhook) translateDstObj(desiredGv schema.GroupVersion) (resources.InputResource, error) {
 	resourceVersion, err := k.resource.GetVersion(desiredGv.Version)
 	if err != nil {
 		return nil, err
 	}
-
-	return resources.Clone(resourceVersion.Type), nil
+	resource := reflect.New(reflect.TypeOf(resourceVersion.Type)).Interface().(resources.InputResource)
+	return resource, nil
 }
 
-func (k *kubeWebhook) translateSrcObj(byt []byte) (resources.Resource, *schema.GroupVersionKind, error) {
+func (k *kubeWebhook) translateSrcObj(byt []byte) (resources.InputResource, *schema.GroupVersionKind, error) {
 	src, gvk, err := k.decoder.Decode(byt)
 	if err != nil {
 		return nil, nil, err
@@ -180,7 +182,7 @@ func (k *kubeWebhook) translateSrcObj(byt []byte) (resources.Resource, *schema.G
 	if err != nil {
 		return nil, nil, err
 	}
-	resource := resources.Clone(resourceVersion.Type)
+	resource := reflect.New(reflect.TypeOf(resourceVersion.Type)).Interface().(resources.InputResource)
 
 	if resourceCrd.Spec != nil {
 		if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
@@ -207,7 +209,7 @@ func (k *kubeWebhook) soloTranslation(obj runtime.Object, gv schema.GroupVersion
 	if err != nil {
 		return nil, err
 	}
-	resource := resources.Clone(resourceVersion.Type)
+	resource := reflect.New(reflect.TypeOf(resourceVersion.Type)).Interface().(resources.InputResource)
 
 	if resourceCrd.Spec != nil {
 		if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
