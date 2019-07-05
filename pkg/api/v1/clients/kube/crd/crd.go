@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -16,7 +17,13 @@ import (
 )
 
 // TODO(ilackarms): evaluate this fix for concurrent map access in k8s.io/apimachinery/pkg/runtime.SchemaBuider
-var registerLock sync.Mutex
+var (
+	registerLock sync.Mutex
+
+	VersionNotFoundError = func(version string) error {
+		return errors.Errorf("could not find version %v", version)
+	}
+)
 
 type CrdMeta struct {
 	Plural        string
@@ -28,7 +35,8 @@ type CrdMeta struct {
 
 type Version struct {
 	Version string
-	Type    runtime.Object
+	Type    SoloKitCrd
+	// ProtoSpec resources.Resource
 }
 
 type Crd struct {
@@ -41,6 +49,20 @@ type MultiVersionCrd struct {
 	Versions []Version
 }
 
+func (m *MultiVersionCrd) GetVersion(requested string) (*Version, error) {
+	for _, version := range m.Versions {
+		if version.Version == requested {
+			return &version, nil
+		}
+	}
+	return nil, VersionNotFoundError(requested)
+}
+
+type SoloKitCrd interface {
+	runtime.Object
+	resources.Resource
+}
+
 func NewCrd(
 	plural string,
 	group string,
@@ -48,7 +70,7 @@ func NewCrd(
 	kindName string,
 	shortName string,
 	clusterScoped bool,
-	objType runtime.Object) Crd {
+	objType SoloKitCrd) Crd {
 	c := Crd{
 		CrdMeta: CrdMeta{
 			Plural:        plural,
@@ -65,6 +87,12 @@ func NewCrd(
 	if err := c.AddToScheme(scheme.Scheme); err != nil {
 		log.Panicf("error while adding [%v] CRD to scheme: %v", c.FullName(), err)
 	}
+	// if res, ok := objType.(resources.Resource); ok {
+	// 	c.Version.ProtoSpec = res
+	// } else {
+	// 	log.Panicf("error while creating crd for %v, must extend " +
+	// 		"resources.Resource interface", c.FullName())
+	// }
 	return c
 }
 

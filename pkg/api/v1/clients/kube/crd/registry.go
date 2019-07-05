@@ -46,6 +46,10 @@ func AddCrd(resource Crd) error {
 	return getRegistry().addCrd(resource)
 }
 
+func GetMultiVersionCrd(gk schema.GroupKind) (MultiVersionCrd, error) {
+	return getRegistry().getMultiVersionCrd(gk)
+}
+
 func (r *crdRegistry) addCrd(resource Crd) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
