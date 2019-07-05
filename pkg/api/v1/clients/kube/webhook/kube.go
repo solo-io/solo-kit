@@ -199,33 +199,6 @@ func (k *kubeWebhook) translateSrcObj(byt []byte) (resources.InputResource, *sch
 	return resource, gvk, nil
 }
 
-func (k *kubeWebhook) soloTranslation(obj runtime.Object, gv schema.GroupVersion) (resources.Resource, error) {
-	resourceCrd, ok := obj.(*v1.Resource)
-	if !ok {
-		return nil, errors.New("could not translate to solo-kit crd type")
-	}
-
-	resourceVersion, err := k.resource.GetVersion(gv.Version)
-	if err != nil {
-		return nil, err
-	}
-	resource := reflect.New(reflect.TypeOf(resourceVersion.Type)).Interface().(resources.InputResource)
-
-	if resourceCrd.Spec != nil {
-		if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
-			return nil, errors.Wrapf(err, "reading crd spec into %v", obj.GetObjectKind())
-		}
-	}
-
-	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
-	if withStatus, ok := resource.(resources.InputResource); ok {
-		resources.UpdateStatus(withStatus, func(status *core.Status) {
-			*status = resourceCrd.Status
-		})
-	}
-	return resource, nil
-}
-
 // helper to construct error response.
 func errored(err error) *apix.ConversionResponse {
 	return &apix.ConversionResponse{
