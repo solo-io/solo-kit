@@ -6,6 +6,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/jsonschema"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
@@ -26,7 +27,14 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 		return nil, err
 	}
 
-	schemas, err := jsonschema.Convert(project.Request)
+	schemas, err := jsonschema.Convert(project.Request, func(desc *descriptor.DescriptorProto) bool {
+		for _, v := range project.Resources {
+			if v.Name == desc.GetName() {
+				return true
+			}
+		}
+		return false
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -439,7 +439,7 @@ func convertEnumType(enum *descriptor.EnumDescriptorProto) (jsonschema.Type, err
 }
 
 // Converts a proto file into a JSON-Schema:
-func convertFile(file *descriptor.FileDescriptorProto) ([]*plugin.CodeGeneratorResponse_File, error) {
+func convertFile(file *descriptor.FileDescriptorProto, filter MessageFilterFunc) ([]*plugin.CodeGeneratorResponse_File, error) {
 
 	// Input filename:
 	protoFileName := path.Base(file.GetName())
@@ -487,6 +487,9 @@ func convertFile(file *descriptor.FileDescriptorProto) ([]*plugin.CodeGeneratorR
 			return nil, fmt.Errorf("no such package found: %s", file.GetPackage())
 		}
 		for _, msg := range file.GetMessageType() {
+			if filter != nil && !filter(msg) {
+				continue
+			}
 			jsonSchemaFileName := fmt.Sprintf("%s.jsonschema", msg.GetName())
 			logger.Infof("Generating JSON-schema for MESSAGE (%v) in file [%v] => %v", msg.GetName(), protoFileName, jsonSchemaFileName)
 			messageJSONSchema, err := convertMessageType(pkg, msg)
@@ -514,7 +517,9 @@ func convertFile(file *descriptor.FileDescriptorProto) ([]*plugin.CodeGeneratorR
 	return response, nil
 }
 
-func Convert(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorResponse, error) {
+type MessageFilterFunc func(desc *descriptor.DescriptorProto) bool
+
+func Convert(req *plugin.CodeGeneratorRequest, filter MessageFilterFunc) (*plugin.CodeGeneratorResponse, error) {
 	generateTargets := make(map[string]bool)
 	for _, file := range req.GetFileToGenerate() {
 		generateTargets[file] = true
@@ -530,7 +535,7 @@ func Convert(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorResponse, e
 	for _, file := range req.GetProtoFile() {
 		if _, ok := generateTargets[file.GetName()]; ok {
 			logger.Debugf("Converting file (%v)", file.GetName())
-			converted, err := convertFile(file)
+			converted, err := convertFile(file, filter)
 			if err != nil {
 				res.Error = proto.String(fmt.Sprintf("Failed to convert %s: %v", file.GetName(), err))
 				return res, err
