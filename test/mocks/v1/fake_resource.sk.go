@@ -28,6 +28,10 @@ func (r *FakeResource) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
 }
 
+func (r *FakeResource) SetStatus(status core.Status) {
+	r.Status = status
+}
+
 func (r *FakeResource) Hash() uint64 {
 	metaCopy := r.GetMetadata()
 	metaCopy.ResourceVersion = ""
@@ -53,6 +57,14 @@ func (list FakeResourceList) Find(namespace, name string) (*FakeResource, error)
 
 func (list FakeResourceList) AsResources() resources.ResourceList {
 	var ress resources.ResourceList
+	for _, fakeResource := range list {
+		ress = append(ress, fakeResource)
+	}
+	return ress
+}
+
+func (list FakeResourceList) AsInputResources() resources.InputResourceList {
+	var ress resources.InputResourceList
 	for _, fakeResource := range list {
 		ress = append(ress, fakeResource)
 	}

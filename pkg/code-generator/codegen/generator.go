@@ -2,9 +2,11 @@ package codegen
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/jsonschema"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/iancoleman/strcase"
@@ -22,6 +24,14 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 	files, err := generateFilesForProject(project)
 	if err != nil {
 		return nil, err
+	}
+
+	schemas, err := jsonschema.Convert(project.Request)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range schemas.File {
+		fmt.Println(v.GetContent())
 	}
 	for _, res := range project.Resources {
 		// only generate files for the resources in our group, otherwise we import

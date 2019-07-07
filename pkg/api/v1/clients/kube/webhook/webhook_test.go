@@ -1,9 +1,10 @@
-package webhook
+package webhook_test
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	solov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/webhook"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
@@ -21,22 +24,38 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+type testConverter struct {
+}
+
+func (*testConverter) Convert(src resources.Resource, dst resources.Resource) error {
+	_, ok := src.(*v1.MockResource)
+	if !ok {
+		return errors.New("can't translate src")
+	}
+	_, ok = dst.(*v2alpha1.MockResource)
+	if !ok {
+		return errors.New("can't translate src")
+	}
+	return nil
+}
+
 var _ = Describe("Conversion Webhook", func() {
 
 	var (
-		webhook      *kubeWebhook
+		kubeWebhook  webhook.KubeWebhook
 		respRecorder *httptest.ResponseRecorder
 	)
+
 	// var decoder *Decoder
 
 	BeforeEach(func() {
 		var err error
-		webhook, err = NewKubeWebhook(context.TODO(), nil, v2alpha1.MockResourceGVK.GroupKind())
+		kubeWebhook, err = webhook.NewKubeWebhook(context.TODO(), nil, v2alpha1.MockResourceGVK.GroupKind(), &testConverter{})
 		Expect(err).NotTo(HaveOccurred())
 		respRecorder = &httptest.ResponseRecorder{
 			Body: bytes.NewBuffer(nil),
 		}
-		Expect(webhook.InjectScheme(scheme.Scheme)).NotTo(HaveOccurred())
+		Expect(kubeWebhook.InjectScheme(scheme.Scheme)).NotTo(HaveOccurred())
 		// var err error
 		// decoder, err = NewDecoder(scheme.Scheme)
 		// Expect(err).NotTo(HaveOccurred())
@@ -51,7 +70,7 @@ var _ = Describe("Conversion Webhook", func() {
 		req := &http.Request{
 			Body: ioutil.NopCloser(bytes.NewReader(payload.Bytes())),
 		}
-		webhook.ServeHTTP(respRecorder, req)
+		kubeWebhook.ServeHTTP(respRecorder, req)
 		Expect(json.NewDecoder(respRecorder.Result().Body).Decode(convReview)).To(Succeed())
 		return convReview
 	}

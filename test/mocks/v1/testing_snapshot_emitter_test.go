@@ -68,8 +68,10 @@ var _ = Describe("V1Emitter", func() {
 		mockResourceClient, err = NewMockResourceClient(mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// FakeResource Constructor
-		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
+		fakeResourceClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         FakeResourceCrd,
+			Cfg:         cfg,
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
 		fakeResourceClient, err = NewFakeResourceClient(fakeResourceClientFactory)

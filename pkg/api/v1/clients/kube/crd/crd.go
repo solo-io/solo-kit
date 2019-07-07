@@ -34,7 +34,6 @@ type CrdMeta struct {
 type Version struct {
 	Version string
 	Type    SoloKitCrd
-	// ProtoSpec resources.Resource
 }
 
 type Crd struct {

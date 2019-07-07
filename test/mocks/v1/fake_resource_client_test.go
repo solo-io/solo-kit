@@ -73,6 +73,7 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
 	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 	Expect(r1.Count).To(Equal(input.Count))
+	Expect(r1.Status).To(Equal(input.Status))
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,

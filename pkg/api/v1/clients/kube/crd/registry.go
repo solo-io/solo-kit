@@ -157,7 +157,7 @@ func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind
 	}, nil
 }
 
-func KubeResource(resource resources.InputResource) *v1.Resource {
+func KubeResource(resource resources.Resource) *v1.Resource {
 	data, err := protoutils.MarshalMap(resource)
 	if err != nil {
 		panic(fmt.Sprintf("internal error: failed to marshal resource to map: %v", err))
@@ -165,7 +165,7 @@ func KubeResource(resource resources.InputResource) *v1.Resource {
 	delete(data, "metadata")
 	delete(data, "status")
 	spec := v1.Spec(data)
-	return &v1.Resource{
+	res := &v1.Resource{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       resource.GetMetadata().Namespace,
 			Name:            resource.GetMetadata().Name,
@@ -173,7 +173,12 @@ func KubeResource(resource resources.InputResource) *v1.Resource {
 			Labels:          resource.GetMetadata().Labels,
 			Annotations:     resource.GetMetadata().Annotations,
 		},
-		Status: resource.GetStatus(),
-		Spec:   &spec,
+		Spec: &spec,
 	}
+
+	if withStatus, ok := resource.(resources.InputResource); ok {
+		res.Status = withStatus.GetStatus()
+	}
+
+	return res
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -64,8 +63,10 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		mockResourceClient, err = NewMockResourceClient(mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// FakeResource Constructor
-		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
+		fakeResourceClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         testing_solo_io.FakeResourceCrd,
+			Cfg:         cfg,
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
 		fakeResourceClient, err = testing_solo_io.NewFakeResourceClient(fakeResourceClientFactory)
