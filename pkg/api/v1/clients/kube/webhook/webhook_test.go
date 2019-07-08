@@ -34,7 +34,7 @@ func (*testConverter) Convert(src resources.Resource, dst resources.Resource) er
 	}
 	_, ok = dst.(*v2alpha1.MockResource)
 	if !ok {
-		return errors.New("can't translate src")
+		return errors.New("can't translate dst")
 	}
 	return nil
 }
@@ -86,20 +86,20 @@ var _ = Describe("Conversion Webhook", func() {
 		return v1.MockResourceCrd.KubeResource(mockResource)
 	}
 
-	makeV2Obj := func() *solov1.Resource {
-		mockResource := &v2alpha1.MockResource{
-			Metadata: core.Metadata{
-				Name:      "two",
-				Namespace: "two",
-			},
-		}
-		return v2alpha1.MockResourceCrd.KubeResource(mockResource)
-	}
+	//makeV2Obj := func() *solov1.Resource {
+	//	mockResource := &v2alpha1.MockResource{
+	//		Metadata: core.Metadata{
+	//			Name:      "two",
+	//			Namespace: "two",
+	//		},
+	//	}
+	//	return v2alpha1.MockResourceCrd.KubeResource(mockResource)
+	//}
 
 	It("should convert spoke to hub successfully", func() {
 
 		v1Obj := makeV1Obj()
-		v2obj := makeV2Obj()
+		//v2obj := makeV2Obj()
 
 		convReq := &apix.ConversionReview{
 			TypeMeta: metav1.TypeMeta{},
@@ -109,9 +109,9 @@ var _ = Describe("Conversion Webhook", func() {
 					{
 						Object: v1Obj,
 					},
-					{
-						Object: v2obj,
-					},
+					//{
+					//	Object: v2obj,
+					//},
 				},
 			},
 		}

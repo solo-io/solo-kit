@@ -140,7 +140,7 @@ func (k *kubeWebhook) handleConvertRequest(req *apix.ConversionRequest) (*apix.C
 }
 
 // allocateDstObject returns an instance for a given GVK.
-func (k *kubeWebhook) allocateDstObject(resource resources.Resource, apiVersion, kind string) (runtime.Object, error) {
+func (k *kubeWebhook) allocateDstObject(resource crd.SoloKitCrd, apiVersion, kind string) (runtime.Object, error) {
 	gvk := schema.FromAPIVersionAndKind(apiVersion, kind)
 
 	obj, err := k.scheme.New(gvk)
@@ -160,16 +160,22 @@ func (k *kubeWebhook) allocateDstObject(resource resources.Resource, apiVersion,
 	return res, nil
 }
 
-func (k *kubeWebhook) translateDstObj(desiredGv schema.GroupVersion) (resources.Resource, error) {
+func (k *kubeWebhook) translateDstObj(desiredGv schema.GroupVersion) (crd.SoloKitCrd, error) {
 	resourceVersion, err := k.resource.GetVersion(desiredGv.Version)
 	if err != nil {
 		return nil, err
 	}
 	resource := resources.Clone(resourceVersion.Type)
-	return resource, nil
+
+	soloKitCrd, ok := resource.(crd.SoloKitCrd)
+	if !ok {
+		return nil, errors.New("could not translate to solo-kit crd type")
+	}
+
+	return soloKitCrd, nil
 }
 
-func (k *kubeWebhook) translateSrcObj(byt []byte) (resources.Resource, *schema.GroupVersionKind, error) {
+func (k *kubeWebhook) translateSrcObj(byt []byte) (crd.SoloKitCrd, *schema.GroupVersionKind, error) {
 	src, gvk, err := k.decoder.Decode(byt)
 	if err != nil {
 		return nil, nil, err
@@ -177,7 +183,7 @@ func (k *kubeWebhook) translateSrcObj(byt []byte) (resources.Resource, *schema.G
 
 	resourceCrd, ok := src.(*v1.Resource)
 	if !ok {
-		return nil, nil, errors.New("could not translate to solo-kit crd type")
+		return nil, nil, errors.New("could not translate to resource type")
 	}
 
 	resourceVersion, err := k.resource.GetVersion(gvk.Version)
@@ -199,7 +205,13 @@ func (k *kubeWebhook) translateSrcObj(byt []byte) (resources.Resource, *schema.G
 			*status = resourceCrd.Status
 		})
 	}
-	return resource, gvk, nil
+
+	soloKitCrd, ok := resource.(crd.SoloKitCrd)
+	if !ok {
+		return nil, nil, errors.New("could not translate to solo-kit crd type")
+	}
+
+	return soloKitCrd, gvk, nil
 }
 
 // helper to construct error response.
