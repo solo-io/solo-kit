@@ -13,6 +13,7 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	plugin "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/spf13/afero"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -24,8 +25,6 @@ var (
 	disallowBigIntsAsStrings     bool = false
 	debugLogging                 bool = false
 	nestedMessagesAsReferences   bool = true
-
-	jsonResourceStack = NewResourceStack()
 
 	globalPkg = &ProtoPackage{
 		name:     "",
@@ -42,7 +41,7 @@ type ResourceStackItem struct {
 type ResourceStack interface {
 	Push(item *ResourceStackItem)
 	Pop() *ResourceStackItem
-	Contains(descriptorProto descriptor.DescriptorProto) *ResourceStackItem
+	Contains(descriptorProto *descriptor.DescriptorProto) *ResourceStackItem
 }
 
 type resourceStack struct {
@@ -187,7 +186,7 @@ func (pkg *ProtoPackage) relativelyLookupPackage(name string) (*ProtoPackage, bo
 }
 
 // Convert a proto "field" (essentially a type-switch with some recursion):
-func convertField(curPkg *ProtoPackage, desc *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProto) (*jsonschema.Type, error) {
+func (g *generator) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProto) (*jsonschema.Type, error) {
 
 	// Prepare a new jsonschema.Type for our eventual return value:
 	jsonSchemaType := &jsonschema.Type{
@@ -330,15 +329,15 @@ func convertField(curPkg *ProtoPackage, desc *descriptor.FieldDescriptorProto, m
 		var recursedJSONSchemaType jsonschema.Type
 		var err error
 
-		if jsonResourceStack.Contains(msg) != nil {
+		if g.stack.Contains(msg) != nil {
 			recursedJSONSchemaType, err = convertMessageTypeReference(recordType)
 		} else {
 			// Recurse:
-			jsonResourceStack.Push(&ResourceStackItem{
+			g.stack.Push(&ResourceStackItem{
 				desc: msg,
 			})
-			recursedJSONSchemaType, err = convertMessageType(curPkg, recordType)
-			jsonResourceStack.Pop()
+			recursedJSONSchemaType, err = g.convertMessageType(curPkg, recordType)
+			g.stack.Pop()
 		}
 		if err != nil {
 			return nil, err
@@ -380,7 +379,7 @@ func convertMessageTypeReference(msg *descriptor.DescriptorProto) (jsonschema.Ty
 }
 
 // Converts a proto "MESSAGE" into a JSON-Schema:
-func convertMessageType(curPkg *ProtoPackage, msg *descriptor.DescriptorProto) (jsonschema.Type, error) {
+func (g *generator) convertMessageType(curPkg *ProtoPackage, msg *descriptor.DescriptorProto) (jsonschema.Type, error) {
 
 	// Prepare a new jsonschema:
 	jsonSchemaType := jsonschema.Type{
@@ -407,7 +406,7 @@ func convertMessageType(curPkg *ProtoPackage, msg *descriptor.DescriptorProto) (
 
 	logger.Debugf("Converting message: %s", proto.MarshalTextString(msg))
 	for _, fieldDesc := range msg.GetField() {
-		recursedJSONSchemaType, err := convertField(curPkg, fieldDesc, msg)
+		recursedJSONSchemaType, err := g.convertField(curPkg, fieldDesc, msg)
 		if err != nil {
 			logger.Errorf("Failed to convert field %s in %s: %v", fieldDesc.GetName(), msg.GetName(), err)
 			return jsonSchemaType, err
@@ -439,7 +438,7 @@ func convertEnumType(enum *descriptor.EnumDescriptorProto) (jsonschema.Type, err
 }
 
 // Converts a proto file into a JSON-Schema:
-func convertFile(file *descriptor.FileDescriptorProto, filter MessageFilterFunc) ([]*plugin.CodeGeneratorResponse_File, error) {
+func (g *generator) convertFile(file *descriptor.FileDescriptorProto, filter MessageFilterFunc) ([]*plugin.CodeGeneratorResponse_File, error) {
 
 	// Input filename:
 	protoFileName := path.Base(file.GetName())
@@ -492,7 +491,7 @@ func convertFile(file *descriptor.FileDescriptorProto, filter MessageFilterFunc)
 			}
 			jsonSchemaFileName := fmt.Sprintf("%s.jsonschema", msg.GetName())
 			logger.Infof("Generating JSON-schema for MESSAGE (%v) in file [%v] => %v", msg.GetName(), protoFileName, jsonSchemaFileName)
-			messageJSONSchema, err := convertMessageType(pkg, msg)
+			messageJSONSchema, err := g.convertMessageType(pkg, msg)
 			if err != nil {
 				logger.Errorf("Failed to convert %s: %v", protoFileName, err)
 				return nil, err
@@ -519,7 +518,21 @@ func convertFile(file *descriptor.FileDescriptorProto, filter MessageFilterFunc)
 
 type MessageFilterFunc func(desc *descriptor.DescriptorProto) bool
 
-func Convert(req *plugin.CodeGeneratorRequest, filter MessageFilterFunc) (*plugin.CodeGeneratorResponse, error) {
+type Generator interface {
+	Convert(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorResponse, error)
+}
+
+type generator struct {
+	filter MessageFilterFunc
+	stack  ResourceStack
+	fs     afero.Fs
+}
+
+func NewGenerator(filter MessageFilterFunc) *generator {
+	return &generator{filter: filter, fs: afero.NewOsFs(), stack: NewResourceStack()}
+}
+
+func (g *generator) Convert(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorResponse, error) {
 	generateTargets := make(map[string]bool)
 	for _, file := range req.GetFileToGenerate() {
 		generateTargets[file] = true
@@ -535,7 +548,7 @@ func Convert(req *plugin.CodeGeneratorRequest, filter MessageFilterFunc) (*plugi
 	for _, file := range req.GetProtoFile() {
 		if _, ok := generateTargets[file.GetName()]; ok {
 			logger.Debugf("Converting file (%v)", file.GetName())
-			converted, err := convertFile(file, filter)
+			converted, err := g.convertFile(file, g.filter)
 			if err != nil {
 				res.Error = proto.String(fmt.Sprintf("Failed to convert %s: %v", file.GetName(), err))
 				return res, err

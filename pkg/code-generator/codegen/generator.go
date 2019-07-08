@@ -27,7 +27,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 		return nil, err
 	}
 
-	schemas, err := jsonschema.Convert(project.Request, func(desc *descriptor.DescriptorProto) bool {
+	schemaGenerator := jsonschema.NewGenerator(func(desc *descriptor.DescriptorProto) bool {
 		for _, v := range project.Resources {
 			if v.Name == desc.GetName() {
 				return true
@@ -35,6 +35,8 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 		}
 		return false
 	})
+
+	schemas, err := schemaGenerator.Convert(project.Request)
 	if err != nil {
 		return nil, err
 	}
