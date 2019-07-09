@@ -1,0 +1,573 @@
+package jsonschema
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"path"
+	"path/filepath"
+	"strings"
+	"sync"
+
+	"github.com/alecthomas/jsonschema"
+	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	plugin "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/spf13/afero"
+	"github.com/xeipuuv/gojsonschema"
+)
+
+var (
+	logger = contextutils.LoggerFrom(context.TODO())
+
+	allowNullValues              bool = true
+	disallowAdditionalProperties bool = false
+	disallowBigIntsAsStrings     bool = false
+	debugLogging                 bool = false
+	nestedMessagesAsReferences   bool = true
+
+	globalPkg = &ProtoPackage{
+		name:     "",
+		parent:   nil,
+		children: make(map[string]*ProtoPackage),
+		types:    make(map[string]*descriptor.DescriptorProto),
+	}
+)
+
+type ResourceStackItem struct {
+	desc *descriptor.DescriptorProto
+}
+
+type ResourceStack interface {
+	Push(item *ResourceStackItem)
+	Pop() *ResourceStackItem
+	Contains(descriptorProto *descriptor.DescriptorProto) *ResourceStackItem
+}
+
+type resourceStack struct {
+	stack []*ResourceStackItem
+	sync.Mutex
+}
+
+func (r *resourceStack) Contains(descriptorProto *descriptor.DescriptorProto) *ResourceStackItem {
+	for _, v := range r.stack {
+		if v.desc.GetName() == descriptorProto.GetName() {
+			return v
+		}
+	}
+	return nil
+}
+
+func NewResourceStack() *resourceStack {
+	return &resourceStack{
+		stack: make([]*ResourceStackItem, 0, 8),
+	}
+}
+
+func (r *resourceStack) Push(item *ResourceStackItem) {
+	r.Lock()
+	defer r.Unlock()
+	r.stack = append(r.stack, item)
+}
+
+func (r *resourceStack) Pop() *ResourceStackItem {
+	r.Lock()
+	defer r.Unlock()
+	var val *ResourceStackItem
+	if len(r.stack) > 0 {
+		val = r.stack[len(r.stack)-1]
+		r.stack = r.stack[0 : len(r.stack)-1]
+	}
+	return val
+}
+
+// ProtoPackage describes a package of Protobuf, which is an container of message types.
+type ProtoPackage struct {
+	name     string
+	parent   *ProtoPackage
+	children map[string]*ProtoPackage
+	types    map[string]*descriptor.DescriptorProto
+}
+
+func registerType(pkgName *string, msg *descriptor.DescriptorProto) {
+	pkg := globalPkg
+	if pkgName != nil {
+		for _, node := range strings.Split(*pkgName, ".") {
+			if pkg == globalPkg && node == "" {
+				// Skips leading "."
+				continue
+			}
+			child, ok := pkg.children[node]
+			if !ok {
+				child = &ProtoPackage{
+					name:     pkg.name + "." + node,
+					parent:   pkg,
+					children: make(map[string]*ProtoPackage),
+					types:    make(map[string]*descriptor.DescriptorProto),
+				}
+				pkg.children[node] = child
+			}
+			pkg = child
+		}
+	}
+	pkg.types[msg.GetName()] = msg
+}
+
+func (pkg *ProtoPackage) lookupType(name string) (*descriptor.DescriptorProto, bool) {
+	if strings.HasPrefix(name, ".") {
+		return globalPkg.relativelyLookupType(name[1:len(name)])
+	}
+
+	for ; pkg != nil; pkg = pkg.parent {
+		if desc, ok := pkg.relativelyLookupType(name); ok {
+			return desc, ok
+		}
+	}
+	return nil, false
+}
+
+func relativelyLookupNestedType(desc *descriptor.DescriptorProto, name string) (*descriptor.DescriptorProto, bool) {
+	components := strings.Split(name, ".")
+componentLoop:
+	for _, component := range components {
+		for _, nested := range desc.GetNestedType() {
+			if nested.GetName() == component {
+				desc = nested
+				continue componentLoop
+			}
+		}
+		logger.Infof("no such nested message %s in %s", component, desc.GetName())
+		return nil, false
+	}
+	return desc, true
+}
+
+func (pkg *ProtoPackage) relativelyLookupType(name string) (*descriptor.DescriptorProto, bool) {
+	components := strings.SplitN(name, ".", 2)
+	switch len(components) {
+	case 0:
+		logger.Debugf("empty message name")
+		return nil, false
+	case 1:
+		found, ok := pkg.types[components[0]]
+		return found, ok
+	case 2:
+		logger.Debugf("looking for %s in %s at %s (%v)", components[1], components[0], pkg.name, pkg)
+		if child, ok := pkg.children[components[0]]; ok {
+			found, ok := child.relativelyLookupType(components[1])
+			return found, ok
+		}
+		if msg, ok := pkg.types[components[0]]; ok {
+			found, ok := relativelyLookupNestedType(msg, components[1])
+			return found, ok
+		}
+		logger.Infof("no such package nor message %s in %s", components[0], pkg.name)
+		return nil, false
+	default:
+		logger.Fatalf("not reached")
+		return nil, false
+	}
+}
+
+func (pkg *ProtoPackage) relativelyLookupPackage(name string) (*ProtoPackage, bool) {
+	components := strings.Split(name, ".")
+	for _, c := range components {
+		var ok bool
+		pkg, ok = pkg.children[c]
+		if !ok {
+			return nil, false
+		}
+	}
+	return pkg, true
+}
+
+// Convert a proto "field" (essentially a type-switch with some recursion):
+func (g *generator) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProto) (*jsonschema.Type, error) {
+
+	// Prepare a new jsonschema.Type for our eventual return value:
+	jsonSchemaType := &jsonschema.Type{
+		Properties: make(map[string]*jsonschema.Type),
+	}
+
+	// Switch the types, and pick a JSONSchema equivalent:
+	switch desc.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE,
+		descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		if allowNullValues {
+			jsonSchemaType.OneOf = []*jsonschema.Type{
+				{Type: gojsonschema.TYPE_NULL},
+				{Type: gojsonschema.TYPE_NUMBER},
+			}
+		} else {
+			jsonSchemaType.Type = gojsonschema.TYPE_NUMBER
+		}
+
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SINT32:
+		if allowNullValues {
+			jsonSchemaType.OneOf = []*jsonschema.Type{
+				{Type: gojsonschema.TYPE_NULL},
+				{Type: gojsonschema.TYPE_INTEGER},
+			}
+		} else {
+			jsonSchemaType.Type = gojsonschema.TYPE_INTEGER
+		}
+
+	case descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SINT64:
+		jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_INTEGER})
+		if !disallowBigIntsAsStrings {
+			jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_STRING})
+		}
+		if allowNullValues {
+			jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_NULL})
+		}
+
+	case descriptor.FieldDescriptorProto_TYPE_STRING,
+		descriptor.FieldDescriptorProto_TYPE_BYTES:
+		if allowNullValues {
+			jsonSchemaType.OneOf = []*jsonschema.Type{
+				{Type: gojsonschema.TYPE_NULL},
+				{Type: gojsonschema.TYPE_STRING},
+			}
+		} else {
+			jsonSchemaType.Type = gojsonschema.TYPE_STRING
+		}
+
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_STRING})
+		jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_INTEGER})
+		if allowNullValues {
+			jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_NULL})
+		}
+
+		// Go through all the enums we have, see if we can match any to this field by name:
+		for _, enumDescriptor := range msg.GetEnumType() {
+
+			// Each one has several values:
+			for _, enumValue := range enumDescriptor.Value {
+
+				// Figure out the entire name of this field:
+				fullFieldName := fmt.Sprintf(".%v.%v", *msg.Name, *enumDescriptor.Name)
+
+				// If we find ENUM values for this field then put them into the JSONSchema list of allowed ENUM values:
+				if strings.HasSuffix(desc.GetTypeName(), fullFieldName) {
+					jsonSchemaType.Enum = append(jsonSchemaType.Enum, enumValue.Name)
+					jsonSchemaType.Enum = append(jsonSchemaType.Enum, enumValue.Number)
+				}
+			}
+		}
+
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		if allowNullValues {
+			jsonSchemaType.OneOf = []*jsonschema.Type{
+				{Type: gojsonschema.TYPE_NULL},
+				{Type: gojsonschema.TYPE_BOOLEAN},
+			}
+		} else {
+			jsonSchemaType.Type = gojsonschema.TYPE_BOOLEAN
+		}
+
+	case descriptor.FieldDescriptorProto_TYPE_GROUP,
+		descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		jsonSchemaType.Type = gojsonschema.TYPE_OBJECT
+		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL {
+			jsonSchemaType.AdditionalProperties = []byte("true")
+		}
+		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REQUIRED {
+			jsonSchemaType.AdditionalProperties = []byte("false")
+		}
+
+	default:
+		return nil, fmt.Errorf("unrecognized field type: %s", desc.GetType().String())
+	}
+
+	// Recurse array of primitive types:
+	if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED && jsonSchemaType.Type != gojsonschema.TYPE_OBJECT {
+		jsonSchemaType.Items = &jsonschema.Type{}
+
+		if len(jsonSchemaType.Enum) > 0 {
+			jsonSchemaType.Items.Enum = jsonSchemaType.Enum
+			jsonSchemaType.Enum = nil
+			jsonSchemaType.Items.OneOf = nil
+		} else {
+			jsonSchemaType.Items.Type = jsonSchemaType.Type
+			jsonSchemaType.Items.OneOf = jsonSchemaType.OneOf
+		}
+
+		if allowNullValues {
+			jsonSchemaType.OneOf = []*jsonschema.Type{
+				{Type: gojsonschema.TYPE_NULL},
+				{Type: gojsonschema.TYPE_ARRAY},
+			}
+		} else {
+			jsonSchemaType.Type = gojsonschema.TYPE_ARRAY
+			jsonSchemaType.OneOf = []*jsonschema.Type{}
+		}
+
+		return jsonSchemaType, nil
+	}
+
+	// Recurse nested objects / arrays of objects (if necessary):
+	if jsonSchemaType.Type == gojsonschema.TYPE_OBJECT {
+
+		recordType, ok := curPkg.lookupType(desc.GetTypeName())
+		if !ok {
+			return nil, fmt.Errorf("no such message type named %s", desc.GetTypeName())
+		}
+
+		var recursedJSONSchemaType jsonschema.Type
+		var err error
+		// recursedJSONSchemaType, err = convertMessageTypeReference(recordType)
+		if g.stack.Contains(msg) != nil {
+			recursedJSONSchemaType, err = convertMessageTypeReference(recordType)
+		} else {
+			// Recurse:
+			g.stack.Push(&ResourceStackItem{
+				desc: msg,
+			})
+			recursedJSONSchemaType, err = g.convertMessageType(curPkg, recordType)
+			g.stack.Pop()
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		// The result is stored differently for arrays of objects (they become "items"):
+		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+			jsonSchemaType.Items = &recursedJSONSchemaType
+			jsonSchemaType.Type = gojsonschema.TYPE_ARRAY
+		} else {
+			// Nested objects are more straight-forward:
+			jsonSchemaType.Properties = recursedJSONSchemaType.Properties
+		}
+
+		// Optionally allow NULL values:
+		if allowNullValues {
+			jsonSchemaType.OneOf = []*jsonschema.Type{
+				{Type: gojsonschema.TYPE_NULL},
+				{Type: jsonSchemaType.Type},
+			}
+			jsonSchemaType.Type = ""
+		}
+	}
+
+	return jsonSchemaType, nil
+}
+
+func convertMessageTypeReference(msg *descriptor.DescriptorProto) (jsonschema.Type, error) {
+
+	// Prepare a new jsonschema:
+	jsonSchemaType := jsonschema.Type{
+		Properties: make(map[string]*jsonschema.Type),
+		Version:    jsonschema.Version,
+	}
+
+	jsonSchemaType.Ref = *msg.Name
+
+	return jsonSchemaType, nil
+}
+
+// Converts a proto "MESSAGE" into a JSON-Schema:
+func (g *generator) convertMessageType(curPkg *ProtoPackage, msg *descriptor.DescriptorProto) (jsonschema.Type, error) {
+
+	// Prepare a new jsonschema:
+	jsonSchemaType := jsonschema.Type{
+		Properties: make(map[string]*jsonschema.Type),
+		Version:    jsonschema.Version,
+	}
+
+	// Optionally allow NULL values:
+	if allowNullValues {
+		jsonSchemaType.OneOf = []*jsonschema.Type{
+			{Type: gojsonschema.TYPE_NULL},
+			{Type: gojsonschema.TYPE_OBJECT},
+		}
+	} else {
+		jsonSchemaType.Type = gojsonschema.TYPE_OBJECT
+	}
+
+	// disallowAdditionalProperties will prevent validation where extra fields are found (outside of the schema):
+	if disallowAdditionalProperties {
+		jsonSchemaType.AdditionalProperties = []byte("false")
+	} else {
+		jsonSchemaType.AdditionalProperties = []byte("true")
+	}
+
+	logger.Debugf("Converting message: %s", proto.MarshalTextString(msg))
+	for _, fieldDesc := range msg.GetField() {
+		recursedJSONSchemaType, err := g.convertField(curPkg, fieldDesc, msg)
+		if err != nil {
+			logger.Errorf("Failed to convert field %s in %s: %v", fieldDesc.GetName(), msg.GetName(), err)
+			return jsonSchemaType, err
+		}
+		jsonSchemaType.Properties[fieldDesc.GetName()] = recursedJSONSchemaType
+	}
+	return jsonSchemaType, nil
+}
+
+// Converts a proto "ENUM" into a JSON-Schema:
+func convertEnumType(enum *descriptor.EnumDescriptorProto) (jsonschema.Type, error) {
+
+	// Prepare a new jsonschema.Type for our eventual return value:
+	jsonSchemaType := jsonschema.Type{
+		Version: jsonschema.Version,
+	}
+
+	// Allow both strings and integers:
+	jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: "string"})
+	jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: "integer"})
+
+	// Add the allowed values:
+	for _, enumValue := range enum.Value {
+		jsonSchemaType.Enum = append(jsonSchemaType.Enum, enumValue.Name)
+		jsonSchemaType.Enum = append(jsonSchemaType.Enum, enumValue.Number)
+	}
+
+	return jsonSchemaType, nil
+}
+
+// Converts a proto file into a JSON-Schema:
+func (g *generator) convertFile(file *descriptor.FileDescriptorProto, filter MessageFilterFunc) ([]*plugin.CodeGeneratorResponse_File, error) {
+
+	// Input filename:
+	protoFileName := path.Base(file.GetName())
+
+	// Prepare a list of responses:
+	response := []*plugin.CodeGeneratorResponse_File{}
+
+	// Warn about multiple messages / enums in files:
+	if len(file.GetMessageType()) > 1 {
+		logger.Warnf("protoc-gen-jsonschema will create multiple MESSAGE schemas (%d) from one proto file (%v)", len(file.GetMessageType()), protoFileName)
+	}
+	if len(file.GetEnumType()) > 1 {
+		logger.Warnf("protoc-gen-jsonschema will create multiple ENUM schemas (%d) from one proto file (%v)", len(file.GetEnumType()), protoFileName)
+	}
+
+	// Generate standalone ENUMs:
+	if len(file.GetMessageType()) == 0 {
+		for _, enum := range file.GetEnumType() {
+			jsonSchemaFileName := fmt.Sprintf("%s.jsonschema", enum.GetName())
+			logger.Infof("Generating JSON-schema for stand-alone ENUM (%v) in file [%v] => %v", enum.GetName(), protoFileName, jsonSchemaFileName)
+			enumJsonSchema, err := convertEnumType(enum)
+			if err != nil {
+				logger.Errorf("Failed to convert %s: %v", protoFileName, err)
+				return nil, err
+			} else {
+				// Marshal the JSON-Schema into JSON:
+				jsonSchemaJSON, err := json.MarshalIndent(enumJsonSchema, "", "    ")
+				if err != nil {
+					logger.Errorf("Failed to encode jsonSchema: %v", err)
+					return nil, err
+				} else {
+					// Add a response:
+					resFile := &plugin.CodeGeneratorResponse_File{
+						Name:    proto.String(jsonSchemaFileName),
+						Content: proto.String(string(jsonSchemaJSON)),
+					}
+					response = append(response, resFile)
+				}
+			}
+		}
+	} else {
+		// Otherwise process MESSAGES (packages):
+		pkg, ok := globalPkg.relativelyLookupPackage(file.GetPackage())
+		if !ok {
+			return nil, fmt.Errorf("no such package found: %s", file.GetPackage())
+		}
+		for _, msg := range file.GetMessageType() {
+			jsonSchemaFileName := fmt.Sprintf("%s.jsonschema", msg.GetName())
+			if filter != nil && !filter(msg) {
+				jsonSchemaFileName = fmt.Sprintf("definitions/%s.jsonschema", msg.GetName())
+			}
+			logger.Infof("Generating JSON-schema for MESSAGE (%v) in file [%v] => %v", msg.GetName(), protoFileName, jsonSchemaFileName)
+			messageJSONSchema, err := g.convertMessageType(pkg, msg)
+			if err != nil {
+				logger.Errorf("Failed to convert %s: %v", protoFileName, err)
+				return nil, err
+			} else {
+				// Marshal the JSON-Schema into JSON:
+				jsonSchemaJSON, err := json.MarshalIndent(messageJSONSchema, "", "    ")
+				if err != nil {
+					logger.Errorf("Failed to encode jsonSchema: %v", err)
+					return nil, err
+				} else {
+					// Add a response:
+					resFile := &plugin.CodeGeneratorResponse_File{
+						Name:    proto.String(jsonSchemaFileName),
+						Content: proto.String(string(jsonSchemaJSON)),
+					}
+					response = append(response, resFile)
+				}
+			}
+		}
+	}
+
+	return response, nil
+}
+
+type MessageFilterFunc func(desc *descriptor.DescriptorProto) bool
+
+type Generator interface {
+	Convert(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorResponse, error)
+}
+
+type generator struct {
+	filter MessageFilterFunc
+	stack  ResourceStack
+	fs     afero.Fs
+}
+
+func NewGenerator(filter MessageFilterFunc) *generator {
+	return &generator{filter: filter, fs: afero.NewOsFs(), stack: NewResourceStack()}
+}
+
+func (g *generator) Convert(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorResponse, error) {
+	generateTargets := make(map[string]bool)
+	for _, file := range req.GetFileToGenerate() {
+		generateTargets[file] = true
+	}
+
+	res := &plugin.CodeGeneratorResponse{}
+	for _, file := range req.GetProtoFile() {
+		for _, msg := range file.GetMessageType() {
+			logger.Debugf("Loading a message type %s from package %s", msg.GetName(), file.GetPackage())
+			registerType(file.Package, msg)
+		}
+	}
+	for _, file := range req.GetProtoFile() {
+		if _, ok := generateTargets[file.GetName()]; ok {
+			logger.Debugf("Converting file (%v)", file.GetName())
+			converted, err := g.convertFile(file, g.filter)
+			if err != nil {
+				res.Error = proto.String(fmt.Sprintf("Failed to convert %s: %v", file.GetName(), err))
+				return res, err
+			}
+			res.File = append(res.File, converted...)
+		}
+	}
+	tmpDir, err := afero.TempDir(g.fs, "", "gloo")
+	if err != nil {
+		return nil, err
+	}
+	err = g.fs.Mkdir(filepath.Join(tmpDir, "definitions"), 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range res.GetFile() {
+		err = afero.WriteFile(g.fs, filepath.Join(tmpDir, v.GetName()), []byte(v.GetContent()), 0777)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return res, nil
+}

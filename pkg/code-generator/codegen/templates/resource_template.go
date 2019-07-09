@@ -200,6 +200,7 @@ func (o *{{ .Name }}) DeepCopyObject() runtime.Object {
 {{- $crdGroupName = .Project.ProjectConfig.CrdGroupOverride }}
 {{- end}}
 
+
 var (
 	{{ .Name }}GVK = schema.GroupVersionKind{
 		Version: "{{ .Project.ProjectConfig.Version }}",
