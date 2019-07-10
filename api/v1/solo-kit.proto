@@ -20,6 +20,8 @@ message Resource {
     bool cluster_scoped = 3;
     // indicates whether documentation generation has to be skipped for the given resource, defaults to false
     bool skip_docs_gen = 4;
+    // indicates whether json schemas should be generated for the given resource, defaults to false
+    bool generate_json_schema = 5;
 }
 
 extend google.protobuf.FieldOptions {

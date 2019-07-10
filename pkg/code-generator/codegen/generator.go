@@ -2,10 +2,10 @@ package codegen
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/jsonschema"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
@@ -26,20 +26,13 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 		return nil, err
 	}
 
-	schemaGenerator := jsonschema.NewGenerator(func(desc *descriptor.DescriptorProto) bool {
-		for _, v := range project.Resources {
-			if v.Name == desc.GetName() {
-				return true
-			}
-		}
-		return false
-	})
-
-	_, err = schemaGenerator.Convert(project.Request)
+	generator, err := jsonschema.NewGenerator(project.Request)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, res := range project.Resources {
+
 		// only generate files for the resources in our group, otherwise we import
 		if !project.ProjectConfig.IsOurProto(res.Filename) && !res.IsCustom {
 			log.Printf("not generating solo-kit "+
@@ -51,6 +44,15 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 				"clients for resource %v.%v, "+
 				"custom resources from a different project are not generated", res.GoPackage, res.Name, project.ProjectConfig.GoPackage)
 			continue
+		}
+
+		if res.ProtoPackage != "" {
+			result, err := generator.Convert(res)
+			if err != nil {
+				return nil, err
+			}
+			byt, err := generator.Marshal(result)
+			fmt.Println(string(byt))
 		}
 
 		fs, err := generateFilesForResource(res)
