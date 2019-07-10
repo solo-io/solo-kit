@@ -389,8 +389,11 @@ func (g *generator) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 
 		// The result is stored differently for arrays of objects (they become "items"):
 		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-			jsonSchemaType.Items = recursedJSONSchemaType
-			jsonSchemaType.Type = gojsonschema.TYPE_ARRAY
+			// Check for map
+			if !isMap(desc, msg) {
+				jsonSchemaType.Items = recursedJSONSchemaType
+				jsonSchemaType.Type = gojsonschema.TYPE_ARRAY
+			}
 		} else {
 			// Nested objects are more straight-forward:
 			jsonSchemaType.Properties = recursedJSONSchemaType.Properties
@@ -404,9 +407,29 @@ func (g *generator) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 			}
 			jsonSchemaType.Type = ""
 		}
+		g.generatedTypes[recursedJSONSchemaType.Title] = recursedJSONSchemaType
 	}
 
 	return jsonSchemaType, nil
+}
+
+func isMap(desc *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProto) bool {
+	split := strings.Split(desc.GetTypeName(), ".")
+	packageName := split[len(split)-1]
+	if packageName == "" {
+		return false
+	}
+	for _, v := range msg.GetNestedType() {
+		if v.GetName() == packageName {
+			for _, field := range v.GetField() {
+				// Best guess that this is a map
+				if field.GetName() == "key" && field.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func schemaRefName(packageName, name string) string {
