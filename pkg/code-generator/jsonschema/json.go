@@ -212,10 +212,10 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 		return jsonSchemaType, nil
 	}
 
-	// Recurse nested objects / arrays of objects (if necessary):
+	// If the field is an object that create a reference go that object
 	if jsonSchemaType.Type == gojsonschema.TYPE_OBJECT {
 		var err error
-		jsonSchemaType, err = g.handleObjectReference(desc, jsonSchemaType)
+		jsonSchemaType, err = g.handleNestedObject(desc, jsonSchemaType)
 		if err != nil {
 			return nil, err
 		}
@@ -224,7 +224,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 	return jsonSchemaType, nil
 }
 
-func (g *generator) handleObjectReference(desc *descriptor.FieldDescriptorProto, jsonSchemaType *jsonschema.Type) (*jsonschema.Type, error) {
+func (g *generator) handleNestedObject(desc *descriptor.FieldDescriptorProto, jsonSchemaType *jsonschema.Type) (*jsonschema.Type, error) {
 	recordType, ok := g.protoPackage.LookupType(desc.GetTypeName())
 	if !ok {
 		return nil, MessageNotFoundError(desc.GetTypeName())
@@ -235,6 +235,7 @@ func (g *generator) handleObjectReference(desc *descriptor.FieldDescriptorProto,
 
 	if IsMap(recordType) {
 		// TODO(EItanya) add validation for map secondary type
+		// Currently this code sets additional to true rather than limiting it to the secondary type
 		recursedJSONSchemaType.Title = desc.GetJsonName()
 		jsonSchemaType.Properties = nil
 		jsonSchemaType.Ref = ""
@@ -259,9 +260,6 @@ func (g *generator) handleObjectReference(desc *descriptor.FieldDescriptorProto,
 		}
 		jsonSchemaType.Type = ""
 	}
-	// if _, ok := g.generatedTypes.Get(recursedJSONSchemaType.Title); !ok {
-	// 	g.generatedTypes.Set(recursedJSONSchemaType.Title, recursedJSONSchemaType)
-	// }
 	return jsonSchemaType, nil
 }
 
@@ -303,8 +301,7 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 	jsonSchemaType := &jsonschema.Type{
 		Properties: make(map[string]*jsonschema.Type),
 		Version:    jsonschema.Version,
-		// Ref:        schemaRefName(curPkg.GetName(), msg.GetName()),
-		Title: schemaTitleName(curPkg.GetName(), msg.GetName()),
+		Title:      schemaTitleName(curPkg.GetName(), msg.GetName()),
 	}
 
 	// Optionally allow NULL values:
@@ -325,13 +322,48 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 	}
 
 	logger.Debugf("Converting message: %s", proto.MarshalTextString(msg))
+
+	var oneOfTypes []*jsonschema.Type
+	for idx := range msg.GetOneofDecl() {
+		var oneOfFields []*jsonschema.Type
+		for _, fieldDesc := range msg.GetField() {
+			if fieldDesc.OneofIndex == nil || fieldDesc.GetOneofIndex() != int32(idx) {
+				continue
+			}
+			childJsonType, err := g.convertField(curPkg, fieldDesc, msg)
+			if err != nil {
+				logger.Errorf("Failed to convert field %s in %s: %v", fieldDesc.GetName(), msg.GetName(), err)
+				return jsonSchemaType, err
+			}
+			oneOfFields = append(oneOfFields, childJsonType)
+		}
+		oneOfType := &jsonschema.Type{
+			Type:  gojsonschema.TYPE_OBJECT,
+			OneOf: oneOfFields,
+		}
+		oneOfTypes = append(oneOfTypes, oneOfType)
+	}
+
+	if len(oneOfTypes) > 1 {
+
+	} else if len(oneOfTypes) == 1 {
+		byt, err := g.Marshal(oneOfTypes[0])
+		if err != nil {
+			return nil, err
+		}
+		jsonSchemaType.AdditionalProperties = byt
+	}
+
 	for _, fieldDesc := range msg.GetField() {
-		recursedJSONSchemaType, err := g.convertField(curPkg, fieldDesc, msg)
+		if fieldDesc.OneofIndex != nil {
+			continue
+		}
+		childJsonTypes, err := g.convertField(curPkg, fieldDesc, msg)
 		if err != nil {
 			logger.Errorf("Failed to convert field %s in %s: %v", fieldDesc.GetName(), msg.GetName(), err)
 			return jsonSchemaType, err
 		}
-		jsonSchemaType.Properties[fieldDesc.GetJsonName()] = recursedJSONSchemaType
+		jsonSchemaType.Properties[fieldDesc.GetJsonName()] = childJsonTypes
 	}
 	return jsonSchemaType, nil
 }
@@ -394,7 +426,6 @@ func (g *generator) convertFile(file *descriptor.FileDescriptorProto) ([]*jsonsc
 					logger.Errorf("Failed to convert %s: %v", protoFileName, err)
 					return err
 				} else {
-					// Marshal the JSON-Schema into JSON:
 					response = append(response, messageJSONSchemas...)
 				}
 				return nil

@@ -77,23 +77,11 @@ var MockResourceJsonSchema = `
         "testing.solo.io.MockResource": {
             "$schema": "http://json-schema.org/draft-04/schema#",
             "properties": {
-                "data.json": {
-                    "type": "string"
-                },
                 "metadata": {
                     "$ref": "#/definitions/core.solo.io.Metadata",
                     "additionalProperties": true,
                     "type": "object",
                     "title": "core.solo.io.Metadata"
-                },
-                "oneofOne": {
-                    "type": "string"
-                },
-                "oneofTwo": {
-                    "type": "boolean"
-                },
-                "someDumbField": {
-                    "type": "string"
                 },
                 "status": {
                     "$ref": "#/definitions/core.solo.io.Status",
