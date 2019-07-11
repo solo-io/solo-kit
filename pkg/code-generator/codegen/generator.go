@@ -26,7 +26,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 		return nil, err
 	}
 
-	generator, err := jsonschema.NewGenerator(project.Request)
+	generator, err := jsonschema.NewGenerator(project.Request, nil)
 	if err != nil {
 		return nil, err
 	}

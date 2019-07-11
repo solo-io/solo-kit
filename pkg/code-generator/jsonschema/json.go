@@ -25,12 +25,6 @@ import (
 var (
 	logger = contextutils.LoggerFrom(context.TODO())
 
-	allowNullValues              bool = false
-	disallowAdditionalProperties bool = false
-	disallowBigIntsAsStrings     bool = false
-	debugLogging                 bool = false
-	nestedMessagesAsReferences   bool = true
-
 	PackageNotFoundError = func(pkg string) error {
 		return errors.Errorf("no such package found: %s", pkg)
 	}
@@ -66,6 +60,12 @@ var (
 			},
 		},
 	}
+
+	defaultOptions = &Options{
+		AllowNullValues:              false,
+		DisallowAdditionalProperties: false,
+		DisallowBigIntsAsStrings:     false,
+	}
 )
 
 // Convert a proto "field" (essentially a type-switch with some recursion):
@@ -90,7 +90,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 	switch desc.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE,
 		descriptor.FieldDescriptorProto_TYPE_FLOAT:
-		if allowNullValues {
+		if g.opts.AllowNullValues {
 			jsonSchemaType.OneOf = []*jsonschema.Type{
 				{Type: gojsonschema.TYPE_NULL},
 				{Type: gojsonschema.TYPE_NUMBER},
@@ -104,7 +104,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 		descriptor.FieldDescriptorProto_TYPE_FIXED32,
 		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
 		descriptor.FieldDescriptorProto_TYPE_SINT32:
-		if allowNullValues {
+		if g.opts.AllowNullValues {
 			jsonSchemaType.OneOf = []*jsonschema.Type{
 				{Type: gojsonschema.TYPE_NULL},
 				{Type: gojsonschema.TYPE_INTEGER},
@@ -119,16 +119,16 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 		descriptor.FieldDescriptorProto_TYPE_SFIXED64,
 		descriptor.FieldDescriptorProto_TYPE_SINT64:
 		jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_INTEGER})
-		if !disallowBigIntsAsStrings {
+		if !g.opts.DisallowBigIntsAsStrings {
 			jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_STRING})
 		}
-		if allowNullValues {
+		if g.opts.AllowNullValues {
 			jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_NULL})
 		}
 
 	case descriptor.FieldDescriptorProto_TYPE_STRING,
 		descriptor.FieldDescriptorProto_TYPE_BYTES:
-		if allowNullValues {
+		if g.opts.AllowNullValues {
 			jsonSchemaType.OneOf = []*jsonschema.Type{
 				{Type: gojsonschema.TYPE_NULL},
 				{Type: gojsonschema.TYPE_STRING},
@@ -140,7 +140,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_STRING})
 		jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_INTEGER})
-		if allowNullValues {
+		if g.opts.AllowNullValues {
 			jsonSchemaType.OneOf = append(jsonSchemaType.OneOf, &jsonschema.Type{Type: gojsonschema.TYPE_NULL})
 		}
 
@@ -162,7 +162,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 		}
 
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		if allowNullValues {
+		if g.opts.AllowNullValues {
 			jsonSchemaType.OneOf = []*jsonschema.Type{
 				{Type: gojsonschema.TYPE_NULL},
 				{Type: gojsonschema.TYPE_BOOLEAN},
@@ -175,7 +175,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 		descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		jsonSchemaType.Type = gojsonschema.TYPE_OBJECT
 		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL ||
-			(desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REQUIRED && isMap(desc, msg)) {
+			(desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REQUIRED && IsMap(msg)) {
 			jsonSchemaType.AdditionalProperties = []byte("true")
 		}
 		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REQUIRED {
@@ -199,7 +199,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 			jsonSchemaType.Items.OneOf = jsonSchemaType.OneOf
 		}
 
-		if allowNullValues {
+		if g.opts.AllowNullValues {
 			jsonSchemaType.OneOf = []*jsonschema.Type{
 				{Type: gojsonschema.TYPE_NULL},
 				{Type: gojsonschema.TYPE_ARRAY},
@@ -214,78 +214,75 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 
 	// Recurse nested objects / arrays of objects (if necessary):
 	if jsonSchemaType.Type == gojsonschema.TYPE_OBJECT {
-
-		recordType, ok := g.protoPackage.LookupType(desc.GetTypeName())
-		if !ok {
-			return nil, MessageNotFoundError(desc.GetTypeName())
-		}
-
-		var recursedJSONSchemaType *jsonschema.Type
 		var err error
-		if nestedMessagesAsReferences {
-			recursedJSONSchemaType = convertMessageTypeReference(desc, recordType)
-		} else {
-			recursedJSONSchemaType, err = g.convertMessageType(curPkg, recordType)
-		}
+		jsonSchemaType, err = g.handleObjectReference(desc, jsonSchemaType)
 		if err != nil {
 			return nil, err
-		}
-
-		// The result is stored differently for arrays of objects (they become "items"):
-		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-			// Check for map
-			if !isMap(desc, msg) {
-				jsonSchemaType.Items = recursedJSONSchemaType
-				jsonSchemaType.Type = gojsonschema.TYPE_ARRAY
-			}
-		} else {
-			// Nested objects are more straight-forward:
-			jsonSchemaType.Properties = recursedJSONSchemaType.Properties
-		}
-
-		// Optionally allow NULL values:
-		if allowNullValues {
-			jsonSchemaType.OneOf = []*jsonschema.Type{
-				{Type: gojsonschema.TYPE_NULL},
-				{Type: jsonSchemaType.Type},
-			}
-			jsonSchemaType.Type = ""
-		}
-		if _, ok := g.generatedTypes.Get(recursedJSONSchemaType.Title); !ok {
-			g.generatedTypes.Set(recursedJSONSchemaType.Title, recursedJSONSchemaType)
 		}
 	}
 
 	return jsonSchemaType, nil
 }
 
-func isMap(desc *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProto) bool {
-	split := strings.Split(desc.GetTypeName(), ".")
-	packageName := split[len(split)-1]
-	if packageName == "" {
+func (g *generator) handleObjectReference(desc *descriptor.FieldDescriptorProto, jsonSchemaType *jsonschema.Type) (*jsonschema.Type, error) {
+	recordType, ok := g.protoPackage.LookupType(desc.GetTypeName())
+	if !ok {
+		return nil, MessageNotFoundError(desc.GetTypeName())
+	}
+	recursedJSONSchemaType := &jsonschema.Type{
+		Version: jsonschema.Version,
+	}
+
+	if IsMap(recordType) {
+		// TODO(EItanya) add validation for map secondary type
+		recursedJSONSchemaType.Title = desc.GetJsonName()
+		jsonSchemaType.Properties = nil
+		jsonSchemaType.Ref = ""
+		jsonSchemaType.AdditionalProperties = []byte("true")
+	} else {
+		pkgName := strings.TrimPrefix(desc.GetTypeName(), ".")
+		// recursedJSONSchemaType.Ref = fmt.Sprintf("#/definitions/%s", pkgName)
+		recursedJSONSchemaType.Title = pkgName
+		// The result is stored differently for arrays of objects (they become "items"):
+		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+			jsonSchemaType.Items = recursedJSONSchemaType
+			jsonSchemaType.Type = gojsonschema.TYPE_ARRAY
+		}
+		jsonSchemaType.Properties = recursedJSONSchemaType.Properties
+	}
+
+	// Optionally allow NULL values:
+	if g.opts.AllowNullValues {
+		jsonSchemaType.OneOf = []*jsonschema.Type{
+			{Type: gojsonschema.TYPE_NULL},
+			{Type: jsonSchemaType.Type},
+		}
+		jsonSchemaType.Type = ""
+	}
+	// if _, ok := g.generatedTypes.Get(recursedJSONSchemaType.Title); !ok {
+	// 	g.generatedTypes.Set(recursedJSONSchemaType.Title, recursedJSONSchemaType)
+	// }
+	return jsonSchemaType, nil
+}
+
+func IsMap(msg *descriptor.DescriptorProto) bool {
+	if msg.GetNestedType() != nil {
 		return false
 	}
-	for _, v := range msg.GetNestedType() {
-		if v.GetName() == packageName {
-			if len(v.GetField()) != 2 {
-				break
-			}
-			key, value := false, false
-			for _, field := range v.GetField() {
-				// Best guess that this is a map
-				if field.GetName() == "key" && field.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
-					key = true
-				}
-				if field.GetName() == "value" {
-					value = true
-				}
-			}
-			if key && value {
-				return true
-			}
+	if len(msg.GetField()) != 2 {
+		return false
+	}
+	key, value := false, false
+	for _, field := range msg.GetField() {
+		// Best guess that this is a map
+		if field.GetName() == "key" && field.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
+			key = true
+		}
+		if field.GetName() == "value" {
+			value = true
 		}
 	}
-	return false
+	return key && value
 }
 
 func schemaRefName(packageName, name string) string {
@@ -299,18 +296,6 @@ func schemaTitleName(packageName, name string) string {
 	return fmt.Sprintf("%s.%s", packageName, name)
 }
 
-func convertMessageTypeReference(pkg *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProto) *jsonschema.Type {
-	pkgName := strings.TrimPrefix(pkg.GetTypeName(), ".")
-	jsonSchemaType := &jsonschema.Type{
-		Properties: make(map[string]*jsonschema.Type),
-		Version:    jsonschema.Version,
-		Ref:        fmt.Sprintf("#/definitions/%s", pkgName),
-		Title:      pkgName,
-	}
-
-	return jsonSchemaType
-}
-
 // Converts a proto "MESSAGE" into a JSON-Schema:
 func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *descriptor.DescriptorProto) (*jsonschema.Type, error) {
 
@@ -318,12 +303,12 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 	jsonSchemaType := &jsonschema.Type{
 		Properties: make(map[string]*jsonschema.Type),
 		Version:    jsonschema.Version,
-		Ref:        schemaRefName(curPkg.GetName(), msg.GetName()),
-		Title:      schemaTitleName(curPkg.GetName(), msg.GetName()),
+		// Ref:        schemaRefName(curPkg.GetName(), msg.GetName()),
+		Title: schemaTitleName(curPkg.GetName(), msg.GetName()),
 	}
 
 	// Optionally allow NULL values:
-	if allowNullValues {
+	if g.opts.DisallowBigIntsAsStrings {
 		jsonSchemaType.OneOf = []*jsonschema.Type{
 			{Type: gojsonschema.TYPE_NULL},
 			{Type: gojsonschema.TYPE_OBJECT},
@@ -332,8 +317,8 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 		jsonSchemaType.Type = gojsonschema.TYPE_OBJECT
 	}
 
-	// disallowAdditionalProperties will prevent validation where extra fields are found (outside of the schema):
-	if disallowAdditionalProperties {
+	// DisallowAdditionalProperties will prevent validation where extra fields are found (outside of the schema):
+	if g.opts.DisallowAdditionalProperties {
 		jsonSchemaType.AdditionalProperties = []byte("false")
 	} else {
 		jsonSchemaType.AdditionalProperties = []byte("true")
@@ -341,15 +326,12 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 
 	logger.Debugf("Converting message: %s", proto.MarshalTextString(msg))
 	for _, fieldDesc := range msg.GetField() {
-		// if isMap(fieldDesc, msg) {
-		// 	continue
-		// }
 		recursedJSONSchemaType, err := g.convertField(curPkg, fieldDesc, msg)
 		if err != nil {
 			logger.Errorf("Failed to convert field %s in %s: %v", fieldDesc.GetName(), msg.GetName(), err)
 			return jsonSchemaType, err
 		}
-		jsonSchemaType.Properties[fieldDesc.GetName()] = recursedJSONSchemaType
+		jsonSchemaType.Properties[fieldDesc.GetJsonName()] = recursedJSONSchemaType
 	}
 	return jsonSchemaType, nil
 }
@@ -381,14 +363,6 @@ func (g *generator) convertFile(file *descriptor.FileDescriptorProto) ([]*jsonsc
 
 	// Prepare a list of responses:
 	response := make([]*jsonschema.Type, 0, len(file.GetMessageType()))
-
-	// Warn about multiple messages / enums in files:
-	if len(file.GetMessageType()) > 1 {
-		logger.Warnf("protoc-gen-jsonschema will create multiple MESSAGE schemas (%d) from one proto file (%v)", len(file.GetMessageType()), protoFileName)
-	}
-	if len(file.GetEnumType()) > 1 {
-		logger.Warnf("protoc-gen-jsonschema will create multiple ENUM schemas (%d) from one proto file (%v)", len(file.GetEnumType()), protoFileName)
-	}
 
 	// Generate standalone ENUMs:
 	if len(file.GetMessageType()) == 0 {
@@ -436,6 +410,7 @@ func (g *generator) convertFile(file *descriptor.FileDescriptorProto) ([]*jsonsc
 
 func (g *generator) recursivelyConvertFields(curPkg *prototree.ProtoPackage, msg *descriptor.DescriptorProto) ([]*jsonschema.Type, error) {
 	result := make([]*jsonschema.Type, 0, len(msg.GetNestedType())+1)
+
 	jsonSchema, err := g.convertMessageType(curPkg, msg)
 	if err != nil {
 		return nil, err
@@ -478,11 +453,18 @@ func (s *schemaMap) Set(key string, val *jsonschema.Type) {
 	s.data[key] = val
 }
 
+type Options struct {
+	AllowNullValues              bool
+	DisallowAdditionalProperties bool
+	DisallowBigIntsAsStrings     bool
+}
+
 type generator struct {
 	// Internal objects used to construct schema types, and build kube schemas
 	protoPackage   *prototree.ProtoPackage
 	fs             afero.Fs
 	generatedTypes *schemaMap
+	opts           *Options
 }
 
 func (g *generator) KubeConvert(resource *model.Resource) (*v1beta1.JSONSchemaProps, error) {
@@ -510,7 +492,7 @@ func (g *generator) Convert(resource *model.Resource) (*jsonschema.Type, error) 
 	definitions[preGenType.Title] = preGenType
 	result := &jsonschema.Type{
 		Version:     jsonschema.Version,
-		Ref:         preGenType.Ref,
+		Ref:         schemaRefName(resource.ProtoPackage, resource.Name),
 		Definitions: definitions,
 	}
 	return result, nil
@@ -551,9 +533,11 @@ func (g *generator) buildKubeSpec(recursedType *jsonschema.Type) ([]*jsonschema.
 	return result, nil
 }
 
-func NewGenerator(req *plugin.CodeGeneratorRequest) (*generator, error) {
-
-	g := &generator{protoPackage: prototree.NewProtoTree(), fs: afero.NewOsFs(), generatedTypes: newSchemaMap()}
+func NewGenerator(req *plugin.CodeGeneratorRequest, opts *Options) (*generator, error) {
+	if opts == nil {
+		opts = defaultOptions
+	}
+	g := &generator{protoPackage: prototree.NewProtoTree(), fs: afero.NewOsFs(), generatedTypes: newSchemaMap(), opts: opts}
 	wg := &sync.WaitGroup{}
 	for _, file := range req.GetProtoFile() {
 		for _, msg := range file.GetMessageType() {
