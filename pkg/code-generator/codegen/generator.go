@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"text/template"
 
@@ -46,20 +45,25 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 			continue
 		}
 
+		fs, err := generateFilesForResource(res)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, fs...)
+
 		if res.ProtoPackage != "" {
 			result, err := generator.Convert(res)
 			if err != nil {
 				return nil, err
 			}
 			byt, err := generator.Marshal(result)
-			fmt.Println(string(byt))
+			res.JsonSchema = string(byt)
+			crdFiles, err := generateFilesForSolokitCrd(res)
+			if err != nil {
+				return nil, err
+			}
+			files = append(files, crdFiles...)
 		}
-
-		fs, err := generateFilesForResource(res)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, fs...)
 	}
 	for _, grp := range project.ResourceGroups {
 		if skipOutOfPackageFiles && !(strings.HasSuffix(grp.Name, "."+project.ProtoPackage) || grp.Name == project.ProtoPackage) {
@@ -106,6 +110,23 @@ func generateFilesForXdsResource(resource *model.XDSResource) (code_generator.Fi
 		content, err := generateXdsResourceFile(resource, tmpl)
 		if err != nil {
 			return nil, err
+		}
+		v = append(v, code_generator.File{
+			Filename: strcase.ToSnake(resource.Name) + suffix,
+			Content:  content,
+		})
+	}
+	return v, nil
+}
+
+func generateFilesForSolokitCrd(resource *model.Resource) (code_generator.Files, error) {
+	var v code_generator.Files
+	for suffix, tmpl := range map[string]*template.Template{
+		"_jsonschema.sk.go": templates.JsonSchemaTemplate,
+	} {
+		content, err := generateResourceFile(resource, tmpl)
+		if err != nil {
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource %v failed", tmpl.ParseName, resource.Name)
 		}
 		v = append(v, code_generator.File{
 			Filename: strcase.ToSnake(resource.Name) + suffix,

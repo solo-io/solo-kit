@@ -91,22 +91,6 @@ func (pkg *ProtoPackage) LookupType(name string) (*descriptor.DescriptorProto, b
 	return nil, false
 }
 
-// func (pkg *ProtoPackage) GetJsonName(name string) (string, bool) {
-// 	pkg, ok := pkg.RelativelyLookupPackage(name)
-// 	if !ok {
-// 		return "", false
-// 	}
-// 	if pkg.parent == nil {
-// 		return "", false
-// 	}
-// 	pkg = pkg.parent
-// 	for _, child := range pkg.types {
-// 		if child.GetName() == name {
-// 			return child
-// 		}
-// 	}
-// }
-
 func relativelyLookupNestedType(desc *descriptor.DescriptorProto, name string) (*descriptor.DescriptorProto, bool) {
 	components := strings.Split(name, ".")
 componentLoop:
