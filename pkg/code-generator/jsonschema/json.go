@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/alecthomas/jsonschema"
 	"github.com/gogo/protobuf/proto"
@@ -66,53 +65,6 @@ var (
 	}
 )
 
-type ResourceStackItem struct {
-	desc *descriptor.DescriptorProto
-}
-
-type ResourceStack interface {
-	Push(item *ResourceStackItem)
-	Pop() *ResourceStackItem
-	Contains(descriptorProto *descriptor.DescriptorProto) *ResourceStackItem
-}
-
-type resourceStack struct {
-	stack []*ResourceStackItem
-	sync.Mutex
-}
-
-func (r *resourceStack) Contains(descriptorProto *descriptor.DescriptorProto) *ResourceStackItem {
-	for _, v := range r.stack {
-		if v.desc.GetName() == descriptorProto.GetName() {
-			return v
-		}
-	}
-	return nil
-}
-
-func NewResourceStack() *resourceStack {
-	return &resourceStack{
-		stack: make([]*ResourceStackItem, 0, 8),
-	}
-}
-
-func (r *resourceStack) Push(item *ResourceStackItem) {
-	r.Lock()
-	defer r.Unlock()
-	r.stack = append(r.stack, item)
-}
-
-func (r *resourceStack) Pop() *ResourceStackItem {
-	r.Lock()
-	defer r.Unlock()
-	var val *ResourceStackItem
-	if len(r.stack) > 0 {
-		val = r.stack[len(r.stack)-1]
-		r.stack = r.stack[0 : len(r.stack)-1]
-	}
-	return val
-}
-
 // ProtoPackage describes a package of Protobuf, which is an container of message types.
 type ProtoPackage struct {
 	name     string
@@ -133,6 +85,13 @@ func NewProtoPackage() *ProtoPackage {
 func (pkg *ProtoPackage) reset() {
 	pkg.children = make(map[string]*ProtoPackage)
 	pkg.types = make(map[string]*descriptor.DescriptorProto)
+}
+
+func (pkg *ProtoPackage) registerMessage(pkgName *string, msg *descriptor.DescriptorProto) {
+	pkg.registerType(pkgName, msg)
+	for _, v := range msg.GetNestedType() {
+		pkg.registerMessage(proto.String(fmt.Sprintf("%s.%s", *pkgName, msg.GetName())), v)
+	}
 }
 
 func (pkg *ProtoPackage) registerType(pkgName *string, msg *descriptor.DescriptorProto) {
@@ -331,7 +290,8 @@ func (g *generator) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 	case descriptor.FieldDescriptorProto_TYPE_GROUP,
 		descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		jsonSchemaType.Type = gojsonschema.TYPE_OBJECT
-		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL {
+		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL ||
+			(desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REQUIRED && isMap(desc, msg)) {
 			jsonSchemaType.AdditionalProperties = []byte("true")
 		}
 		if desc.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REQUIRED {
@@ -379,7 +339,7 @@ func (g *generator) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 		var recursedJSONSchemaType *jsonschema.Type
 		var err error
 		if nestedMessagesAsReferences {
-			recursedJSONSchemaType = convertMessageTypeReference(desc.GetTypeName(), recordType)
+			recursedJSONSchemaType = convertMessageTypeReference(desc, recordType)
 		} else {
 			recursedJSONSchemaType, err = g.convertMessageType(curPkg, recordType)
 		}
@@ -407,7 +367,9 @@ func (g *generator) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 			}
 			jsonSchemaType.Type = ""
 		}
-		g.generatedTypes[recursedJSONSchemaType.Title] = recursedJSONSchemaType
+		if _, ok := g.generatedTypes[recursedJSONSchemaType.Title]; !ok {
+			g.generatedTypes[recursedJSONSchemaType.Title] = recursedJSONSchemaType
+		}
 	}
 
 	return jsonSchemaType, nil
@@ -421,11 +383,21 @@ func isMap(desc *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProt
 	}
 	for _, v := range msg.GetNestedType() {
 		if v.GetName() == packageName {
+			if len(v.GetField()) != 2 {
+				break
+			}
+			key, value := false, false
 			for _, field := range v.GetField() {
 				// Best guess that this is a map
 				if field.GetName() == "key" && field.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
-					return true
+					key = true
 				}
+				if field.GetName() == "value" {
+					value = true
+				}
+			}
+			if key && value {
+				return true
 			}
 		}
 	}
@@ -443,15 +415,15 @@ func schemaTitleName(packageName, name string) string {
 	return fmt.Sprintf("%s.%s", packageName, name)
 }
 
-func convertMessageTypeReference(pkgName string, msg *descriptor.DescriptorProto) *jsonschema.Type {
-	pkgName = strings.TrimPrefix(pkgName, ".")
-	// Prepare a new jsonschema:
+func convertMessageTypeReference(pkg *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProto) *jsonschema.Type {
+	pkgName := strings.TrimPrefix(pkg.GetTypeName(), ".")
 	jsonSchemaType := &jsonschema.Type{
 		Properties: make(map[string]*jsonschema.Type),
 		Version:    jsonschema.Version,
 		Ref:        fmt.Sprintf("#/definitions/%s", pkgName),
 		Title:      pkgName,
 	}
+
 	return jsonSchemaType
 }
 
@@ -485,6 +457,9 @@ func (g *generator) convertMessageType(curPkg *ProtoPackage, msg *descriptor.Des
 
 	logger.Debugf("Converting message: %s", proto.MarshalTextString(msg))
 	for _, fieldDesc := range msg.GetField() {
+		// if isMap(fieldDesc, msg) {
+		// 	continue
+		// }
 		recursedJSONSchemaType, err := g.convertField(curPkg, fieldDesc, msg)
 		if err != nil {
 			logger.Errorf("Failed to convert field %s in %s: %v", fieldDesc.GetName(), msg.GetName(), err)
@@ -553,18 +528,35 @@ func (g *generator) convertFile(file *descriptor.FileDescriptorProto) ([]*jsonsc
 		for _, msg := range file.GetMessageType() {
 			jsonSchemaFileName := fmt.Sprintf("%s.jsonschema", msg.GetName())
 			logger.Infof("Generating JSON-schema for MESSAGE (%v) in file [%v] => %v", msg.GetName(), protoFileName, jsonSchemaFileName)
-			messageJSONSchema, err := g.convertMessageType(pkg, msg)
+			messageJSONSchemas, err := g.recursivelyConvertFields(pkg, msg)
 			if err != nil {
 				logger.Errorf("Failed to convert %s: %v", protoFileName, err)
 				return nil, err
 			} else {
 				// Marshal the JSON-Schema into JSON:
-				response = append(response, messageJSONSchema)
+				response = append(response, messageJSONSchemas...)
 			}
 		}
 	}
 
 	return response, nil
+}
+
+func (g *generator) recursivelyConvertFields(curPkg *ProtoPackage, msg *descriptor.DescriptorProto) ([]*jsonschema.Type, error) {
+	result := make([]*jsonschema.Type, 0, len(msg.GetNestedType())+1)
+	jsonSchema, err := g.convertMessageType(curPkg, msg)
+	if err != nil {
+		return nil, err
+	}
+	result = append(result, jsonSchema)
+	for _, nested := range msg.GetNestedType() {
+		jsonSchemas, err := g.recursivelyConvertFields(curPkg, nested)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, jsonSchemas...)
+	}
+	return result, nil
 }
 
 type Generator interface {
@@ -630,6 +622,8 @@ func (g *generator) buildKubeSpec(recursedType *jsonschema.Type) ([]*jsonschema.
 	}
 	if len(pregenTypes) == 0 {
 		result = append(result, recursedType)
+	} else {
+		result = append(result, pregenTypes...)
 	}
 	for _, preGenType := range pregenTypes {
 		recursiveResult, err := g.buildKubeSpec(preGenType)
@@ -650,7 +644,7 @@ func NewGenerator(req *plugin.CodeGeneratorRequest) (*generator, error) {
 	for _, file := range req.GetProtoFile() {
 		for _, msg := range file.GetMessageType() {
 			logger.Debugf("Loading a message type %s from package %s", msg.GetName(), file.GetPackage())
-			g.protoPackage.registerType(file.Package, msg)
+			g.protoPackage.registerMessage(file.Package, msg)
 		}
 	}
 
