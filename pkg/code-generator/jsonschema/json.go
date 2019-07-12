@@ -315,11 +315,11 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 	}
 
 	// DisallowAdditionalProperties will prevent validation where extra fields are found (outside of the schema):
-	if g.opts.DisallowAdditionalProperties {
-		jsonSchemaType.AdditionalProperties = []byte("false")
-	} else {
-		jsonSchemaType.AdditionalProperties = []byte("true")
-	}
+	// if g.opts.DisallowAdditionalProperties {
+	// 	jsonSchemaType.AdditionalProperties = []byte("false")
+	// } else {
+	// 	jsonSchemaType.AdditionalProperties = []byte("true")
+	// }
 
 	logger.Debugf("Converting message: %s", proto.MarshalTextString(msg))
 
@@ -335,7 +335,11 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 				logger.Errorf("Failed to convert field %s in %s: %v", fieldDesc.GetName(), msg.GetName(), err)
 				return jsonSchemaType, err
 			}
-			oneOfFields = append(oneOfFields, childJsonType)
+			props := make(map[string]*jsonschema.Type, 1)
+			props[fieldDesc.GetJsonName()] = childJsonType
+			oneOfFields = append(oneOfFields, &jsonschema.Type{
+				Properties: props,
+			})
 		}
 		oneOfType := &jsonschema.Type{
 			Type:  gojsonschema.TYPE_OBJECT,
@@ -345,7 +349,15 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 	}
 
 	if len(oneOfTypes) > 1 {
-
+		anyOf := &jsonschema.Type{
+			Version: jsonschema.Version,
+			AnyOf:   oneOfTypes,
+		}
+		byt, err := g.Marshal(anyOf)
+		if err != nil {
+			return nil, err
+		}
+		jsonSchemaType.AdditionalProperties = byt
 	} else if len(oneOfTypes) == 1 {
 		byt, err := g.Marshal(oneOfTypes[0])
 		if err != nil {
@@ -463,25 +475,28 @@ type Generator interface {
 }
 
 type schemaMap struct {
-	data map[string]*jsonschema.Type
+	data map[string]jsonschema.Type
 	sync.RWMutex
 }
 
 func newSchemaMap() *schemaMap {
-	return &schemaMap{data: make(map[string]*jsonschema.Type)}
+	return &schemaMap{data: make(map[string]jsonschema.Type)}
 }
 
 func (s *schemaMap) Get(key string) (*jsonschema.Type, bool) {
 	s.RLock()
 	defer s.RUnlock()
 	val, ok := s.data[key]
-	return val, ok
+	return &val, ok
 }
 
 func (s *schemaMap) Set(key string, val *jsonschema.Type) {
 	s.Lock()
 	defer s.Unlock()
-	s.data[key] = val
+	// if _, ok := s.data[key]; ok {
+	// 	return
+	// }
+	s.data[key] = *val
 }
 
 type Options struct {
@@ -514,11 +529,11 @@ func (g *generator) Convert(resource *model.Resource) (*jsonschema.Type, error) 
 
 	definitions := make(jsonschema.Definitions, len(allTypesToAdd))
 	for _, v := range allTypesToAdd {
-		preGenType, ok := g.generatedTypes.Get(v.Title)
+		nestedPreGenType, ok := g.generatedTypes.Get(v.Title)
 		if !ok {
 			return nil, errors.Errorf("could not find ref to previously existing type")
 		}
-		definitions[v.Title] = preGenType
+		definitions[v.Title] = nestedPreGenType
 	}
 	definitions[preGenType.Title] = preGenType
 	result := &jsonschema.Type{

@@ -33,7 +33,6 @@ var FakeResourceJsonSchema = `
                     "type": "string"
                 }
             },
-            "additionalProperties": true,
             "type": "object",
             "title": "core.solo.io.Metadata"
         },
@@ -50,7 +49,6 @@ var FakeResourceJsonSchema = `
                     "title": "core.solo.io.Metadata"
                 }
             },
-            "additionalProperties": true,
             "type": "object",
             "title": "testing.solo.io.FakeResource"
         }

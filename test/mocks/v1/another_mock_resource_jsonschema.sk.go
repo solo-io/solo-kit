@@ -33,7 +33,6 @@ var AnotherMockResourceJsonSchema = `
                     "type": "string"
                 }
             },
-            "additionalProperties": true,
             "type": "object",
             "title": "core.solo.io.Metadata"
         },
@@ -70,7 +69,6 @@ var AnotherMockResourceJsonSchema = `
                     "title": "core.solo.io.Status.SubresourceStatusesEntry"
                 }
             },
-            "additionalProperties": true,
             "type": "object",
             "title": "core.solo.io.Status"
         },
@@ -93,7 +91,6 @@ var AnotherMockResourceJsonSchema = `
                     "title": "core.solo.io.Status"
                 }
             },
-            "additionalProperties": true,
             "type": "object",
             "title": "testing.solo.io.AnotherMockResource"
         }
