@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"log"
 	"sort"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -155,5 +157,9 @@ var (
 func init() {
 	if err := crd.AddCrd(MockResourceCrd); err != nil {
 		log.Fatalf("could not add crd to global registry")
+	}
+
+	if err := json.Unmarshal([]byte(MockResourceJsonSchema), &v1beta1.JSONSchemaProps{}); err != nil {
+		log.Fatalf("could not unmarshal MockResource json schema into kube json schema props")
 	}
 }

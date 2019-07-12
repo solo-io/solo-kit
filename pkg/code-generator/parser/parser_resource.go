@@ -36,8 +36,11 @@ type ProtoMessageWrapper struct {
 
 func getResource(resources []*model.Resource, project model.ProjectConfig, cfg model.ResourceConfig) (*model.Resource, error) {
 	matches := func(res *model.Resource) bool {
+		// TODO(Eitanya) make this logic simpler by switching to just checking equality of name and proto package
 		if res.Name == cfg.ResourceName &&
-			(strings.HasPrefix(res.ProtoPackage, cfg.ResourcePackage) || res.GoPackage == cfg.ResourcePackage) {
+			((strings.HasPrefix(res.ProtoPackage, cfg.ResourcePackage) && cfg.ResourceVersion != "") ||
+				res.ProtoPackage == cfg.ResourcePackage ||
+				res.GoPackage == cfg.ResourcePackage) {
 			if cfg.ResourceVersion == "" {
 				return true
 			}
