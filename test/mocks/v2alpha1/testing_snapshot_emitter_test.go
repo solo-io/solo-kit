@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
+	testing_solo_io_v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -43,7 +43,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		kube               kubernetes.Interface
 		emitter            TestingEmitter
 		mockResourceClient MockResourceClient
-		fakeResourceClient testing_solo_io.FakeResourceClient
+		fakeResourceClient testing_solo_io_v1.FakeResourceClient
 	)
 
 	BeforeEach(func() {
@@ -68,7 +68,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		fakeResourceClient, err = testing_solo_io.NewFakeResourceClient(fakeResourceClientFactory)
+		fakeResourceClient, err = testing_solo_io_v1.NewFakeResourceClient(fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient)
 	})
@@ -150,7 +150,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			FakeResource
 		*/
 
-		assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+		assertSnapshotFakes := func(expectFakes testing_solo_io_v1.FakeResourceList, unexpectFakes testing_solo_io_v1.FakeResourceList) {
 		drain:
 			for {
 				select {
@@ -176,32 +176,32 @@ var _ = Describe("V2Alpha1Emitter", func() {
 				}
 			}
 		}
-		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io_v1.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
-		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io_v1.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
+		assertSnapshotFakes(testing_solo_io_v1.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
+		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io_v1.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io_v1.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFakes(testing_solo_io_v1.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
 
 		err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b})
+		assertSnapshotFakes(testing_solo_io_v1.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io_v1.FakeResourceList{fakeResource2a, fakeResource2b})
 
 		err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(nil, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
+		assertSnapshotFakes(nil, testing_solo_io_v1.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
 	})
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
@@ -277,7 +277,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			FakeResource
 		*/
 
-		assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+		assertSnapshotFakes := func(expectFakes testing_solo_io_v1.FakeResourceList, unexpectFakes testing_solo_io_v1.FakeResourceList) {
 		drain:
 			for {
 				select {
@@ -303,31 +303,31 @@ var _ = Describe("V2Alpha1Emitter", func() {
 				}
 			}
 		}
-		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io_v1.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
-		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io_v1.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
+		assertSnapshotFakes(testing_solo_io_v1.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
+		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io_v1.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io_v1.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFakes(testing_solo_io_v1.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
 
 		err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b})
+		assertSnapshotFakes(testing_solo_io_v1.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io_v1.FakeResourceList{fakeResource2a, fakeResource2b})
 
 		err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(nil, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
+		assertSnapshotFakes(nil, testing_solo_io_v1.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
 	})
 })

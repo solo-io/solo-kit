@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
+	testing_solo_io_v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,7 +36,7 @@ var _ = Describe("TestingEventLoop", func() {
 		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		fakeResourceClient, err := testing_solo_io.NewFakeResourceClient(fakeResourceClientFactory)
+		fakeResourceClient, err := testing_solo_io_v1.NewFakeResourceClient(fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient)
@@ -44,7 +44,7 @@ var _ = Describe("TestingEventLoop", func() {
 	It("runs sync function on a new snapshot", func() {
 		_, err = emitter.MockResource().Write(NewMockResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.FakeResource().Write(testing_solo_io.NewFakeResource(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.FakeResource().Write(testing_solo_io_v1.NewFakeResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockTestingSyncer{}
 		el := NewTestingEventLoop(emitter, sync)

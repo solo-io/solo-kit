@@ -18,19 +18,19 @@
     "testing.solo.io": [
       {
         "name": "MockResource",
-        "package": "testing.solo.io"
+        "package": "testing.solo.io.v1"
       },
       {
         "name": "FakeResource",
-        "package": "testing.solo.io"
+        "package": "testing.solo.io.v1"
       },
       {
         "name": "AnotherMockResource",
-        "package": "testing.solo.io"
+        "package": "testing.solo.io.v1"
       },
       {
         "name": "ClusterResource",
-        "package": "testing.solo.io"
+        "package": "testing.solo.io.v1"
       },
       {
         "name": "MockCustomType",

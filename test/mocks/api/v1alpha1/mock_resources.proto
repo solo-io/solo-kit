@@ -9,7 +9,7 @@ syntax = "proto3";
 package Comments
 package Comments a
 */
-package testing.solo.io;
+package testing.solo.io.v1alpha1;
 /*
 go_package Comments
 go_package Comments a
@@ -41,14 +41,14 @@ Mock resources for goofin off
 */
 message MockResource {
 
-    option (core.solo.io.resource).short_name = "mk";
-    option (core.solo.io.resource).plural_name = "mocks";
+    option (core.solo.io.v1.resource).short_name = "mk";
+    option (core.solo.io.v1.resource).plural_name = "mocks";
 
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.v1.Status status = 6 [(gogoproto.nullable) = false];
+    core.solo.io.v1.Metadata metadata = 7 [(gogoproto.nullable) = false];
 
     string data = 1 [json_name="data.json", (gogoproto.jsontag) = "data.json"];
-    string some_dumb_field = 100 [(core.solo.io.skip_hashing) = true];
+    string some_dumb_field = 100 [(core.solo.io.v1.skip_hashing) = true];
 
     oneof test_oneof_fields {
         string oneof_one = 3;
@@ -58,9 +58,9 @@ message MockResource {
 
 message FakeResource {
 
-    option (core.solo.io.resource).short_name = "fk";
-    option (core.solo.io.resource).plural_name = "fakes";
+    option (core.solo.io.v1.resource).short_name = "fk";
+    option (core.solo.io.v1.resource).plural_name = "fakes";
 
     uint32 count = 1;
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.v1.Metadata metadata = 7 [(gogoproto.nullable) = false];
 }

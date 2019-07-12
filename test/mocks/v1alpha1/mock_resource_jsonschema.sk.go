@@ -5,15 +5,15 @@ package v1alpha1
 var MockResourceJsonSchema = `
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "$ref": "#/definitions/testing.solo.io.MockResource",
+    "$ref": "#/definitions/testing.solo.io.v1alpha1.MockResource",
     "definitions": {
-        "core.solo.io.Metadata": {
+        "core.solo.io.v1.Metadata": {
             "$schema": "http://json-schema.org/draft-04/schema#",
             "properties": {
                 "annotations": {
                     "additionalProperties": true,
                     "type": "object",
-                    "title": "core.solo.io.Metadata.AnnotationsEntry"
+                    "title": "core.solo.io.v1.Metadata.AnnotationsEntry"
                 },
                 "cluster": {
                     "type": "string"
@@ -21,7 +21,7 @@ var MockResourceJsonSchema = `
                 "labels": {
                     "additionalProperties": true,
                     "type": "object",
-                    "title": "core.solo.io.Metadata.LabelsEntry"
+                    "title": "core.solo.io.v1.Metadata.LabelsEntry"
                 },
                 "name": {
                     "type": "string"
@@ -34,9 +34,9 @@ var MockResourceJsonSchema = `
                 }
             },
             "type": "object",
-            "title": "core.solo.io.Metadata"
+            "title": "core.solo.io.v1.Metadata"
         },
-        "core.solo.io.Status": {
+        "core.solo.io.v1.Status": {
             "$schema": "http://json-schema.org/draft-04/schema#",
             "properties": {
                 "reason": {
@@ -66,73 +66,55 @@ var MockResourceJsonSchema = `
                 "subresourceStatuses": {
                     "additionalProperties": true,
                     "type": "object",
-                    "title": "core.solo.io.Status.SubresourceStatusesEntry"
+                    "title": "core.solo.io.v1.Status.SubresourceStatusesEntry"
                 }
             },
             "type": "object",
-            "title": "core.solo.io.Status"
+            "title": "core.solo.io.v1.Status"
         },
-        "testing.solo.io.MockResource": {
+        "testing.solo.io.v1alpha1.MockResource": {
             "$schema": "http://json-schema.org/draft-04/schema#",
             "properties": {
+                "data.json": {
+                    "type": "string"
+                },
                 "metadata": {
-                    "$ref": "#/definitions/core.solo.io.Metadata",
+                    "$ref": "#/definitions/core.solo.io.v1.Metadata",
                     "additionalProperties": true,
                     "type": "object",
-                    "title": "core.solo.io.Metadata"
+                    "title": "core.solo.io.v1.Metadata"
+                },
+                "someDumbField": {
+                    "type": "string"
                 },
                 "status": {
-                    "$ref": "#/definitions/core.solo.io.Status",
+                    "$ref": "#/definitions/core.solo.io.v1.Status",
                     "additionalProperties": true,
                     "type": "object",
-                    "title": "core.solo.io.Status"
+                    "title": "core.solo.io.v1.Status"
                 }
             },
             "additionalProperties": {
-                "$schema": "http://json-schema.org/draft-04/schema#",
-                "anyOf": [
+                "type": "object",
+                "oneOf": [
                     {
-                        "type": "object",
-                        "oneOf": [
-                            {
-                                "properties": {
-                                    "someDumbField": {
-                                        "type": "string"
-                                    }
-                                }
-                            },
-                            {
-                                "properties": {
-                                    "data.json": {
-                                        "type": "string"
-                                    }
-                                }
+                        "properties": {
+                            "oneofOne": {
+                                "type": "string"
                             }
-                        ]
+                        }
                     },
                     {
-                        "type": "object",
-                        "oneOf": [
-                            {
-                                "properties": {
-                                    "oneofOne": {
-                                        "type": "string"
-                                    }
-                                }
-                            },
-                            {
-                                "properties": {
-                                    "oneofTwo": {
-                                        "type": "boolean"
-                                    }
-                                }
+                        "properties": {
+                            "oneofTwo": {
+                                "type": "boolean"
                             }
-                        ]
+                        }
                     }
                 ]
             },
             "type": "object",
-            "title": "testing.solo.io.MockResource"
+            "title": "testing.solo.io.v1alpha1.MockResource"
         }
     }
 }

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package core.solo.io;
+package core.solo.io.v1;
 option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
 
 // This file contains Options for Proto Messages/Fields/Enums for use with Solo-Kit

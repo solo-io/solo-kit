@@ -8,7 +8,7 @@
     "testing.solo.io": [
       {
         "name": "MockResource",
-        "package": "testing.solo.io"
+        "package": "testing.solo.io.v1alpha1"
       }
     ]
   }

@@ -16,8 +16,8 @@ import (
 const (
 	// solo-kit types
 	// required fields
-	metadataTypeName = ".core.solo.io.Metadata"
-	statusTypeName   = ".core.solo.io.Status"
+	metadataTypeName = ".core.solo.io.v1.Metadata"
+	statusTypeName   = ".core.solo.io.v1.Status"
 
 	// magic comments
 	// Deprecated, use Message Option (core.solo.io.resource).short_name
@@ -37,7 +37,7 @@ type ProtoMessageWrapper struct {
 func getResource(resources []*model.Resource, project model.ProjectConfig, cfg model.ResourceConfig) (*model.Resource, error) {
 	matches := func(res *model.Resource) bool {
 		if res.Name == cfg.ResourceName &&
-			(res.ProtoPackage == cfg.ResourcePackage || res.GoPackage == cfg.ResourcePackage) {
+			(strings.HasPrefix(res.ProtoPackage, cfg.ResourcePackage) || res.GoPackage == cfg.ResourcePackage) {
 			if cfg.ResourceVersion == "" {
 				return true
 			}

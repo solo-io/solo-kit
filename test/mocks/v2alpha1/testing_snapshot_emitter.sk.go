@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
+	testing_solo_io_v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -44,15 +44,15 @@ func init() {
 type TestingEmitter interface {
 	Register() error
 	MockResource() MockResourceClient
-	FakeResource() testing_solo_io.FakeResourceClient
+	FakeResource() testing_solo_io_v1.FakeResourceClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient) TestingEmitter {
+func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient testing_solo_io_v1.FakeResourceClient) TestingEmitter {
 	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient testing_solo_io_v1.FakeResourceClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
 		mockResource: mockResourceClient,
 		fakeResource: fakeResourceClient,
@@ -63,7 +63,7 @@ func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResour
 type testingEmitter struct {
 	forceEmit    <-chan struct{}
 	mockResource MockResourceClient
-	fakeResource testing_solo_io.FakeResourceClient
+	fakeResource testing_solo_io_v1.FakeResourceClient
 }
 
 func (c *testingEmitter) Register() error {
@@ -80,7 +80,7 @@ func (c *testingEmitter) MockResource() MockResourceClient {
 	return c.mockResource
 }
 
-func (c *testingEmitter) FakeResource() testing_solo_io.FakeResourceClient {
+func (c *testingEmitter) FakeResource() testing_solo_io_v1.FakeResourceClient {
 	return c.fakeResource
 }
 
@@ -108,7 +108,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	mockResourceChan := make(chan mockResourceListWithNamespace)
 	/* Create channel for FakeResource */
 	type fakeResourceListWithNamespace struct {
-		list      testing_solo_io.FakeResourceList
+		list      testing_solo_io_v1.FakeResourceList
 		namespace string
 	}
 	fakeResourceChan := make(chan fakeResourceListWithNamespace)
@@ -176,7 +176,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			snapshots <- &sentSnapshot
 		}
 		mocksByNamespace := make(map[string]MockResourceList)
-		fakesByNamespace := make(map[string]testing_solo_io.FakeResourceList)
+		fakesByNamespace := make(map[string]testing_solo_io_v1.FakeResourceList)
 
 		for {
 			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }
@@ -211,7 +211,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				// merge lists by namespace
 				fakesByNamespace[namespace] = fakeResourceNamespacedList.list
-				var fakeResourceList testing_solo_io.FakeResourceList
+				var fakeResourceList testing_solo_io_v1.FakeResourceList
 				for _, fakes := range fakesByNamespace {
 					fakeResourceList = append(fakeResourceList, fakes...)
 				}

@@ -5,7 +5,7 @@ package v2alpha1
 import (
 	"fmt"
 
-	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
+	testing_solo_io_v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
@@ -13,7 +13,7 @@ import (
 
 type TestingSnapshot struct {
 	Mocks MockResourceList
-	Fakes testing_solo_io.FakeResourceList
+	Fakes testing_solo_io_v1.FakeResourceList
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {

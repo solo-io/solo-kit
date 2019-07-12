@@ -1,5 +1,5 @@
 syntax = "proto3";
-package testing.solo.io;
+package testing.solo.io.v2alpha1;
 option go_package = "github.com/solo-io/solo-kit/test/mocks/v2alpha1";
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
@@ -12,14 +12,14 @@ option (gogoproto.equal_all) = true;
 The best mock resource you ever done seen
 */
 message MockResource {
-    option (core.solo.io.resource).short_name = "mk";
-    option (core.solo.io.resource).plural_name = "mocks";
+    option (core.solo.io.v1.resource).short_name = "mk";
+    option (core.solo.io.v1.resource).plural_name = "mocks";
 
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.v1.Status status = 6 [(gogoproto.nullable) = false];
+    core.solo.io.v1.Metadata metadata = 7 [(gogoproto.nullable) = false];
 
     oneof we_stuck_it_in_a_oneof {
-        string some_dumb_field = 100 [(core.solo.io.skip_hashing) = true];
+        string some_dumb_field = 100 [(core.solo.io.v1.skip_hashing) = true];
         string data = 1 [json_name = "data.json", (gogoproto.jsontag) = "data.json"];
     }
 
