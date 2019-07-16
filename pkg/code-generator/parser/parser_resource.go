@@ -72,7 +72,7 @@ func getResources(version *model.Version, apiGroup *model.ApiGroup, messages []P
 				break
 			}
 		}
-		resource.Project = version
+		resource.ParentVersion = version
 		resources = append(resources, resource)
 	}
 
@@ -88,7 +88,7 @@ func getResources(version *model.Version, apiGroup *model.ApiGroup, messages []P
 			ClusterScoped:      custom.ClusterScoped,
 			CustomImportPrefix: impPrefix,
 			SkipDocsGen:        true,
-			Project:            version,
+			ParentVersion:      version,
 			IsCustom:           true,
 			CustomResource:     custom,
 		})

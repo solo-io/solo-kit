@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse(`package {{ .Project.VersionConfig.Version }}
+var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse(`package {{ .ParentVersion.VersionConfig.Version }}
 
 import (
 	"sort"
@@ -195,15 +195,15 @@ func (o *{{ .Name }}) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*{{ .Name }})
 }
 
-{{- $crdGroupName := .Project.ProtoPackage }}
-{{- if ne .Project.VersionConfig.ApiGroup.CrdGroupOverride "" }}
-{{- $crdGroupName = .Project.VersionConfig.ApiGroup.CrdGroupOverride }}
+{{- $crdGroupName := .ParentVersion.ProtoPackage }}
+{{- if ne .ParentVersion.VersionConfig.ApiGroup.CrdGroupOverride "" }}
+{{- $crdGroupName = .ParentVersion.VersionConfig.ApiGroup.CrdGroupOverride }}
 {{- end}}
 
 
 var (
 	{{ .Name }}GVK = schema.GroupVersionKind{
-		Version: "{{ .Project.VersionConfig.Version }}",
+		Version: "{{ .ParentVersion.VersionConfig.Version }}",
 		Group: "{{ $crdGroupName }}",
 		Kind: "{{ .Name }}",
 	}

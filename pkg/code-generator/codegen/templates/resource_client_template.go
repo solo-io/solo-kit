@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var ResourceClientTemplate = template.Must(template.New("resource_client").Funcs(Funcs).Parse(`package {{ .Project.VersionConfig.Version }}
+var ResourceClientTemplate = template.Must(template.New("resource_client").Funcs(Funcs).Parse(`package {{ .ParentVersion.VersionConfig.Version }}
 
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"

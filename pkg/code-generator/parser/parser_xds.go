@@ -86,13 +86,13 @@ func processMessagesAndServices(version *model.Version, msgs []*xdsMessage, svcs
 		}
 
 		resources = append(resources, &model.XDSResource{
-			MessageType:  message.name,
-			Name:         svc.name,
-			NameField:    message.nameField,
-			NoReferences: message.noReferences,
-			ProtoPackage: message.protoPackage,
-			Filename:     message.fileName,
-			Project:      version,
+			MessageType:   message.name,
+			Name:          svc.name,
+			NameField:     message.nameField,
+			NoReferences:  message.noReferences,
+			ProtoPackage:  message.protoPackage,
+			Filename:      message.fileName,
+			ParentVersion: version,
 		})
 	}
 

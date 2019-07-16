@@ -136,7 +136,7 @@ type Resource struct {
 	// resource groups i belong to
 	ResourceGroups []*ResourceGroup
 	// project i belong to
-	Project *Version
+	ParentVersion *Version
 
 	Filename string // the proto file where this resource is contained
 	Version  string // set during parsing from this resource's solo-kit.json
@@ -171,8 +171,8 @@ type XDSResource struct {
 	NameField    string
 	NoReferences bool
 
-	Project      *Version
-	ProtoPackage string // eg. gloo.solo.io
+	ParentVersion *Version
+	ProtoPackage  string // eg. gloo.solo.io
 
 	Filename string // the proto file where this resource is contained
 }
@@ -241,7 +241,7 @@ func detectGoPackageForVersion(versionDir string) (string, error) {
 		return "", err
 	}
 	if goPkg == "" {
-		return "", errors.Errorf("no go_package statement found in root dir of project %v", versionDir)
+		return "", errors.Errorf("no go_package statement found in root dir of version %v", versionDir)
 	}
 	return goPkg, nil
 }
