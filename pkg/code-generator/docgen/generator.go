@@ -89,8 +89,8 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 	return v, nil
 }
 
-func GenerateFiles(project *model.Version, docsOptions *options.DocsOptions) (code_generator.Files, error) {
-	protoFiles := protokit.ParseCodeGenRequest(project.Request)
+func GenerateFiles(version *model.Version, docsOptions *options.DocsOptions) (code_generator.Files, error) {
+	protoFiles := protokit.ParseCodeGenRequest(version.Request)
 	if docsOptions == nil {
 		docsOptions = &options.DocsOptions{}
 	}
@@ -101,7 +101,7 @@ func GenerateFiles(project *model.Version, docsOptions *options.DocsOptions) (co
 
 	docGenerator := DocsGen{
 		DocsOptions: *docsOptions,
-		Project:     project,
+		Project:     version,
 	}
 
 	files, err := docGenerator.GenerateFilesForProject()
@@ -174,9 +174,9 @@ func (d *DocsGen) GenerateFilesForProject() (code_generator.Files, error) {
 	return v, nil
 }
 
-func generateProjectFile(project *model.Version, tmpl *template.Template) (string, error) {
+func generateProjectFile(version *model.Version, tmpl *template.Template) (string, error) {
 	buf := &bytes.Buffer{}
-	if err := tmpl.Execute(buf, project); err != nil {
+	if err := tmpl.Execute(buf, version); err != nil {
 		return "", err
 	}
 	return buf.String(), nil

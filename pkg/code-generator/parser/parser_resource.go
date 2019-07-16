@@ -24,7 +24,7 @@ const (
 	shortNameDeclaration = "@solo-kit:resource.short_name="
 	// Deprecated, use Message Option (core.solo.io.resource).plural_name
 	pluralNameDeclaration = "@solo-kit:resource.plural_name="
-	// Deprecated, use projectConfig.ResourceGroups
+	// Deprecated, use versionConfig.ResourceGroups
 	resourceGroupsDeclaration = "@solo-kit:resource.resource_groups="
 )
 

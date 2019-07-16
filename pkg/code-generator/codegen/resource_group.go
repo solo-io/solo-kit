@@ -17,7 +17,6 @@ func GenerateResourceGroupFiles(apiGroup *model.ApiGroup, skipOutOfPackageFiles,
 	var files code_generator.Files
 
 	for _, grp := range apiGroup.ResourceGroupsFoo {
-		// TODO joekelley this check probably doesn't make sense
 		if skipOutOfPackageFiles && !(strings.HasSuffix(grp.Name, "."+apiGroup.Name) || grp.Name == apiGroup.Name) {
 			continue
 		}

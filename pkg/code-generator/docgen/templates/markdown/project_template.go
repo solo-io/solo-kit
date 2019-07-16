@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func ProjectDocsRootTemplate(project *model.Version, docsOptions *options.DocsOptions) *template.Template {
+func ProjectDocsRootTemplate(version *model.Version, docsOptions *options.DocsOptions) *template.Template {
 	str := `
 
 ### API Reference for {{ .VersionConfig.ApiGroup.SoloKitProject.Title}}
@@ -29,5 +29,5 @@ API Version: ` + "`{{ .VersionConfig.ApiGroup.Name }}.{{ .VersionConfig.Version 
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
 <!-- End of HubSpot Embed Code -->
 `
-	return template.Must(template.New("markdown_project").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(str))
+	return template.Must(template.New("markdown_project").Funcs(funcs.TemplateFuncs(version, docsOptions)).Parse(str))
 }

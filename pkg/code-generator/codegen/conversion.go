@@ -14,46 +14,46 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func GenerateConversionFiles(soloKitProject *model.ApiGroup, projects []*model.Version) (code_generator.Files, error) {
+func GenerateConversionFiles(soloKitProject *model.ApiGroup, versions []*model.Version) (code_generator.Files, error) {
 	var files code_generator.Files
 
-	sort.SliceStable(projects, func(i, j int) bool {
-		vi, err := kubeapi.ParseVersion(projects[i].VersionConfig.Version)
+	sort.SliceStable(versions, func(i, j int) bool {
+		vi, err := kubeapi.ParseVersion(versions[i].VersionConfig.Version)
 		if err != nil {
 			return false
 		}
-		vj, err := kubeapi.ParseVersion(projects[j].VersionConfig.Version)
+		vj, err := kubeapi.ParseVersion(versions[j].VersionConfig.Version)
 		if err != nil {
 			return false
 		}
 		return vi.LessThan(vj)
 	})
 
-	resourceNameToProjects := make(map[string][]*model.Version)
+	resourceNameToVersions := make(map[string][]*model.Version)
 
-	for index, project := range projects {
-		for _, res := range project.Resources {
+	for i, v := range versions {
+		for _, res := range v.Resources {
 			// only generate files for the resources in our group, otherwise we import
-			if !project.VersionConfig.IsOurProto(res.Filename) && !res.IsCustom {
+			if !v.VersionConfig.IsOurProto(res.Filename) && !res.IsCustom {
 				log.Printf("not generating solo-kit "+
 					"clients for resource %v.%v, "+
-					"resource proto package must match project proto package %v", res.ProtoPackage, res.Name, project.ProtoPackage)
+					"resource proto package must match v proto package %v", res.ProtoPackage, res.Name, v.ProtoPackage)
 				continue
 			} else if res.IsCustom && res.CustomResource.Imported {
 				log.Printf("not generating solo-kit "+
 					"clients for resource %v.%v, "+
-					"custom resources from a different project are not generated", res.GoPackage, res.Name, project.VersionConfig.GoPackage)
+					"custom resources from a different v are not generated", res.GoPackage, res.Name, v.VersionConfig.GoPackage)
 				continue
 			}
 
-			if _, found := resourceNameToProjects[res.Name]; !found {
-				resourceNameToProjects[res.Name] = make([]*model.Version, 0, len(projects)-index)
+			if _, found := resourceNameToVersions[res.Name]; !found {
+				resourceNameToVersions[res.Name] = make([]*model.Version, 0, len(versions)-i)
 			}
-			resourceNameToProjects[res.Name] = append(resourceNameToProjects[res.Name], project)
+			resourceNameToVersions[res.Name] = append(resourceNameToVersions[res.Name], v)
 		}
 	}
 
-	soloKitProject.Conversions = getConversionsFromResourceProjects(resourceNameToProjects)
+	soloKitProject.Conversions = getConversionsFromResourceProjects(resourceNameToVersions)
 
 	fs, err := generateFilesForConversionConfig(soloKitProject)
 	if err != nil {

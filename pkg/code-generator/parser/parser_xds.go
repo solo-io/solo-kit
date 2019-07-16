@@ -32,7 +32,7 @@ type xdsMessage struct {
 	fileName        string
 }
 
-func getXdsResources(project *model.Version, messages []ProtoMessageWrapper, services []*protokit.ServiceDescriptor) ([]*model.XDSResource, error) {
+func getXdsResources(version *model.Version, messages []ProtoMessageWrapper, services []*protokit.ServiceDescriptor) ([]*model.XDSResource, error) {
 	var msgs []*xdsMessage
 	var svcs []*xdsService
 
@@ -45,7 +45,7 @@ func getXdsResources(project *model.Version, messages []ProtoMessageWrapper, ser
 			// message is not a resource
 			continue
 		}
-		if msg.protoPackage != project.ProtoPackage {
+		if msg.protoPackage != version.ProtoPackage {
 			continue
 		}
 		msgs = append(msgs, msg)
@@ -59,7 +59,7 @@ func getXdsResources(project *model.Version, messages []ProtoMessageWrapper, ser
 			// message is not a resource
 			continue
 		}
-		if service.protoPackage != project.ProtoPackage {
+		if service.protoPackage != version.ProtoPackage {
 			continue
 		}
 		svcs = append(svcs, service)
@@ -67,10 +67,10 @@ func getXdsResources(project *model.Version, messages []ProtoMessageWrapper, ser
 
 	// match time!
 	// for every service, match it with a config message.
-	return processMessagesAndServices(project, msgs, svcs)
+	return processMessagesAndServices(version, msgs, svcs)
 }
 
-func processMessagesAndServices(project *model.Version, msgs []*xdsMessage, svcs []*xdsService) ([]*model.XDSResource, error) {
+func processMessagesAndServices(version *model.Version, msgs []*xdsMessage, svcs []*xdsService) ([]*model.XDSResource, error) {
 	var resources []*model.XDSResource
 	for _, svc := range svcs {
 		var message *xdsMessage
@@ -92,7 +92,7 @@ func processMessagesAndServices(project *model.Version, msgs []*xdsMessage, svcs
 			NoReferences: message.noReferences,
 			ProtoPackage: message.protoPackage,
 			Filename:     message.fileName,
-			Project:      project,
+			Project:      version,
 		})
 	}
 

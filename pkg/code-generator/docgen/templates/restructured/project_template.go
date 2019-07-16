@@ -9,8 +9,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func ProjectDocsRootTemplate(project *model.Version, docsOptions *options.DocsOptions) *template.Template {
-	return template.Must(template.New("restructured_project").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(`
+func ProjectDocsRootTemplate(version *model.Version, docsOptions *options.DocsOptions) *template.Template {
+	return template.Must(template.New("restructured_project").Funcs(funcs.TemplateFuncs(version, docsOptions)).Parse(`
 ===========================================
 API Reference for {{ .VersionConfig.ApiGroup.SoloKitProject.Title }}
 ===========================================
