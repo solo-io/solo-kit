@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	github_com_solo_io_solo_kit_api_external_kubernetes_group "github.com/solo-io/solo-kit/api/external/kubernetes/group"
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -60,7 +60,7 @@ var _ = Describe("TestingEventLoop", func() {
 		podClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		podClient, err := github_com_solo_io_solo_kit_api_external_kubernetes_group.NewPodClient(podClientFactory)
+		podClient, err := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(podClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
@@ -76,7 +76,7 @@ var _ = Describe("TestingEventLoop", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.MockCustomType().Write(NewMockCustomType(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.Pod().Write(github_com_solo_io_solo_kit_api_external_kubernetes_group.NewPod(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.Pod().Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockTestingSyncer{}
 		el := NewTestingEventLoop(emitter, sync)

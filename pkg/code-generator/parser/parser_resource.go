@@ -36,7 +36,7 @@ type ProtoMessageWrapper struct {
 
 func getResource(resources []*model.Resource, cfg model.ResourceConfig) (*model.Resource, error) {
 	matches := func(res *model.Resource) bool {
-		return res.Name == cfg.ResourceName //&& (res.ProtoPackage == cfg.ResourcePackage || res.GoPackage == cfg.ResourcePackage)
+		return res.Name == cfg.ResourceName && (res.ProtoPackage == cfg.ResourcePackage || res.GoPackage == cfg.ResourcePackage)
 	}
 
 	// collect all resources that match on package and name

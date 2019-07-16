@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	github_com_solo_io_solo_kit_api_external_kubernetes_group "github.com/solo-io/solo-kit/api/external/kubernetes/group"
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	"go.opencensus.io/stats"
 
@@ -93,7 +93,7 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 						currentSnapshot.Clusterresources = append(currentSnapshot.Clusterresources, typed)
 					case *MockCustomType:
 						currentSnapshot.Mcts = append(currentSnapshot.Mcts, typed)
-					case *github_com_solo_io_solo_kit_api_external_kubernetes_group.Pod:
+					case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
 						currentSnapshot.Pods = append(currentSnapshot.Pods, typed)
 					default:
 						select {

@@ -587,7 +587,7 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 		for _, vc := range soloKitProject.ApiGroup.VersionConfigs {
 			var customResources []model.CustomResourceConfig
 			for _, cr := range vc.CustomResources {
-				cr.Package = soloKitProject.ApiGroup.ResourceGroupGoPackage
+				cr.Package = vc.GoPackage
 				cr.Imported = true
 				customResources = append(customResources, cr)
 			}
