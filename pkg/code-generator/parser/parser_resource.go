@@ -46,10 +46,7 @@ func getResource(resources []*model.Resource, cfg model.ResourceConfig) (*model.
 			possibleResources = append(possibleResources, res)
 		}
 	}
-	switch len(possibleResources) {
-	case 1:
-		return possibleResources[0], nil
-	case 0:
+	if len(possibleResources) == 0 {
 		return nil, errors.Errorf("getting resource: message %v not found", cfg)
 	}
 

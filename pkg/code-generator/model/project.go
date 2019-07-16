@@ -189,8 +189,7 @@ func LoadProjectConfig(path string) (SoloKitProject, error) {
 	}
 
 	skp.ProjectFile = path
-	goPackageSegments := strings.Split(skp.ApiGroup.ResourceGroupGoPackage, "/")
-	skp.ApiGroup.ResourceGroupGoPackageShort = goPackageSegments[len(goPackageSegments)-1]
+	skp.ApiGroup.ResourceGroupGoPackageShort = filepath.Base(skp.ApiGroup.ResourceGroupGoPackage)
 	for _, vc := range skp.ApiGroup.VersionConfigs {
 		if vc.GoPackage == "" {
 			goPkg, err := detectGoPackageForVersion(filepath.Dir(skp.ProjectFile) + "/" + vc.Version)

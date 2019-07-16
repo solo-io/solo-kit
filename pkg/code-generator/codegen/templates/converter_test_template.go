@@ -4,7 +4,9 @@ import (
 	"text/template"
 )
 
-var ConverterTestTemplate = template.Must(template.New("converter_test").Funcs(Funcs).Parse(`package {{ .ConversionGoPackageShort }}_test
+var ConverterTestTemplate = template.Must(template.New("converter_test").Funcs(Funcs).Parse(`// +build solokit
+
+package {{ .ConversionGoPackageShort }}_test
 
 {{ $short_package := .ConversionGoPackageShort }}
 

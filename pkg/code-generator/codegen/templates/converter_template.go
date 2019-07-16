@@ -7,10 +7,9 @@ import (
 var ConverterTemplate = template.Must(template.New("converter").Funcs(Funcs).Parse(`package {{ .ConversionGoPackageShort }}
 
 import (
-	"errors"
-
 	"github.com/solo-io/go-utils/versionutils/kubeapi"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates/errors"
 
 	{{- range .Conversions }}
 	{{- range .Projects }}
@@ -81,7 +80,7 @@ func (c *{{ lower_camel $resourceName }}Converter) convertUp(src, dst crd.SoloKi
 	{{- end }}
 	{{- end }}
 	}
-	return errors.New("unrecognized source type, this should never happen")
+	return errors.UnrecognizedSourceType
 }
 
 func (c *{{ lower_camel $resourceName }}Converter) convertDown(src, dst crd.SoloKitCrd) error {
@@ -97,7 +96,7 @@ func (c *{{ lower_camel $resourceName }}Converter) convertDown(src, dst crd.Solo
 	{{- end }}
 	{{- end }}
 	}
-	return errors.New("unrecognized source type, this should never happen")
+	return errors.UnrecognizedSourceType
 }
 
 {{- end }}

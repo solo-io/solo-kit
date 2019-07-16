@@ -167,7 +167,6 @@ func Generate(opts GenerateOptions) error {
 				return err
 			}
 
-			genDocs = &DocsOptions{}
 			if skp.ApiGroup.DocsDir != "" && (genDocs != nil) {
 				docs, err := docgen.GenerateFiles(version, genDocs)
 				if err != nil {
@@ -226,9 +225,7 @@ func Generate(opts GenerateOptions) error {
 		}
 
 		if skp.ApiGroup.ConversionGoPackage != "" {
-			goPackageSegments := strings.Split(skp.ApiGroup.ConversionGoPackage, "/")
-			skp.ApiGroup.ConversionGoPackageShort = goPackageSegments[len(goPackageSegments)-1]
-
+			skp.ApiGroup.ConversionGoPackageShort = filepath.Base(skp.ApiGroup.ConversionGoPackage)
 			code, err := codegen.GenerateConversionFiles(skp.ApiGroup, apiGroupVersions)
 			if err != nil {
 				return err

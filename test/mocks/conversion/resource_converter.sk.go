@@ -3,10 +3,9 @@
 package conversion
 
 import (
-	"errors"
-
 	"github.com/solo-io/go-utils/versionutils/kubeapi"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates/errors"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	v1alpha1 "github.com/solo-io/solo-kit/test/mocks/v1alpha1"
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1"
@@ -59,7 +58,7 @@ func (c *fakeResourceConverter) convertUp(src, dst crd.SoloKitCrd) error {
 	case *v1alpha1.FakeResource:
 		return c.convertUp(c.upConverter.FromV1Alpha1ToV1(t), dst)
 	}
-	return errors.New("unrecognized source type, this should never happen")
+	return errors.UnrecognizedSourceType
 }
 
 func (c *fakeResourceConverter) convertDown(src, dst crd.SoloKitCrd) error {
@@ -71,7 +70,7 @@ func (c *fakeResourceConverter) convertDown(src, dst crd.SoloKitCrd) error {
 	case *v1.FakeResource:
 		return c.convertDown(c.downConverter.FromV1ToV1Alpha1(t), dst)
 	}
-	return errors.New("unrecognized source type, this should never happen")
+	return errors.UnrecognizedSourceType
 }
 
 type MockResourceUpConverter interface {
@@ -125,7 +124,7 @@ func (c *mockResourceConverter) convertUp(src, dst crd.SoloKitCrd) error {
 	case *v1.MockResource:
 		return c.convertUp(c.upConverter.FromV1ToV2Alpha1(t), dst)
 	}
-	return errors.New("unrecognized source type, this should never happen")
+	return errors.UnrecognizedSourceType
 }
 
 func (c *mockResourceConverter) convertDown(src, dst crd.SoloKitCrd) error {
@@ -139,5 +138,5 @@ func (c *mockResourceConverter) convertDown(src, dst crd.SoloKitCrd) error {
 	case *v2alpha1.MockResource:
 		return c.convertDown(c.downConverter.FromV2Alpha1ToV1(t), dst)
 	}
-	return errors.New("unrecognized source type, this should never happen")
+	return errors.UnrecognizedSourceType
 }
