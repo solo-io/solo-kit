@@ -76,7 +76,7 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 
-	// Creates a VersionConfig from each of the 'solo-kit.json' files
+	// Creates a SoloKitProject from each of the 'solo-kit.json' files
 	// found in the directory tree rooted at 'absoluteRoot'.
 	soloKitProjects, err := collectProjectsFromRoot(absoluteRoot, skipDirs)
 	if err != nil {

@@ -88,12 +88,6 @@ func NewCrd(
 	if err := c.AddToScheme(scheme.Scheme); err != nil {
 		log.Panicf("error while adding [%v] CRD to scheme: %v", c.FullName(), err)
 	}
-	// if res, ok := objType.(resources.Resource); ok {
-	// 	c.Version.ProtoSpec = res
-	// } else {
-	// 	log.Panicf("error while creating crd for %v, must extend " +
-	// 		"resources.Resource interface", c.FullName())
-	// }
 	return c
 }
 
