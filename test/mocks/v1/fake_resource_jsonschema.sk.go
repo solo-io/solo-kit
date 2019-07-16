@@ -37,19 +37,24 @@ var FakeResourceJsonSchema = `
             "title": "core.solo.io.v1.Metadata"
         },
         "testing.solo.io.v1.FakeResource": {
-            "$schema": "http://json-schema.org/draft-04/schema#",
             "properties": {
-                "count": {
-                    "type": "integer"
-                },
                 "metadata": {
                     "$ref": "#/definitions/core.solo.io.v1.Metadata",
                     "additionalProperties": true,
                     "type": "object",
                     "title": "core.solo.io.v1.Metadata"
+                },
+                "spec": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "properties": {
+                        "count": {
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object",
+                    "title": "spec"
                 }
             },
-            "type": "object",
             "title": "testing.solo.io.v1.FakeResource"
         }
     }

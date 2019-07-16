@@ -11,12 +11,9 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-var (
-	logger = contextutils.LoggerFrom(context.TODO())
-)
-
 // ProtoPackage describes a package of Protobuf, which is an container of message types.
 type ProtoPackage struct {
+	ctx      context.Context
 	name     string
 	parent   *ProtoPackage
 	children map[string]*ProtoPackage
@@ -25,8 +22,9 @@ type ProtoPackage struct {
 	sync.RWMutex
 }
 
-func NewProtoTree() *ProtoPackage {
+func NewProtoTree(ctx context.Context) *ProtoPackage {
 	return &ProtoPackage{
+		ctx:      ctx,
 		name:     "",
 		parent:   nil,
 		children: make(map[string]*ProtoPackage),
@@ -34,7 +32,7 @@ func NewProtoTree() *ProtoPackage {
 	}
 }
 
-func (pkg *ProtoPackage) GetName() string {
+func (pkg *ProtoPackage) Name() string {
 	return pkg.name
 }
 
@@ -60,6 +58,7 @@ func (pkg *ProtoPackage) registerType(pkgName *string, msg *descriptor.Descripto
 			child, ok := pkg.children[node]
 			if !ok {
 				child = &ProtoPackage{
+					ctx:      pkg.ctx,
 					name:     pkg.name + "." + node,
 					parent:   pkg,
 					children: make(map[string]*ProtoPackage),
@@ -91,7 +90,7 @@ func (pkg *ProtoPackage) LookupType(name string) (*descriptor.DescriptorProto, b
 	return nil, false
 }
 
-func relativelyLookupNestedType(desc *descriptor.DescriptorProto, name string) (*descriptor.DescriptorProto, bool) {
+func (pkg *ProtoPackage) relativelyLookupNestedType(desc *descriptor.DescriptorProto, name string) (*descriptor.DescriptorProto, bool) {
 	components := strings.Split(name, ".")
 componentLoop:
 	for _, component := range components {
@@ -101,13 +100,14 @@ componentLoop:
 				continue componentLoop
 			}
 		}
-		logger.Infof("no such nested message %s in %s", component, desc.GetName())
+		contextutils.LoggerFrom(pkg.ctx).Infof("no such nested message %s in %s", component, desc.GetName())
 		return nil, false
 	}
 	return desc, true
 }
 
 func (pkg *ProtoPackage) relativelyLookupType(name string) (*descriptor.DescriptorProto, bool) {
+	logger := contextutils.LoggerFrom(pkg.ctx)
 	components := strings.SplitN(name, ".", 2)
 	switch len(components) {
 	case 0:
@@ -123,7 +123,7 @@ func (pkg *ProtoPackage) relativelyLookupType(name string) (*descriptor.Descript
 			return found, ok
 		}
 		if msg, ok := pkg.types[components[0]]; ok {
-			found, ok := relativelyLookupNestedType(msg, components[1])
+			found, ok := pkg.relativelyLookupNestedType(msg, components[1])
 			return found, ok
 		}
 		logger.Infof("no such package nor message %s in %s", components[0], pkg.name)
@@ -134,7 +134,7 @@ func (pkg *ProtoPackage) relativelyLookupType(name string) (*descriptor.Descript
 	}
 }
 
-func (pkg *ProtoPackage) RelativelyLookupPackage(name string) (*ProtoPackage, bool) {
+func (pkg *ProtoPackage) LookupPackage(name string) (*ProtoPackage, bool) {
 	pkg.RLock()
 	defer pkg.RUnlock()
 	components := strings.Split(name, ".")

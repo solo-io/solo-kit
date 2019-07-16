@@ -23,7 +23,6 @@ type ProjectConfig struct {
 	Description    string                      `json:"description"`
 	Name           string                      `json:"name"`
 	Version        string                      `json:"version"`
-	SchemaLink     string                      `json:"schema_link"`
 	DocsDir        string                      `json:"docs_dir"`
 	ResourceGroups map[string][]ResourceConfig `json:"resource_groups"`
 	// if set, this group will override the proto pacakge typically used

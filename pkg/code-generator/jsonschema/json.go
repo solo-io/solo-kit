@@ -19,7 +19,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/xeipuuv/gojsonschema"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
 var (
@@ -33,32 +32,20 @@ var (
 		return errors.Errorf("no such message type named %s", msg)
 	}
 
-	defaultKubeType = v1beta1.JSONSchemaProps{
-		Definitions: v1beta1.JSONSchemaDefinitions{
-			"Resource": {
-				Required: []string{"metadata", "status", "apiVersion", "kind", "spec"},
-				Type:     "object",
-				Properties: map[string]v1beta1.JSONSchemaProps{
-					// "metadata": {
-					// 	Type: "object",
-					// 	Ref: proto.String(schemaRefName("Metadata")),
-					// },
-					// "status": {
-					// 	Type: "object",
-					// 	Ref: proto.String(schemaRefName("Status")),
-					// },
-					"apiVersion": {
-						Type: "string",
-					},
-					"kind": {
-						Type: "string",
-					},
-					"spec": {
-						Type: "object",
-					},
-				},
-			},
-		},
+	UnrecognizedFieldTypeError = func(name string) error {
+		return errors.Errorf("unrecognized field type: %s", name)
+	}
+
+	TypeNotFoundError = func(typeName string) error {
+		return errors.Errorf("could not find proper type name")
+	}
+
+	NoPreviouslyRegisteredTypeError = func(typeName string) error {
+		return errors.Errorf("could not find ref to previously existing type %s", typeName)
+	}
+
+	NotCustomResourceJsonError = func(title string) error {
+		return errors.Errorf("%s is not a valid custom resource json schema")
 	}
 
 	defaultOptions = &Options{
@@ -79,7 +66,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 	if desc.TypeName != nil && desc.GetType() != descriptor.FieldDescriptorProto_TYPE_ENUM {
 		_, ok := g.protoPackage.LookupType(desc.GetTypeName())
 		if !ok {
-			return nil, errors.Errorf("could not find proper type name")
+			return nil, TypeNotFoundError(desc.GetTypeName())
 		}
 		pkgName := strings.TrimPrefix(desc.GetTypeName(), ".")
 		jsonSchemaType.Title = pkgName
@@ -183,7 +170,7 @@ func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descripto
 		}
 
 	default:
-		return nil, fmt.Errorf("unrecognized field type: %s", desc.GetType().String())
+		return nil, UnrecognizedFieldTypeError(desc.GetType().String())
 	}
 
 	// Recurse array of primitive types:
@@ -301,7 +288,7 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 	jsonSchemaType := &jsonschema.Type{
 		Properties: make(map[string]*jsonschema.Type),
 		Version:    jsonschema.Version,
-		Title:      schemaTitleName(curPkg.GetName(), msg.GetName()),
+		Title:      schemaTitleName(curPkg.Name(), msg.GetName()),
 	}
 
 	// Optionally allow NULL values:
@@ -353,13 +340,13 @@ func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *desc
 			Version: jsonschema.Version,
 			AnyOf:   oneOfTypes,
 		}
-		byt, err := g.Marshal(anyOf)
+		byt, err := Marshal(anyOf)
 		if err != nil {
 			return nil, err
 		}
 		jsonSchemaType.AdditionalProperties = byt
 	} else if len(oneOfTypes) == 1 {
-		byt, err := g.Marshal(oneOfTypes[0])
+		byt, err := Marshal(oneOfTypes[0])
 		if err != nil {
 			return nil, err
 		}
@@ -423,7 +410,7 @@ func (g *generator) convertFile(file *descriptor.FileDescriptorProto) ([]*jsonsc
 		}
 	} else {
 		// Otherwise process MESSAGES (packages):
-		pkg, ok := g.protoPackage.RelativelyLookupPackage(file.GetPackage())
+		pkg, ok := g.protoPackage.LookupPackage(file.GetPackage())
 		if !ok {
 			return nil, fmt.Errorf("no such package found: %s", file.GetPackage())
 		}
@@ -471,7 +458,6 @@ func (g *generator) recursivelyConvertFields(curPkg *prototree.ProtoPackage, msg
 
 type Generator interface {
 	Convert(resource *model.Resource) (*jsonschema.Type, error)
-	KubeConvert(resource *model.Resource) (*v1beta1.JSONSchemaProps, error)
 }
 
 type schemaMap struct {
@@ -513,14 +499,10 @@ type generator struct {
 	opts           *Options
 }
 
-func (g *generator) KubeConvert(resource *model.Resource) (*v1beta1.JSONSchemaProps, error) {
-	panic("implement me")
-}
-
 func (g *generator) Convert(resource *model.Resource) (*jsonschema.Type, error) {
 	preGenType, ok := g.generatedTypes.Get(schemaTitleName(resource.ProtoPackage, resource.Name))
 	if !ok {
-		return nil, errors.Errorf("could not find ref to previously existing type")
+		return nil, NoPreviouslyRegisteredTypeError(schemaTitleName(resource.ProtoPackage, resource.Name))
 	}
 	allTypesToAdd, err := g.buildKubeSpec(preGenType)
 	if err != nil {
@@ -531,7 +513,7 @@ func (g *generator) Convert(resource *model.Resource) (*jsonschema.Type, error) 
 	for _, v := range allTypesToAdd {
 		nestedPreGenType, ok := g.generatedTypes.Get(v.Title)
 		if !ok {
-			return nil, errors.Errorf("could not find ref to previously existing type")
+			return nil, NoPreviouslyRegisteredTypeError(v.Title)
 		}
 		definitions[v.Title] = nestedPreGenType
 	}
@@ -544,7 +526,7 @@ func (g *generator) Convert(resource *model.Resource) (*jsonschema.Type, error) 
 	return result, nil
 }
 
-func (g *generator) Marshal(schemaType *jsonschema.Type) ([]byte, error) {
+func Marshal(schemaType *jsonschema.Type) ([]byte, error) {
 	jsonSchemaJSON, err := json.MarshalIndent(schemaType, "", "    ")
 	if err != nil {
 		return nil, err
@@ -583,7 +565,7 @@ func NewGenerator(req *plugin.CodeGeneratorRequest, opts *Options) (*generator, 
 	if opts == nil {
 		opts = defaultOptions
 	}
-	g := &generator{protoPackage: prototree.NewProtoTree(), fs: afero.NewOsFs(), generatedTypes: newSchemaMap(), opts: opts}
+	g := &generator{protoPackage: prototree.NewProtoTree(context.TODO()), fs: afero.NewOsFs(), generatedTypes: newSchemaMap(), opts: opts}
 	wg := &sync.WaitGroup{}
 	for _, file := range req.GetProtoFile() {
 		for _, msg := range file.GetMessageType() {
@@ -609,4 +591,47 @@ func NewGenerator(req *plugin.CodeGeneratorRequest, opts *Options) (*generator, 
 		}
 	}
 	return g, nil
+}
+
+func TranformToKubeSpec(schemaType *jsonschema.Type, res *model.Resource) (*jsonschema.Type, error) {
+	var (
+		resourceSpec *jsonschema.Type
+		key          string
+	)
+	for k, v := range schemaType.Definitions {
+		if v.Title == schemaTitleName(res.ProtoPackage, res.Original.GetName()) {
+			resourceSpec = v
+			key = k
+		}
+	}
+	if resourceSpec == nil {
+		return nil, NotCustomResourceJsonError(schemaType.Title)
+	}
+	resourceType := &jsonschema.Type{
+		Title:      resourceSpec.Title,
+		Ref:        resourceSpec.Ref,
+		Properties: resourceSpec.Properties,
+	}
+
+	resourceSpec.Title = "spec"
+	resourceSpec.Ref = ""
+	result := make(map[string]*jsonschema.Type)
+	for k, v := range resourceSpec.Properties {
+		if !(k == "metadata" || k == "status") {
+			result[k] = v
+		}
+	}
+	resourceSpec.Properties = result
+
+	result = make(map[string]*jsonschema.Type)
+	for k, v := range resourceType.Properties {
+		if k == "metadata" || k == "status" {
+			result[k] = v
+		}
+	}
+	resourceType.Properties = result
+
+	resourceType.Properties["spec"] = resourceSpec
+	schemaType.Definitions[key] = resourceType
+	return schemaType, nil
 }

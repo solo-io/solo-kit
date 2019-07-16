@@ -56,7 +56,11 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 			if err != nil {
 				return nil, err
 			}
-			byt, err := generator.Marshal(result)
+			kubeJson, err := jsonschema.TranformToKubeSpec(result, res)
+			if err != nil {
+				return nil, err
+			}
+			byt, err := jsonschema.Marshal(kubeJson)
 			res.JsonSchema = string(byt)
 			crdFiles, err := generateFilesForSolokitCrd(res)
 			if err != nil {

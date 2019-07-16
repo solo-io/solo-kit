@@ -73,16 +73,22 @@ var AnotherMockResourceJsonSchema = `
             "title": "core.solo.io.v1.Status"
         },
         "testing.solo.io.v1.AnotherMockResource": {
-            "$schema": "http://json-schema.org/draft-04/schema#",
             "properties": {
-                "basicField": {
-                    "type": "string"
-                },
                 "metadata": {
                     "$ref": "#/definitions/core.solo.io.v1.Metadata",
                     "additionalProperties": true,
                     "type": "object",
                     "title": "core.solo.io.v1.Metadata"
+                },
+                "spec": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "properties": {
+                        "basicField": {
+                            "type": "string"
+                        }
+                    },
+                    "type": "object",
+                    "title": "spec"
                 },
                 "status": {
                     "$ref": "#/definitions/core.solo.io.v1.Status",
@@ -91,7 +97,6 @@ var AnotherMockResourceJsonSchema = `
                     "title": "core.solo.io.v1.Status"
                 }
             },
-            "type": "object",
             "title": "testing.solo.io.v1.AnotherMockResource"
         }
     }

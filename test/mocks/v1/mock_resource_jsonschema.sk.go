@@ -73,19 +73,44 @@ var MockResourceJsonSchema = `
             "title": "core.solo.io.v1.Status"
         },
         "testing.solo.io.v1.MockResource": {
-            "$schema": "http://json-schema.org/draft-04/schema#",
             "properties": {
-                "data.json": {
-                    "type": "string"
-                },
                 "metadata": {
                     "$ref": "#/definitions/core.solo.io.v1.Metadata",
                     "additionalProperties": true,
                     "type": "object",
                     "title": "core.solo.io.v1.Metadata"
                 },
-                "someDumbField": {
-                    "type": "string"
+                "spec": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "properties": {
+                        "data.json": {
+                            "type": "string"
+                        },
+                        "someDumbField": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "oneofOne": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "oneofTwo": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "type": "object",
+                    "title": "spec"
                 },
                 "status": {
                     "$ref": "#/definitions/core.solo.io.v1.Status",
@@ -94,26 +119,6 @@ var MockResourceJsonSchema = `
                     "title": "core.solo.io.v1.Status"
                 }
             },
-            "additionalProperties": {
-                "type": "object",
-                "oneOf": [
-                    {
-                        "properties": {
-                            "oneofOne": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    {
-                        "properties": {
-                            "oneofTwo": {
-                                "type": "boolean"
-                            }
-                        }
-                    }
-                ]
-            },
-            "type": "object",
             "title": "testing.solo.io.v1.MockResource"
         }
     }
