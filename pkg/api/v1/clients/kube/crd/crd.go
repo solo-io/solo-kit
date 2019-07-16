@@ -1,14 +1,13 @@
 package crd
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -16,7 +15,22 @@ import (
 )
 
 // TODO(ilackarms): evaluate this fix for concurrent map access in k8s.io/apimachinery/pkg/runtime.SchemaBuider
-var registerLock sync.Mutex
+var (
+	registerLock sync.Mutex
+
+	VersionNotFoundError = func(version string) error {
+		return errors.Errorf("could not find version %v", version)
+	}
+)
+
+type Converter interface {
+	Convert(src SoloKitCrd, dst SoloKitCrd) error
+}
+
+type SoloKitCrd interface {
+	runtime.Object
+	resources.Resource
+}
 
 type CrdMeta struct {
 	Plural        string
@@ -28,7 +42,7 @@ type CrdMeta struct {
 
 type Version struct {
 	Version string
-	Type    runtime.Object
+	Type    SoloKitCrd
 }
 
 type Crd struct {
@@ -41,6 +55,15 @@ type MultiVersionCrd struct {
 	Versions []Version
 }
 
+func (m *MultiVersionCrd) GetVersion(requested string) (*Version, error) {
+	for _, version := range m.Versions {
+		if version.Version == requested {
+			return &version, nil
+		}
+	}
+	return nil, VersionNotFoundError(requested)
+}
+
 func NewCrd(
 	plural string,
 	group string,
@@ -48,7 +71,7 @@ func NewCrd(
 	kindName string,
 	shortName string,
 	clusterScoped bool,
-	objType runtime.Object) Crd {
+	objType SoloKitCrd) Crd {
 	c := Crd{
 		CrdMeta: CrdMeta{
 			Plural:        plural,
@@ -65,6 +88,12 @@ func NewCrd(
 	if err := c.AddToScheme(scheme.Scheme); err != nil {
 		log.Panicf("error while adding [%v] CRD to scheme: %v", c.FullName(), err)
 	}
+	// if res, ok := objType.(resources.Resource); ok {
+	// 	c.Version.ProtoSpec = res
+	// } else {
+	// 	log.Panicf("error while creating crd for %v, must extend " +
+	// 		"resources.Resource interface", c.FullName())
+	// }
 	return c
 }
 
@@ -73,25 +102,9 @@ func (d Crd) Register(apiexts apiexts.Interface) error {
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
-	data, err := protoutils.MarshalMap(resource)
-	if err != nil {
-		panic(fmt.Sprintf("internal error: failed to marshal resource to map: %v", err))
-	}
-	delete(data, "metadata")
-	delete(data, "status")
-	spec := v1.Spec(data)
-	return &v1.Resource{
-		TypeMeta: d.TypeMeta(),
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       resource.GetMetadata().Namespace,
-			Name:            resource.GetMetadata().Name,
-			ResourceVersion: resource.GetMetadata().ResourceVersion,
-			Labels:          resource.GetMetadata().Labels,
-			Annotations:     resource.GetMetadata().Annotations,
-		},
-		Status: resource.GetStatus(),
-		Spec:   &spec,
-	}
+	res := KubeResource(resource)
+	res.TypeMeta = d.TypeMeta()
+	return res
 }
 
 func (d CrdMeta) FullName() string {

@@ -6,7 +6,7 @@ import (
 
 var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`// +build solokit
 
-package {{ .Project.ProjectConfig.Version }}
+package {{ .ApiGroup.ResourceGroupGoPackageShort }}
 
 {{- /* we need to know if the tests require a crd client or a regular clientset */ -}}
 {{- $clients := new_str_slice }}
@@ -46,7 +46,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func() {
+var _ = Describe("{{ upper_camel .ApiGroup.ResourceGroupGoPackageShort }}Emitter", func() {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return

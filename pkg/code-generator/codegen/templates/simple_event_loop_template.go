@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var SimpleEventLoopTemplate = template.Must(template.New("simple_event_loop").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
+var SimpleEventLoopTemplate = template.Must(template.New("simple_event_loop").Funcs(Funcs).Parse(`package {{ .ApiGroup.ResourceGroupGoPackageShort }}
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func New{{ .GoName }}SimpleEventLoop(emitter {{ .GoName }}SimpleEmitter, syncers
 }
 
 func (el *{{ lower_camel .GoName }}SimpleEventLoop) Run(ctx context.Context) (<-chan error, error) {
-	ctx = contextutils.WithLogger(ctx, "{{ .Project.ProjectConfig.Version }}.event_loop")
+	ctx = contextutils.WithLogger(ctx, "{{ .ApiGroup.ResourceGroupGoPackageShort }}.event_loop")
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("event loop started")
 
@@ -61,7 +61,7 @@ func (el *{{ lower_camel .GoName }}SimpleEventLoop) Run(ctx context.Context) (<-
 	}
 
 
-	go errutils.AggregateErrs(ctx, errs, emitterErrs, "{{ .Project.ProjectConfig.Version }}.emitter errors")
+	go errutils.AggregateErrs(ctx, errs, emitterErrs, "{{ .ApiGroup.ResourceGroupGoPackageShort }}.emitter errors")
 	go func() {
 		// create a new context for each syncer for each loop, cancel each before each loop
 		syncerCancels := make(map[{{ .GoName }}Syncer]context.CancelFunc)

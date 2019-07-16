@@ -43,7 +43,7 @@ type templateFunctions struct {
 var magicCommentRegex = regexp.MustCompile("@solo-kit:.*")
 var githubProjectFileRegex = regexp.MustCompile(".*github.com/([^/]*)/([^/]*)/(.*)")
 
-func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) template.FuncMap {
+func TemplateFuncs(project *model.Version, docsOptions *options.DocsOptions) template.FuncMap {
 	funcs := &templateFunctions{}
 	funcMap := template.FuncMap{
 		"join":               strings.Join,
@@ -180,7 +180,7 @@ func noEscape(s string) htmltemplate.HTML {
 	return htmltemplate.HTML(s)
 }
 
-func fieldType(project *model.Project) func(field *protokit.FieldDescriptor) (string, error) {
+func fieldType(project *model.Version) func(field *protokit.FieldDescriptor) (string, error) {
 	return func(field *protokit.FieldDescriptor) (string, error) {
 		fieldTypeStr := func() string {
 			switch field.GetType() {
@@ -230,7 +230,7 @@ func wellKnownProtoLink(typeName string) string {
 	return wellKnown
 }
 
-func linkForField(project *model.Project, docsOptions *options.DocsOptions) func(forFile *protokit.FileDescriptor, field *protokit.FieldDescriptor) (string, error) {
+func linkForField(project *model.Version, docsOptions *options.DocsOptions) func(forFile *protokit.FileDescriptor, field *protokit.FieldDescriptor) (string, error) {
 	return func(forFile *protokit.FileDescriptor, field *protokit.FieldDescriptor) (string, error) {
 		typeName, err := fieldType(project)(field)
 		if err != nil {
@@ -293,7 +293,7 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 	}
 }
 
-func linkForResource(project *model.Project, docsOptions *options.DocsOptions) func(resource *model.Resource) (string, error) {
+func linkForResource(project *model.Version, docsOptions *options.DocsOptions) func(resource *model.Resource) (string, error) {
 	protoFiles := protokit.ParseCodeGenRequest(project.Request)
 	return func(resource *model.Resource) (string, error) {
 		for _, file := range protoFiles {
@@ -314,12 +314,12 @@ func linkForResource(project *model.Project, docsOptions *options.DocsOptions) f
 				return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, name), nil
 			}
 		}
-		return "", errors.Errorf("internal error: could not find file for resource %v in project %v",
-			resource.Filename, project.ProjectConfig.Name)
+		return "", errors.Errorf("internal error: could not find file for resource %v in apigroup %v",
+			resource.Filename, project.VersionConfig.ApiGroup.Name)
 	}
 }
 
-func resourceForMessage(project *model.Project) func(msg *protokit.Descriptor) (*model.Resource, error) {
+func resourceForMessage(project *model.Version) func(msg *protokit.Descriptor) (*model.Resource, error) {
 	return func(msg *protokit.Descriptor) (*model.Resource, error) {
 		for _, res := range project.Resources {
 			if res.SkipDocsGen {
@@ -330,8 +330,8 @@ func resourceForMessage(project *model.Project) func(msg *protokit.Descriptor) (
 			}
 		}
 		return nil, nil
-		return nil, errors.Errorf("internal error: could not find file for resource for msg %v in project %v",
-			msg.GetName(), project.ProjectConfig.Name)
+		return nil, errors.Errorf("internal error: could not find file for resource for msg %v in apigroup %v",
+			msg.GetName(), project.VersionConfig.ApiGroup.Name)
 	}
 }
 
@@ -408,7 +408,7 @@ func commonPrefix(sep byte, paths ...string) string {
 	return string(c)
 }
 
-func getFileForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, error) {
+func getFileForField(project *model.Version, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, error) {
 	parts := strings.Split(strings.TrimPrefix(field.GetTypeName(), "."), ".")
 	if strings.HasSuffix(parts[len(parts)-1], "Entry") {
 		parts = parts[:len(parts)-1]
@@ -457,7 +457,7 @@ func splitTypeName(typeName string) (string, []string) {
 	return packageName, parts[indexOfFirstUppercasePart:]
 }
 
-func getFileAndTypeDefForField(project *model.Project, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, *descriptor.DescriptorProto, *descriptor.EnumDescriptorProto, error) {
+func getFileAndTypeDefForField(project *model.Version, field *protokit.FieldDescriptor) (*descriptor.FileDescriptorProto, *descriptor.DescriptorProto, *descriptor.EnumDescriptorProto, error) {
 	packageName, typeNameParts := splitTypeName(field.GetTypeName())
 	for _, protoFile := range project.Request.ProtoFile {
 		if protoFile.GetPackage() == packageName {
@@ -564,7 +564,7 @@ func (c *templateFunctions) forEachMessage(messagesToSkip map[string]bool) func(
 
 // Returns a map indicating which resources should be skipped during doc generation.
 // The keys are strings in the format <resource package>.<resource name>.
-func getMessageSkippingInfo(project *model.Project) map[string]bool {
+func getMessageSkippingInfo(project *model.Version) map[string]bool {
 	// Build map for quick lookup of SkipDocsGen flag
 	toSkip := make(map[string]bool)
 	for _, resource := range project.Resources {

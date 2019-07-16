@@ -63,6 +63,7 @@ message FakeResource {
 
     uint32 count = 1;
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
 }
 
 /*

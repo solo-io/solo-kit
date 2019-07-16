@@ -34,16 +34,9 @@ type ProtoMessageWrapper struct {
 	Message   *protokit.Descriptor
 }
 
-func getResource(resources []*model.Resource, project model.ProjectConfig, cfg model.ResourceConfig) (*model.Resource, error) {
+func getResource(resources []*model.Resource, cfg model.ResourceConfig) (*model.Resource, error) {
 	matches := func(res *model.Resource) bool {
-		if res.Name == cfg.ResourceName &&
-			(res.ProtoPackage == cfg.ResourcePackage || res.GoPackage == cfg.ResourcePackage) {
-			if cfg.ResourceVersion == "" {
-				return true
-			}
-			return cfg.ResourceVersion == res.Version
-		}
-		return false
+		return res.Name == cfg.ResourceName //&& (res.ProtoPackage == cfg.ResourcePackage || res.GoPackage == cfg.ResourcePackage)
 	}
 
 	// collect all resources that match on package and name
@@ -59,40 +52,34 @@ func getResource(resources []*model.Resource, project model.ProjectConfig, cfg m
 	case 0:
 		return nil, errors.Errorf("getting resource: message %v not found", cfg)
 	}
-	// default to using the version matching the project itself
-	// only works for this project's resources
-	for _, res := range possibleResources {
-		if res.GoPackage == project.GoPackage {
-			return res, nil
-		}
-	}
-	return nil, errors.Errorf("found %v resources found which match %v, try specifying a version", len(possibleResources), cfg)
+
+	return possibleResources[0], nil
 }
 
-func getResources(project *model.Project, allProjectConfigs []*model.ProjectConfig, messages []ProtoMessageWrapper) ([]*model.Resource, []*model.ResourceGroup, error) {
+func getResources(version *model.Version, apiGroup *model.ApiGroup, messages []ProtoMessageWrapper) ([]*model.Resource, error) {
 	var (
 		resources []*model.Resource
 	)
 	for _, msg := range messages {
 		resource, err := describeResource(msg)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if resource == nil {
 			// not a solo-kit resource, ignore
 			continue
 		}
-		for _, projectCfg := range allProjectConfigs {
-			if projectCfg.IsOurProto(resource.Filename) {
-				resource.Version = projectCfg.Version
+		for _, vc := range apiGroup.VersionConfigs {
+			if vc.IsOurProto(resource.Filename) {
+				resource.Version = vc.Version
 				break
 			}
 		}
-		resource.Project = project
+		resource.Project = version
 		resources = append(resources, resource)
 	}
 
-	for _, custom := range project.ProjectConfig.CustomResources {
+	for _, custom := range version.VersionConfig.CustomResources {
 		impPrefix := strings.Replace(custom.Package, "/", "_", -1)
 		impPrefix = strings.Replace(impPrefix, ".", "_", -1)
 		impPrefix = strings.Replace(impPrefix, "-", "_", -1)
@@ -104,29 +91,33 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 			ClusterScoped:      custom.ClusterScoped,
 			CustomImportPrefix: impPrefix,
 			SkipDocsGen:        true,
-			Project:            project,
+			Project:            version,
 			IsCustom:           true,
 			CustomResource:     custom,
 		})
 	}
 
+	return resources, nil
+}
+
+func GetResourceGroups(apiGroup *model.ApiGroup, resources []*model.Resource) ([]*model.ResourceGroup, error) {
 	var (
 		resourceGroups []*model.ResourceGroup
 	)
 
-	for groupName, resourcesCfg := range project.ProjectConfig.ResourceGroups {
+	for groupName, resourcesCfg := range apiGroup.ResourceGroups {
 		var resourcesForGroup []*model.Resource
 		for _, resourceCfg := range resourcesCfg {
-			resource, err := getResource(resources, project.ProjectConfig, resourceCfg)
+			resource, err := getResource(resources, resourceCfg)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 
 			var importPrefix string
-			if !project.ProjectConfig.IsOurProto(resource.Filename) && !resource.IsCustom {
+			if !apiGroup.IsOurProto(resource.Filename) && !resource.IsCustom {
 				importPrefix = resource.ProtoPackage
 			} else if resource.IsCustom && resource.CustomResource.Imported {
-				// If is custom resource from a different project use import prefix
+				// If is custom resource from a different version use import prefix
 				importPrefix = resource.CustomImportPrefix
 			}
 
@@ -140,7 +131,7 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 		rg := &model.ResourceGroup{
 			Name:      groupName,
 			GoName:    goName(groupName),
-			Project:   project,
+			ApiGroup:  apiGroup,
 			Resources: resourcesForGroup,
 		}
 		for _, res := range resourcesForGroup {
@@ -150,7 +141,7 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 		imports := make(map[string]string)
 		for _, res := range rg.Resources {
 			// only generate files for the resources in our group, otherwise we import
-			if res.GoPackage != rg.Project.ProjectConfig.GoPackage {
+			if res.GoPackage != rg.ApiGroup.ResourceGroupGoPackage {
 				// add import
 				imports[strings.TrimSuffix(res.ImportPrefix, ".")] = res.GoPackage
 			}
@@ -179,7 +170,7 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 	sort.SliceStable(resourceGroups, func(i, j int) bool {
 		return resourceGroups[i].Name < resourceGroups[j].Name
 	})
-	return resources, resourceGroups, nil
+	return resourceGroups, nil
 }
 
 func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, error) {

@@ -17,6 +17,10 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
       name = "k8s.io/gengo"
       unused-packages = false
 
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+
 [[constraint]]
   version = "1.1.1"
   name = "github.com/gogo/protobuf"
@@ -31,7 +35,7 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  version = "0.9.1"
+  version = "0.9.4"
 
 [[constraint]]
   version = ">=0.8.0"

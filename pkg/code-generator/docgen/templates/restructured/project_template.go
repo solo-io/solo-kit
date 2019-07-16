@@ -9,16 +9,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func ProjectDocsRootTemplate(project *model.Project, docsOptions *options.DocsOptions) *template.Template {
-	return template.Must(template.New("pf").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(`
+func ProjectDocsRootTemplate(project *model.Version, docsOptions *options.DocsOptions) *template.Template {
+	return template.Must(template.New("restructured_project").Funcs(funcs.TemplateFuncs(project, docsOptions)).Parse(`
 ===========================================
-API Reference for {{ .ProjectConfig.Title}}
+API Reference for {{ .VersionConfig.ApiGroup.SoloKitProject.Title }}
 ===========================================
-.. _{{ .ProjectConfig.Title}}:
+.. _{{ .VersionConfig.ApiGroup.SoloKitProject.Title }}:
 
-API Version: ` + "`{{ .ProjectConfig.Name }}.{{ .ProjectConfig.Version }}`" + `
+API Version: ` + "`{{ .VersionConfig.ApiGroup.Name }}.{{ .VersionConfig.Version }}`" + `
 
-{{ .ProjectConfig.Description }}
+{{ .VersionConfig.ApiGroup.SoloKitProject.Description }}
 
 API Resources:
 ~~~~~~~~~~~~~~

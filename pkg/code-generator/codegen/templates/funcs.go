@@ -82,6 +82,9 @@ var Funcs = template.FuncMap{
 		}
 		return result
 	},
+	"add_int": func(a, b int) int {
+		return a + b
+	},
 }
 
 func printPointer(format string, p *string) string {

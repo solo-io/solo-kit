@@ -32,7 +32,7 @@ type xdsMessage struct {
 	fileName        string
 }
 
-func getXdsResources(project *model.Project, messages []ProtoMessageWrapper, services []*protokit.ServiceDescriptor) ([]*model.XDSResource, error) {
+func getXdsResources(project *model.Version, messages []ProtoMessageWrapper, services []*protokit.ServiceDescriptor) ([]*model.XDSResource, error) {
 	var msgs []*xdsMessage
 	var svcs []*xdsService
 
@@ -70,7 +70,7 @@ func getXdsResources(project *model.Project, messages []ProtoMessageWrapper, ser
 	return processMessagesAndServices(project, msgs, svcs)
 }
 
-func processMessagesAndServices(project *model.Project, msgs []*xdsMessage, svcs []*xdsService) ([]*model.XDSResource, error) {
+func processMessagesAndServices(project *model.Version, msgs []*xdsMessage, svcs []*xdsService) ([]*model.XDSResource, error) {
 	var resources []*model.XDSResource
 	for _, svc := range svcs {
 		var message *xdsMessage

@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var ProjectTestSuiteTemplate = template.Must(template.New("project_template").Funcs(Funcs).Parse(`package {{ .ProjectConfig.Version }}
+var ProjectTestSuiteTemplate = template.Must(template.New("project_test_suite_template").Funcs(Funcs).Parse(`package {{ .VersionConfig.Version }}
 
 {{- $uniqueCrds := new_str_slice }}
 {{- range .Resources}}
@@ -27,9 +27,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Test{{ upper_camel .ProjectConfig.Name }}(t *testing.T) {
+func Test{{ upper_camel .VersionConfig.ApiGroup.Name }}(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "{{ upper_camel .ProjectConfig.Name }} Suite")
+	RunSpecs(t, "{{ upper_camel .VersionConfig.ApiGroup.Name }} Suite")
 }
 
 

@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions) *template.Template {
+func ProtoFileTemplate(project *model.Version, docsOptions *options.DocsOptions) *template.Template {
 	str := `
 {{ $File := . -}}
 

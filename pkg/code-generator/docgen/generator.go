@@ -18,7 +18,7 @@ import (
 
 type DocsGen struct {
 	DocsOptions options.DocsOptions
-	Project     *model.Project
+	Project     *model.Version
 }
 
 // must ignore validate.proto from lyft
@@ -89,7 +89,7 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 	return v, nil
 }
 
-func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (code_generator.Files, error) {
+func GenerateFiles(project *model.Version, docsOptions *options.DocsOptions) (code_generator.Files, error) {
 	protoFiles := protokit.ParseCodeGenRequest(project.Request)
 	if docsOptions == nil {
 		docsOptions = &options.DocsOptions{}
@@ -167,14 +167,14 @@ func (d *DocsGen) GenerateFilesForProject() (code_generator.Files, error) {
 			return nil, err
 		}
 		v = append(v, code_generator.File{
-			Filename: strcase.ToSnake(d.Project.ProjectConfig.Name) + suffix,
+			Filename: strcase.ToSnake(d.Project.VersionConfig.ApiGroup.Name) + suffix,
 			Content:  content,
 		})
 	}
 	return v, nil
 }
 
-func generateProjectFile(project *model.Project, tmpl *template.Template) (string, error) {
+func generateProjectFile(project *model.Version, tmpl *template.Template) (string, error) {
 	buf := &bytes.Buffer{}
 	if err := tmpl.Execute(buf, project); err != nil {
 		return "", err

@@ -139,7 +139,7 @@ func (o *MockResource) DeepCopyObject() runtime.Object {
 var (
 	MockResourceGVK = schema.GroupVersionKind{
 		Version: "v1alpha1",
-		Group:   "crds.testing.solo.io",
+		Group:   "testing.solo.io",
 		Kind:    "MockResource",
 	}
 	MockResourceCrd = crd.NewCrd(

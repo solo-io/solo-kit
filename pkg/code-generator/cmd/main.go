@@ -76,17 +76,17 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 
-	// Creates a ProjectConfig from each of the 'solo-kit.json' files
+	// Creates a VersionConfig from each of the 'solo-kit.json' files
 	// found in the directory tree rooted at 'absoluteRoot'.
-	projectConfigs, err := collectProjectsFromRoot(absoluteRoot, skipDirs)
+	soloKitProjects, err := collectProjectsFromRoot(absoluteRoot, skipDirs)
 	if err != nil {
 		return err
 	}
 
 	log.Printf("collected projects: %v", func() []string {
 		var names []string
-		for _, project := range projectConfigs {
-			names = append(names, project.Name)
+		for _, skp := range soloKitProjects {
+			names = append(names, skp.Title)
 		}
 		sort.Strings(names)
 		return names
@@ -97,9 +97,13 @@ func Generate(opts GenerateOptions) error {
 		if !compileProtos {
 			return false
 		}
-		for _, proj := range projectConfigs {
-			if strings.HasPrefix(protoFile, filepath.Dir(proj.ProjectFile)) {
-				return true
+		for _, skp := range soloKitProjects {
+			for _, ag := range skp.ApiGroups {
+				for _, vc := range ag.VersionConfigs {
+					if strings.HasPrefix(protoFile, filepath.Dir(skp.ProjectFile)+"/"+vc.Version) {
+						return true
+					}
+				}
 			}
 		}
 		return false
@@ -122,80 +126,125 @@ func Generate(opts GenerateOptions) error {
 	}())
 
 	var protoDescriptors []*descriptor.FileDescriptorProto
-	for _, projectConfig := range projectConfigs {
-		importedResources, err := importCustomResources(projectConfig.Imports)
-		if err != nil {
-			return err
-		}
-
-		projectConfig.CustomResources = append(projectConfig.CustomResources, importedResources...)
-
-		for _, desc := range descriptors {
-			if filepath.Dir(desc.ProtoFilePath) == filepath.Dir(projectConfig.ProjectFile) {
-				projectConfig.ProjectProtos = append(projectConfig.ProjectProtos, desc.GetName())
-			}
-			protoDescriptors = append(protoDescriptors, desc.FileDescriptorProto)
-		}
-	}
-
-	for _, projectConfig := range projectConfigs {
-
-		// Build a 'Project' object that contains a resource for each message that:
-		// - is contained in the FileDescriptor and
-		// - is a solo kit resource (i.e. it has a field named 'metadata')
-
-		project, err := parser.ProcessDescriptors(projectConfig, projectConfigs, protoDescriptors)
-		if err != nil {
-			return err
-		}
-
-		code, err := codegen.GenerateFiles(project, true, opts.SkipGeneratedTests)
-		if err != nil {
-			return err
-		}
-
-		if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
-			docs, err := docgen.GenerateFiles(project, genDocs)
+	for _, skp := range soloKitProjects {
+		for _, ag := range skp.ApiGroups {
+			importedResources, err := importCustomResources(ag.Imports)
 			if err != nil {
 				return err
 			}
-
-			for _, file := range docs {
-				path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
-				if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-					return err
-				}
-				if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-					return err
+			for _, vc := range ag.VersionConfigs {
+				vc.CustomResources = append(vc.CustomResources, importedResources...)
+				for _, vc := range ag.VersionConfigs {
+					for _, desc := range descriptors {
+						if filepath.Dir(desc.ProtoFilePath) == filepath.Dir(skp.ProjectFile)+"/"+vc.Version {
+							vc.VersionProtos = append(vc.VersionProtos, desc.GetName())
+						}
+						protoDescriptors = append(protoDescriptors, desc.FileDescriptorProto)
+					}
 				}
 			}
 		}
+	}
 
-		outDir := filepath.Join(gopathSrc(), project.ProjectConfig.GoPackage)
+	for _, skp := range soloKitProjects {
+		for _, ag := range skp.ApiGroups {
+			ag.SoloKitProject = skp
+			// Store all projects for conversion generation.
+			var apiGroupVersions []*model.Version
+			for _, vc := range ag.VersionConfigs {
+				vc.ApiGroup = ag
 
-		for _, file := range code {
-			path := filepath.Join(outDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-				return err
-			}
-			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-				return err
-			}
-			if out, err := exec.Command("gofmt", "-w", path).CombinedOutput(); err != nil {
-				return errors.Wrapf(err, "gofmt failed: %s", out)
+				// Build a 'Version' object that contains a resource for each message that:
+				// - is contained in the FileDescriptor and
+				// - is a solo kit resource (i.e. it has a field named 'metadata')
+
+				version, err := parser.ProcessDescriptors(vc, ag, protoDescriptors)
+				if err != nil {
+					return err
+				}
+				apiGroupVersions = append(apiGroupVersions, version)
+
+				code, err := codegen.GenerateProjectFiles(version, true, opts.SkipGeneratedTests)
+				if err != nil {
+					return err
+				}
+
+				outDir := filepath.Join(gopathSrc(), version.VersionConfig.GoPackage)
+				if err := writeCodeFiles(code, outDir); err != nil {
+					return err
+				}
+
+				genDocs = &DocsOptions{}
+				if ag.DocsDir != "" && (genDocs != nil) {
+					docs, err := docgen.GenerateFiles(version, genDocs)
+					if err != nil {
+						return err
+					}
+
+					for _, file := range docs {
+						path := filepath.Join(absoluteRoot, ag.DocsDir, file.Filename)
+						if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+							return err
+						}
+						if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
+							return err
+						}
+					}
+				}
+
+				// Generate mocks
+				// need to run after to make sure all resources have already been written
+				// Set this env var during tests so that mocks are not generated
+				if !opts.SkipGenMocks {
+					if err := genMocks(code, outDir, absoluteRoot); err != nil {
+						return err
+					}
+				}
 			}
 
-			if out, err := exec.Command("goimports", "-w", path).CombinedOutput(); err != nil {
-				return errors.Wrapf(err, "goimports failed: %s", out)
-			}
-		}
+			if ag.ResourceGroupGoPackage != "" {
+				var allResources []*model.Resource
+				for _, v := range apiGroupVersions {
+					allResources = append(allResources, v.Resources...)
+				}
+				ag.ResourceGroupsFoo, err = parser.GetResourceGroups(ag, allResources)
+				if err != nil {
+					return err
+				}
 
-		// Generate mocks
-		// need to run after to make sure all resources have already been written
-		// Set this env var during tests so that mocks are not generated
-		if !opts.SkipGenMocks {
-			if err := genMocks(code, outDir, absoluteRoot); err != nil {
-				return err
+				code, err := codegen.GenerateResourceGroupFiles(ag, true, opts.SkipGeneratedTests)
+				if err != nil {
+					return err
+				}
+
+				outDir := filepath.Join(gopathSrc(), ag.ResourceGroupGoPackage)
+				if err := writeCodeFiles(code, outDir); err != nil {
+					return err
+				}
+
+				// Generate mocks
+				// need to run after to make sure all resources have already been written
+				// Set this env var during tests so that mocks are not generated
+				if !opts.SkipGenMocks {
+					if err := genMocks(code, outDir, absoluteRoot); err != nil {
+						return err
+					}
+				}
+			}
+
+			if ag.ConversionGoPackage != "" {
+				goPackageSegments := strings.Split(ag.ConversionGoPackage, "/")
+				ag.ConversionGoPackageShort = goPackageSegments[len(goPackageSegments)-1]
+
+				code, err := codegen.GenerateConversionFiles(ag, apiGroupVersions)
+				if err != nil {
+					return err
+				}
+
+				outDir := filepath.Join(gopathSrc(), ag.ConversionGoPackage)
+				if err := writeCodeFiles(code, outDir); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -254,8 +303,8 @@ func gopathSrc() string {
 	return filepath.Join(os.Getenv("GOPATH"), "src")
 }
 
-func collectProjectsFromRoot(root string, skipDirs []string) ([]*model.ProjectConfig, error) {
-	var projects []*model.ProjectConfig
+func collectProjectsFromRoot(root string, skipDirs []string) ([]*model.SoloKitProject, error) {
+	var soloKitProjects []*model.SoloKitProject
 
 	if err := filepath.Walk(root, func(projectFile string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -279,12 +328,13 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]*model.ProjectCo
 		if err != nil {
 			return err
 		}
-		projects = append(projects, &project)
+
+		soloKitProjects = append(soloKitProjects, &project)
 		return nil
 	}); err != nil {
 		return nil, err
 	}
-	return projects, nil
+	return soloKitProjects, nil
 }
 
 func addDescriptorsForFile(addDescriptor func(f DescriptorWithPath), root, protoFile string, customImports, customGogoArgs []string, wantCompile func(string) bool) error {
@@ -539,19 +589,44 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 		if err != nil {
 			return nil, err
 		}
-		var projectConfig model.ProjectConfig
-		err = json.Unmarshal(byt, &projectConfig)
+
+		var soloKitProject model.SoloKitProject
+		err = json.Unmarshal(byt, &soloKitProject)
 		if err != nil {
 			return nil, err
 		}
-		var customResources []model.CustomResourceConfig
-		for _, v := range projectConfig.CustomResources {
-			v.Package = projectConfig.GoPackage
-			v.Imported = true
-			customResources = append(customResources, v)
+		for _, ag := range soloKitProject.ApiGroups {
+			for _, vc := range ag.VersionConfigs {
+				var customResources []model.CustomResourceConfig
+				for _, cr := range vc.CustomResources {
+					cr.Package = ag.ResourceGroupGoPackage
+					cr.Imported = true
+					customResources = append(customResources, cr)
+				}
+				results = append(results, customResources...)
+			}
 		}
-		results = append(results, customResources...)
 	}
 
 	return results, nil
+}
+
+func writeCodeFiles(code code_generator.Files, outDir string) error {
+	for _, file := range code {
+		path := filepath.Join(outDir, file.Filename)
+		if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+			return err
+		}
+		if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
+			return err
+		}
+		if out, err := exec.Command("gofmt", "-w", path).CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "gofmt failed: %s", out)
+		}
+
+		if out, err := exec.Command("goimports", "-w", path).CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "goimports failed: %s", out)
+		}
+	}
+	return nil
 }

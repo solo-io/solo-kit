@@ -5,7 +5,7 @@ import (
 )
 
 var SimpleEmitterTemplate = template.Must(template.New("resource_group_emitter").Funcs(Funcs).Parse(
-	`package {{ .Project.ProjectConfig.Version }}
+	`package {{ .ApiGroup.ResourceGroupGoPackageShort }}
 
 import (
 	"context"

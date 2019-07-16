@@ -5,7 +5,7 @@ import (
 )
 
 var ResourceGroupEmitterTemplate = template.Must(template.New("resource_group_emitter").Funcs(Funcs).Parse(
-	`package {{ .Project.ProjectConfig.Version }}
+	`package {{ .ApiGroup.ResourceGroupGoPackageShort }}
 
 {{- $client_declarations := new_str_slice }}
 {{- $clients := new_str_slice }}

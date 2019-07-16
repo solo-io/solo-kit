@@ -126,7 +126,7 @@ func (o *FakeResource) DeepCopyObject() runtime.Object {
 var (
 	FakeResourceGVK = schema.GroupVersionKind{
 		Version: "v1alpha1",
-		Group:   "crds.testing.solo.io",
+		Group:   "testing.solo.io",
 		Kind:    "FakeResource",
 	}
 	FakeResourceCrd = crd.NewCrd(
