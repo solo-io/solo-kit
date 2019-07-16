@@ -1,63 +1,61 @@
 {
   "title": "Solo-Kit Testing",
   "description": "mock solo-kit project",
-  "api_groups": [
-    {
-      "name": "testing.solo.io",
-      "docs_dir": "test/mocks/docs",
-      "conversion_go_package": "github.com/solo-io/solo-kit/test/mocks/conversion",
-      "resource_group_go_package": "github.com/solo-io/solo-kit/test/mocks/group",
-      "imports": [
-        "github.com/solo-io/solo-kit/api/external/kubernetes"
-      ],
-      "resource_groups": {
-        "testing.solo.io": [
-          {
-            "name": "MockResource",
-            "package": "testing.solo.io"
-          },
-          {
-            "name": "FakeResource",
-            "package": "testing.solo.io"
-          },
-          {
-            "name": "AnotherMockResource",
-            "package": "testing.solo.io"
-          },
-          {
-            "name": "ClusterResource",
-            "package": "testing.solo.io"
-          },
-          {
-            "name": "MockCustomType",
-            "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
-          },
-          {
-            "name": "Pod",
-            "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-          }
-        ]
-      },
-      "version_configs": [
+  "api_group": {
+    "name": "testing.solo.io",
+    "docs_dir": "test/mocks/docs",
+    "conversion_go_package": "github.com/solo-io/solo-kit/test/mocks/conversion",
+    "resource_group_go_package": "github.com/solo-io/solo-kit/test/mocks/group",
+    "imports": [
+      "github.com/solo-io/solo-kit/api/external/kubernetes"
+    ],
+    "resource_groups": {
+      "testing.solo.io": [
         {
-          "version": "v2alpha1"
+          "name": "MockResource",
+          "package": "testing.solo.io"
         },
         {
-          "version": "v1alpha1",
-          "crd_group_override": "crds.testing.solo.io"
+          "name": "FakeResource",
+          "package": "testing.solo.io"
         },
         {
-          "version": "v1",
-          "custom_resources": [
-            {
-              "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype",
-              "type": "MockCustomType",
-              "plural_name": "mcts",
-              "short_name": "mct"
-            }
-          ]
+          "name": "AnotherMockResource",
+          "package": "testing.solo.io"
+        },
+        {
+          "name": "ClusterResource",
+          "package": "testing.solo.io"
+        },
+        {
+          "name": "MockCustomType",
+          "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
+        },
+        {
+          "name": "Pod",
+          "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
         }
       ]
-    }
-  ]
+    },
+    "version_configs": [
+      {
+        "version": "v2alpha1"
+      },
+      {
+        "version": "v1alpha1",
+        "crd_group_override": "crds.testing.solo.io"
+      },
+      {
+        "version": "v1",
+        "custom_resources": [
+          {
+            "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype",
+            "type": "MockCustomType",
+            "plural_name": "mcts",
+            "short_name": "mct"
+          }
+        ]
+      }
+    ]
+  }
 }

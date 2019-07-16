@@ -98,11 +98,9 @@ func Generate(opts GenerateOptions) error {
 			return false
 		}
 		for _, skp := range soloKitProjects {
-			for _, ag := range skp.ApiGroups {
-				for _, vc := range ag.VersionConfigs {
-					if strings.HasPrefix(protoFile, filepath.Dir(skp.ProjectFile)+"/"+vc.Version) {
-						return true
-					}
+			for _, vc := range skp.ApiGroup.VersionConfigs {
+				if strings.HasPrefix(protoFile, filepath.Dir(skp.ProjectFile)+"/"+vc.Version) {
+					return true
 				}
 			}
 		}
@@ -127,124 +125,118 @@ func Generate(opts GenerateOptions) error {
 
 	var protoDescriptors []*descriptor.FileDescriptorProto
 	for _, skp := range soloKitProjects {
-		for _, ag := range skp.ApiGroups {
-			importedResources, err := importCustomResources(ag.Imports)
-			if err != nil {
-				return err
-			}
-			for _, vc := range ag.VersionConfigs {
-				vc.CustomResources = append(vc.CustomResources, importedResources...)
-				for _, vc := range ag.VersionConfigs {
-					for _, desc := range descriptors {
-						if filepath.Dir(desc.ProtoFilePath) == filepath.Dir(skp.ProjectFile)+"/"+vc.Version {
-							vc.VersionProtos = append(vc.VersionProtos, desc.GetName())
-						}
-						protoDescriptors = append(protoDescriptors, desc.FileDescriptorProto)
-					}
+		importedResources, err := importCustomResources(skp.ApiGroup.Imports)
+		if err != nil {
+			return err
+		}
+		for _, vc := range skp.ApiGroup.VersionConfigs {
+			vc.CustomResources = append(vc.CustomResources, importedResources...)
+			for _, desc := range descriptors {
+				if filepath.Dir(desc.ProtoFilePath) == filepath.Dir(skp.ProjectFile)+"/"+vc.Version {
+					vc.VersionProtos = append(vc.VersionProtos, desc.GetName())
 				}
+				protoDescriptors = append(protoDescriptors, desc.FileDescriptorProto)
 			}
 		}
 	}
 
 	for _, skp := range soloKitProjects {
-		for _, ag := range skp.ApiGroups {
-			ag.SoloKitProject = skp
-			// Store all projects for conversion generation.
-			var apiGroupVersions []*model.Version
-			for _, vc := range ag.VersionConfigs {
-				vc.ApiGroup = ag
+		skp.ApiGroup.SoloKitProject = skp
+		// Store all projects for conversion generation.
+		var apiGroupVersions []*model.Version
+		for _, vc := range skp.ApiGroup.VersionConfigs {
+			vc.ApiGroup = skp.ApiGroup
 
-				// Build a 'Version' object that contains a resource for each message that:
-				// - is contained in the FileDescriptor and
-				// - is a solo kit resource (i.e. it has a field named 'metadata')
+			// Build a 'Version' object that contains a resource for each message that:
+			// - is contained in the FileDescriptor and
+			// - is a solo kit resource (i.e. it has a field named 'metadata')
 
-				version, err := parser.ProcessDescriptors(vc, ag, protoDescriptors)
+			version, err := parser.ProcessDescriptors(vc, skp.ApiGroup, protoDescriptors)
+			if err != nil {
+				return err
+			}
+			apiGroupVersions = append(apiGroupVersions, version)
+
+			code, err := codegen.GenerateProjectFiles(version, true, opts.SkipGeneratedTests)
+			if err != nil {
+				return err
+			}
+
+			outDir := filepath.Join(gopathSrc(), version.VersionConfig.GoPackage)
+			if err := writeCodeFiles(code, outDir); err != nil {
+				return err
+			}
+
+			genDocs = &DocsOptions{}
+			if skp.ApiGroup.DocsDir != "" && (genDocs != nil) {
+				docs, err := docgen.GenerateFiles(version, genDocs)
 				if err != nil {
 					return err
 				}
-				apiGroupVersions = append(apiGroupVersions, version)
 
-				code, err := codegen.GenerateProjectFiles(version, true, opts.SkipGeneratedTests)
-				if err != nil {
-					return err
-				}
-
-				outDir := filepath.Join(gopathSrc(), version.VersionConfig.GoPackage)
-				if err := writeCodeFiles(code, outDir); err != nil {
-					return err
-				}
-
-				genDocs = &DocsOptions{}
-				if ag.DocsDir != "" && (genDocs != nil) {
-					docs, err := docgen.GenerateFiles(version, genDocs)
-					if err != nil {
+				for _, file := range docs {
+					path := filepath.Join(absoluteRoot, skp.ApiGroup.DocsDir, file.Filename)
+					if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
 						return err
 					}
-
-					for _, file := range docs {
-						path := filepath.Join(absoluteRoot, ag.DocsDir, file.Filename)
-						if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-							return err
-						}
-						if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-							return err
-						}
-					}
-				}
-
-				// Generate mocks
-				// need to run after to make sure all resources have already been written
-				// Set this env var during tests so that mocks are not generated
-				if !opts.SkipGenMocks {
-					if err := genMocks(code, outDir, absoluteRoot); err != nil {
+					if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
 						return err
 					}
 				}
 			}
 
-			if ag.ResourceGroupGoPackage != "" {
-				var allResources []*model.Resource
-				for _, v := range apiGroupVersions {
-					allResources = append(allResources, v.Resources...)
-				}
-				ag.ResourceGroupsFoo, err = parser.GetResourceGroups(ag, allResources)
-				if err != nil {
+			// Generate mocks
+			// need to run after to make sure all resources have already been written
+			// Set this env var during tests so that mocks are not generated
+			if !opts.SkipGenMocks {
+				if err := genMocks(code, outDir, absoluteRoot); err != nil {
 					return err
-				}
-
-				code, err := codegen.GenerateResourceGroupFiles(ag, true, opts.SkipGeneratedTests)
-				if err != nil {
-					return err
-				}
-
-				outDir := filepath.Join(gopathSrc(), ag.ResourceGroupGoPackage)
-				if err := writeCodeFiles(code, outDir); err != nil {
-					return err
-				}
-
-				// Generate mocks
-				// need to run after to make sure all resources have already been written
-				// Set this env var during tests so that mocks are not generated
-				if !opts.SkipGenMocks {
-					if err := genMocks(code, outDir, absoluteRoot); err != nil {
-						return err
-					}
 				}
 			}
+		}
 
-			if ag.ConversionGoPackage != "" {
-				goPackageSegments := strings.Split(ag.ConversionGoPackage, "/")
-				ag.ConversionGoPackageShort = goPackageSegments[len(goPackageSegments)-1]
+		if skp.ApiGroup.ResourceGroupGoPackage != "" {
+			var allResources []*model.Resource
+			for _, v := range apiGroupVersions {
+				allResources = append(allResources, v.Resources...)
+			}
+			skp.ApiGroup.ResourceGroupsFoo, err = parser.GetResourceGroups(skp.ApiGroup, allResources)
+			if err != nil {
+				return err
+			}
 
-				code, err := codegen.GenerateConversionFiles(ag, apiGroupVersions)
-				if err != nil {
+			code, err := codegen.GenerateResourceGroupFiles(skp.ApiGroup, true, opts.SkipGeneratedTests)
+			if err != nil {
+				return err
+			}
+
+			outDir := filepath.Join(gopathSrc(), skp.ApiGroup.ResourceGroupGoPackage)
+			if err := writeCodeFiles(code, outDir); err != nil {
+				return err
+			}
+
+			// Generate mocks
+			// need to run after to make sure all resources have already been written
+			// Set this env var during tests so that mocks are not generated
+			if !opts.SkipGenMocks {
+				if err := genMocks(code, outDir, absoluteRoot); err != nil {
 					return err
 				}
+			}
+		}
 
-				outDir := filepath.Join(gopathSrc(), ag.ConversionGoPackage)
-				if err := writeCodeFiles(code, outDir); err != nil {
-					return err
-				}
+		if skp.ApiGroup.ConversionGoPackage != "" {
+			goPackageSegments := strings.Split(skp.ApiGroup.ConversionGoPackage, "/")
+			skp.ApiGroup.ConversionGoPackageShort = goPackageSegments[len(goPackageSegments)-1]
+
+			code, err := codegen.GenerateConversionFiles(skp.ApiGroup, apiGroupVersions)
+			if err != nil {
+				return err
+			}
+
+			outDir := filepath.Join(gopathSrc(), skp.ApiGroup.ConversionGoPackage)
+			if err := writeCodeFiles(code, outDir); err != nil {
+				return err
 			}
 		}
 	}
@@ -595,16 +587,14 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 		if err != nil {
 			return nil, err
 		}
-		for _, ag := range soloKitProject.ApiGroups {
-			for _, vc := range ag.VersionConfigs {
-				var customResources []model.CustomResourceConfig
-				for _, cr := range vc.CustomResources {
-					cr.Package = ag.ResourceGroupGoPackage
-					cr.Imported = true
-					customResources = append(customResources, cr)
-				}
-				results = append(results, customResources...)
+		for _, vc := range soloKitProject.ApiGroup.VersionConfigs {
+			var customResources []model.CustomResourceConfig
+			for _, cr := range vc.CustomResources {
+				cr.Package = soloKitProject.ApiGroup.ResourceGroupGoPackage
+				cr.Imported = true
+				customResources = append(customResources, cr)
 			}
+			results = append(results, customResources...)
 		}
 	}
 

@@ -1,53 +1,51 @@
 {
   "title": "solo-kit",
-  "api_groups": [
-    {
-      "name": "kubernetes.solo.io",
-      "resource_group_go_package": "github.com/solo-io/solo-kit/api/external/kubernetes/group",
-      "version_configs": [
-        {
-          "version": "kubernetes",
-          "go_package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes",
-          "custom_resources": [
-            {
-              "package": "github.com/solo-io/solo-kit/api/external/kubernetes/pod",
-              "type": "Pod",
-              "plural_name": "pods",
-              "short_name": "p"
-            },
-            {
-              "package": "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
-              "type": "KubeNamespace",
-              "plural_name": "kubenamespaces",
-              "short_name": "kn"
-            },
-            {
-              "package": "github.com/solo-io/solo-kit/api/external/kubernetes/configmap",
-              "type": "ConfigMap",
-              "plural_name": "configmaps",
-              "short_name": "cm"
-            },
-            {
-              "package": "github.com/solo-io/solo-kit/api/external/kubernetes/service",
-              "type": "Service",
-              "plural_name": "services",
-              "short_name": "svc"
-            },
-            {
-              "package": "github.com/solo-io/solo-kit/api/external/kubernetes/deployment",
-              "type": "Deployment",
-              "plural_name": "deployments",
-              "short_name": "dp "
-            },
-            {
-              "package": "github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition",
-              "type": "CustomResourceDefinition",
-              "plural_name": "customresourcedefinition",
-              "short_name": "crd "
-            }
-          ]
-        }
-      ]
-    }
-  ]
+  "api_group": {
+    "name": "kubernetes.solo.io",
+    "resource_group_go_package": "github.com/solo-io/solo-kit/api/external/kubernetes/group",
+    "version_configs": [
+      {
+        "version": "kubernetes",
+        "go_package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes",
+        "custom_resources": [
+          {
+            "package": "github.com/solo-io/solo-kit/api/external/kubernetes/pod",
+            "type": "Pod",
+            "plural_name": "pods",
+            "short_name": "p"
+          },
+          {
+            "package": "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
+            "type": "KubeNamespace",
+            "plural_name": "kubenamespaces",
+            "short_name": "kn"
+          },
+          {
+            "package": "github.com/solo-io/solo-kit/api/external/kubernetes/configmap",
+            "type": "ConfigMap",
+            "plural_name": "configmaps",
+            "short_name": "cm"
+          },
+          {
+            "package": "github.com/solo-io/solo-kit/api/external/kubernetes/service",
+            "type": "Service",
+            "plural_name": "services",
+            "short_name": "svc"
+          },
+          {
+            "package": "github.com/solo-io/solo-kit/api/external/kubernetes/deployment",
+            "type": "Deployment",
+            "plural_name": "deployments",
+            "short_name": "dp "
+          },
+          {
+            "package": "github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition",
+            "type": "CustomResourceDefinition",
+            "plural_name": "customresourcedefinition",
+            "short_name": "crd "
+          }
+        ]
+      }
+    ]
+  }
 }

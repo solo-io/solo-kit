@@ -19,9 +19,9 @@ const ProjectConfigFilename = "solo-kit.json"
 // SOLO-KIT Descriptors from which code can be generated
 
 type SoloKitProject struct {
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	ApiGroups   []*ApiGroup `json:"api_groups"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	ApiGroup    *ApiGroup `json:"api_group"`
 
 	// set by load
 	ProjectFile string
@@ -189,17 +189,15 @@ func LoadProjectConfig(path string) (SoloKitProject, error) {
 	}
 
 	skp.ProjectFile = path
-	for _, ag := range skp.ApiGroups {
-		goPackageSegments := strings.Split(ag.ResourceGroupGoPackage, "/")
-		ag.ResourceGroupGoPackageShort = goPackageSegments[len(goPackageSegments)-1]
-		for _, vc := range ag.VersionConfigs {
-			if vc.GoPackage == "" {
-				goPkg, err := detectGoPackageForVersion(filepath.Dir(skp.ProjectFile) + "/" + vc.Version)
-				if err != nil {
-					return SoloKitProject{}, err
-				}
-				vc.GoPackage = goPkg
+	goPackageSegments := strings.Split(skp.ApiGroup.ResourceGroupGoPackage, "/")
+	skp.ApiGroup.ResourceGroupGoPackageShort = goPackageSegments[len(goPackageSegments)-1]
+	for _, vc := range skp.ApiGroup.VersionConfigs {
+		if vc.GoPackage == "" {
+			goPkg, err := detectGoPackageForVersion(filepath.Dir(skp.ProjectFile) + "/" + vc.Version)
+			if err != nil {
+				return SoloKitProject{}, err
 			}
+			vc.GoPackage = goPkg
 		}
 	}
 
