@@ -4,7 +4,6 @@
   "api_group": {
     "name": "testingtwo.solo.io",
     "docs_dir": "test/mockstwo/docs",
-    "conversion_go_package": "github.com/solo-io/solo-kit/test/mockstwo/conversion",
     "resource_group_go_package": "github.com/solo-io/solo-kit/test/mockstwo/group",
     "imports": [
       "github.com/solo-io/solo-kit/api/external/kubernetes"

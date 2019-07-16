@@ -140,9 +140,22 @@ func Generate(opts GenerateOptions) error {
 		}
 	}
 
+	// Accumulate all resources in order to handle cross-project dependencies
+	var allResources []*model.Resource
 	for _, skp := range soloKitProjects {
 		skp.ApiGroup.SoloKitProject = skp
-		// Store all projects for conversion generation.
+		for _, vc := range skp.ApiGroup.VersionConfigs {
+			vc.ApiGroup = skp.ApiGroup
+			version, err := parser.ProcessDescriptors(vc, skp.ApiGroup, protoDescriptors)
+			if err != nil {
+				return err
+			}
+			allResources = append(allResources, version.Resources...)
+		}
+	}
+
+	for _, skp := range soloKitProjects {
+		// Store all versions on each api group for conversion generation.
 		var apiGroupVersions []*model.Version
 		for _, vc := range skp.ApiGroup.VersionConfigs {
 			vc.ApiGroup = skp.ApiGroup
@@ -195,16 +208,12 @@ func Generate(opts GenerateOptions) error {
 		}
 
 		if skp.ApiGroup.ResourceGroupGoPackage != "" {
-			var allResources []*model.Resource
-			for _, v := range apiGroupVersions {
-				allResources = append(allResources, v.Resources...)
-			}
 			skp.ApiGroup.ResourceGroupsFoo, err = parser.GetResourceGroups(skp.ApiGroup, allResources)
 			if err != nil {
 				return err
 			}
 
-			code, err := codegen.GenerateResourceGroupFiles(skp.ApiGroup, true, opts.SkipGeneratedTests)
+			code, err := codegen.GenerateResourceGroupFiles(skp.ApiGroup, false, opts.SkipGeneratedTests)
 			if err != nil {
 				return err
 			}
