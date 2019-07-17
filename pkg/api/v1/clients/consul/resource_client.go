@@ -58,7 +58,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, errors.NewNotExistErr(namespace, name)
 	}
 	resource := rc.NewResource()
-	if err := protoutils.UnmarshalBytes(kvPair.Value, resource); err != nil {
+	if err := protoutils.UnmarshalYAML(kvPair.Value, resource); err != nil {
 		return nil, errors.Wrapf(err, "reading KV into %v", rc.Kind())
 	}
 	resources.UpdateMetadata(resource, func(meta *core.Metadata) {
@@ -92,7 +92,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	clone := resources.Clone(resource)
 	clone.SetMetadata(meta)
 
-	data, err := protoutils.MarshalBytes(clone)
+	data, err := protoutils.MarshalYAML(clone)
 	if err != nil {
 		panic(errors.Wrapf(err, "internal err: failed to marshal resource"))
 	}
@@ -143,7 +143,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	var resourceList resources.ResourceList
 	for _, kvPair := range kvPairs {
 		resource := rc.NewResource()
-		if err := protoutils.UnmarshalBytes(kvPair.Value, resource); err != nil {
+		if err := protoutils.UnmarshalYAML(kvPair.Value, resource); err != nil {
 			return nil, errors.Wrapf(err, "reading KV into %v", rc.Kind())
 		}
 		resources.UpdateMetadata(resource, func(meta *core.Metadata) {
@@ -197,7 +197,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		var resourceList resources.ResourceList
 		for _, kvPair := range kvPairs {
 			resource := rc.NewResource()
-			if err := protoutils.UnmarshalBytes(kvPair.Value, resource); err != nil {
+			if err := protoutils.UnmarshalYAML(kvPair.Value, resource); err != nil {
 				return nil, errors.Wrapf(err, "reading KV into %v", rc.Kind())
 			}
 			resources.UpdateMetadata(resource, func(meta *core.Metadata) {
