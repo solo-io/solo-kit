@@ -139,7 +139,7 @@ func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind
 	}
 
 	// Kubernetes expects Version to match the name of the first element specified in the Versions list.
-	// We specify the latest version there, so we must also sort the list of versions from latest to oldest.
+	// Sort so the first version in the list will also be the latest.
 	sort.Slice(versions, func(i, j int) bool {
 		parsedi, err := kubeapi.ParseVersion(versions[i].Name)
 		if err != nil {
@@ -163,7 +163,7 @@ func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind
 				ShortNames: []string{crd.ShortName},
 			},
 			Versions: versions,
-			Version:  crd.Versions.GetLatestVersion().Version,
+			Version:  versions[0].Name,
 		},
 	}, nil
 }
