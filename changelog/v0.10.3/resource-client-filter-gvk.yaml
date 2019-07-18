@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Filter resources with GVK that doesn't match that of the resource client.
+    issueLink: https://github.com/solo-io/solo-kit/issues/216
