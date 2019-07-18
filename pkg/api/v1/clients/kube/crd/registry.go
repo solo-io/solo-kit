@@ -2,10 +2,12 @@ package crd
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/go-utils/versionutils/kubeapi"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -135,6 +137,21 @@ func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind
 	if !validGvk {
 		return nil, InvalidGVKError(gvk)
 	}
+
+	// Kubernetes expects Version to match the name of the first element specified in the Versions list.
+	// We specify the latest version there, so we must also sort the list of versions from latest to oldest.
+	sort.Slice(versions, func(i, j int) bool {
+		parsedi, err := kubeapi.ParseVersion(versions[i].Name)
+		if err != nil {
+			return false
+		}
+		parsedj, err := kubeapi.ParseVersion(versions[j].Name)
+		if err != nil {
+			return false
+		}
+		return parsedi.GreaterThan(parsedj)
+	})
+
 	return &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{Name: crd.FullName()},
 		Spec: v1beta1.CustomResourceDefinitionSpec{
