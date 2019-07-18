@@ -2,6 +2,7 @@ package setup
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,14 +19,18 @@ const defaultConsulDockerImage = "consul@sha256:6ffe55dcc1000126a6e874b298fe1f1b
 type ConsulFactory struct {
 	consulpath string
 	tmpdir     string
+	Ports      ConsulPorts
 }
 
 func NewConsulFactory() (*ConsulFactory, error) {
 	consulpath := os.Getenv("CONSUL_BINARY")
 
+	ports := NewRandomConsulPorts()
+
 	if consulpath != "" {
 		return &ConsulFactory{
 			consulpath: consulpath,
+			Ports:      ports,
 		}, nil
 	}
 
@@ -61,6 +66,7 @@ docker rm -f $CID
 	return &ConsulFactory{
 		consulpath: filepath.Join(tmpdir, "consul"),
 		tmpdir:     tmpdir,
+		Ports:      ports,
 	}, nil
 }
 
@@ -79,6 +85,7 @@ type ConsulInstance struct {
 	consulpath string
 	tmpdir     string
 	cmd        *exec.Cmd
+	Ports      ConsulPorts
 }
 
 func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
@@ -88,7 +95,7 @@ func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(ef.consulpath, "agent", "-dev", "--client=0.0.0.0")
+	cmd := exec.Command(ef.consulpath, append([]string{"agent", "-dev", "--client=0.0.0.0"}, ef.Ports.Flags()...)...)
 	cmd.Dir = ef.tmpdir
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter
@@ -96,6 +103,7 @@ func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		consulpath: ef.consulpath,
 		tmpdir:     tmpdir,
 		cmd:        cmd,
+		Ports:      ef.Ports,
 	}, nil
 
 }
@@ -131,4 +139,31 @@ func (i *ConsulInstance) Clean() error {
 		os.RemoveAll(i.tmpdir)
 	}
 	return nil
+}
+
+type ConsulPorts struct {
+	DnsPort, HttpPort, GrpcPort, ServerPort, SerfLanPort, SerfWanPort int
+}
+
+func NewRandomConsulPorts() ConsulPorts {
+	return ConsulPorts{
+		HttpPort:    rand.Intn(1000) + 10000,
+		GrpcPort:    rand.Intn(1000) + 10001,
+		DnsPort:     rand.Intn(1000) + 10002,
+		ServerPort:  rand.Intn(1000) + 10002,
+		SerfLanPort: rand.Intn(1000) + 10002,
+		SerfWanPort: rand.Intn(1000) + 10002,
+	}
+}
+
+// return flags to set each port type as a string
+func (p ConsulPorts) Flags() []string {
+	return []string{
+		fmt.Sprintf("--dns-port=%v", p.DnsPort),
+		fmt.Sprintf("--grpc-port=%v", p.GrpcPort),
+		fmt.Sprintf("--http-port=%v", p.HttpPort),
+		fmt.Sprintf("--server-port=%v", p.ServerPort),
+		fmt.Sprintf("--serf-lan-port=%v", p.SerfLanPort),
+		fmt.Sprintf("--serf-wan-port=%v", p.SerfWanPort),
+	}
 }

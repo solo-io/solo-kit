@@ -2,6 +2,7 @@ package setup
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,14 +25,18 @@ const defaultVaultDockerImage = "vault:0.9.2"
 type VaultFactory struct {
 	vaultpath string
 	tmpdir    string
+	Port      int
 }
 
 func NewVaultFactory() (*VaultFactory, error) {
 	vaultpath := os.Getenv("VAULT_BINARY")
 
+	port := rand.Intn(1000) + 10002
+
 	if vaultpath != "" {
 		return &VaultFactory{
 			vaultpath: vaultpath,
+			Port:      port,
 		}, nil
 	}
 
@@ -67,6 +72,7 @@ docker rm -f $CID
 	return &VaultFactory{
 		vaultpath: filepath.Join(tmpdir, "vault"),
 		tmpdir:    tmpdir,
+		Port:      port,
 	}, nil
 }
 
@@ -86,6 +92,7 @@ type VaultInstance struct {
 	tmpdir    string
 	cmd       *exec.Cmd
 	token     string
+	Port      int
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -98,6 +105,7 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	return &VaultInstance{
 		vaultpath: ef.vaultpath,
 		tmpdir:    tmpdir,
+		Port:      ef.Port,
 	}, nil
 
 }
@@ -115,7 +123,7 @@ func (i *VaultInstance) RunWithPort() error {
 		"server",
 		"-dev",
 		"-dev-root-token-id=root",
-		"-dev-listen-address=0.0.0.0:8200",
+		fmt.Sprintf("-dev-listen-address=0.0.0.0:%v", i.Port),
 	)
 	buf := &bytes.Buffer{}
 	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)

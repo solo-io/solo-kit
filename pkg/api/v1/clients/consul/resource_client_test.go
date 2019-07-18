@@ -2,6 +2,7 @@ package consul_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/consul/api"
@@ -22,7 +23,11 @@ var _ = Describe("Base", func() {
 	)
 	BeforeEach(func() {
 		rootKey = "my-root-key"
-		c, err := api.NewClient(api.DefaultConfig())
+
+		cfg := api.DefaultConfig()
+		cfg.Address = fmt.Sprintf("127.0.0.1:%v", consulInstance.Ports.HttpPort)
+
+		c, err := api.NewClient(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		consul = c
 		client = NewResourceClient(consul, rootKey, &v1.MockResource{})

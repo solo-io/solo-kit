@@ -2,6 +2,7 @@ package vault_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -23,7 +24,7 @@ var _ = Describe("Base", func() {
 	BeforeEach(func() {
 		rootKey = "bark"
 		cfg := api.DefaultConfig()
-		cfg.Address = "http://127.0.0.1:8200"
+		cfg.Address = fmt.Sprintf("http://127.0.0.1:%v", vaultInstance.Port)
 		c, err := api.NewClient(cfg)
 		c.SetToken(vaultInstance.Token())
 		Expect(err).NotTo(HaveOccurred())
