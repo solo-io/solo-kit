@@ -42,6 +42,9 @@ func (list VersionList) GetLatestVersion() Version {
 		if err != nil {
 			continue
 		}
+		if latestParsed == nil {
+			latestParsed = parsed
+		}
 		if parsed.GreaterThan(latestParsed) {
 			latest = v
 			latestParsed = parsed
