@@ -26,9 +26,7 @@ func NewKubeConfig(namespace, name string) *KubeConfig {
 // require custom resource to implement Clone() as well as resources.Resource interface
 
 type CloneableKubeConfig interface {
-	GetMetadata() core.Metadata
-	SetMetadata(meta core.Metadata)
-	Equal(that interface{}) bool
+	resources.BaseResource
 	Clone() *github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfig
 }
 
