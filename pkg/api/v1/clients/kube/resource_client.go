@@ -297,7 +297,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 	var resourceList resources.ResourceList
 	for _, resourceCrd := range listedResources {
-		if rc.matchesClientGVK(*resourceCrd) {
+		if !rc.matchesClientGVK(*resourceCrd) {
 			continue
 		}
 		resource, err := rc.convertCrdToResource(resourceCrd)
