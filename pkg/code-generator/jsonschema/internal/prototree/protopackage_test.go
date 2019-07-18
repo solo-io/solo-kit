@@ -10,7 +10,8 @@ import (
 
 var _ = Describe("protopackage", func() {
 	var (
-		soloiov1 = "core.solo.io.v1"
+		soloiov1    = "core.solo.io.v1"
+		googleProto = "google.protobuf"
 
 		root *ProtoPackage
 	)
@@ -34,6 +35,18 @@ var _ = Describe("protopackage", func() {
 		})
 
 		It("Can create a nested recursive tree", func() {
+			tests := []string{
+				googleProto + ".DescriptorProto.ExtensionRange",
+				googleProto + ".DescriptorProto.ReservedRange",
+				googleProto + ".DescriptorProto",
+			}
+			t, found := messages[tests[len(tests)-1]]
+			Expect(found).To(BeTrue())
+			root.RegisterMessage(proto.String(googleProto), t)
+			for _, v := range tests {
+				_, found := root.LookupType(v)
+				Expect(found).To(BeTrue())
+			}
 
 		})
 	})

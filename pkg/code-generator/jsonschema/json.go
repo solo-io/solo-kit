@@ -55,6 +55,24 @@ var (
 	}
 )
 
+type Generator interface {
+	Convert(resource *model.Resource) (*jsonschema.Type, error)
+}
+
+type Options struct {
+	AllowNullValues              bool
+	DisallowAdditionalProperties bool
+	DisallowBigIntsAsStrings     bool
+}
+
+type generator struct {
+	// Internal objects used to construct schema types, and build kube schemas
+	protoPackage   *prototree.ProtoPackage
+	fs             afero.Fs
+	generatedTypes *schemaMap
+	opts           *Options
+}
+
 // Convert a proto "field" (essentially a type-switch with some recursion):
 func (g *generator) convertField(curPkg *prototree.ProtoPackage, desc *descriptor.FieldDescriptorProto, msg *descriptor.DescriptorProto) (*jsonschema.Type, error) {
 
@@ -250,37 +268,6 @@ func (g *generator) handleNestedObject(desc *descriptor.FieldDescriptorProto, js
 	return jsonSchemaType, nil
 }
 
-func IsMap(msg *descriptor.DescriptorProto) bool {
-	if msg.GetNestedType() != nil {
-		return false
-	}
-	if len(msg.GetField()) != 2 {
-		return false
-	}
-	key, value := false, false
-	for _, field := range msg.GetField() {
-		// Best guess that this is a map
-		if field.GetName() == "key" && field.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
-			key = true
-		}
-		if field.GetName() == "value" {
-			value = true
-		}
-	}
-	return key && value
-}
-
-func schemaRefName(packageName, name string) string {
-	return fmt.Sprintf("#/definitions/%s", schemaTitleName(packageName, name))
-}
-
-func schemaTitleName(packageName, name string) string {
-	if packageName == "" {
-		return name
-	}
-	return fmt.Sprintf("%s.%s", packageName, name)
-}
-
 // Converts a proto "MESSAGE" into a JSON-Schema:
 func (g *generator) convertMessageType(curPkg *prototree.ProtoPackage, msg *descriptor.DescriptorProto) (*jsonschema.Type, error) {
 
@@ -456,49 +443,6 @@ func (g *generator) recursivelyConvertFields(curPkg *prototree.ProtoPackage, msg
 	return result, nil
 }
 
-type Generator interface {
-	Convert(resource *model.Resource) (*jsonschema.Type, error)
-}
-
-type schemaMap struct {
-	data map[string]jsonschema.Type
-	sync.RWMutex
-}
-
-func newSchemaMap() *schemaMap {
-	return &schemaMap{data: make(map[string]jsonschema.Type)}
-}
-
-func (s *schemaMap) Get(key string) (*jsonschema.Type, bool) {
-	s.RLock()
-	defer s.RUnlock()
-	val, ok := s.data[key]
-	return &val, ok
-}
-
-func (s *schemaMap) Set(key string, val *jsonschema.Type) {
-	s.Lock()
-	defer s.Unlock()
-	// if _, ok := s.data[key]; ok {
-	// 	return
-	// }
-	s.data[key] = *val
-}
-
-type Options struct {
-	AllowNullValues              bool
-	DisallowAdditionalProperties bool
-	DisallowBigIntsAsStrings     bool
-}
-
-type generator struct {
-	// Internal objects used to construct schema types, and build kube schemas
-	protoPackage   *prototree.ProtoPackage
-	fs             afero.Fs
-	generatedTypes *schemaMap
-	opts           *Options
-}
-
 func (g *generator) Convert(resource *model.Resource) (*jsonschema.Type, error) {
 	preGenType, ok := g.generatedTypes.Get(schemaTitleName(resource.ProtoPackage, resource.Name))
 	if !ok {
@@ -634,4 +578,57 @@ func TranformToKubeSpec(schemaType *jsonschema.Type, res *model.Resource) (*json
 	resourceType.Properties["spec"] = resourceSpec
 	schemaType.Definitions[key] = resourceType
 	return schemaType, nil
+}
+
+func IsMap(msg *descriptor.DescriptorProto) bool {
+	if msg.GetNestedType() != nil {
+		return false
+	}
+	if len(msg.GetField()) != 2 {
+		return false
+	}
+	key, value := false, false
+	for _, field := range msg.GetField() {
+		// Best guess that this is a map
+		if field.GetName() == "key" && field.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
+			key = true
+		}
+		if field.GetName() == "value" {
+			value = true
+		}
+	}
+	return key && value
+}
+
+func schemaRefName(packageName, name string) string {
+	return fmt.Sprintf("#/definitions/%s", schemaTitleName(packageName, name))
+}
+
+func schemaTitleName(packageName, name string) string {
+	if packageName == "" {
+		return name
+	}
+	return fmt.Sprintf("%s.%s", packageName, name)
+}
+
+type schemaMap struct {
+	data map[string]jsonschema.Type
+	sync.RWMutex
+}
+
+func newSchemaMap() *schemaMap {
+	return &schemaMap{data: make(map[string]jsonschema.Type)}
+}
+
+func (s *schemaMap) Get(key string) (*jsonschema.Type, bool) {
+	s.RLock()
+	defer s.RUnlock()
+	val, ok := s.data[key]
+	return &val, ok
+}
+
+func (s *schemaMap) Set(key string, val *jsonschema.Type) {
+	s.Lock()
+	defer s.Unlock()
+	s.data[key] = *val
 }
