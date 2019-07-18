@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -14,10 +16,15 @@ import (
 
 const delim = " "
 
-type Resource interface {
+type BaseResource interface {
 	GetMetadata() core.Metadata
 	SetMetadata(meta core.Metadata)
 	Equal(that interface{}) bool
+}
+
+type Resource interface {
+	BaseResource
+	GroupVersionKind() schema.GroupVersionKind
 }
 
 type ProtoResource interface {
@@ -382,11 +389,11 @@ func Clone(resource Resource) Resource {
 	panic(fmt.Errorf("resource %T is not cloneable and not a proto", resource))
 }
 
-func Kind(resource Resource) string {
+func Kind(resource BaseResource) string {
 	return reflect.TypeOf(resource).String()
 }
 
-func UpdateMetadata(resource Resource, updateFunc func(meta *core.Metadata)) {
+func UpdateMetadata(resource BaseResource, updateFunc func(meta *core.Metadata)) {
 	meta := resource.GetMetadata()
 	updateFunc(&meta)
 	resource.SetMetadata(meta)

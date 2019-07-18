@@ -21,7 +21,7 @@ var _ = Describe("Base", func() {
 		secrets clients.ResourceClient
 	)
 	BeforeEach(func() {
-		rootKey = helpers.RandString(4)
+		rootKey = "bark"
 		cfg := api.DefaultConfig()
 		cfg.Address = "http://127.0.0.1:8200"
 		c, err := api.NewClient(cfg)

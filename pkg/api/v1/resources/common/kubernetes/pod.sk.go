@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewPod(namespace, name string) *Pod {
@@ -25,7 +26,9 @@ func NewPod(namespace, name string) *Pod {
 // require custom resource to implement Clone() as well as resources.Resource interface
 
 type CloneablePod interface {
-	resources.Resource
+	GetMetadata() core.Metadata
+	SetMetadata(meta core.Metadata)
+	Equal(that interface{}) bool
 	Clone() *github_com_solo_io_solo_kit_api_external_kubernetes_pod.Pod
 }
 
@@ -47,6 +50,10 @@ func (r *Pod) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *Pod) GroupVersionKind() schema.GroupVersionKind {
+	return PodGVK
 }
 
 type PodList []*Pod
@@ -121,3 +128,11 @@ func (list PodList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	PodGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "Pod",
+	}
+)

@@ -172,7 +172,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	}
 
 	list = nil
-	after := time.After(time.Millisecond * 5)
+	after := time.After(time.Millisecond * 250)
 Loop:
 	for {
 		select {

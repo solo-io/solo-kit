@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewService(namespace, name string) *Service {
@@ -25,7 +26,9 @@ func NewService(namespace, name string) *Service {
 // require custom resource to implement Clone() as well as resources.Resource interface
 
 type CloneableService interface {
-	resources.Resource
+	GetMetadata() core.Metadata
+	SetMetadata(meta core.Metadata)
+	Equal(that interface{}) bool
 	Clone() *github_com_solo_io_solo_kit_api_external_kubernetes_service.Service
 }
 
@@ -47,6 +50,10 @@ func (r *Service) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *Service) GroupVersionKind() schema.GroupVersionKind {
+	return ServiceGVK
 }
 
 type ServiceList []*Service
@@ -121,3 +128,11 @@ func (list ServiceList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	ServiceGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "Service",
+	}
+)

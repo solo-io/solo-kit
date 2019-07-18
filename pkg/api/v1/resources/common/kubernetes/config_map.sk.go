@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewConfigMap(namespace, name string) *ConfigMap {
@@ -25,7 +26,9 @@ func NewConfigMap(namespace, name string) *ConfigMap {
 // require custom resource to implement Clone() as well as resources.Resource interface
 
 type CloneableConfigMap interface {
-	resources.Resource
+	GetMetadata() core.Metadata
+	SetMetadata(meta core.Metadata)
+	Equal(that interface{}) bool
 	Clone() *github_com_solo_io_solo_kit_api_external_kubernetes_configmap.ConfigMap
 }
 
@@ -47,6 +50,10 @@ func (r *ConfigMap) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *ConfigMap) GroupVersionKind() schema.GroupVersionKind {
+	return ConfigMapGVK
 }
 
 type ConfigMapList []*ConfigMap
@@ -121,3 +128,11 @@ func (list ConfigMapList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	ConfigMapGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "ConfigMap",
+	}
+)

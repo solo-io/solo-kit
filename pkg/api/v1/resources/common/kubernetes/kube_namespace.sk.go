@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewKubeNamespace(namespace, name string) *KubeNamespace {
@@ -25,7 +26,9 @@ func NewKubeNamespace(namespace, name string) *KubeNamespace {
 // require custom resource to implement Clone() as well as resources.Resource interface
 
 type CloneableKubeNamespace interface {
-	resources.Resource
+	GetMetadata() core.Metadata
+	SetMetadata(meta core.Metadata)
+	Equal(that interface{}) bool
 	Clone() *github_com_solo_io_solo_kit_api_external_kubernetes_namespace.KubeNamespace
 }
 
@@ -47,6 +50,10 @@ func (r *KubeNamespace) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *KubeNamespace) GroupVersionKind() schema.GroupVersionKind {
+	return KubeNamespaceGVK
 }
 
 type KubeNamespaceList []*KubeNamespace
@@ -121,3 +128,11 @@ func (list KubeNamespaceList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	KubeNamespaceGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "KubeNamespace",
+	}
+)
