@@ -21,7 +21,7 @@ var _ = Describe("Base", func() {
 		rootKey string
 	)
 	BeforeEach(func() {
-		rootKey = helpers.RandString(4)
+		rootKey = "my-root-key"
 		c, err := api.NewClient(api.DefaultConfig())
 		Expect(err).NotTo(HaveOccurred())
 		consul = c

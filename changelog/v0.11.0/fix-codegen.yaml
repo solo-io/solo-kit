@@ -3,5 +3,5 @@ changelog:
   description: fix & enable vault and consul resource clients
   issueLink: https://github.com/solo-io/solo-kit/issues/217
 - type: BREAKING_CHANGE
-  description: add GroupVersionKind() to
+  description: add GroupVersionKind() to Resource interface
   issueLink: https://github.com/solo-io/solo-kit/issues/217

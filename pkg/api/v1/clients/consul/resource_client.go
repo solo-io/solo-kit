@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -134,8 +135,8 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	opts = opts.WithDefaults()
 	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
-	namespacePrefix := filepath.Join(rc.root, namespace)
-	kvPairs, _, err := rc.consul.KV().List(namespacePrefix, nil)
+	resourceDir := rc.resourceDirectory(namespace)
+	kvPairs, _, err := rc.consul.KV().List(resourceDir, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading namespace root")
 	}
@@ -239,6 +240,17 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
+func (rc *ResourceClient) resourceDirectory(namespace string) string {
+	return strings.Join([]string{
+		rc.root,
+		namespace,
+		rc.resourceType.GroupVersionKind().Group,
+		rc.resourceType.GroupVersionKind().Version,
+		rc.resourceType.GroupVersionKind().Kind}, "/")
+}
+
 func (rc *ResourceClient) resourceKey(namespace, name string) string {
-	return filepath.Join(rc.root, namespace, name)
+	return strings.Join([]string{
+		rc.resourceDirectory(namespace),
+		name}, "/")
 }
