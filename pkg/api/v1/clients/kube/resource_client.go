@@ -173,6 +173,9 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		}
 		return nil, errors.Wrapf(err, "reading resource from kubernetes")
 	}
+	if !rc.matchesClientGVK(*resourceCrd) {
+		return nil, errors.Errorf("cannot read %v resource with %v client", resourceCrd.GroupVersionKind().String(), rc.crd.GroupVersionKind().String())
+	}
 	resource, err := rc.convertCrdToResource(resourceCrd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "converting output crd")
@@ -294,6 +297,9 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 	var resourceList resources.ResourceList
 	for _, resourceCrd := range listedResources {
+		if rc.matchesClientGVK(*resourceCrd) {
+			continue
+		}
 		resource, err := rc.convertCrdToResource(resourceCrd)
 		if err != nil {
 			return nil, errors.Wrapf(err, "converting output crd")
@@ -362,7 +368,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 
 				// Only notify watchers if the updated resource is in the watched
 				// namespace and its kind matches the one of the resource clientz
-				if matchesTargetNamespace(watchedNamespace, resource.ObjectMeta.Namespace) && rc.matchesClientKind(resource) {
+				if matchesTargetNamespace(watchedNamespace, resource.ObjectMeta.Namespace) && rc.matchesClientGVK(resource) {
 					updateResourceList()
 				}
 			case <-ctx.Done():
@@ -375,11 +381,9 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
-// Checks whether the type of the given resource matches the one of the client's underlying CRD:
-// 1. the kind name must match that of CRD
-// 2. the version must match the CRD GroupVersion (in the form <GROUP_NAME>/<VERSION>)
-func (rc *ResourceClient) matchesClientKind(resource v1.Resource) bool {
-	return resource.Kind == rc.crd.KindName && resource.APIVersion == rc.crd.GroupVersion().String()
+// Checks whether the group version kind of the given resource matches that of the client's underlying CRD:
+func (rc *ResourceClient) matchesClientGVK(resource v1.Resource) bool {
+	return resource.GroupVersionKind().String() == rc.crd.GroupVersionKind().String()
 }
 
 func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {
