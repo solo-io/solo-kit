@@ -7,9 +7,9 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"sigs.k8s.io/yaml"
 
-	"github.com/ghodss/yaml"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
@@ -33,6 +33,33 @@ func MarshalBytes(res resources.Resource) ([]byte, error) {
 		return buf.Bytes(), err
 	}
 	return json.Marshal(res)
+}
+
+func UnmarshalYAML(data []byte, into resources.Resource) error {
+	jsn, err := yaml.YAMLToJSON(data)
+	if err != nil {
+		return err
+	}
+
+	if protoInto, ok := into.(proto.Message); ok {
+		return jsonpb.Unmarshal(bytes.NewBuffer(jsn), protoInto)
+	}
+	return json.Unmarshal(data, into)
+}
+
+func MarshalYAML(res resources.Resource) ([]byte, error) {
+	jsn, err := func() ([]byte, error) {
+		if pb, ok := res.(proto.Message); ok {
+			buf := &bytes.Buffer{}
+			err := jsonpbMarshaler.Marshal(buf, pb)
+			return buf.Bytes(), err
+		}
+		return json.Marshal(res)
+	}()
+	if err != nil {
+		return nil, err
+	}
+	return yaml.JSONToYAML(jsn)
 }
 
 func MarshalBytesEmitZeroValues(res resources.Resource) ([]byte, error) {

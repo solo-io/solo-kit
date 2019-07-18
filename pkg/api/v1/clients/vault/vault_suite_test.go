@@ -11,10 +11,6 @@ import (
 
 // TODO: fix tests
 func TestVault(t *testing.T) {
-
-	log.Printf("Skipping Vault Suite. Tests are currently failing and need to be fixed.")
-	return
-
 	RegisterFailHandler(Fail)
 	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "Vault Suite")

@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/hashicorp/vault/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -18,46 +18,29 @@ import (
 )
 
 const (
-	dataKey       = "data"
-	annotationKey = "resource_kind"
+	dataKey = "data"
 )
 
 func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resource, error) {
-	// not our secret
-	// should be an error on a Read, ignored on a list
-	if secret.Data[annotationKey] != rc.Kind() {
-		return nil, nil
-	}
-
 	dataValue, ok := secret.Data[dataKey]
 	if !ok {
 		return nil, errors.Errorf("secret missing required key %v", dataKey)
 	}
-	data, ok := dataValue.(string)
+	data, ok := dataValue.(map[string]interface{})
 	if !ok {
-		return nil, errors.Errorf("key %v present but value was not string", dataKey)
-	}
-	// assumes the data is YAML-encoded
-	jsn, err := yaml.YAMLToJSON([]byte(data))
-	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("key %v present but value was not map[string]interface{}", dataKey)
 	}
 	resource := rc.NewResource()
-	return resource, protoutils.UnmarshalBytes(jsn, resource)
+	return resource, protoutils.UnmarshalMap(data, resource)
 }
 
 func (rc *ResourceClient) toVaultSecret(resource resources.Resource) (map[string]interface{}, error) {
 	values := make(map[string]interface{})
-	jsn, err := protoutils.MarshalBytes(resource)
+	data, err := protoutils.MarshalMap(resource)
 	if err != nil {
 		return nil, err
 	}
-	data, err := yaml.JSONToYAML(jsn)
-	if err != nil {
-		return nil, err
-	}
-	values[dataKey] = string(data)
-	values[annotationKey] = rc.Kind()
+	values[dataKey] = data
 	return values, nil
 }
 
@@ -269,5 +252,5 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 }
 
 func (rc *ResourceClient) resourceKey(namespace, name string) string {
-	return filepath.Join(rc.root, namespace, name)
+	return strings.Join([]string{"secret", "data", rc.root, namespace, rc.resourceType.GroupVersionKind().String(), name}, "/")
 }

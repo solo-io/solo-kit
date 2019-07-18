@@ -27,11 +27,11 @@ type VaultFactory struct {
 }
 
 func NewVaultFactory() (*VaultFactory, error) {
-	envoypath := os.Getenv("VAULT_BINARY")
+	vaultpath := os.Getenv("VAULT_BINARY")
 
-	if envoypath != "" {
+	if vaultpath != "" {
 		return &VaultFactory{
-			vaultpath: envoypath,
+			vaultpath: vaultpath,
 		}, nil
 	}
 
@@ -126,8 +126,19 @@ func (i *VaultInstance) RunWithPort() error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Millisecond * 1500)
 	i.cmd = cmd
+	time.Sleep(time.Millisecond * 1500)
+
+	// enable kv storage
+	enableCmdOut, err := exec.Command(i.vaultpath,
+		"secrets",
+		"enable",
+		"-address=http://127.0.0.1:8200",
+		"-version=2",
+		"kv").CombinedOutput()
+	if err != nil {
+		return errors.Wrapf(err, "enabling kv storage failed: %s", enableCmdOut)
+	}
 
 	tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(buf.String(), 1)
 	if len(tokenSlice) < 1 {
