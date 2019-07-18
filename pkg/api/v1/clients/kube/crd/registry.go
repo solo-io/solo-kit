@@ -146,6 +146,7 @@ func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind
 				ShortNames: []string{crd.ShortName},
 			},
 			Versions: versions,
+			Version:  crd.Versions.GetLatestVersion().Version,
 		},
 	}, nil
 }

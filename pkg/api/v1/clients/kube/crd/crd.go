@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/solo-io/go-utils/versionutils/kubeapi"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -31,6 +32,28 @@ type Version struct {
 	Type    runtime.Object
 }
 
+type VersionList []Version
+
+func (list VersionList) GetLatestVersion() Version {
+	var latest Version
+	var latestParsed kubeapi.Version
+	for _, v := range list {
+		parsed, err := kubeapi.ParseVersion(v.Version)
+		if err != nil {
+			continue
+		}
+		if parsed.GreaterThan(latestParsed) {
+			latest = v
+			latestParsed = parsed
+		}
+	}
+	// If none of the versions are any good, return the first one.
+	if latest.Version == "" && len(list) > 0 {
+		return list[0]
+	}
+	return latest
+}
+
 type Crd struct {
 	CrdMeta
 	Version Version
@@ -38,7 +61,7 @@ type Crd struct {
 
 type MultiVersionCrd struct {
 	CrdMeta
-	Versions []Version
+	Versions VersionList
 }
 
 func NewCrd(

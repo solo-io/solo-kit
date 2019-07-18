@@ -562,7 +562,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:bba31bb46164a88a6f10ac118286db76f4a8c894a74cc87d00162c32149a1b1f"
+  digest = "1:5dd2d00c9726046d285699a353e6cad45dc606fa77a2f1f378c777bb047d0af4"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
@@ -577,6 +577,7 @@
     "testutils",
     "testutils/clusterlock",
     "testutils/kube",
+    "versionutils/kubeapi",
   ]
   pruneopts = "UT"
   revision = "8eada3e906dc4de9810cf93455a476e7121fa5f4"
@@ -1268,6 +1269,7 @@
     "github.com/solo-io/go-utils/testutils",
     "github.com/solo-io/go-utils/testutils/clusterlock",
     "github.com/solo-io/go-utils/testutils/kube",
+    "github.com/solo-io/go-utils/versionutils/kubeapi",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
