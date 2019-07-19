@@ -2,7 +2,6 @@ package setup
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -147,12 +146,12 @@ type ConsulPorts struct {
 
 func NewRandomConsulPorts() ConsulPorts {
 	return ConsulPorts{
-		HttpPort:    rand.Intn(1000) + 10000,
-		GrpcPort:    rand.Intn(1000) + 10001,
-		DnsPort:     rand.Intn(1000) + 10002,
-		ServerPort:  rand.Intn(1000) + 10002,
-		SerfLanPort: rand.Intn(1000) + 10002,
-		SerfWanPort: rand.Intn(1000) + 10002,
+		HttpPort:    AllocateParallelPort(8500),
+		GrpcPort:    AllocateParallelPort(8501),
+		DnsPort:     AllocateParallelPort(8502),
+		ServerPort:  AllocateParallelPort(8503),
+		SerfLanPort: AllocateParallelPort(8504),
+		SerfWanPort: AllocateParallelPort(8505),
 	}
 }
 

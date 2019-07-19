@@ -2,7 +2,6 @@ package setup
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,7 +30,7 @@ type VaultFactory struct {
 func NewVaultFactory() (*VaultFactory, error) {
 	vaultpath := os.Getenv("VAULT_BINARY")
 
-	port := rand.Intn(1000) + 10002
+	port := AllocateParallelPort(8200)
 
 	if vaultpath != "" {
 		return &VaultFactory{
@@ -141,7 +140,7 @@ func (i *VaultInstance) RunWithPort() error {
 	enableCmdOut, err := exec.Command(i.vaultpath,
 		"secrets",
 		"enable",
-		"-address=http://127.0.0.1:8200",
+		fmt.Sprintf("-address=http://127.0.0.1:%v", i.Port),
 		"-version=2",
 		"kv").CombinedOutput()
 	if err != nil {
