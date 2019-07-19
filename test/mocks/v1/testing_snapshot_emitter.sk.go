@@ -286,7 +286,40 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		originalSnapshot := TestingSnapshot{}
 		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+		mocksByNamespace := make(map[string]MockResourceList)
+		fakesByNamespace := make(map[string]FakeResourceList)
+		anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
+		mctsByNamespace := make(map[string]MockCustomTypeList)
+		podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
+
+		snapshotInitialized := false
 		sync := func() {
+			// check if snapshot complete:
+			// should have all the namespaces in the snapshot
+			if !snapshotInitialized {
+				if currentSnapshot.Clusterresources == nil {
+					return
+				}
+				for _, namespace := range watchNamespaces {
+					if _, ok := mocksByNamespace[namespace]; !ok {
+						return
+					}
+					if _, ok := fakesByNamespace[namespace]; !ok {
+						return
+					}
+					if _, ok := anothermockresourcesByNamespace[namespace]; !ok {
+						return
+					}
+					if _, ok := mctsByNamespace[namespace]; !ok {
+						return
+					}
+					if _, ok := podsByNamespace[namespace]; !ok {
+						return
+					}
+				}
+				snapshotInitialized = true
+			}
+
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
@@ -296,11 +329,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
-		mocksByNamespace := make(map[string]MockResourceList)
-		fakesByNamespace := make(map[string]FakeResourceList)
-		anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
-		mctsByNamespace := make(map[string]MockCustomTypeList)
-		podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
 
 		for {
 			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }

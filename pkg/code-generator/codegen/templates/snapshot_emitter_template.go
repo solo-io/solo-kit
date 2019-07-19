@@ -191,7 +191,38 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		originalSnapshot := {{ .GoName }}Snapshot{}
 		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
+
+		{{- range .Resources}}
+		{{- if not .ClusterScoped }}
+				{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
+		{{- end }}
+		{{- end }}
+
+		snapshotInitialized := false
 		sync := func() {
+			// check if snapshot complete:
+			// should have all the namespaces in the snapshot
+			if ! snapshotInitialized {
+				{{- range .Resources}}
+				{{- if .ClusterScoped }}
+						if currentSnapshot.{{ upper_camel .PluralName }} == nil {
+							return
+						}
+				{{- end }}
+				{{- end}}
+				for _, namespace := range watchNamespaces {
+					{{- range .Resources}}
+					{{- if (not .ClusterScoped) }}
+								if _, ok := {{ lower_camel .PluralName }}ByNamespace[namespace]; !ok {
+									return
+								}
+					{{- end }}
+					{{- end}}
+				}
+				snapshotInitialized = true
+			}
+
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
@@ -201,11 +232,6 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
-{{- range .Resources}}
-{{- if not .ClusterScoped }}
-		{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
-{{- end }}
-{{- end }}
 
 		for {
 			record := func(){stats.Record(ctx, m{{ .GoName }}SnapshotIn.M(1))}

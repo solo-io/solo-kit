@@ -130,7 +130,21 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		originalSnapshot := KubeconfigsSnapshot{}
 		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+		kubeconfigsByNamespace := make(map[string]KubeConfigList)
+
+		snapshotInitialized := false
 		sync := func() {
+			// check if snapshot complete:
+			// should have all the namespaces in the snapshot
+			if !snapshotInitialized {
+				for _, namespace := range watchNamespaces {
+					if _, ok := kubeconfigsByNamespace[namespace]; !ok {
+						return
+					}
+				}
+				snapshotInitialized = true
+			}
+
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
@@ -140,7 +154,6 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
-		kubeconfigsByNamespace := make(map[string]KubeConfigList)
 
 		for {
 			record := func() { stats.Record(ctx, mKubeconfigsSnapshotIn.M(1)) }
