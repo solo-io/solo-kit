@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Wait for the entire snapshot to arrive befor emitting it.
+    issueLink: https://github.com/solo-io/solo-kit/pull/222
