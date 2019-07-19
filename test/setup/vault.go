@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const defaultVaultDockerImage = "vault:0.9.2"
+const defaultVaultDockerImage = "vault:1.1.3"
 
 type VaultFactory struct {
 	vaultpath string
