@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Set version field when registering CRDs.
+    issueLink: https://github.com/solo-io/solo-kit/issues/220
