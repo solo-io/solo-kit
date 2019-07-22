@@ -111,6 +111,13 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	Expect(list).To(And(ContainElement(r1), ContainElement(r2)))
 	postList(callbacks, list)
 
+	// test resource version locking works
+	resources.UpdateMetadata(r2, func(meta *core.Metadata) {
+		meta.ResourceVersion = ""
+	})
+	_, err = client.Write(r2, clients.WriteOpts{OverwriteExisting: true})
+	Expect(err).To(HaveOccurred())
+
 	err = client.Delete(writtenNamespace, "adsfw", clients.DeleteOpts{})
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsNotExist(err)).To(BeTrue())
@@ -172,7 +179,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	}
 
 	list = nil
-	after := time.After(time.Millisecond * 5)
+	after := time.After(time.Millisecond * 250)
 Loop:
 	for {
 		select {

@@ -37,6 +37,10 @@ func (r *FakeResource) Hash() uint64 {
 	)
 }
 
+func (r *FakeResource) GroupVersionKind() schema.GroupVersionKind {
+	return FakeResourceGVK
+}
+
 type FakeResourceList []*FakeResource
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -110,8 +114,6 @@ func (list FakeResourceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &FakeResource{}
-
 // Kubernetes Adapter for FakeResource
 
 func (o *FakeResource) GetObjectKind() schema.ObjectKind {
@@ -124,11 +126,6 @@ func (o *FakeResource) DeepCopyObject() runtime.Object {
 }
 
 var (
-	FakeResourceGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "testing.solo.io",
-		Kind:    "FakeResource",
-	}
 	FakeResourceCrd = crd.NewCrd(
 		"fakes",
 		FakeResourceGVK.Group,
@@ -144,3 +141,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	FakeResourceGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "testing.solo.io",
+		Kind:    "FakeResource",
+	}
+)

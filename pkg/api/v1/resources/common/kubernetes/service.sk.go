@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewService(namespace, name string) *Service {
@@ -47,6 +48,10 @@ func (r *Service) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *Service) GroupVersionKind() schema.GroupVersionKind {
+	return ServiceGVK
 }
 
 type ServiceList []*Service
@@ -121,3 +126,11 @@ func (list ServiceList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	ServiceGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "Service",
+	}
+)

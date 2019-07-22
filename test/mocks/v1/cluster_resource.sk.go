@@ -41,6 +41,10 @@ func (r *ClusterResource) Hash() uint64 {
 	)
 }
 
+func (r *ClusterResource) GroupVersionKind() schema.GroupVersionKind {
+	return ClusterResourceGVK
+}
+
 type ClusterResourceList []*ClusterResource
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -122,8 +126,6 @@ func (list ClusterResourceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &ClusterResource{}
-
 // Kubernetes Adapter for ClusterResource
 
 func (o *ClusterResource) GetObjectKind() schema.ObjectKind {
@@ -136,11 +138,6 @@ func (o *ClusterResource) DeepCopyObject() runtime.Object {
 }
 
 var (
-	ClusterResourceGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "testing.solo.io",
-		Kind:    "ClusterResource",
-	}
 	ClusterResourceCrd = crd.NewCrd(
 		"clusterresources",
 		ClusterResourceGVK.Group,
@@ -156,3 +153,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	ClusterResourceGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "testing.solo.io",
+		Kind:    "ClusterResource",
+	}
+)

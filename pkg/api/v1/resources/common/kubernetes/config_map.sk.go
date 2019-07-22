@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewConfigMap(namespace, name string) *ConfigMap {
@@ -47,6 +48,10 @@ func (r *ConfigMap) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *ConfigMap) GroupVersionKind() schema.GroupVersionKind {
+	return ConfigMapGVK
 }
 
 type ConfigMapList []*ConfigMap
@@ -121,3 +126,11 @@ func (list ConfigMapList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	ConfigMapGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "ConfigMap",
+	}
+)

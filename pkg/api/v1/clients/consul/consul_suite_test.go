@@ -36,6 +36,10 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	consulInstance.Clean()
-	consulFactory.Clean()
+	if consulInstance != nil {
+		consulInstance.Clean()
+	}
+	if consulFactory != nil {
+		consulFactory.Clean()
+	}
 })

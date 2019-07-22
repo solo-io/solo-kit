@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -18,6 +20,11 @@ type Resource interface {
 	GetMetadata() core.Metadata
 	SetMetadata(meta core.Metadata)
 	Equal(that interface{}) bool
+}
+
+type VersionedResource interface {
+	Resource
+	GroupVersionKind() schema.GroupVersionKind
 }
 
 type ProtoResource interface {
