@@ -475,6 +475,8 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(util.CreateMockResource(clientset, namespace1, "res-2", "val-2")).NotTo(HaveOccurred())
 				Expect(util.CreateMockResource(clientset, namespace1, "res-3", "val-3")).NotTo(HaveOccurred())
 				Expect(util.CreateMockResource(clientset, namespace2, "res-4", "val-4")).NotTo(HaveOccurred())
+				// Expect v3alpha1 resources to fail to unmarshal into a v1 struct and be omitted from the list
+				Expect(util.CreateV3Alpha1MockResource(clientset, namespace2, "res-alpha5", "val-alpha5")).NotTo(HaveOccurred())
 
 				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1, namespace2, "empty"}, 0)
 				Expect(rc.Register()).NotTo(HaveOccurred())

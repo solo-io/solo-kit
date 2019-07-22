@@ -1,0 +1,22 @@
+syntax = "proto3";
+package testing.solo.io;
+option go_package = "github.com/solo-io/solo-kit/test/mocks/v3alpha1";
+
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+/*
+The best mock resource you ever done seen -- new and improved with just one field
+*/
+message MockResource {
+    option (core.solo.io.resource).short_name = "mk";
+    option (core.solo.io.resource).plural_name = "mocks";
+
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+
+    string single_value = 1;
+}

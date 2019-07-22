@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
-	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
+	"github.com/solo-io/solo-kit/test/mocks/v3alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -44,13 +44,11 @@ func DeleteMockResource(cs *fake.Clientset, namespace, name string) error {
 	return cs.ResourcesV1().Resources(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
-func CreateV2Alpha1MockResource(cs *fake.Clientset, namespace, name, dumbFieldValue string) error {
+func CreateV3Alpha1MockResource(cs *fake.Clientset, namespace, name, singleValue string) error {
 	_, err := cs.ResourcesV1().Resources(namespace).Create(
-		v2alpha1.MockResourceCrd.KubeResource(&v2alpha1.MockResource{
-			Metadata: core.Metadata{Name: name},
-			WeStuckItInAOneof: &v2alpha1.MockResource_SomeDumbField{
-				SomeDumbField: dumbFieldValue,
-			},
+		v3alpha1.MockResourceCrd.KubeResource(&v3alpha1.MockResource{
+			Metadata:    core.Metadata{Name: name},
+			SingleValue: singleValue,
 		}))
 	return err
 }

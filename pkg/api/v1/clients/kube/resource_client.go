@@ -296,7 +296,8 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	for _, resourceCrd := range listedResources {
 		resource, err := rc.convertCrdToResource(resourceCrd)
 		if err != nil {
-			return nil, errors.Wrapf(err, "converting output crd")
+			// Resource apiversion doesn't match that of the client or is otherwise unexpected yaml.
+			continue
 		}
 		resourceList = append(resourceList, resource)
 	}
