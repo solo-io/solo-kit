@@ -31,7 +31,7 @@ func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resourc
 		return nil, false, errors.Wrapf(err, "parsing data response")
 	}
 	// if deletion time set, the secret was deleted
-	deleted := data.Metadata.DeletionTime != ""
+	deleted := data.Metadata.DeletionTime != "" || data.Metadata.Destroyed
 
 	resource := rc.NewResource()
 	if err := protoutils.UnmarshalMap(data.Data, resource); err != nil {
@@ -153,14 +153,15 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
 	namespace = clients.DefaultNamespaceIfEmpty(namespace)
-	key := rc.resourceKey(namespace, name)
+
 	if !opts.IgnoreNotExist {
 		if _, err := rc.Read(namespace, name, clients.ReadOpts{Ctx: opts.Ctx}); err != nil {
-			return errors.NewNotExistErr(namespace, name, err)
+			return err
 		}
 	}
-	_, err := rc.vault.Logical().Delete(key)
-	if err != nil {
+	metaKey := rc.resourceMetadataKey(namespace, name)
+
+	if _, err := rc.vault.Logical().Delete(metaKey); err != nil {
 		return errors.Wrapf(err, "deleting resource %v", name)
 	}
 	return nil
@@ -270,5 +271,11 @@ func (rc *ResourceClient) resourceDirectory(namespace, directoryType string) str
 func (rc *ResourceClient) resourceKey(namespace, name string) string {
 	return strings.Join([]string{
 		rc.resourceDirectory(namespace, directoryTypeData),
+		name}, "/")
+}
+
+func (rc *ResourceClient) resourceMetadataKey(namespace, name string) string {
+	return strings.Join([]string{
+		rc.resourceDirectory(namespace, directoryTypeMetadata),
 		name}, "/")
 }

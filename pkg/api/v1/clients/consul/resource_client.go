@@ -125,7 +125,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 	key := rc.resourceKey(namespace, name)
 	if !opts.IgnoreNotExist {
 		if _, err := rc.Read(namespace, name, clients.ReadOpts{Ctx: opts.Ctx}); err != nil {
-			return errors.NewNotExistErr(namespace, name, err)
+			return err
 		}
 	}
 	_, err := rc.consul.KV().Delete(key, nil)
