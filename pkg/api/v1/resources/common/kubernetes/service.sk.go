@@ -26,7 +26,7 @@ func NewService(namespace, name string) *Service {
 // require custom resource to implement Clone() as well as resources.Resource interface
 
 type CloneableService interface {
-	resources.BaseResource
+	resources.Resource
 	Clone() *github_com_solo_io_solo_kit_api_external_kubernetes_service.Service
 }
 

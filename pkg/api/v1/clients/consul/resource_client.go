@@ -19,10 +19,10 @@ import (
 type ResourceClient struct {
 	consul       *api.Client
 	root         string
-	resourceType resources.Resource
+	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, resourceType resources.Resource) *ResourceClient {
+func NewResourceClient(client *api.Client, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
 	return &ResourceClient{
 		consul:       client,
 		root:         rootKey,
@@ -99,17 +99,21 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 	var modifyIndex uint64
 	if meta.GetResourceVersion() != "" {
-		if i, err := strconv.Atoi(meta.GetResourceVersion()); err == nil {
-			modifyIndex = uint64(i)
+		i, err := strconv.Atoi(meta.GetResourceVersion())
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid resource version: %v (must be int)", meta.GetResourceVersion())
 		}
+		modifyIndex = uint64(i)
 	}
 	kvPair := &api.KVPair{
 		Key:         key,
 		Value:       data,
 		ModifyIndex: modifyIndex,
 	}
-	if _, err := rc.consul.KV().Put(kvPair, nil); err != nil {
+	if success, _, err := rc.consul.KV().CAS(kvPair, nil); err != nil {
 		return nil, errors.Wrapf(err, "writing to KV")
+	} else if !success {
+		return nil, errors.Errorf("writing to KV failed, unknown error)")
 	}
 	// return a read object to update the modify index
 	return rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{Ctx: opts.Ctx})

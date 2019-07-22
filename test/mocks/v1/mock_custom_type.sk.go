@@ -26,7 +26,7 @@ func NewMockCustomType(namespace, name string) *MockCustomType {
 // require custom resource to implement Clone() as well as resources.Resource interface
 
 type CloneableMockCustomType interface {
-	resources.BaseResource
+	resources.Resource
 	Clone() *github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType
 }
 

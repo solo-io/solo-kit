@@ -1,11 +1,12 @@
 package vault
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -16,7 +17,9 @@ import (
 )
 
 const (
-	dataKey = "data"
+	dataKey        = "data"
+	optionsKey     = "options"
+	checkAndSetKey = "cas"
 )
 
 func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resource, bool, error) {
@@ -31,35 +34,46 @@ func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resourc
 	deleted := data.Metadata.DeletionTime != ""
 
 	resource := rc.NewResource()
-	return resource, deleted, protoutils.UnmarshalMap(data.Data, resource)
+	if err := protoutils.UnmarshalMap(data.Data, resource); err != nil {
+		return nil, false, err
+	}
+	resources.UpdateMetadata(resource, func(meta *core.Metadata) {
+		meta.ResourceVersion = strconv.Itoa(data.Metadata.Version)
+	})
+	return resource, deleted, nil
 }
 
 func (rc *ResourceClient) toVaultSecret(resource resources.Resource) (map[string]interface{}, error) {
+	var version int
+	if rv := resource.GetMetadata().ResourceVersion; rv != "" {
+		var err error
+		version, err = strconv.Atoi(resource.GetMetadata().ResourceVersion)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid resource version: %v (must be int)", rv)
+		}
+	} else {
+		version = 0
+	}
+
 	values := make(map[string]interface{})
 	data, err := protoutils.MarshalMap(resource)
 	if err != nil {
 		return nil, err
 	}
 	values[dataKey] = data
-	return values, nil
-}
-
-// util methods
-func newOrIncrementResourceVer(resourceVersion string) string {
-	curr, err := strconv.Atoi(resourceVersion)
-	if err != nil {
-		curr = 1
+	values[optionsKey] = map[string]interface{}{
+		checkAndSetKey: version,
 	}
-	return fmt.Sprintf("%v", curr+1)
+	return values, nil
 }
 
 type ResourceClient struct {
 	vault        *api.Client
 	root         string
-	resourceType resources.Resource
+	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, resourceType resources.Resource) *ResourceClient {
+func NewResourceClient(client *api.Client, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
 	return &ResourceClient{
 		vault:        client,
 		root:         rootKey,
@@ -118,14 +132,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		if !opts.OverwriteExisting {
 			return nil, errors.NewExistErr(meta)
 		}
-		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
-			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
-		}
 	}
 
 	// mutate and return clone
 	clone := resources.Clone(resource)
-	meta.ResourceVersion = newOrIncrementResourceVer(meta.ResourceVersion)
 	clone.SetMetadata(meta)
 
 	secret, err := rc.toVaultSecret(clone)

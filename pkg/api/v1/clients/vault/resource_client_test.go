@@ -22,7 +22,7 @@ var _ = Describe("Base", func() {
 		secrets clients.ResourceClient
 	)
 	BeforeEach(func() {
-		rootKey = "bark"
+		rootKey = "test-prefix"
 		cfg := api.DefaultConfig()
 		cfg.Address = fmt.Sprintf("http://127.0.0.1:%v", vaultInstance.Port)
 		c, err := api.NewClient(cfg)

@@ -48,16 +48,19 @@ func UnmarshalYAML(data []byte, into resources.Resource) error {
 }
 
 func MarshalYAML(res resources.Resource) ([]byte, error) {
-	jsn, err := func() ([]byte, error) {
-		if pb, ok := res.(proto.Message); ok {
-			buf := &bytes.Buffer{}
-			err := jsonpbMarshaler.Marshal(buf, pb)
-			return buf.Bytes(), err
+	var jsn []byte
+	if pb, ok := res.(proto.Message); ok {
+		buf := &bytes.Buffer{}
+		if err := jsonpbMarshaler.Marshal(buf, pb); err != nil {
+			return nil, err
 		}
-		return json.Marshal(res)
-	}()
-	if err != nil {
-		return nil, err
+		jsn = buf.Bytes()
+	} else {
+		var err error
+		jsn, err = json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return yaml.JSONToYAML(jsn)
 }

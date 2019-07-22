@@ -16,14 +16,14 @@ import (
 
 const delim = " "
 
-type BaseResource interface {
+type Resource interface {
 	GetMetadata() core.Metadata
 	SetMetadata(meta core.Metadata)
 	Equal(that interface{}) bool
 }
 
-type Resource interface {
-	BaseResource
+type VersionedResource interface {
+	Resource
 	GroupVersionKind() schema.GroupVersionKind
 }
 
@@ -389,11 +389,11 @@ func Clone(resource Resource) Resource {
 	panic(fmt.Errorf("resource %T is not cloneable and not a proto", resource))
 }
 
-func Kind(resource BaseResource) string {
+func Kind(resource Resource) string {
 	return reflect.TypeOf(resource).String()
 }
 
-func UpdateMetadata(resource BaseResource, updateFunc func(meta *core.Metadata)) {
+func UpdateMetadata(resource Resource, updateFunc func(meta *core.Metadata)) {
 	meta := resource.GetMetadata()
 	updateFunc(&meta)
 	resource.SetMetadata(meta)

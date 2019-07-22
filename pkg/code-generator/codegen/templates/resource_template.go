@@ -42,7 +42,7 @@ func New{{ .Name }}(namespace, name string) *{{ .Name }} {
 // require custom resource to implement Clone() as well as resources.Resource interface
 
 type Cloneable{{ $.Name }} interface {
-	resources.BaseResource
+	resources.Resource
 	Clone() *{{ $.CustomImportPrefix}}.{{ $.Name }}
 }
 
