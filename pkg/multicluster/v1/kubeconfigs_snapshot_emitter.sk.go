@@ -95,8 +95,19 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	}
 	kubeConfigChan := make(chan kubeConfigListWithNamespace)
 
+	var initialKubeConfigList KubeConfigList
+
+	currentSnapshot := KubeconfigsSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for KubeConfig */
+		{
+			upstreams, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial KubeConfig list")
+			}
+			initialKubeConfigList = append(initialKubeConfigList, upstreams...)
+		}
 		kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting KubeConfig watch")
@@ -124,27 +135,15 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Kubeconfigs */
+	currentSnapshot.Kubeconfigs = initialKubeConfigList.Sort()
 
 	snapshots := make(chan *KubeconfigsSnapshot)
 	go func() {
 		originalSnapshot := KubeconfigsSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
-		kubeconfigsByNamespace := make(map[string]KubeConfigList)
 
-		snapshotInitialized := false
 		sync := func() {
-			// check if snapshot complete:
-			// should have all the namespaces in the snapshot
-			if !snapshotInitialized {
-				for _, namespace := range watchNamespaces {
-					if _, ok := kubeconfigsByNamespace[namespace]; !ok {
-						return
-					}
-				}
-				snapshotInitialized = true
-			}
-
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
@@ -154,6 +153,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		kubeconfigsByNamespace := make(map[string]KubeConfigList)
 
 		for {
 			record := func() { stats.Record(ctx, mKubeconfigsSnapshotIn.M(1)) }

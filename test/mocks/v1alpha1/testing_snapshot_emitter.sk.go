@@ -95,8 +95,19 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 	mockResourceChan := make(chan mockResourceListWithNamespace)
 
+	var initialMockResourceList MockResourceList
+
+	currentSnapshot := TestingSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for MockResource */
+		{
+			upstreams, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial MockResource list")
+			}
+			initialMockResourceList = append(initialMockResourceList, upstreams...)
+		}
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
@@ -124,27 +135,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Mocks */
+	currentSnapshot.Mocks = initialMockResourceList.Sort()
 
 	snapshots := make(chan *TestingSnapshot)
 	go func() {
 		originalSnapshot := TestingSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
-		mocksByNamespace := make(map[string]MockResourceList)
 
-		snapshotInitialized := false
 		sync := func() {
-			// check if snapshot complete:
-			// should have all the namespaces in the snapshot
-			if !snapshotInitialized {
-				for _, namespace := range watchNamespaces {
-					if _, ok := mocksByNamespace[namespace]; !ok {
-						return
-					}
-				}
-				snapshotInitialized = true
-			}
-
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
@@ -154,6 +153,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		mocksByNamespace := make(map[string]MockResourceList)
 
 		for {
 			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }
