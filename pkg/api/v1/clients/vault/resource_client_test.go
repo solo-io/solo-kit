@@ -26,6 +26,7 @@ var _ = Describe("Base", func() {
 		cfg := api.DefaultConfig()
 		cfg.Address = fmt.Sprintf("http://127.0.0.1:%v", vaultInstance.Port)
 		c, err := api.NewClient(cfg)
+		Expect(err).NotTo(HaveOccurred())
 		c.SetToken(vaultInstance.Token())
 		Expect(err).NotTo(HaveOccurred())
 		vault = c

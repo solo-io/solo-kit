@@ -239,7 +239,7 @@ func (rc *ResourceClient) listKeys(directory string) ([]string, error) {
 		return nil, errors.Wrapf(err, "listing directory %v", directory)
 	}
 	if keyList == nil {
-		return nil, errors.Errorf("directory %v not found", directory)
+		return []string{}, nil
 	}
 	val, ok := keyList.Data["keys"]
 	if !ok {
