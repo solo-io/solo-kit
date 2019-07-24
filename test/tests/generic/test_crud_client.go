@@ -33,6 +33,11 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	err := client.Register()
 	Expect(err).NotTo(HaveOccurred())
 
+	// list with no resources should return empty list, not err
+	list, err := client.List("", clients.ListOpts{})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(list).To(BeEmpty())
+
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	postWrite(callbacks, r1)
@@ -91,7 +96,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	Expect(err).NotTo(HaveOccurred())
 
 	// with labels
-	list, err := client.List("", clients.ListOpts{
+	list, err = client.List("", clients.ListOpts{
 		Selector: labels,
 	})
 	Expect(err).NotTo(HaveOccurred())
