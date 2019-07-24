@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/solo-io/go-utils/log"
+
 	"io/ioutil"
 
 	"time"
@@ -29,6 +31,14 @@ type VaultFactory struct {
 
 func NewVaultFactory() (*VaultFactory, error) {
 	vaultpath := os.Getenv("VAULT_BINARY")
+
+	if vaultpath == "" {
+		vaultPath, err := exec.LookPath("vault")
+		if err == nil {
+			log.Printf("Using vault from PATH: %s", vaultPath)
+			vaultpath = vaultPath
+		}
+	}
 
 	port := AllocateParallelPort(8200)
 

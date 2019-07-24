@@ -56,7 +56,6 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	opts = opts.WithDefaults()
 	path := rc.filename(namespace, name)
 	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
@@ -75,7 +74,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 
 	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{
 		Ctx: opts.Ctx,
@@ -107,7 +105,11 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+
+	if namespace == "" {
+		return errors.Errorf("namespace cannot be empty for file-backed resources")
+	}
+
 	path := rc.filename(namespace, name)
 	err := os.Remove(path)
 	switch {
@@ -122,8 +124,38 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 }
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+	if namespace != "" {
+		// list on a single namespace
+		return rc.listSingleNamespace(namespace, opts)
+	}
+
+	// handle NamespaceAll case
+
+	namespaceDirs, err := ioutil.ReadDir(rc.dir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "reading namespace dir")
+	}
+
+	var namespaces []string
+	for _, dir := range namespaceDirs {
+		namespace := strings.TrimPrefix(dir.Name(), rc.dir)
+		namespaces = append(namespaces, namespace)
+	}
+
+	var resourceList resources.ResourceList
+	for _, ns := range namespaces {
+		nsResources, err := rc.listSingleNamespace(ns, opts)
+		if err != nil {
+			return nil, err
+		}
+		resourceList = append(resourceList, nsResources...)
+	}
+
+	return resourceList.Sort(), nil
+}
+
+func (rc *ResourceClient) listSingleNamespace(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
 	namespaceDir := filepath.Join(rc.dir, namespace)
 	files, err := ioutil.ReadDir(namespaceDir)
@@ -155,7 +187,6 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
 	dir := filepath.Join(rc.dir, namespace)
 	events, errs, err := rc.events(opts.Ctx, dir, opts.RefreshRate)

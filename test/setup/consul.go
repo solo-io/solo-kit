@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/solo-io/go-utils/log"
+
 	"io/ioutil"
 
 	"time"
@@ -23,6 +25,14 @@ type ConsulFactory struct {
 
 func NewConsulFactory() (*ConsulFactory, error) {
 	consulpath := os.Getenv("CONSUL_BINARY")
+
+	if consulpath == "" {
+		consulPath, err := exec.LookPath("consul")
+		if err == nil {
+			log.Printf("Using consul from PATH: %s", consulPath)
+			consulpath = consulPath
+		}
+	}
 
 	ports := NewRandomConsulPorts()
 
