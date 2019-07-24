@@ -85,7 +85,7 @@ var _ = Describe("Apiclient", func() {
 		selector := map[string]string{
 			helpers.TestLabel: helpers.RandString(8),
 		}
-		generic.TestCrudClient("test", client, clients.WatchOpts{
+		generic.TestCrudClient("test1", "test2", client, clients.WatchOpts{
 			Selector:    selector,
 			Ctx:         context.TODO(),
 			RefreshRate: time.Minute,

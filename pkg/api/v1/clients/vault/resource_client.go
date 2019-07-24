@@ -124,7 +124,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
+
+	if meta.Namespace == "" {
+		return nil, errors.Errorf("namespace cannot be empty for vault-backed resources")
+	}
 	key := rc.resourceKey(meta.Namespace, meta.Name)
 
 	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{})
@@ -152,7 +155,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+
+	if namespace == "" {
+		return errors.Errorf("namespace cannot be empty for vault-backed resources")
+	}
 
 	if !opts.IgnoreNotExist {
 		if _, err := rc.Read(namespace, name, clients.ReadOpts{Ctx: opts.Ctx}); err != nil {
@@ -168,29 +174,45 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 }
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
-	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+	if namespace != "" {
+		// list on a single namespace
+		return rc.listSingleNamespace(namespace, opts)
+	}
 
-	resourceMetaDir := rc.resourceDirectory(namespace, directoryTypeMetadata)
-	secrets, err := rc.vault.Logical().List(resourceMetaDir)
+	// handle NamespaceAll case
+
+	var namespaces []string
+
+	resourceMetaDir := rc.resourceDirectory("", directoryTypeMetadata)
+
+	namespaces, err := rc.listKeys(resourceMetaDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading namespace root")
 	}
-	val, ok := secrets.Data["keys"]
-	if !ok {
-		return nil, errors.Errorf("vault secret list at root %s did not contain key \"keys\"", resourceMetaDir)
+
+	var resourceList resources.ResourceList
+	for _, ns := range namespaces {
+		nsResources, err := rc.listSingleNamespace(ns, opts)
+		if err != nil {
+			return nil, err
+		}
+		resourceList = append(resourceList, nsResources...)
 	}
-	keys, ok := val.([]interface{})
-	if !ok {
-		return nil, errors.Errorf("expected secret list of type []interface{} but got %v", reflect.TypeOf(val))
+	return resourceList.Sort(), nil
+}
+
+func (rc *ResourceClient) listSingleNamespace(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+	opts = opts.WithDefaults()
+
+	resourceMetaDir := rc.resourceDirectory(namespace, directoryTypeMetadata)
+
+	secretKeys, err := rc.listKeys(resourceMetaDir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "reading resource namespace directory")
 	}
 
 	var resourceList resources.ResourceList
-	for _, keyAsInterface := range keys {
-		key, ok := keyAsInterface.(string)
-		if !ok {
-			return nil, errors.Errorf("expected key of type string but got %v", reflect.TypeOf(keyAsInterface))
-		}
+	for _, key := range secretKeys {
 		secret, err := rc.vault.Logical().Read(rc.resourceDirectory(namespace, directoryTypeData) + "/" + key)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting secret %s", key)
@@ -210,9 +232,39 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	return resourceList.Sort(), nil
 }
 
+// list on a single namespace
+func (rc *ResourceClient) listKeys(directory string) ([]string, error) {
+	keyList, err := rc.vault.Logical().List(directory)
+	if err != nil {
+		return nil, errors.Wrapf(err, "listing directory %v", directory)
+	}
+	if keyList == nil {
+		return nil, errors.Errorf("directory %v not found", directory)
+	}
+	val, ok := keyList.Data["keys"]
+	if !ok {
+		return nil, errors.Errorf("vault secret list at root %s did not contain key \"keys\"", directory)
+	}
+	keys, ok := val.([]interface{})
+	if !ok {
+		return nil, errors.Errorf("expected secret list of type []interface{} but got %v", reflect.TypeOf(val))
+	}
+
+	var keysAsStrings []string
+	for _, keyAsInterface := range keys {
+		key, ok := keyAsInterface.(string)
+		if !ok {
+			return nil, errors.Errorf("expected key of type string but got %v", reflect.TypeOf(keyAsInterface))
+		}
+		keysAsStrings = append(keysAsStrings, key)
+	}
+
+	return keysAsStrings, nil
+}
+
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+
 	resourcesChan := make(chan resources.ResourceList)
 	errs := make(chan error)
 	var cached resources.ResourceList
@@ -262,10 +314,11 @@ func (rc *ResourceClient) resourceDirectory(namespace, directoryType string) str
 		"secret",
 		directoryType,
 		rc.root,
-		namespace,
 		rc.resourceType.GroupVersionKind().Group,
 		rc.resourceType.GroupVersionKind().Version,
-		rc.resourceType.GroupVersionKind().Kind}, "/")
+		rc.resourceType.GroupVersionKind().Kind,
+		namespace,
+	}, "/")
 }
 
 func (rc *ResourceClient) resourceKey(namespace, name string) string {

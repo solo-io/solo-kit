@@ -17,10 +17,10 @@ import (
 )
 
 // Call within "It"
-func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
+func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
 	selectors := opts.Selector
 	foo := "foo"
-	input := v1.NewMockResource(namespace, foo)
+	input := v1.NewMockResource(namespace1, foo)
 	data := "hello: goodbye"
 	input.Data = data
 	labels := map[string]string{"pickme": helpers.RandString(8)}
@@ -43,11 +43,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 
 	Expect(r1).To(BeAssignableToTypeOf(&v1.MockResource{}))
 	Expect(r1.GetMetadata().Name).To(Equal(foo))
-	writtenNamespace := namespace
-	if writtenNamespace == "" {
-		writtenNamespace = DefaultNamespace
-	}
-	Expect(r1.GetMetadata().Namespace).To(Equal(writtenNamespace))
+	Expect(r1.GetMetadata().Namespace).To(Equal(namespace1))
 	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(""))
 	Expect(r1.(*v1.MockResource).Data).To(Equal(data))
 
@@ -70,7 +66,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	read, err := client.Read(writtenNamespace, foo, clients.ReadOpts{})
+	read, err := client.Read(namespace1, foo, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	postRead(callbacks, read)
 
@@ -87,7 +83,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 		Data: data,
 		Metadata: core.Metadata{
 			Name:      boo,
-			Namespace: namespace,
+			Namespace: namespace2,
 			Labels:    selectors,
 		},
 	}
@@ -95,7 +91,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	Expect(err).NotTo(HaveOccurred())
 
 	// with labels
-	list, err := client.List(namespace, clients.ListOpts{
+	list, err := client.List("", clients.ListOpts{
 		Selector: labels,
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -104,7 +100,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	Expect(list).NotTo(ContainElement(r2))
 
 	// without
-	list, err = client.List(namespace, clients.ListOpts{
+	list, err = client.List("", clients.ListOpts{
 		Selector: selectors,
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -118,34 +114,35 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 	_, err = client.Write(r2, clients.WriteOpts{OverwriteExisting: true})
 	Expect(err).To(HaveOccurred())
 
-	err = client.Delete(writtenNamespace, "adsfw", clients.DeleteOpts{})
+	err = client.Delete(namespace1, "adsfw", clients.DeleteOpts{})
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsNotExist(err)).To(BeTrue())
 
-	err = client.Delete(writtenNamespace, "adsfw", clients.DeleteOpts{
+	err = client.Delete(namespace1, "adsfw", clients.DeleteOpts{
 		IgnoreNotExist: true,
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = client.Delete(writtenNamespace, r2.GetMetadata().Name, clients.DeleteOpts{})
+	err = client.Delete(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
 	Eventually(func() resources.ResourceList {
-		list, err = client.List(namespace, clients.ListOpts{
+		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
 		})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(ContainElement(r1))
 	Eventually(func() resources.ResourceList {
-		list, err = client.List(namespace, clients.ListOpts{
+		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
 		})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
 
-	w, errs, err := client.Watch(namespace, opts)
+	// watch works on all namespaces
+	w, errs, err := client.Watch("", opts)
 	Expect(err).NotTo(HaveOccurred())
 
 	var r3 resources.Resource
@@ -165,7 +162,7 @@ func TestCrudClient(namespace string, client ResourceClient, opts clients.WatchO
 			Data: data,
 			Metadata: core.Metadata{
 				Name:      "goo",
-				Namespace: namespace,
+				Namespace: namespace1,
 				Labels:    selectors,
 			},
 		}
