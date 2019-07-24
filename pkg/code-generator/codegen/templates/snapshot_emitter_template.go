@@ -138,11 +138,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- if (not .ClusterScoped) }}
 		/* Setup namespaced watch for {{ .Name }} */
 		{
-			upstreams, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial {{ .Name }} list")
 			}
-			initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List, upstreams...)
+			initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List, {{ lower_camel .PluralName }}...)
 		}
 		{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
 		if err != nil {
