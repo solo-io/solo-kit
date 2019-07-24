@@ -102,11 +102,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for MockResource */
 		{
-			upstreams, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial MockResource list")
 			}
-			initialMockResourceList = append(initialMockResourceList, upstreams...)
+			initialMockResourceList = append(initialMockResourceList, mocks...)
 		}
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {

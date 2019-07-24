@@ -187,11 +187,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for MockResource */
 		{
-			upstreams, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial MockResource list")
 			}
-			initialMockResourceList = append(initialMockResourceList, upstreams...)
+			initialMockResourceList = append(initialMockResourceList, mocks...)
 		}
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {
@@ -205,11 +205,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for FakeResource */
 		{
-			upstreams, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial FakeResource list")
 			}
-			initialFakeResourceList = append(initialFakeResourceList, upstreams...)
+			initialFakeResourceList = append(initialFakeResourceList, fakes...)
 		}
 		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
 		if err != nil {
@@ -223,11 +223,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for AnotherMockResource */
 		{
-			upstreams, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial AnotherMockResource list")
 			}
-			initialAnotherMockResourceList = append(initialAnotherMockResourceList, upstreams...)
+			initialAnotherMockResourceList = append(initialAnotherMockResourceList, anothermockresources...)
 		}
 		anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
 		if err != nil {
@@ -241,11 +241,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for MockCustomType */
 		{
-			upstreams, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial MockCustomType list")
 			}
-			initialMockCustomTypeList = append(initialMockCustomTypeList, upstreams...)
+			initialMockCustomTypeList = append(initialMockCustomTypeList, mcts...)
 		}
 		mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, opts)
 		if err != nil {
@@ -259,11 +259,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for Pod */
 		{
-			upstreams, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial Pod list")
 			}
-			initialPodList = append(initialPodList, upstreams...)
+			initialPodList = append(initialPodList, pods...)
 		}
 		podNamespacesChan, podErrs, err := c.pod.Watch(namespace, opts)
 		if err != nil {

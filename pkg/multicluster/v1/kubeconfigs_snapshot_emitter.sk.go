@@ -102,11 +102,11 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for KubeConfig */
 		{
-			upstreams, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			kubeconfigs, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial KubeConfig list")
 			}
-			initialKubeConfigList = append(initialKubeConfigList, upstreams...)
+			initialKubeConfigList = append(initialKubeConfigList, kubeconfigs...)
 		}
 		kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
 		if err != nil {
