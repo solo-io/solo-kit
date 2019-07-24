@@ -106,6 +106,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	mockResourceChan := make(chan mockResourceListWithNamespace)
+
+	var initialMockResourceList MockResourceList
 	/* Create channel for FakeResource */
 	type fakeResourceListWithNamespace struct {
 		list      testing_solo_io.FakeResourceList
@@ -113,8 +115,19 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 	fakeResourceChan := make(chan fakeResourceListWithNamespace)
 
+	var initialFakeResourceList testing_solo_io.FakeResourceList
+
+	currentSnapshot := TestingSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for MockResource */
+		{
+			mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial MockResource list")
+			}
+			initialMockResourceList = append(initialMockResourceList, mocks...)
+		}
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
@@ -126,6 +139,13 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
 		}(namespace)
 		/* Setup namespaced watch for FakeResource */
+		{
+			fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial FakeResource list")
+			}
+			initialFakeResourceList = append(initialFakeResourceList, fakes...)
+		}
 		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting FakeResource watch")
@@ -159,12 +179,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Mocks */
+	currentSnapshot.Mocks = initialMockResourceList.Sort()
+	/* Initialize snapshot for Fakes */
+	currentSnapshot.Fakes = initialFakeResourceList.Sort()
 
 	snapshots := make(chan *TestingSnapshot)
 	go func() {
 		originalSnapshot := TestingSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

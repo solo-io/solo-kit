@@ -95,8 +95,19 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	}
 	kubeConfigChan := make(chan kubeConfigListWithNamespace)
 
+	var initialKubeConfigList KubeConfigList
+
+	currentSnapshot := KubeconfigsSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for KubeConfig */
+		{
+			kubeconfigs, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial KubeConfig list")
+			}
+			initialKubeConfigList = append(initialKubeConfigList, kubeconfigs...)
+		}
 		kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting KubeConfig watch")
@@ -124,12 +135,14 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Kubeconfigs */
+	currentSnapshot.Kubeconfigs = initialKubeConfigList.Sort()
 
 	snapshots := make(chan *KubeconfigsSnapshot)
 	go func() {
 		originalSnapshot := KubeconfigsSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

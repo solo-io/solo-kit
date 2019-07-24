@@ -95,8 +95,19 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 	mockResourceChan := make(chan mockResourceListWithNamespace)
 
+	var initialMockResourceList MockResourceList
+
+	currentSnapshot := TestingSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for MockResource */
+		{
+			mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial MockResource list")
+			}
+			initialMockResourceList = append(initialMockResourceList, mocks...)
+		}
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
@@ -124,12 +135,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Mocks */
+	currentSnapshot.Mocks = initialMockResourceList.Sort()
 
 	snapshots := make(chan *TestingSnapshot)
 	go func() {
 		originalSnapshot := TestingSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
