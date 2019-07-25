@@ -1,6 +1,7 @@
 package vault_test
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -11,10 +12,10 @@ import (
 
 // TODO: fix tests
 func TestVault(t *testing.T) {
-
-	log.Printf("Skipping Vault Suite. Tests are currently failing and need to be fixed.")
-	return
-
+	if os.Getenv("RUN_VAULT_TESTS") != "1" {
+		log.Printf("This test downloads and runs consul and is disabled by default. To enable, set RUN_VAULT_TESTS=1 in your env.")
+		return
+	}
 	RegisterFailHandler(Fail)
 	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "Vault Suite")

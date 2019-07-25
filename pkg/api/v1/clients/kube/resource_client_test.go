@@ -123,17 +123,18 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			return
 		}
 		var (
-			namespace string
+			ns1, ns2 string
 		)
 		BeforeEach(func() {
-			namespace = helpers.RandString(8)
+			ns1 = helpers.RandString(8)
+			ns2 = helpers.RandString(8)
 			kubeClient = helpers.MustKubeClient()
-			err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
+			err := kubeutils.CreateNamespacesInParallel(kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -141,7 +142,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			selector := map[string]string{
 				helpers.TestLabel: helpers.RandString(8),
 			}
-			generic.TestCrudClient(namespace, client, clients.WatchOpts{
+			generic.TestCrudClient(ns1, ns2, client, clients.WatchOpts{
 				Selector:    selector,
 				Ctx:         context.TODO(),
 				RefreshRate: time.Minute,

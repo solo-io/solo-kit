@@ -1,0 +1,7 @@
+changelog:
+- type: NEW_FEATURE
+  description: fix & enable vault and consul resource clients
+  issueLink: https://github.com/solo-io/solo-kit/issues/217
+- type: NEW_FEATURE
+  description: add VersionedResource interface with GroupVersionKind()
+  issueLink: https://github.com/solo-io/solo-kit/issues/217

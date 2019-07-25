@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewKubeConfig(namespace, name string) *KubeConfig {
@@ -47,6 +48,10 @@ func (r *KubeConfig) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *KubeConfig) GroupVersionKind() schema.GroupVersionKind {
+	return KubeConfigGVK
 }
 
 type KubeConfigList []*KubeConfig
@@ -121,3 +126,11 @@ func (list KubeConfigList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	KubeConfigGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "multicluster.solo.io",
+		Kind:    "KubeConfig",
+	}
+)

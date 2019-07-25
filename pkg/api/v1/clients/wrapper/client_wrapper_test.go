@@ -30,7 +30,7 @@ var _ = Describe("ClientWrapper", func() {
 				helpers.TestLabel: helpers.RandString(8),
 			},
 		}
-		generic.TestCrudClient("test", cluster, opts, generic.Callback{
+		generic.TestCrudClient("test1", "test2", cluster, opts, generic.Callback{
 			PostWriteFunc: func(res resources.Resource) {
 				Expect(res.GetMetadata().Cluster).To(Equal(clusterName))
 			},

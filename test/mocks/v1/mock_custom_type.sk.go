@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewMockCustomType(namespace, name string) *MockCustomType {
@@ -47,6 +48,10 @@ func (r *MockCustomType) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *MockCustomType) GroupVersionKind() schema.GroupVersionKind {
+	return MockCustomTypeGVK
 }
 
 type MockCustomTypeList []*MockCustomType
@@ -121,3 +126,11 @@ func (list MockCustomTypeList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	MockCustomTypeGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "testing.solo.io",
+		Kind:    "MockCustomType",
+	}
+)

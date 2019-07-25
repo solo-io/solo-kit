@@ -2,9 +2,9 @@ package consul
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -18,10 +18,10 @@ import (
 type ResourceClient struct {
 	consul       *api.Client
 	root         string
-	resourceType resources.Resource
+	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, resourceType resources.Resource) *ResourceClient {
+func NewResourceClient(client *api.Client, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
 	return &ResourceClient{
 		consul:       client,
 		root:         rootKey,
@@ -58,7 +58,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, errors.NewNotExistErr(namespace, name)
 	}
 	resource := rc.NewResource()
-	if err := protoutils.UnmarshalBytes(kvPair.Value, resource); err != nil {
+	if err := protoutils.UnmarshalYAML(kvPair.Value, resource); err != nil {
 		return nil, errors.Wrapf(err, "reading KV into %v", rc.Kind())
 	}
 	resources.UpdateMetadata(resource, func(meta *core.Metadata) {
@@ -73,7 +73,9 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
+	if meta.Namespace == "" {
+		return nil, errors.Errorf("namespace cannot be empty for consul-backed resources")
+	}
 	key := rc.resourceKey(meta.Namespace, meta.Name)
 
 	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{
@@ -92,23 +94,27 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	clone := resources.Clone(resource)
 	clone.SetMetadata(meta)
 
-	data, err := protoutils.MarshalBytes(clone)
+	data, err := protoutils.MarshalYAML(clone)
 	if err != nil {
 		panic(errors.Wrapf(err, "internal err: failed to marshal resource"))
 	}
 	var modifyIndex uint64
 	if meta.GetResourceVersion() != "" {
-		if i, err := strconv.Atoi(meta.GetResourceVersion()); err == nil {
-			modifyIndex = uint64(i)
+		i, err := strconv.Atoi(meta.GetResourceVersion())
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid resource version: %v (must be int)", meta.GetResourceVersion())
 		}
+		modifyIndex = uint64(i)
 	}
 	kvPair := &api.KVPair{
 		Key:         key,
 		Value:       data,
 		ModifyIndex: modifyIndex,
 	}
-	if _, err := rc.consul.KV().Put(kvPair, nil); err != nil {
+	if success, _, err := rc.consul.KV().CAS(kvPair, nil); err != nil {
 		return nil, errors.Wrapf(err, "writing to KV")
+	} else if !success {
+		return nil, errors.Errorf("writing to KV failed, unknown error)")
 	}
 	// return a read object to update the modify index
 	return rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{Ctx: opts.Ctx})
@@ -116,11 +122,13 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+	if namespace == "" {
+		return errors.Errorf("namespace cannot be empty for consul-backed resources")
+	}
 	key := rc.resourceKey(namespace, name)
 	if !opts.IgnoreNotExist {
 		if _, err := rc.Read(namespace, name, clients.ReadOpts{Ctx: opts.Ctx}); err != nil {
-			return errors.NewNotExistErr(namespace, name, err)
+			return err
 		}
 	}
 	_, err := rc.consul.KV().Delete(key, nil)
@@ -132,10 +140,9 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
-	namespacePrefix := filepath.Join(rc.root, namespace)
-	kvPairs, _, err := rc.consul.KV().List(namespacePrefix, nil)
+	resourceDir := rc.resourceDir(namespace)
+	kvPairs, _, err := rc.consul.KV().List(resourceDir, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading namespace root")
 	}
@@ -143,7 +150,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	var resourceList resources.ResourceList
 	for _, kvPair := range kvPairs {
 		resource := rc.NewResource()
-		if err := protoutils.UnmarshalBytes(kvPair.Value, resource); err != nil {
+		if err := protoutils.UnmarshalYAML(kvPair.Value, resource); err != nil {
 			return nil, errors.Wrapf(err, "reading KV into %v", rc.Kind())
 		}
 		resources.UpdateMetadata(resource, func(meta *core.Metadata) {
@@ -164,8 +171,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
 	var lastIndex uint64
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
-	namespacePrefix := filepath.Join(rc.root, namespace)
+	resourceDir := rc.resourceDir(namespace)
 	resourcesChan := make(chan resources.ResourceList)
 	errs := make(chan error)
 	go func() {
@@ -181,7 +187,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		resourcesChan <- list
 	}()
 	updatedResourceList := func() (resources.ResourceList, error) {
-		kvPairs, meta, err := rc.consul.KV().List(namespacePrefix,
+		kvPairs, meta, err := rc.consul.KV().List(resourceDir,
 			&api.QueryOptions{
 				RequireConsistent: true,
 				WaitIndex:         lastIndex,
@@ -197,7 +203,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		var resourceList resources.ResourceList
 		for _, kvPair := range kvPairs {
 			resource := rc.NewResource()
-			if err := protoutils.UnmarshalBytes(kvPair.Value, resource); err != nil {
+			if err := protoutils.UnmarshalYAML(kvPair.Value, resource); err != nil {
 				return nil, errors.Wrapf(err, "reading KV into %v", rc.Kind())
 			}
 			resources.UpdateMetadata(resource, func(meta *core.Metadata) {
@@ -239,6 +245,19 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
+// works with "" (NamespaceAll)
+func (rc *ResourceClient) resourceDir(namespace string) string {
+	return strings.Join([]string{
+		rc.root,
+		rc.resourceType.GroupVersionKind().Group,
+		rc.resourceType.GroupVersionKind().Version,
+		rc.resourceType.GroupVersionKind().Kind,
+		namespace,
+	}, "/")
+}
+
 func (rc *ResourceClient) resourceKey(namespace, name string) string {
-	return filepath.Join(rc.root, namespace, name)
+	return strings.Join([]string{
+		rc.resourceDir(namespace),
+		name}, "/")
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewCustomResourceDefinition(namespace, name string) *CustomResourceDefinition {
@@ -47,6 +48,10 @@ func (r *CustomResourceDefinition) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *CustomResourceDefinition) GroupVersionKind() schema.GroupVersionKind {
+	return CustomResourceDefinitionGVK
 }
 
 type CustomResourceDefinitionList []*CustomResourceDefinition
@@ -121,3 +126,11 @@ func (list CustomResourceDefinitionList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	CustomResourceDefinitionGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "CustomResourceDefinition",
+	}
+)

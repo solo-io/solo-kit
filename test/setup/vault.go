@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/solo-io/go-utils/log"
+
 	"io/ioutil"
 
 	"time"
@@ -19,19 +21,31 @@ import (
 	"github.com/pkg/errors"
 )
 
-const defaultVaultDockerImage = "vault:0.9.2"
+const defaultVaultDockerImage = "vault:1.1.3"
 
 type VaultFactory struct {
 	vaultpath string
 	tmpdir    string
+	Port      int
 }
 
 func NewVaultFactory() (*VaultFactory, error) {
-	envoypath := os.Getenv("VAULT_BINARY")
+	vaultpath := os.Getenv("VAULT_BINARY")
 
-	if envoypath != "" {
+	if vaultpath == "" {
+		vaultPath, err := exec.LookPath("vault")
+		if err == nil {
+			log.Printf("Using vault from PATH: %s", vaultPath)
+			vaultpath = vaultPath
+		}
+	}
+
+	port := AllocateParallelPort(8200)
+
+	if vaultpath != "" {
 		return &VaultFactory{
-			vaultpath: envoypath,
+			vaultpath: vaultpath,
+			Port:      port,
 		}, nil
 	}
 
@@ -67,6 +81,7 @@ docker rm -f $CID
 	return &VaultFactory{
 		vaultpath: filepath.Join(tmpdir, "vault"),
 		tmpdir:    tmpdir,
+		Port:      port,
 	}, nil
 }
 
@@ -86,6 +101,7 @@ type VaultInstance struct {
 	tmpdir    string
 	cmd       *exec.Cmd
 	token     string
+	Port      int
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -98,6 +114,7 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	return &VaultInstance{
 		vaultpath: ef.vaultpath,
 		tmpdir:    tmpdir,
+		Port:      ef.Port,
 	}, nil
 
 }
@@ -115,7 +132,7 @@ func (i *VaultInstance) RunWithPort() error {
 		"server",
 		"-dev",
 		"-dev-root-token-id=root",
-		"-dev-listen-address=0.0.0.0:8200",
+		fmt.Sprintf("-dev-listen-address=0.0.0.0:%v", i.Port),
 	)
 	buf := &bytes.Buffer{}
 	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
@@ -126,8 +143,19 @@ func (i *VaultInstance) RunWithPort() error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Millisecond * 1500)
 	i.cmd = cmd
+	time.Sleep(time.Millisecond * 1500)
+
+	// enable kv storage
+	enableCmdOut, err := exec.Command(i.vaultpath,
+		"secrets",
+		"enable",
+		fmt.Sprintf("-address=http://127.0.0.1:%v", i.Port),
+		"-version=2",
+		"kv").CombinedOutput()
+	if err != nil {
+		return errors.Wrapf(err, "enabling kv storage failed: %s", enableCmdOut)
+	}
 
 	tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(buf.String(), 1)
 	if len(tokenSlice) < 1 {

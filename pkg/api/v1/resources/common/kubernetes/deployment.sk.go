@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewDeployment(namespace, name string) *Deployment {
@@ -47,6 +48,10 @@ func (r *Deployment) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *Deployment) GroupVersionKind() schema.GroupVersionKind {
+	return DeploymentGVK
 }
 
 type DeploymentList []*Deployment
@@ -121,3 +126,11 @@ func (list DeploymentList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	DeploymentGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "Deployment",
+	}
+)
