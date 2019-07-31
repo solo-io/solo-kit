@@ -140,6 +140,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 	snapshots := make(chan *TestingSnapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := TestingSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
 

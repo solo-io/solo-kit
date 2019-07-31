@@ -140,6 +140,10 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 
 	snapshots := make(chan *KubeconfigsSnapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := KubeconfigsSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
 
