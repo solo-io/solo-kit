@@ -5,6 +5,7 @@ import (
 
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -82,12 +83,36 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 			continue
 		}
 		resourceToWrite.SetStatus(status)
-		res, err := client.Write(resourceToWrite, clients.WriteOpts{
+		res, writeErr := client.Write(resourceToWrite, clients.WriteOpts{
 			Ctx:               ctx,
 			OverwriteExisting: true,
 		})
-		if err != nil {
-			err := errors.Wrapf(err, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
+		if writeErr != nil {
+			if errors.IsConflict(writeErr) {
+				updatedRes, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{
+					Ctx: ctx,
+				})
+				if readErr != nil {
+					err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
+					logger.Warn(err)
+					merr = multierror.Append(merr, err)
+					merr = multierror.Append(merr, readErr)
+					continue
+				}
+				if hashutils.HashAll(updatedRes) == hashutils.HashAll(resourceToWrite) {
+					// same hash, something not important was done, try again:
+					updatedRes.(resources.InputResource).SetStatus(status)
+					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
+						Ctx:               ctx,
+						OverwriteExisting: true,
+					})
+
+				}
+
+			}
+		}
+		if writeErr != nil {
+			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
 			logger.Warn(err)
 			merr = multierror.Append(merr, err)
 			continue

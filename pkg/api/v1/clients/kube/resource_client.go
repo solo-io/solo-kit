@@ -217,6 +217,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		stats.Record(ctx, MUpdates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
 		if _, updateErr := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Update(resourceCrd); updateErr != nil {
+			if apierrors.IsConflict(updateErr) {
+				return nil, errors.NewConflictErr(meta)
+			}
+
 			original, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			if err == nil {
 				return nil, errors.Wrapf(updateErr, "updating kube resource %v:%v (want %v)", resourceCrd.Name, resourceCrd.ResourceVersion, original.ResourceVersion)
