@@ -33,6 +33,7 @@ import (
 var (
 	m{{ .GoName }}SnapshotIn  = stats.Int64("{{ .Name }}/snap_emitter/snap_in", "The number of snapshots in", "1")
 	m{{ .GoName }}SnapshotOut = stats.Int64("{{ .Name }}/snap_emitter/snap_out", "The number of snapshots out", "1")
+	m{{ .GoName }}SnapshotMissed = stats.Int64("{{ .Name }}/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	{{ lower_camel .GoName }}snapshotInView = &view.View{
 		Name:        "{{ .Name }}_snap_emitter/snap_in",
@@ -50,10 +51,18 @@ var (
 		TagKeys:     []tag.Key{
 		},
 	}
+	{{ lower_camel .GoName }}snapshotMissedView = &view.View{
+			Name:        "{{ .Name }}/snap_emitter/snap_missed",
+			Measure:     m{{ .GoName }}SnapshotMissed,
+			Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+			Aggregation: view.Count(),
+			TagKeys:     []tag.Key{
+			},
+	}
 )
 
 func init() {
-	view.Register({{ lower_camel .GoName }}snapshotInView, {{ lower_camel .GoName }}snapshotOutView)
+	view.Register({{ lower_camel .GoName }}snapshotInView, {{ lower_camel .GoName }}snapshotOutView, {{ lower_camel .GoName }}snapshotMissedView)
 }
 
 type {{ .GoName }}Emitter interface {
@@ -217,11 +226,16 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				return
 			}
 
-			stats.Record(ctx, m{{ .GoName }}SnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, m{{ .GoName }}SnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, m{{ .GoName }}SnapshotMissed.M(1))
+			}
 		}
+
 		{{- range .Resources}}
 		{{- if not .ClusterScoped }}
 				{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)

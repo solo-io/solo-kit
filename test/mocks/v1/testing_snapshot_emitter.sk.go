@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	mTestingSnapshotIn  = stats.Int64("testing.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mTestingSnapshotOut = stats.Int64("testing.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mTestingSnapshotIn     = stats.Int64("testing.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mTestingSnapshotOut    = stats.Int64("testing.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mTestingSnapshotMissed = stats.Int64("testing.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	testingsnapshotInView = &view.View{
 		Name:        "testing.solo.io_snap_emitter/snap_in",
@@ -35,10 +36,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	testingsnapshotMissedView = &view.View{
+		Name:        "testing.solo.io/snap_emitter/snap_missed",
+		Measure:     mTestingSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(testingsnapshotInView, testingsnapshotOutView)
+	view.Register(testingsnapshotInView, testingsnapshotOutView, testingsnapshotMissedView)
 }
 
 type TestingEmitter interface {
@@ -356,10 +364,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return
 			}
 
-			stats.Record(ctx, mTestingSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mTestingSnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, mTestingSnapshotMissed.M(1))
+			}
 		}
 		mocksByNamespace := make(map[string]MockResourceList)
 		fakesByNamespace := make(map[string]FakeResourceList)
