@@ -5,6 +5,7 @@ import (
 
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
+
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -87,7 +88,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 			Ctx:               ctx,
 			OverwriteExisting: true,
 		})
-		if writeErr != nil && errors.IsConflict(writeErr) {
+		if writeErr != nil && errors.IsResourceVersion(writeErr) {
 			updatedRes, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{
 				Ctx: ctx,
 			})

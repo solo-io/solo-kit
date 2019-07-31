@@ -40,21 +40,9 @@ func NewExistErr(meta core.Metadata) *existErr {
 	return &existErr{meta: meta}
 }
 
-func NewConflictErr(meta core.Metadata) *conflictErr {
-	return &conflictErr{meta: meta}
-}
-
 func IsExist(err error) bool {
 	switch err.(type) {
 	case *existErr:
-		return true
-	}
-	return false
-}
-
-func IsConflict(err error) bool {
-	switch err.(type) {
-	case *conflictErr:
 		return true
 	}
 	return false
