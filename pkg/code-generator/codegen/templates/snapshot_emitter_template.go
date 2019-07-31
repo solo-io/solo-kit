@@ -226,16 +226,16 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				return
 			}
 
-            sentSnapshot := currentSnapshot.Clone()
-            select {
+			sentSnapshot := currentSnapshot.Clone()
+			select {
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, m{{ .GoName }}SnapshotOut.M(1))
 				originalSnapshot = currentSnapshot.Clone()
 			default:
 				stats.Record(ctx, m{{ .GoName }}SnapshotMissed.M(1))
-            }
-
+			}
 		}
+
 		{{- range .Resources}}
 		{{- if not .ClusterScoped }}
 				{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
