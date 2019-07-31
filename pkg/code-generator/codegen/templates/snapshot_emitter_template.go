@@ -205,6 +205,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 	snapshots := make(chan *{{ .GoName }}Snapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := {{ .GoName }}Snapshot{}
 		timer := time.NewTicker(time.Second * 1)
 

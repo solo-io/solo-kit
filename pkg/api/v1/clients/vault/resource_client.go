@@ -267,7 +267,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 
 	resourcesChan := make(chan resources.ResourceList)
 	errs := make(chan error)
-	var cached resources.ResourceList
 	go func() {
 		// watch should open up with an initial read
 		list, err := rc.List(namespace, clients.ListOpts{
@@ -278,7 +277,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 			errs <- err
 			return
 		}
-		cached = list
 		resourcesChan <- list
 		for {
 			select {
@@ -289,10 +287,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 				if err != nil {
 					errs <- err
 				}
-				if list != nil && !reflect.DeepEqual(list, cached) {
-					cached = list
-					resourcesChan <- list
-				}
+				resourcesChan <- list
 			case <-opts.Ctx.Done():
 				close(resourcesChan)
 				close(errs)

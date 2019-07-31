@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: Send initial snapshot from emitter right away
+    issueLink: https://github.com/solo-io/solo-kit/issues/231
+  - type: FIX
+    description: Remove local cache from vault client
+    issueLink: https://github.com/solo-io/solo-kit/issues/230
