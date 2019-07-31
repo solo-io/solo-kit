@@ -168,7 +168,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			default:
 				stats.Record(ctx, mTestingSnapshotMissed.M(1))
 			}
-
 		}
 		mocksByNamespace := make(map[string]MockResourceList)
 

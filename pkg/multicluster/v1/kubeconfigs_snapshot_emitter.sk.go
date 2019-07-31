@@ -168,7 +168,6 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			default:
 				stats.Record(ctx, mKubeconfigsSnapshotMissed.M(1))
 			}
-
 		}
 		kubeconfigsByNamespace := make(map[string]KubeConfigList)
 
