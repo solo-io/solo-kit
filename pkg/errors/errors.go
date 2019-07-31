@@ -28,14 +28,6 @@ func (err *existErr) Error() string {
 	return fmt.Sprintf("%v exists", err.meta)
 }
 
-type conflictErr struct {
-	meta core.Metadata
-}
-
-func (err *conflictErr) Error() string {
-	return fmt.Sprintf("confict writing %v", err.meta)
-}
-
 func NewExistErr(meta core.Metadata) *existErr {
 	return &existErr{meta: meta}
 }
