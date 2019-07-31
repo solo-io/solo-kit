@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Don't send a snapshot if we can't. Retry after a second.
+    issueLink: https://github.com/solo-io/solo-kit/pull/233
