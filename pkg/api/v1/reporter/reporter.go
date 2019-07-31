@@ -87,18 +87,11 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 			Ctx:               ctx,
 			OverwriteExisting: true,
 		})
-		if writeErr != nil {
-			if errors.IsConflict(writeErr) {
-				updatedRes, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{
-					Ctx: ctx,
-				})
-				if readErr != nil {
-					err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
-					logger.Warn(err)
-					merr = multierror.Append(merr, err)
-					merr = multierror.Append(merr, readErr)
-					continue
-				}
+		if writeErr != nil && errors.IsConflict(writeErr) {
+			updatedRes, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{
+				Ctx: ctx,
+			})
+			if readErr == nil {
 				if hashutils.HashAll(updatedRes) == hashutils.HashAll(resourceToWrite) {
 					// same hash, something not important was done, try again:
 					updatedRes.(resources.InputResource).SetStatus(status)
@@ -106,9 +99,9 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 						Ctx:               ctx,
 						OverwriteExisting: true,
 					})
-
 				}
-
+			} else {
+				logger.Warnw("error reading client to compare conflict when writing status", "error", readErr)
 			}
 		}
 		if writeErr != nil {
