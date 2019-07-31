@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	mKubeconfigsSnapshotIn  = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mKubeconfigsSnapshotOut = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mKubeconfigsSnapshotIn     = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mKubeconfigsSnapshotOut    = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mKubeconfigsSnapshotMissed = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	kubeconfigssnapshotInView = &view.View{
 		Name:        "kubeconfigs.multicluster.solo.io_snap_emitter/snap_in",
@@ -33,10 +34,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	kubeconfigssnapshotMissedView = &view.View{
+		Name:        "kubeconfigs.multicluster.solo.io/snap_emitter/snap_missed",
+		Measure:     mKubeconfigsSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(kubeconfigssnapshotInView, kubeconfigssnapshotOutView)
+	view.Register(kubeconfigssnapshotInView, kubeconfigssnapshotOutView, kubeconfigssnapshotMissedView)
 }
 
 type KubeconfigsEmitter interface {
@@ -152,10 +160,15 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				return
 			}
 
-			stats.Record(ctx, mKubeconfigsSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mKubeconfigsSnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, mKubeconfigsSnapshotMissed.M(1))
+			}
+
 		}
 		kubeconfigsByNamespace := make(map[string]KubeConfigList)
 
