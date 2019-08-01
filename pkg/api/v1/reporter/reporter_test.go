@@ -43,12 +43,32 @@ var _ = Describe("Reporter", func() {
 		r2, err = mockResourceClient.Read(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(r1.(*v1.MockResource).GetStatus()).To(Equal(core.Status{
-			State:  2,
-			Reason: "everyone makes mistakes",
+			State:      2,
+			Reason:     "everyone makes mistakes",
+			ReportedBy: "test",
 		}))
 		Expect(r2.(*v1.MockResource).GetStatus()).To(Equal(core.Status{
-			State:  2,
-			Reason: "try your best",
+			State:      2,
+			Reason:     "try your best",
+			ReportedBy: "test",
 		}))
+	})
+
+	It("handles conflict", func() {
+		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		resourceErrs := rep.ResourceErrors{
+			r1.(*v1.MockResource): fmt.Errorf("everyone makes mistakes"),
+		}
+
+		// write again to update resource version
+		newR1 := v1.NewMockResource("", "mocky")
+		newR1.Metadata.ResourceVersion = r1.GetMetadata().ResourceVersion
+		r1updated, err := mockResourceClient.Write(newR1, clients.WriteOpts{OverwriteExisting: true})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(r1updated.GetMetadata().ResourceVersion))
+
+		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
+		Expect(err).NotTo(HaveOccurred())
 	})
 })
