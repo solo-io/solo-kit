@@ -9,7 +9,6 @@ import (
 	"go.opencensus.io/tag"
 
 	v1 "k8s.io/api/core/v1"
-	kubeinformers "k8s.io/client-go/informers"
 	kubelisters "k8s.io/client-go/listers/core/v1"
 
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -63,8 +62,6 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 }
 
 func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string) (*kubeCoreCaches, error) {
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, resyncDuration)
-
 	var informers []cache.SharedIndexInformer
 
 	pods := map[string]kubelisters.PodLister{}
@@ -127,9 +124,19 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 
 	var namespaceLister kubelisters.NamespaceLister
 	if len(namesapcesToWatch) == 1 && namesapcesToWatch[0] == metav1.NamespaceAll {
-		namespaces := kubeInformerFactory.Core().V1().Namespaces()
-		namespaceLister = namespaces.Lister()
-		informers = append(informers, namespaces.Informer())
+
+		// Pods
+		watch := client.CoreV1().Namespaces().Watch
+		list := func(options metav1.ListOptions) (runtime.Object, error) {
+			return client.CoreV1().Namespaces().List(options)
+		}
+		nsCtx := ctx
+		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(metav1.NamespaceAll))); err == nil {
+			nsCtx = ctxWithTags
+		}
+		informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Namespace{}, list, watch)
+		informers = append(informers, informer)
+		namespaceLister = kubelisters.NewNamespaceLister(informer.GetIndexer())
 	}
 
 	k := &kubeCoreCaches{
