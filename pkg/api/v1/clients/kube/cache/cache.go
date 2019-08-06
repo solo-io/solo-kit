@@ -142,22 +142,27 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 	return k, nil
 }
 
+// Deprecated: Use NamespacedPodLister instead
 func (k *kubeCoreCaches) PodLister() kubelisters.PodLister {
 	return k.NamespacedPodLister(metav1.NamespaceAll)
 }
 
+// Deprecated: Use NamespacedServiceLister instead
 func (k *kubeCoreCaches) ServiceLister() kubelisters.ServiceLister {
 	return k.NamespacedServiceLister(metav1.NamespaceAll)
 }
 
+// Deprecated: Use NamespacedConfigMapLister instead
 func (k *kubeCoreCaches) ConfigMapLister() kubelisters.ConfigMapLister {
 	return k.NamespacedConfigMapLister(metav1.NamespaceAll)
 }
 
+// Deprecated: Use NamespacedSecretLister instead
 func (k *kubeCoreCaches) SecretLister() kubelisters.SecretLister {
 	return k.NamespacedSecretLister(metav1.NamespaceAll)
 }
 
+// NamespaceLister() will return a non-null lister only if we watch all namespaces.
 func (k *kubeCoreCaches) NamespaceLister() kubelisters.NamespaceLister {
 	return k.namespaceLister
 }
