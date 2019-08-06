@@ -6,11 +6,17 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
+	"go.opencensus.io/tag"
 
+	v1 "k8s.io/api/core/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	kubelisters "k8s.io/client-go/listers/core/v1"
 
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 )
 
 type Cache interface {
@@ -28,11 +34,11 @@ type KubeCoreCache interface {
 }
 
 type kubeCoreCaches struct {
-	podLister       kubelisters.PodLister
-	serviceLister   kubelisters.ServiceLister
-	configMapLister kubelisters.ConfigMapLister
-	secretLister    kubelisters.SecretLister
-	namespaceLister kubelisters.NamespaceLister
+	podListers       map[string]kubelisters.PodLister
+	serviceListers   map[string]kubelisters.ServiceLister
+	configMapListers map[string]kubelisters.ConfigMapLister
+	secretListers    map[string]kubelisters.SecretLister
+	namespaceLister  kubelisters.NamespaceLister
 
 	cacheUpdatedWatchers      []chan struct{}
 	cacheUpdatedWatchersMutex sync.Mutex
@@ -42,29 +48,89 @@ type kubeCoreCaches struct {
 // across clients, it should get a context that has a longer lifetime than the clients themselves
 func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCoreCaches, error) {
 	resyncDuration := 12 * time.Hour
+	return NewKubeCoreCacheWithOptions(ctx, client, resyncDuration, []string{metav1.NamespaceAll})
+}
+
+func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string) (*kubeCoreCaches, error) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, resyncDuration)
 
-	pods := kubeInformerFactory.Core().V1().Pods()
-	services := kubeInformerFactory.Core().V1().Services()
-	configMaps := kubeInformerFactory.Core().V1().ConfigMaps()
-	secrets := kubeInformerFactory.Core().V1().Secrets()
-	namespaces := kubeInformerFactory.Core().V1().Namespaces()
+	var informers []cache.SharedIndexInformer
+
+	pods := map[string]kubelisters.PodLister{}
+	services := map[string]kubelisters.ServiceLister{}
+	configMaps := map[string]kubelisters.ConfigMapLister{}
+	secrets := map[string]kubelisters.SecretLister{}
+
+	for _, nsToWatch := range namesapcesToWatch {
+		nsCtx := ctx
+		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(nsToWatch))); err == nil {
+			nsCtx = ctxWithTags
+		}
+
+		{
+			// Pods
+			watch := client.CoreV1().Pods(nsToWatch).Watch
+			list := func(options metav1.ListOptions) (runtime.Object, error) {
+				return client.CoreV1().Pods(nsToWatch).List(options)
+			}
+			informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Pod{}, list, watch)
+			informers = append(informers, informer)
+			lister := kubelisters.NewPodLister(informer.GetIndexer())
+			pods[nsToWatch] = lister
+		}
+		{
+			// Services
+			watch := client.CoreV1().Services(nsToWatch).Watch
+			list := func(options metav1.ListOptions) (runtime.Object, error) {
+				return client.CoreV1().Services(nsToWatch).List(options)
+			}
+			informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Service{}, list, watch)
+			informers = append(informers, informer)
+			lister := kubelisters.NewServiceLister(informer.GetIndexer())
+			services[nsToWatch] = lister
+		}
+		{
+			// ConfigMap
+			watch := client.CoreV1().ConfigMaps(nsToWatch).Watch
+			list := func(options metav1.ListOptions) (runtime.Object, error) {
+				return client.CoreV1().ConfigMaps(nsToWatch).List(options)
+			}
+			informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.ConfigMap{}, list, watch)
+			informers = append(informers, informer)
+			lister := kubelisters.NewConfigMapLister(informer.GetIndexer())
+			configMaps[nsToWatch] = lister
+		}
+		{
+			// Secrets
+			watch := client.CoreV1().Secrets(nsToWatch).Watch
+			list := func(options metav1.ListOptions) (runtime.Object, error) {
+				return client.CoreV1().Secrets(nsToWatch).List(options)
+			}
+			informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Secret{}, list, watch)
+			informers = append(informers, informer)
+			lister := kubelisters.NewSecretLister(informer.GetIndexer())
+			secrets[nsToWatch] = lister
+		}
+
+	}
+
+	var namespaceLister kubelisters.NamespaceLister
+	if len(namesapcesToWatch) == 1 && namesapcesToWatch[0] == metav1.NamespaceAll {
+		namespaces := kubeInformerFactory.Core().V1().Namespaces()
+		namespaceLister = namespaces.Lister()
+		informers = append(informers, namespaces.Informer())
+	}
 
 	k := &kubeCoreCaches{
-		podLister:       pods.Lister(),
-		serviceLister:   services.Lister(),
-		configMapLister: configMaps.Lister(),
-		secretLister:    secrets.Lister(),
-		namespaceLister: namespaces.Lister(),
+		podListers:       pods,
+		serviceListers:   services,
+		configMapListers: configMaps,
+		secretListers:    secrets,
+		namespaceLister:  namespaceLister,
 	}
 
 	kubeController := controller.NewController("kube-plugin-controller",
-		controller.NewLockingSyncHandler(k.updatedOccured),
-		pods.Informer(),
-		services.Informer(),
-		configMaps.Informer(),
-		secrets.Informer(),
-		namespaces.Informer(),
+		controller.NewLockingSyncHandler(k.updatedOccured), informers...,
 	)
 
 	stop := ctx.Done()
@@ -77,23 +143,39 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 }
 
 func (k *kubeCoreCaches) PodLister() kubelisters.PodLister {
-	return k.podLister
+	return k.NamespacedPodLister(metav1.NamespaceAll)
 }
 
 func (k *kubeCoreCaches) ServiceLister() kubelisters.ServiceLister {
-	return k.serviceLister
+	return k.NamespacedServiceLister(metav1.NamespaceAll)
 }
 
 func (k *kubeCoreCaches) ConfigMapLister() kubelisters.ConfigMapLister {
-	return k.configMapLister
+	return k.NamespacedConfigMapLister(metav1.NamespaceAll)
 }
 
 func (k *kubeCoreCaches) SecretLister() kubelisters.SecretLister {
-	return k.secretLister
+	return k.NamespacedSecretLister(metav1.NamespaceAll)
 }
 
 func (k *kubeCoreCaches) NamespaceLister() kubelisters.NamespaceLister {
 	return k.namespaceLister
+}
+
+func (k *kubeCoreCaches) NamespacedPodLister(ns string) kubelisters.PodLister {
+	return k.podListers[ns]
+}
+
+func (k *kubeCoreCaches) NamespacedServiceLister(ns string) kubelisters.ServiceLister {
+	return k.serviceListers[ns]
+}
+
+func (k *kubeCoreCaches) NamespacedConfigMapLister(ns string) kubelisters.ConfigMapLister {
+	return k.configMapListers[ns]
+}
+
+func (k *kubeCoreCaches) NamespacedSecretLister(ns string) kubelisters.SecretLister {
+	return k.secretListers[ns]
 }
 
 func (k *kubeCoreCaches) Subscribe() <-chan struct{} {
