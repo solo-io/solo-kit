@@ -5,7 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
+	"github.com/solo-io/solo-kit/pkg/errors"
 	"go.opencensus.io/tag"
 
 	v1 "k8s.io/api/core/v1"
@@ -62,6 +64,17 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 }
 
 func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string) (*kubeCoreCaches, error) {
+
+	if len(namesapcesToWatch) == 0 {
+		namesapcesToWatch = []string{metav1.NamespaceAll}
+	}
+
+	if len(namesapcesToWatch) > 1 {
+		if !stringutils.ContainsString(metav1.NamespaceAll, namesapcesToWatch) {
+			return nil, errors.Errorf("if metav1.NamespaceAll is provided, it must be the only one. namespaces provided %v", namesapcesToWatch)
+		}
+	}
+
 	var informers []cache.SharedIndexInformer
 
 	pods := map[string]kubelisters.PodLister{}
