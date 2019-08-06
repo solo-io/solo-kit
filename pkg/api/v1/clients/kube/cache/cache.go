@@ -15,10 +15,31 @@ import (
 
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
+
+type ServiceLister interface {
+	// List lists all Services in the indexer.
+	List(selector labels.Selector) (ret []*v1.Service, err error)
+}
+
+type PodLister interface {
+	// List lists all Pods in the indexer.
+	List(selector labels.Selector) (ret []*v1.Pod, err error)
+}
+
+type ConfigMapLister interface {
+	// List lists all ConfigMaps in the indexer.
+	List(selector labels.Selector) (ret []*v1.ConfigMap, err error)
+}
+
+type SecretLister interface {
+	// List lists all Secrets in the indexer.
+	List(selector labels.Selector) (ret []*v1.Secret, err error)
+}
 
 type Cache interface {
 	Subscribe() <-chan struct{}
@@ -39,10 +60,10 @@ type KubeCoreCache interface {
 
 	NamespaceLister() kubelisters.NamespaceLister
 
-	NamespacedPodLister(ns string) kubelisters.PodLister
-	NamespacedServiceLister(ns string) kubelisters.ServiceLister
-	NamespacedConfigMapLister(ns string) kubelisters.ConfigMapLister
-	NamespacedSecretLister(ns string) kubelisters.SecretLister
+	NamespacedPodLister(ns string) PodLister
+	NamespacedServiceLister(ns string) ServiceLister
+	NamespacedConfigMapLister(ns string) ConfigMapLister
+	NamespacedSecretLister(ns string) SecretLister
 }
 
 type kubeCoreCaches struct {
@@ -175,22 +196,22 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 
 // Deprecated: Use NamespacedPodLister instead
 func (k *kubeCoreCaches) PodLister() kubelisters.PodLister {
-	return k.NamespacedPodLister(metav1.NamespaceAll)
+	return k.podListers[metav1.NamespaceAll]
 }
 
 // Deprecated: Use NamespacedServiceLister instead
 func (k *kubeCoreCaches) ServiceLister() kubelisters.ServiceLister {
-	return k.NamespacedServiceLister(metav1.NamespaceAll)
+	return k.serviceListers[metav1.NamespaceAll]
 }
 
 // Deprecated: Use NamespacedConfigMapLister instead
 func (k *kubeCoreCaches) ConfigMapLister() kubelisters.ConfigMapLister {
-	return k.NamespacedConfigMapLister(metav1.NamespaceAll)
+	return k.configMapListers[metav1.NamespaceAll]
 }
 
 // Deprecated: Use NamespacedSecretLister instead
 func (k *kubeCoreCaches) SecretLister() kubelisters.SecretLister {
-	return k.NamespacedSecretLister(metav1.NamespaceAll)
+	return k.secretListers[metav1.NamespaceAll]
 }
 
 // NamespaceLister() will return a non-null lister only if we watch all namespaces.
@@ -198,30 +219,30 @@ func (k *kubeCoreCaches) NamespaceLister() kubelisters.NamespaceLister {
 	return k.namespaceLister
 }
 
-func (k *kubeCoreCaches) NamespacedPodLister(ns string) kubelisters.PodLister {
+func (k *kubeCoreCaches) NamespacedPodLister(ns string) PodLister {
 	if lister, ok := k.podListers[metav1.NamespaceAll]; ok {
-		return lister
+		return lister.Pods(ns)
 	}
 	return k.podListers[ns]
 }
 
-func (k *kubeCoreCaches) NamespacedServiceLister(ns string) kubelisters.ServiceLister {
+func (k *kubeCoreCaches) NamespacedServiceLister(ns string) ServiceLister {
 	if lister, ok := k.serviceListers[metav1.NamespaceAll]; ok {
-		return lister
+		return lister.Services(ns)
 	}
 	return k.serviceListers[ns]
 }
 
-func (k *kubeCoreCaches) NamespacedConfigMapLister(ns string) kubelisters.ConfigMapLister {
+func (k *kubeCoreCaches) NamespacedConfigMapLister(ns string) ConfigMapLister {
 	if lister, ok := k.configMapListers[metav1.NamespaceAll]; ok {
-		return lister
+		return lister.ConfigMaps(ns)
 	}
 	return k.configMapListers[ns]
 }
 
-func (k *kubeCoreCaches) NamespacedSecretLister(ns string) kubelisters.SecretLister {
+func (k *kubeCoreCaches) NamespacedSecretLister(ns string) SecretLister {
 	if lister, ok := k.secretListers[metav1.NamespaceAll]; ok {
-		return lister
+		return lister.Secrets(ns)
 	}
 	return k.secretListers[ns]
 }
