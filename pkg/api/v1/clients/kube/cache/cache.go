@@ -186,18 +186,30 @@ func (k *kubeCoreCaches) NamespaceLister() kubelisters.NamespaceLister {
 }
 
 func (k *kubeCoreCaches) NamespacedPodLister(ns string) kubelisters.PodLister {
+	if lister, ok := k.podListers[metav1.NamespaceAll]; ok {
+		return lister
+	}
 	return k.podListers[ns]
 }
 
 func (k *kubeCoreCaches) NamespacedServiceLister(ns string) kubelisters.ServiceLister {
+	if lister, ok := k.serviceListers[metav1.NamespaceAll]; ok {
+		return lister
+	}
 	return k.serviceListers[ns]
 }
 
 func (k *kubeCoreCaches) NamespacedConfigMapLister(ns string) kubelisters.ConfigMapLister {
+	if lister, ok := k.configMapListers[metav1.NamespaceAll]; ok {
+		return lister
+	}
 	return k.configMapListers[ns]
 }
 
 func (k *kubeCoreCaches) NamespacedSecretLister(ns string) kubelisters.SecretLister {
+	if lister, ok := k.secretListers[metav1.NamespaceAll]; ok {
+		return lister
+	}
 	return k.secretListers[ns]
 }
 
