@@ -129,11 +129,15 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
-
+	var configMapList []*kubev1.ConfigMap
+	var err error
 	if rc.cache.NamespacedConfigMapLister(namespace) == nil {
+		configMapList, err = rc.cache.NamespacedConfigMapLister(namespace).List(labels.SelectorFromSet(opts.Selector))
+	} else if rc.cache.NamespacedConfigMapLister(metav1.NamespaceAll) == nil {
+		configMapList, err = rc.cache.NamespacedConfigMapLister(metav1.NamespaceAll).Pods(namespace.List(labels.SelectorFromSet(opts.Selector))
+	} else{
 		return nil, errors.Errorf("namespaces is not watched")
 	}
-	configMapList, err := rc.cache.NamespacedConfigMapLister(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing configMaps in %v", namespace)
 	}

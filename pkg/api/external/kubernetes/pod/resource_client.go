@@ -139,11 +139,15 @@ func (rc *podResourceClient) Delete(namespace, name string, opts clients.DeleteO
 
 func (rc *podResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
-
+	var podObjList []*kubev1.Pod
+	var err error
 	if rc.cache.NamespacedPodLister(namespace) == nil {
+		podObjList, err = rc.cache.NamespacedPodLister(namespace).List(labels.SelectorFromSet(opts.Selector))
+	} else if rc.cache.NamespacedPodLister(metav1.NamespaceAll) == nil {
+		podObjList, err = rc.cache.NamespacedPodLister(metav1.NamespaceAll).Pods(namespace.List(labels.SelectorFromSet(opts.Selector))
+	} else{
 		return nil, errors.Errorf("namespaces is not watched")
 	}
-	podObjList, err := rc.cache.NamespacedPodLister(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing pods level")
 	}
