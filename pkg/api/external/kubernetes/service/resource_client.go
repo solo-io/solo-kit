@@ -140,16 +140,10 @@ func (rc *serviceResourceClient) Delete(namespace, name string, opts clients.Del
 func (rc *serviceResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	var serviceObjList []*kubev1.Service
-	var err error
 	if rc.cache.NamespacedServiceLister(namespace) == nil {
-		serviceObjList, err = rc.cache.NamespacedServiceLister(namespace).List(labels.SelectorFromSet(opts.Selector))
-	} else if rc.cache.NamespacedServiceLister(metav1.NamespaceAll) == nil {
-		serviceObjList, err = rc.cache.NamespacedServiceLister(metav1.NamespaceAll).Pods(namespace.List(labels.SelectorFromSet(opts.Selector))
-	} else{
 		return nil, errors.Errorf("namespaces is not watched")
 	}
-
+	serviceObjList, err := rc.cache.NamespacedServiceLister(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing services level")
 	}
