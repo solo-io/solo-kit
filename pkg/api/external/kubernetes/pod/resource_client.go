@@ -140,6 +140,9 @@ func (rc *podResourceClient) Delete(namespace, name string, opts clients.DeleteO
 func (rc *podResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
+	if rc.cache.NamespacedPodLister(namespace) == nil {
+		return nil, errors.Errorf("namespaces is not watched")
+	}
 	podObjList, err := rc.cache.NamespacedPodLister(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing pods level")

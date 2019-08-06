@@ -140,6 +140,9 @@ func (rc *serviceResourceClient) Delete(namespace, name string, opts clients.Del
 func (rc *serviceResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
+	if rc.cache.NamespacedServiceLister(namespace) == nil {
+		return nil, errors.Errorf("namespaces is not watched")
+	}
 	serviceObjList, err := rc.cache.NamespacedServiceLister(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing services level")
