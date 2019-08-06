@@ -180,7 +180,8 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 	// Create a shared informer for each of the given namespaces.
 	// NOTE: We do not distinguish between the value "" (all namespaces) and a regular namespace here.
 	for _, ns := range namespaces {
-
+		// copy to variable, so we can send it to clousures
+		ns := ns
 		// To nip configuration errors in the bud, error if the registry already contains an informer for the given resource/namespace.
 		if f.registry.get(resourceType, ns) != nil {
 			return errors.Errorf("Shared cache already contains informer for resource [%v] and namespace [%v]", resourceType, ns)
