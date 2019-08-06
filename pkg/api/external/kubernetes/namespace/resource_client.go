@@ -138,6 +138,10 @@ func (rc *namespaceResourceClient) Delete(namespace, name string, opts clients.D
 func (rc *namespaceResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
+	if rc.cache.NamespaceLister() == nil {
+		return nil, errors.New("to list namespaces you must watch all namespaces")
+	}
+
 	namespaceObjList, err := rc.cache.NamespaceLister().List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing namespaces level")

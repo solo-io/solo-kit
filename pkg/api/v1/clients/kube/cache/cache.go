@@ -26,11 +26,22 @@ type Cache interface {
 
 type KubeCoreCache interface {
 	Cache
+
+	// Deprecated: Use NamespacedPodLister instead
 	PodLister() kubelisters.PodLister
+	// Deprecated: Use NamespacedServiceLister instead
 	ServiceLister() kubelisters.ServiceLister
+	// Deprecated: Use NamespacedConfigMapLister instead
 	ConfigMapLister() kubelisters.ConfigMapLister
+	// Deprecated: Use NamespacedSecretLister instead
 	SecretLister() kubelisters.SecretLister
+
 	NamespaceLister() kubelisters.NamespaceLister
+
+	NamespacedPodLister(ns string) kubelisters.PodLister
+	NamespacedServiceLister(ns string) kubelisters.ServiceLister
+	NamespacedConfigMapLister(ns string) kubelisters.ConfigMapLister
+	NamespacedSecretLister(ns string) kubelisters.SecretLister
 }
 
 type kubeCoreCaches struct {

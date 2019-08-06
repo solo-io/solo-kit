@@ -211,7 +211,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	secretList, err := rc.cache.SecretLister().Secrets(namespace).List(labels.SelectorFromSet(opts.Selector))
+	secretList, err := rc.cache.NamespacedSecretLister(namespace).List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing secrets in %v", namespace)
 	}
