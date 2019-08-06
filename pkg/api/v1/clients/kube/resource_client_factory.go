@@ -115,11 +115,42 @@ type ResourceClientSharedInformerFactory struct {
 	cacheUpdatedWatchersMutex sync.Mutex
 }
 
-func notEmpty(ns string) string {
+func NotEmptyValue(ns string) string {
 	if ns == "" {
 		return "<all>"
 	}
 	return ns
+}
+
+func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType runtime.Object,
+	listFunc func(options metav1.ListOptions) (runtime.Object, error),
+	watchFunc func(opts metav1.ListOptions) (kubewatch.Interface, error)) cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(
+		&cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				listCtx := ctx
+				if ctxWithTags, err := tag.New(listCtx, tag.Insert(KeyOpKind, "list")); err == nil {
+					listCtx = ctxWithTags
+				}
+				stats.Record(listCtx, MLists.M(1), MInFlight.M(1))
+				defer stats.Record(listCtx, MInFlight.M(-1))
+				return listFunc(options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
+				watchCtx := ctx
+				if ctxWithTags, err := tag.New(watchCtx, tag.Insert(KeyOpKind, "watch")); err == nil {
+					watchCtx = ctxWithTags
+				}
+
+				stats.Record(watchCtx, MWatches.M(1), MInFlight.M(1))
+				defer stats.Record(watchCtx, MInFlight.M(-1))
+				return watchFunc(options)
+			},
+		},
+		objType,
+		resyncPeriod,
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+	)
 }
 
 // Creates a new SharedIndexInformer and adds it to the factory's informer registry.
@@ -149,7 +180,8 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 	// Create a shared informer for each of the given namespaces.
 	// NOTE: We do not distinguish between the value "" (all namespaces) and a regular namespace here.
 	for _, ns := range namespaces {
-
+		// copy to variable, so we can send it to closures
+		ns := ns
 		// To nip configuration errors in the bud, error if the registry already contains an informer for the given resource/namespace.
 		if f.registry.get(resourceType, ns) != nil {
 			return errors.Errorf("Shared cache already contains informer for resource [%v] and namespace [%v]", resourceType, ns)
@@ -157,39 +189,16 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 		}
 
 		nsCtx := ctx
-		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(KeyNamespaceKind, notEmpty(ns))); err == nil {
+		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(KeyNamespaceKind, NotEmptyValue(ns))); err == nil {
 			nsCtx = ctxWithTags
 		}
 
-		list := rc.crdClientset.ResourcesV1().Resources(ns).List
+		resourceList := rc.crdClientset.ResourcesV1().Resources(ns).List
+		list := func(options metav1.ListOptions) (runtime.Object, error) {
+			return resourceList(options)
+		}
 		watch := rc.crdClientset.ResourcesV1().Resources(ns).Watch
-		sharedInformer := cache.NewSharedIndexInformer(
-			&cache.ListWatch{
-				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-					listCtx := nsCtx
-					if ctxWithTags, err := tag.New(listCtx, tag.Insert(KeyOpKind, "list")); err == nil {
-						listCtx = ctxWithTags
-					}
-					stats.Record(listCtx, MLists.M(1), MInFlight.M(1))
-					defer stats.Record(listCtx, MInFlight.M(-1))
-					return list(options)
-				},
-				WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
-					watchCtx := nsCtx
-					if ctxWithTags, err := tag.New(watchCtx, tag.Insert(KeyOpKind, "watch")); err == nil {
-						watchCtx = ctxWithTags
-					}
-
-					stats.Record(watchCtx, MWatches.M(1), MInFlight.M(1))
-					defer stats.Record(watchCtx, MInFlight.M(-1))
-					return watch(options)
-				},
-			},
-			&v1.Resource{},
-			resyncPeriod,
-			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-		)
-
+		sharedInformer := NewSharedInformer(nsCtx, resyncPeriod, &v1.Resource{}, list, watch)
 		f.registry.add(resourceType, ns, sharedInformer)
 	}
 
