@@ -193,8 +193,9 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 			nsCtx = ctxWithTags
 		}
 
+		resourceList := rc.crdClientset.ResourcesV1().Resources(ns).List
 		list := func(options metav1.ListOptions) (runtime.Object, error) {
-			return rc.crdClientset.ResourcesV1().Resources(ns).List(options)
+			return resourceList(options)
 		}
 		watch := rc.crdClientset.ResourcesV1().Resources(ns).Watch
 		sharedInformer := NewSharedInformer(nsCtx, resyncPeriod, &v1.Resource{}, list, watch)
