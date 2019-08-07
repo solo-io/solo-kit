@@ -85,6 +85,7 @@ func (p VersionConfig) IsOurProto(protoFile string) bool {
 type ResourceConfig struct {
 	ResourceName    string `json:"name"`
 	ResourcePackage string `json:"package"` // resource package doubles as the proto package or the go import package
+	ResourceVersion string `json:"version"` // version of the resource, used to distinguish when multiple versions of a resource exist
 }
 
 // Create a Solo-Kit backed resource from

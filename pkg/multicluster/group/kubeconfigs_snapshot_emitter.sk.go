@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	github_com_solo_io_solo_kit_api_multicluster_v1 "github.com/solo-io/solo-kit/api/multicluster/v1"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -41,15 +43,15 @@ func init() {
 
 type KubeconfigsEmitter interface {
 	Register() error
-	KubeConfig() KubeConfigClient
+	KubeConfig() github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *KubeconfigsSnapshot, <-chan error, error)
 }
 
-func NewKubeconfigsEmitter(kubeConfigClient KubeConfigClient) KubeconfigsEmitter {
+func NewKubeconfigsEmitter(kubeConfigClient github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigClient) KubeconfigsEmitter {
 	return NewKubeconfigsEmitterWithEmit(kubeConfigClient, make(chan struct{}))
 }
 
-func NewKubeconfigsEmitterWithEmit(kubeConfigClient KubeConfigClient, emit <-chan struct{}) KubeconfigsEmitter {
+func NewKubeconfigsEmitterWithEmit(kubeConfigClient github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigClient, emit <-chan struct{}) KubeconfigsEmitter {
 	return &kubeconfigsEmitter{
 		kubeConfig: kubeConfigClient,
 		forceEmit:  emit,
@@ -58,7 +60,7 @@ func NewKubeconfigsEmitterWithEmit(kubeConfigClient KubeConfigClient, emit <-cha
 
 type kubeconfigsEmitter struct {
 	forceEmit  <-chan struct{}
-	kubeConfig KubeConfigClient
+	kubeConfig github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigClient
 }
 
 func (c *kubeconfigsEmitter) Register() error {
@@ -68,7 +70,7 @@ func (c *kubeconfigsEmitter) Register() error {
 	return nil
 }
 
-func (c *kubeconfigsEmitter) KubeConfig() KubeConfigClient {
+func (c *kubeconfigsEmitter) KubeConfig() github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigClient {
 	return c.kubeConfig
 }
 
@@ -90,7 +92,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	ctx := opts.Ctx
 	/* Create channel for KubeConfig */
 	type kubeConfigListWithNamespace struct {
-		list      KubeConfigList
+		list      github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList
 		namespace string
 	}
 	kubeConfigChan := make(chan kubeConfigListWithNamespace)
@@ -140,7 +142,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
-		kubeconfigsByNamespace := make(map[string]KubeConfigList)
+		kubeconfigsByNamespace := make(map[string]github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList)
 
 		for {
 			record := func() { stats.Record(ctx, mKubeconfigsSnapshotIn.M(1)) }
@@ -163,7 +165,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 
 				// merge lists by namespace
 				kubeconfigsByNamespace[namespace] = kubeConfigNamespacedList.list
-				var kubeConfigList KubeConfigList
+				var kubeConfigList github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList
 				for _, kubeconfigs := range kubeconfigsByNamespace {
 					kubeConfigList = append(kubeConfigList, kubeconfigs...)
 				}

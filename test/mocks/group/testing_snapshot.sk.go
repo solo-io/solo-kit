@@ -6,17 +6,19 @@ import (
 	"fmt"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	github_com_solo_io_solo_kit_test_mocks_v1 "github.com/solo-io/solo-kit/test/mocks/v1"
+	testing_solo_io_kubernetes "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
 
 type TestingSnapshot struct {
-	Mocks                MockResourceList
-	Fakes                FakeResourceList
-	Anothermockresources AnotherMockResourceList
-	Clusterresources     ClusterResourceList
-	Mcts                 MockCustomTypeList
+	Mocks                testing_solo_io_kubernetes.MockResourceList
+	Fakes                testing_solo_io_kubernetes.FakeResourceList
+	Anothermockresources testing_solo_io_kubernetes.AnotherMockResourceList
+	Clusterresources     testing_solo_io_kubernetes.ClusterResourceList
+	Mcts                 github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList
 	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
 }
 

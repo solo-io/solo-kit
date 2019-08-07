@@ -10,6 +10,8 @@ import (
 	"time"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	github_com_solo_io_solo_kit_test_mocks_v1 "github.com/solo-io/solo-kit/test/mocks/v1"
+	testing_solo_io_kubernetes "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -42,11 +44,11 @@ var _ = Describe("GroupEmitter", func() {
 		cfg                       *rest.Config
 		kube                      kubernetes.Interface
 		emitter                   TestingEmitter
-		mockResourceClient        MockResourceClient
-		fakeResourceClient        FakeResourceClient
-		anotherMockResourceClient AnotherMockResourceClient
-		clusterResourceClient     ClusterResourceClient
-		mockCustomTypeClient      MockCustomTypeClient
+		mockResourceClient        testing_solo_io_kubernetes.MockResourceClient
+		fakeResourceClient        testing_solo_io_kubernetes.FakeResourceClient
+		anotherMockResourceClient testing_solo_io_kubernetes.AnotherMockResourceClient
+		clusterResourceClient     testing_solo_io_kubernetes.ClusterResourceClient
+		mockCustomTypeClient      github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeClient
 		podClient                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 	)
 
@@ -60,46 +62,46 @@ var _ = Describe("GroupEmitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		// MockResource Constructor
 		mockResourceClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         MockResourceCrd,
+			Crd:         testing_solo_io_kubernetes.MockResourceCrd,
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
-		mockResourceClient, err = NewMockResourceClient(mockResourceClientFactory)
+		mockResourceClient, err = testing_solo_io_kubernetes.NewMockResourceClient(mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// FakeResource Constructor
 		fakeResourceClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         FakeResourceCrd,
+			Crd:         testing_solo_io_kubernetes.FakeResourceCrd,
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
-		fakeResourceClient, err = NewFakeResourceClient(fakeResourceClientFactory)
+		fakeResourceClient, err = testing_solo_io_kubernetes.NewFakeResourceClient(fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// AnotherMockResource Constructor
 		anotherMockResourceClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         AnotherMockResourceCrd,
+			Crd:         testing_solo_io_kubernetes.AnotherMockResourceCrd,
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
-		anotherMockResourceClient, err = NewAnotherMockResourceClient(anotherMockResourceClientFactory)
+		anotherMockResourceClient, err = testing_solo_io_kubernetes.NewAnotherMockResourceClient(anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// ClusterResource Constructor
 		clusterResourceClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         ClusterResourceCrd,
+			Crd:         testing_solo_io_kubernetes.ClusterResourceCrd,
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
-		clusterResourceClient, err = NewClusterResourceClient(clusterResourceClientFactory)
+		clusterResourceClient, err = testing_solo_io_kubernetes.NewClusterResourceClient(clusterResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// MockCustomType Constructor
 		mockCustomTypeClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		mockCustomTypeClient, err = NewMockCustomTypeClient(mockCustomTypeClientFactory)
+		mockCustomTypeClient, err = github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomTypeClient(mockCustomTypeClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// Pod Constructor
 		podClientFactory := &factory.MemoryResourceClientFactory{
@@ -133,7 +135,7 @@ var _ = Describe("GroupEmitter", func() {
 			MockResource
 		*/
 
-		assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+		assertSnapshotMocks := func(expectMocks testing_solo_io_kubernetes.MockResourceList, unexpectMocks testing_solo_io_kubernetes.MockResourceList) {
 		drain:
 			for {
 				select {
@@ -159,38 +161,38 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		mockResource1a, err := mockResourceClient.Write(testing_solo_io_kubernetes.NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
-		mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		mockResource1b, err := mockResourceClient.Write(testing_solo_io_kubernetes.NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
+		assertSnapshotMocks(testing_solo_io_kubernetes.MockResourceList{mockResource1a, mockResource1b}, nil)
+		mockResource2a, err := mockResourceClient.Write(testing_solo_io_kubernetes.NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResource2b, err := mockResourceClient.Write(testing_solo_io_kubernetes.NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotMocks(testing_solo_io_kubernetes.MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
 
 		err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, MockResourceList{mockResource2a, mockResource2b})
+		assertSnapshotMocks(testing_solo_io_kubernetes.MockResourceList{mockResource1a, mockResource1b}, testing_solo_io_kubernetes.MockResourceList{mockResource2a, mockResource2b})
 
 		err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
+		assertSnapshotMocks(nil, testing_solo_io_kubernetes.MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
 
 		/*
 			FakeResource
 		*/
 
-		assertSnapshotFakes := func(expectFakes FakeResourceList, unexpectFakes FakeResourceList) {
+		assertSnapshotFakes := func(expectFakes testing_solo_io_kubernetes.FakeResourceList, unexpectFakes testing_solo_io_kubernetes.FakeResourceList) {
 		drain:
 			for {
 				select {
@@ -216,38 +218,38 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		fakeResource1a, err := fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io_kubernetes.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		fakeResource1b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b}, nil)
-		fakeResource2a, err := fakeResourceClient.Write(NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		fakeResource2b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io_kubernetes.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
+		assertSnapshotFakes(testing_solo_io_kubernetes.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
+		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io_kubernetes.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io_kubernetes.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFakes(testing_solo_io_kubernetes.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
 
 		err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b}, FakeResourceList{fakeResource2a, fakeResource2b})
+		assertSnapshotFakes(testing_solo_io_kubernetes.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io_kubernetes.FakeResourceList{fakeResource2a, fakeResource2b})
 
 		err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(nil, FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
+		assertSnapshotFakes(nil, testing_solo_io_kubernetes.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
 
 		/*
 			AnotherMockResource
 		*/
 
-		assertSnapshotAnothermockresources := func(expectAnothermockresources AnotherMockResourceList, unexpectAnothermockresources AnotherMockResourceList) {
+		assertSnapshotAnothermockresources := func(expectAnothermockresources testing_solo_io_kubernetes.AnotherMockResourceList, unexpectAnothermockresources testing_solo_io_kubernetes.AnotherMockResourceList) {
 		drain:
 			for {
 				select {
@@ -273,38 +275,38 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		anotherMockResource1a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		anotherMockResource1a, err := anotherMockResourceClient.Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, nil)
-		anotherMockResource2a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		anotherMockResource2b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		anotherMockResource1b, err := anotherMockResourceClient.Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b}, nil)
+		assertSnapshotAnothermockresources(testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, nil)
+		anotherMockResource2a, err := anotherMockResourceClient.Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		anotherMockResource2b, err := anotherMockResourceClient.Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotAnothermockresources(testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b}, nil)
 
 		err = anotherMockResourceClient.Delete(anotherMockResource2a.GetMetadata().Namespace, anotherMockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = anotherMockResourceClient.Delete(anotherMockResource2b.GetMetadata().Namespace, anotherMockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, AnotherMockResourceList{anotherMockResource2a, anotherMockResource2b})
+		assertSnapshotAnothermockresources(testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource2a, anotherMockResource2b})
 
 		err = anotherMockResourceClient.Delete(anotherMockResource1a.GetMetadata().Namespace, anotherMockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = anotherMockResourceClient.Delete(anotherMockResource1b.GetMetadata().Namespace, anotherMockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotAnothermockresources(nil, AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b})
+		assertSnapshotAnothermockresources(nil, testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b})
 
 		/*
 			ClusterResource
 		*/
 
-		assertSnapshotClusterresources := func(expectClusterresources ClusterResourceList, unexpectClusterresources ClusterResourceList) {
+		assertSnapshotClusterresources := func(expectClusterresources testing_solo_io_kubernetes.ClusterResourceList, unexpectClusterresources testing_solo_io_kubernetes.ClusterResourceList) {
 		drain:
 			for {
 				select {
@@ -328,30 +330,30 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		clusterResource1a, err := clusterResourceClient.Write(testing_solo_io_kubernetes.NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a}, nil)
-		clusterResource2a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		assertSnapshotClusterresources(testing_solo_io_kubernetes.ClusterResourceList{clusterResource1a}, nil)
+		clusterResource2a, err := clusterResourceClient.Write(testing_solo_io_kubernetes.NewClusterResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a, clusterResource2a}, nil)
+		assertSnapshotClusterresources(testing_solo_io_kubernetes.ClusterResourceList{clusterResource1a, clusterResource2a}, nil)
 
 		err = clusterResourceClient.Delete(clusterResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a}, ClusterResourceList{clusterResource2a})
+		assertSnapshotClusterresources(testing_solo_io_kubernetes.ClusterResourceList{clusterResource1a}, testing_solo_io_kubernetes.ClusterResourceList{clusterResource2a})
 
 		err = clusterResourceClient.Delete(clusterResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusterresources(nil, ClusterResourceList{clusterResource1a, clusterResource2a})
+		assertSnapshotClusterresources(nil, testing_solo_io_kubernetes.ClusterResourceList{clusterResource1a, clusterResource2a})
 
 		/*
 			MockCustomType
 		*/
 
-		assertSnapshotmcts := func(expectmcts MockCustomTypeList, unexpectmcts MockCustomTypeList) {
+		assertSnapshotmcts := func(expectmcts github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList, unexpectmcts github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList) {
 		drain:
 			for {
 				select {
@@ -377,32 +379,32 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		mockCustomType1a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		mockCustomType1a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		mockCustomType1b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotmcts(MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
-		mockCustomType2a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockCustomType2b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		mockCustomType1b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b}, nil)
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
+		mockCustomType2a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomType2b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b}, nil)
 
 		err = mockCustomTypeClient.Delete(mockCustomType2a.GetMetadata().Namespace, mockCustomType2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockCustomTypeClient.Delete(mockCustomType2b.GetMetadata().Namespace, mockCustomType2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(MockCustomTypeList{mockCustomType1a, mockCustomType1b}, MockCustomTypeList{mockCustomType2a, mockCustomType2b})
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType2a, mockCustomType2b})
 
 		err = mockCustomTypeClient.Delete(mockCustomType1a.GetMetadata().Namespace, mockCustomType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockCustomTypeClient.Delete(mockCustomType1b.GetMetadata().Namespace, mockCustomType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(nil, MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
+		assertSnapshotmcts(nil, github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
 
 		/*
 			Pod
@@ -478,7 +480,7 @@ var _ = Describe("GroupEmitter", func() {
 			MockResource
 		*/
 
-		assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+		assertSnapshotMocks := func(expectMocks testing_solo_io_kubernetes.MockResourceList, unexpectMocks testing_solo_io_kubernetes.MockResourceList) {
 		drain:
 			for {
 				select {
@@ -504,38 +506,38 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		mockResource1a, err := mockResourceClient.Write(testing_solo_io_kubernetes.NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
-		mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		mockResource1b, err := mockResourceClient.Write(testing_solo_io_kubernetes.NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
+		assertSnapshotMocks(testing_solo_io_kubernetes.MockResourceList{mockResource1a, mockResource1b}, nil)
+		mockResource2a, err := mockResourceClient.Write(testing_solo_io_kubernetes.NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResource2b, err := mockResourceClient.Write(testing_solo_io_kubernetes.NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotMocks(testing_solo_io_kubernetes.MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
 
 		err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, MockResourceList{mockResource2a, mockResource2b})
+		assertSnapshotMocks(testing_solo_io_kubernetes.MockResourceList{mockResource1a, mockResource1b}, testing_solo_io_kubernetes.MockResourceList{mockResource2a, mockResource2b})
 
 		err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
+		assertSnapshotMocks(nil, testing_solo_io_kubernetes.MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
 
 		/*
 			FakeResource
 		*/
 
-		assertSnapshotFakes := func(expectFakes FakeResourceList, unexpectFakes FakeResourceList) {
+		assertSnapshotFakes := func(expectFakes testing_solo_io_kubernetes.FakeResourceList, unexpectFakes testing_solo_io_kubernetes.FakeResourceList) {
 		drain:
 			for {
 				select {
@@ -561,38 +563,38 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		fakeResource1a, err := fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io_kubernetes.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		fakeResource1b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b}, nil)
-		fakeResource2a, err := fakeResourceClient.Write(NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		fakeResource2b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io_kubernetes.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
+		assertSnapshotFakes(testing_solo_io_kubernetes.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
+		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io_kubernetes.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io_kubernetes.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFakes(testing_solo_io_kubernetes.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
 
 		err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b}, FakeResourceList{fakeResource2a, fakeResource2b})
+		assertSnapshotFakes(testing_solo_io_kubernetes.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io_kubernetes.FakeResourceList{fakeResource2a, fakeResource2b})
 
 		err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotFakes(nil, FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
+		assertSnapshotFakes(nil, testing_solo_io_kubernetes.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
 
 		/*
 			AnotherMockResource
 		*/
 
-		assertSnapshotAnothermockresources := func(expectAnothermockresources AnotherMockResourceList, unexpectAnothermockresources AnotherMockResourceList) {
+		assertSnapshotAnothermockresources := func(expectAnothermockresources testing_solo_io_kubernetes.AnotherMockResourceList, unexpectAnothermockresources testing_solo_io_kubernetes.AnotherMockResourceList) {
 		drain:
 			for {
 				select {
@@ -618,38 +620,38 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		anotherMockResource1a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		anotherMockResource1a, err := anotherMockResourceClient.Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, nil)
-		anotherMockResource2a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		anotherMockResource2b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		anotherMockResource1b, err := anotherMockResourceClient.Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b}, nil)
+		assertSnapshotAnothermockresources(testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, nil)
+		anotherMockResource2a, err := anotherMockResourceClient.Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		anotherMockResource2b, err := anotherMockResourceClient.Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotAnothermockresources(testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b}, nil)
 
 		err = anotherMockResourceClient.Delete(anotherMockResource2a.GetMetadata().Namespace, anotherMockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = anotherMockResourceClient.Delete(anotherMockResource2b.GetMetadata().Namespace, anotherMockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, AnotherMockResourceList{anotherMockResource2a, anotherMockResource2b})
+		assertSnapshotAnothermockresources(testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource2a, anotherMockResource2b})
 
 		err = anotherMockResourceClient.Delete(anotherMockResource1a.GetMetadata().Namespace, anotherMockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = anotherMockResourceClient.Delete(anotherMockResource1b.GetMetadata().Namespace, anotherMockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotAnothermockresources(nil, AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b})
+		assertSnapshotAnothermockresources(nil, testing_solo_io_kubernetes.AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b, anotherMockResource2a, anotherMockResource2b})
 
 		/*
 			ClusterResource
 		*/
 
-		assertSnapshotClusterresources := func(expectClusterresources ClusterResourceList, unexpectClusterresources ClusterResourceList) {
+		assertSnapshotClusterresources := func(expectClusterresources testing_solo_io_kubernetes.ClusterResourceList, unexpectClusterresources testing_solo_io_kubernetes.ClusterResourceList) {
 		drain:
 			for {
 				select {
@@ -673,30 +675,30 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		clusterResource1a, err := clusterResourceClient.Write(testing_solo_io_kubernetes.NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a}, nil)
-		clusterResource2a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		assertSnapshotClusterresources(testing_solo_io_kubernetes.ClusterResourceList{clusterResource1a}, nil)
+		clusterResource2a, err := clusterResourceClient.Write(testing_solo_io_kubernetes.NewClusterResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a, clusterResource2a}, nil)
+		assertSnapshotClusterresources(testing_solo_io_kubernetes.ClusterResourceList{clusterResource1a, clusterResource2a}, nil)
 
 		err = clusterResourceClient.Delete(clusterResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusterresources(ClusterResourceList{clusterResource1a}, ClusterResourceList{clusterResource2a})
+		assertSnapshotClusterresources(testing_solo_io_kubernetes.ClusterResourceList{clusterResource1a}, testing_solo_io_kubernetes.ClusterResourceList{clusterResource2a})
 
 		err = clusterResourceClient.Delete(clusterResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusterresources(nil, ClusterResourceList{clusterResource1a, clusterResource2a})
+		assertSnapshotClusterresources(nil, testing_solo_io_kubernetes.ClusterResourceList{clusterResource1a, clusterResource2a})
 
 		/*
 			MockCustomType
 		*/
 
-		assertSnapshotmcts := func(expectmcts MockCustomTypeList, unexpectmcts MockCustomTypeList) {
+		assertSnapshotmcts := func(expectmcts github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList, unexpectmcts github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList) {
 		drain:
 			for {
 				select {
@@ -722,32 +724,32 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		mockCustomType1a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		mockCustomType1a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		mockCustomType1b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotmcts(MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
-		mockCustomType2a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockCustomType2b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		mockCustomType1b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b}, nil)
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
+		mockCustomType2a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomType2b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b}, nil)
 
 		err = mockCustomTypeClient.Delete(mockCustomType2a.GetMetadata().Namespace, mockCustomType2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockCustomTypeClient.Delete(mockCustomType2b.GetMetadata().Namespace, mockCustomType2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(MockCustomTypeList{mockCustomType1a, mockCustomType1b}, MockCustomTypeList{mockCustomType2a, mockCustomType2b})
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType2a, mockCustomType2b})
 
 		err = mockCustomTypeClient.Delete(mockCustomType1a.GetMetadata().Namespace, mockCustomType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockCustomTypeClient.Delete(mockCustomType1b.GetMetadata().Namespace, mockCustomType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(nil, MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
+		assertSnapshotmcts(nil, github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
 
 		/*
 			Pod

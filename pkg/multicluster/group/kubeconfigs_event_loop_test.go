@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	github_com_solo_io_solo_kit_api_multicluster_v1 "github.com/solo-io/solo-kit/api/multicluster/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -28,13 +30,13 @@ var _ = Describe("KubeconfigsEventLoop", func() {
 		kubeConfigClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		kubeConfigClient, err := NewKubeConfigClient(kubeConfigClientFactory)
+		kubeConfigClient, err := github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfigClient(kubeConfigClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)
 	})
 	It("runs sync function on a new snapshot", func() {
-		_, err = emitter.KubeConfig().Write(NewKubeConfig(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.KubeConfig().Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockKubeconfigsSyncer{}
 		el := NewKubeconfigsEventLoop(emitter, sync)

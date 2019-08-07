@@ -36,12 +36,12 @@ func GenerateConversionFiles(soloKitProject *model.ApiGroup, versions []*model.V
 			// only generate files for the resources in our group, otherwise we import
 			if !v.VersionConfig.IsOurProto(res.Filename) && !res.IsCustom {
 				log.Printf("not generating solo-kit "+
-					"clients for resource %v.%v, "+
+					"converters for resource %v.%v, "+
 					"resource proto package must match v proto package %v", res.ProtoPackage, res.Name, v.ProtoPackage)
 				continue
 			} else if res.IsCustom && res.CustomResource.Imported {
 				log.Printf("not generating solo-kit "+
-					"clients for resource %v.%v, "+
+					"converters for resource %v.%v, "+
 					"custom resources from a different v are not generated", res.GoPackage, res.Name, v.VersionConfig.GoPackage)
 				continue
 			}

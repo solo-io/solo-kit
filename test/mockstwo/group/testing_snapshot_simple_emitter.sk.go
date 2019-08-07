@@ -8,7 +8,8 @@ import (
 	"time"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
+	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
+	testing_solo_io_kubernetes "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	"go.opencensus.io/stats"
 
@@ -84,15 +85,15 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 				currentSnapshot = TestingSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
-					case *testing_solo_io.MockResource:
+					case *testing_solo_io_kubernetes.MockResource:
 						currentSnapshot.Mocks = append(currentSnapshot.Mocks, typed)
-					case *testing_solo_io.FakeResource:
+					case *testing_solo_io_kubernetes.FakeResource:
 						currentSnapshot.Fakes = append(currentSnapshot.Fakes, typed)
-					case *testing_solo_io.AnotherMockResource:
+					case *testing_solo_io_kubernetes.AnotherMockResource:
 						currentSnapshot.Anothermockresources = append(currentSnapshot.Anothermockresources, typed)
-					case *testing_solo_io.ClusterResource:
+					case *testing_solo_io_kubernetes.ClusterResource:
 						currentSnapshot.Clusterresources = append(currentSnapshot.Clusterresources, typed)
-					case *MockCustomType:
+					case *github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomType:
 						currentSnapshot.Mcts = append(currentSnapshot.Mcts, typed)
 					case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
 						currentSnapshot.Pods = append(currentSnapshot.Pods, typed)

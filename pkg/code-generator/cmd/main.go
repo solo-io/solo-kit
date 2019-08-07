@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -583,13 +582,7 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 		if !strings.HasSuffix(imp, model.ProjectConfigFilename) {
 			imp = filepath.Join(imp, model.ProjectConfigFilename)
 		}
-		byt, err := ioutil.ReadFile(imp)
-		if err != nil {
-			return nil, err
-		}
-
-		var soloKitProject model.SoloKitProject
-		err = json.Unmarshal(byt, &soloKitProject)
+		soloKitProject, err := model.LoadProjectConfig(imp)
 		if err != nil {
 			return nil, err
 		}

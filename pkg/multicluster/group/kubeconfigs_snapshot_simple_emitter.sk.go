@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	github_com_solo_io_solo_kit_api_multicluster_v1 "github.com/solo-io/solo-kit/api/multicluster/v1"
+
 	"go.opencensus.io/stats"
 
 	"github.com/solo-io/go-utils/errutils"
@@ -81,7 +83,7 @@ func (c *kubeconfigsSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Kubec
 				currentSnapshot = KubeconfigsSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
-					case *KubeConfig:
+					case *github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfig:
 						currentSnapshot.Kubeconfigs = append(currentSnapshot.Kubeconfigs, typed)
 					default:
 						select {

@@ -63,6 +63,24 @@ func generateFilesForResourceGroup(rg *model.ResourceGroup) (code_generator.File
 			Content:  content,
 		})
 	}
+
+	testSuite := &model.TestSuite{
+		PackageName: rg.ApiGroup.ResourceGroupGoPackageShort,
+	}
+	for suffix, tmpl := range map[string]*template.Template{
+		"_suite_test.go": templates.SimpleTestSuiteTemplate,
+	} {
+		name := testSuite.PackageName + suffix
+		content, err := generateTestSuiteFile(testSuite, tmpl)
+		if err != nil {
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource group %v failed", tmpl.ParseName, name)
+		}
+		v = append(v, code_generator.File{
+			Filename: name,
+			Content:  content,
+		})
+	}
+
 	return v, nil
 }
 

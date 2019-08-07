@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	github_com_solo_io_solo_kit_api_multicluster_v1 "github.com/solo-io/solo-kit/api/multicluster/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -37,7 +39,7 @@ var _ = Describe("GroupEmitter", func() {
 		name1, name2     = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		kube             kubernetes.Interface
 		emitter          KubeconfigsEmitter
-		kubeConfigClient KubeConfigClient
+		kubeConfigClient github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigClient
 	)
 
 	BeforeEach(func() {
@@ -51,7 +53,7 @@ var _ = Describe("GroupEmitter", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		kubeConfigClient, err = NewKubeConfigClient(kubeConfigClientFactory)
+		kubeConfigClient, err = github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfigClient(kubeConfigClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)
 	})
@@ -76,7 +78,7 @@ var _ = Describe("GroupEmitter", func() {
 			KubeConfig
 		*/
 
-		assertSnapshotkubeconfigs := func(expectkubeconfigs KubeConfigList, unexpectkubeconfigs KubeConfigList) {
+		assertSnapshotkubeconfigs := func(expectkubeconfigs github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList, unexpectkubeconfigs github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList) {
 		drain:
 			for {
 				select {
@@ -102,32 +104,32 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		kubeConfig1a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		kubeConfig1a, err := kubeConfigClient.Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b}, nil)
-		kubeConfig2a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		kubeConfig2b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		kubeConfig1b, err := kubeConfigClient.Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b}, nil)
+		assertSnapshotkubeconfigs(github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig1a, kubeConfig1b}, nil)
+		kubeConfig2a, err := kubeConfigClient.Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		kubeConfig2b, err := kubeConfigClient.Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubeconfigs(github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b}, nil)
 
 		err = kubeConfigClient.Delete(kubeConfig2a.GetMetadata().Namespace, kubeConfig2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = kubeConfigClient.Delete(kubeConfig2b.GetMetadata().Namespace, kubeConfig2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b}, KubeConfigList{kubeConfig2a, kubeConfig2b})
+		assertSnapshotkubeconfigs(github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig1a, kubeConfig1b}, github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig2a, kubeConfig2b})
 
 		err = kubeConfigClient.Delete(kubeConfig1a.GetMetadata().Namespace, kubeConfig1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = kubeConfigClient.Delete(kubeConfig1b.GetMetadata().Namespace, kubeConfig1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotkubeconfigs(nil, KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b})
+		assertSnapshotkubeconfigs(nil, github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b})
 	})
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
@@ -146,7 +148,7 @@ var _ = Describe("GroupEmitter", func() {
 			KubeConfig
 		*/
 
-		assertSnapshotkubeconfigs := func(expectkubeconfigs KubeConfigList, unexpectkubeconfigs KubeConfigList) {
+		assertSnapshotkubeconfigs := func(expectkubeconfigs github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList, unexpectkubeconfigs github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList) {
 		drain:
 			for {
 				select {
@@ -172,31 +174,31 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		kubeConfig1a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		kubeConfig1a, err := kubeConfigClient.Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b}, nil)
-		kubeConfig2a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		kubeConfig2b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		kubeConfig1b, err := kubeConfigClient.Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b}, nil)
+		assertSnapshotkubeconfigs(github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig1a, kubeConfig1b}, nil)
+		kubeConfig2a, err := kubeConfigClient.Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		kubeConfig2b, err := kubeConfigClient.Write(github_com_solo_io_solo_kit_api_multicluster_v1.NewKubeConfig(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubeconfigs(github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b}, nil)
 
 		err = kubeConfigClient.Delete(kubeConfig2a.GetMetadata().Namespace, kubeConfig2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = kubeConfigClient.Delete(kubeConfig2b.GetMetadata().Namespace, kubeConfig2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b}, KubeConfigList{kubeConfig2a, kubeConfig2b})
+		assertSnapshotkubeconfigs(github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig1a, kubeConfig1b}, github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig2a, kubeConfig2b})
 
 		err = kubeConfigClient.Delete(kubeConfig1a.GetMetadata().Namespace, kubeConfig1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = kubeConfigClient.Delete(kubeConfig1b.GetMetadata().Namespace, kubeConfig1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotkubeconfigs(nil, KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b})
+		assertSnapshotkubeconfigs(nil, github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b})
 	})
 })

@@ -111,10 +111,9 @@ func GetResourceGroups(apiGroup *model.ApiGroup, resources []*model.Resource) ([
 			}
 
 			var importPrefix string
-			if !apiGroup.IsOurProto(resource.Filename) && !resource.IsCustom {
-				importPrefix = resource.ProtoPackage
-			} else if resource.IsCustom && resource.CustomResource.Imported {
-				// If is custom resource from a different version use import prefix
+			if !resource.IsCustom {
+				importPrefix = resource.ProtoPackage + "_" + resource.ParentVersion.VersionConfig.Version
+			} else {
 				importPrefix = resource.CustomImportPrefix
 			}
 

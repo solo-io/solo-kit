@@ -5,12 +5,14 @@ package group
 import (
 	"fmt"
 
+	github_com_solo_io_solo_kit_api_multicluster_v1 "github.com/solo-io/solo-kit/api/multicluster/v1"
+
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
 
 type KubeconfigsSnapshot struct {
-	Kubeconfigs KubeConfigList
+	Kubeconfigs github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList
 }
 
 func (s KubeconfigsSnapshot) Clone() KubeconfigsSnapshot {

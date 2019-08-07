@@ -10,6 +10,8 @@ import (
 	"time"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	github_com_solo_io_solo_kit_test_mocks_v1 "github.com/solo-io/solo-kit/test/mocks/v1"
+	testing_solo_io_kubernetes "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,31 +32,31 @@ var _ = Describe("TestingEventLoop", func() {
 		mockResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		mockResourceClient, err := NewMockResourceClient(mockResourceClientFactory)
+		mockResourceClient, err := testing_solo_io_kubernetes.NewMockResourceClient(mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		fakeResourceClient, err := NewFakeResourceClient(fakeResourceClientFactory)
+		fakeResourceClient, err := testing_solo_io_kubernetes.NewFakeResourceClient(fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		anotherMockResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		anotherMockResourceClient, err := NewAnotherMockResourceClient(anotherMockResourceClientFactory)
+		anotherMockResourceClient, err := testing_solo_io_kubernetes.NewAnotherMockResourceClient(anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		clusterResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		clusterResourceClient, err := NewClusterResourceClient(clusterResourceClientFactory)
+		clusterResourceClient, err := testing_solo_io_kubernetes.NewClusterResourceClient(clusterResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		mockCustomTypeClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		mockCustomTypeClient, err := NewMockCustomTypeClient(mockCustomTypeClientFactory)
+		mockCustomTypeClient, err := github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomTypeClient(mockCustomTypeClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		podClientFactory := &factory.MemoryResourceClientFactory{
@@ -66,15 +68,15 @@ var _ = Describe("TestingEventLoop", func() {
 		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 	})
 	It("runs sync function on a new snapshot", func() {
-		_, err = emitter.MockResource().Write(NewMockResource(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.MockResource().Write(testing_solo_io_kubernetes.NewMockResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.FakeResource().Write(NewFakeResource(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.FakeResource().Write(testing_solo_io_kubernetes.NewFakeResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.AnotherMockResource().Write(NewAnotherMockResource(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.AnotherMockResource().Write(testing_solo_io_kubernetes.NewAnotherMockResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.ClusterResource().Write(NewClusterResource(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.ClusterResource().Write(testing_solo_io_kubernetes.NewClusterResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.MockCustomType().Write(NewMockCustomType(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.MockCustomType().Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Pod().Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
