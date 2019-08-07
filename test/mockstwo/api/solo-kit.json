@@ -6,7 +6,8 @@
     "docs_dir": "test/mockstwo/docs",
     "resource_group_go_package": "github.com/solo-io/solo-kit/test/mockstwo/group",
     "imports": [
-      "github.com/solo-io/solo-kit/api/external/kubernetes"
+      "github.com/solo-io/solo-kit/api/external/kubernetes",
+      "github.com/solo-io/solo-kit/test/mocks/api"
     ],
     "resource_groups": {
       "testing.solo.io": [
@@ -32,7 +33,7 @@
         },
         {
           "name": "MockCustomType",
-          "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
+          "package": "github.com/solo-io/solo-kit/test/mocks/v1"
         },
         {
           "name": "Pod",

@@ -4,7 +4,7 @@ import (
 	"text/template"
 )
 
-var SimpleTestSuiteTemplate = template.Must(template.New("project_template").Funcs(Funcs).Parse(`package {{ .PackageName }}_test
+var SimpleTestSuiteTemplate = template.Must(template.New("project_template").Funcs(Funcs).Parse(`package {{ .PackageName }}
 
 import (
 	"testing"

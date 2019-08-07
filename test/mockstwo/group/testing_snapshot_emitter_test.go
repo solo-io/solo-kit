@@ -10,7 +10,7 @@ import (
 	"time"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
+	github_com_solo_io_solo_kit_test_mocks_v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	testing_solo_io_kubernetes "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -48,7 +48,7 @@ var _ = Describe("GroupEmitter", func() {
 		fakeResourceClient        testing_solo_io_kubernetes.FakeResourceClient
 		anotherMockResourceClient testing_solo_io_kubernetes.AnotherMockResourceClient
 		clusterResourceClient     testing_solo_io_kubernetes.ClusterResourceClient
-		mockCustomTypeClient      github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeClient
+		mockCustomTypeClient      github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeClient
 		podClient                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 	)
 
@@ -101,7 +101,7 @@ var _ = Describe("GroupEmitter", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		mockCustomTypeClient, err = github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomTypeClient(mockCustomTypeClientFactory)
+		mockCustomTypeClient, err = github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomTypeClient(mockCustomTypeClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// Pod Constructor
 		podClientFactory := &factory.MemoryResourceClientFactory{
@@ -353,7 +353,7 @@ var _ = Describe("GroupEmitter", func() {
 			MockCustomType
 		*/
 
-		assertSnapshotmcts := func(expectmcts github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList, unexpectmcts github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList) {
+		assertSnapshotmcts := func(expectmcts github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList, unexpectmcts github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList) {
 		drain:
 			for {
 				select {
@@ -379,32 +379,32 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		mockCustomType1a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		mockCustomType1a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		mockCustomType1b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
-		mockCustomType2a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockCustomType2b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		mockCustomType1b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b}, nil)
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
+		mockCustomType2a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomType2b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b}, nil)
 
 		err = mockCustomTypeClient.Delete(mockCustomType2a.GetMetadata().Namespace, mockCustomType2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockCustomTypeClient.Delete(mockCustomType2b.GetMetadata().Namespace, mockCustomType2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType2a, mockCustomType2b})
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType2a, mockCustomType2b})
 
 		err = mockCustomTypeClient.Delete(mockCustomType1a.GetMetadata().Namespace, mockCustomType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockCustomTypeClient.Delete(mockCustomType1b.GetMetadata().Namespace, mockCustomType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(nil, github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
+		assertSnapshotmcts(nil, github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
 
 		/*
 			Pod
@@ -698,7 +698,7 @@ var _ = Describe("GroupEmitter", func() {
 			MockCustomType
 		*/
 
-		assertSnapshotmcts := func(expectmcts github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList, unexpectmcts github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList) {
+		assertSnapshotmcts := func(expectmcts github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList, unexpectmcts github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList) {
 		drain:
 			for {
 				select {
@@ -724,32 +724,32 @@ var _ = Describe("GroupEmitter", func() {
 				}
 			}
 		}
-		mockCustomType1a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		mockCustomType1a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		mockCustomType1b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
-		mockCustomType2a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockCustomType2b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		mockCustomType1b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b}, nil)
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
+		mockCustomType2a, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomType2b, err := mockCustomTypeClient.Write(github_com_solo_io_solo_kit_test_mocks_v1.NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b}, nil)
 
 		err = mockCustomTypeClient.Delete(mockCustomType2a.GetMetadata().Namespace, mockCustomType2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockCustomTypeClient.Delete(mockCustomType2b.GetMetadata().Namespace, mockCustomType2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType2a, mockCustomType2b})
+		assertSnapshotmcts(github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b}, github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType2a, mockCustomType2b})
 
 		err = mockCustomTypeClient.Delete(mockCustomType1a.GetMetadata().Namespace, mockCustomType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockCustomTypeClient.Delete(mockCustomType1b.GetMetadata().Namespace, mockCustomType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotmcts(nil, github_com_solo_io_solo_kit_test_mocks_api_v1_customtype.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
+		assertSnapshotmcts(nil, github_com_solo_io_solo_kit_test_mocks_v1.MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
 
 		/*
 			Pod
