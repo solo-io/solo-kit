@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: validation in the kube cache
+    issueLink: https://github.com/solo-io/solo-kit/pull/236

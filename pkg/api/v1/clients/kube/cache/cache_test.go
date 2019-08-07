@@ -85,10 +85,6 @@ var _ = Describe("kube core cache tests", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			AfterEach(func() {
-				cancel()
-			})
-
 			It("can list resources for all listers", func() {
 				Expect(cache.NamespaceLister()).To(BeNil())
 				_, err := cache.NamespacedPodLister("default").List(selectors)
@@ -97,6 +93,34 @@ var _ = Describe("kube core cache tests", func() {
 				Expect(err).NotTo(HaveOccurred())
 				_, err = cache.NamespacedSecretLister("default").List(selectors)
 				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+		Context("2 namesapces", func() {
+			Context("valid namesapces", func() {
+
+				BeforeEach(func() {
+					var err error
+					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default", "default2"})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("can list resources for all listers", func() {
+					Expect(cache.NamespaceLister()).To(BeNil())
+					_, err := cache.NamespacedPodLister("default").List(selectors)
+					Expect(err).NotTo(HaveOccurred())
+					_, err = cache.NamespacedConfigMapLister("default").List(selectors)
+					Expect(err).NotTo(HaveOccurred())
+					_, err = cache.NamespacedSecretLister("default").List(selectors)
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			Context("Invalid namesapces", func() {
+				It("should error with invalid namespace config", func() {
+					var err error
+					_, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default", ""})
+					Expect(err).To(HaveOccurred())
+				})
 			})
 		})
 	})

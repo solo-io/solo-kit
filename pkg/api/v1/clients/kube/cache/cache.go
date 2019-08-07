@@ -91,7 +91,7 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 	}
 
 	if len(namesapcesToWatch) > 1 {
-		if !stringutils.ContainsString(metav1.NamespaceAll, namesapcesToWatch) {
+		if stringutils.ContainsString(metav1.NamespaceAll, namesapcesToWatch) {
 			return nil, errors.Errorf("if metav1.NamespaceAll is provided, it must be the only one. namespaces provided %v", namesapcesToWatch)
 		}
 	}
