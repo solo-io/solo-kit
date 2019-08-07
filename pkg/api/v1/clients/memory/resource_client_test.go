@@ -27,7 +27,7 @@ var _ = Describe("Base", func() {
 		selector := map[string]string{
 			helpers.TestLabel: helpers.RandString(8),
 		}
-		generic.TestCrudClient("test", client, clients.WatchOpts{
+		generic.TestCrudClient("ns1", "ns2", client, clients.WatchOpts{
 			Selector:    selector,
 			Ctx:         context.TODO(),
 			RefreshRate: time.Minute,

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Initialize the snapshot with Lists before starting watches, to make sure we have a complete snapshot.
+    issueLink: https://github.com/solo-io/solo-kit/pull/222

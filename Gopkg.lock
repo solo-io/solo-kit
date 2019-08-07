@@ -273,12 +273,12 @@
   revision = "3d5d8f294aa03d8e98859feac328afbdf1ae0703"
 
 [[projects]]
-  branch = "master"
-  digest = "1:183f00c472fb9b2446659618eebf4899872fa267b92f926539411abdc8b941df"
+  digest = "1:351c9fafe916b099211b6e05749afdf5eef2d9aa297691827825628ec395d8c4"
   name = "github.com/hashicorp/go-retryablehttp"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e651d75abec6fbd4f2c09508f72ae7af8a8b7171"
+  revision = "85a8ee556d7323a4faf0f4c17ee900e9ff1482e8"
+  version = "v0.5.4"
 
 [[projects]]
   branch = "master"
@@ -334,19 +334,20 @@
   version = "v0.8.1"
 
 [[projects]]
-  digest = "1:31e20c290aaed8b03e36350241a9f862e4fd53d11780a41d231771ace9a1be03"
+  digest = "1:abffbe3d4718f67015db40830240472403a976d1825fc363085105f5ecec6932"
   name = "github.com/hashicorp/vault"
   packages = [
     "api",
     "helper/compressutil",
+    "helper/consts",
     "helper/hclutil",
     "helper/jsonutil",
     "helper/parseutil",
     "helper/strutil",
   ]
   pruneopts = "UT"
-  revision = "e21712a687889de1125e0a12a980420b1a4f72d3"
-  version = "v0.10.4"
+  revision = "9bc820f700f83a7c4bcab54c5323735a581b34eb"
+  version = "v1.1.3"
 
 [[projects]]
   branch = "master"
@@ -530,6 +531,17 @@
   version = "v2.0.1"
 
 [[projects]]
+  digest = "1:f690a0a27cefae695fa9587aa3ed23652e593be1d98b35f8184d10bccec30444"
+  name = "github.com/pierrec/lz4"
+  packages = [
+    ".",
+    "internal/xxh32",
+  ]
+  pruneopts = "UT"
+  revision = "057d66e894a4e55853274a3bbbf7de02ba639e43"
+  version = "v2.2.4"
+
+[[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
@@ -562,7 +574,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:d41d48ce8186f6a3e0a4df90def7a583d85e56a21d58c4b9009afaa4daaad6de"
+  digest = "1:5dd2d00c9726046d285699a353e6cad45dc606fa77a2f1f378c777bb047d0af4"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
@@ -580,8 +592,8 @@
     "versionutils/kubeapi",
   ]
   pruneopts = "UT"
-  revision = "95cd6da41a4f69714768061dd06b75b4ec5636cb"
-  version = "v0.9.4"
+  revision = "8eada3e906dc4de9810cf93455a476e7121fa5f4"
+  version = "v0.9.9"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -1316,6 +1328,7 @@
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/workqueue",
     "k8s.io/code-generator/cmd/client-gen",
+    "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -123,17 +123,18 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			return
 		}
 		var (
-			namespace string
+			ns1, ns2 string
 		)
 		BeforeEach(func() {
-			namespace = helpers.RandString(8)
+			ns1 = helpers.RandString(8)
+			ns2 = helpers.RandString(8)
 			kubeClient = helpers.MustKubeClient()
-			err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
+			err := kubeutils.CreateNamespacesInParallel(kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -141,7 +142,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			selector := map[string]string{
 				helpers.TestLabel: helpers.RandString(8),
 			}
-			generic.TestCrudClient(namespace, client, clients.WatchOpts{
+			generic.TestCrudClient(ns1, ns2, client, clients.WatchOpts{
 				Selector:    selector,
 				Ctx:         context.TODO(),
 				RefreshRate: time.Minute,
@@ -308,6 +309,17 @@ var _ = Describe("Test Kube ResourceClient", func() {
 						"unexpectedField": data,
 					},
 				}
+				unexpectedVersionResourceName = "v1omega1-res"
+				unexpectedVersionResourceCrd  = &solov1.Resource{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "testing.solo.io/v1omega1",
+						Kind:       "MockResource",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resource1,
+						Namespace: namespace1,
+					},
+				}
 			)
 
 			BeforeEach(func() {
@@ -320,6 +332,9 @@ var _ = Describe("Test Kube ResourceClient", func() {
 						}
 						if action.GetName() == malformedResourceName {
 							return true, malformedResourceCrd, nil
+						}
+						if action.GetName() == unexpectedVersionResourceName {
+							return true, unexpectedVersionResourceCrd, nil
 						}
 					}
 					return true, nil, &errors2.StatusError{ErrStatus: metav1.Status{
@@ -350,6 +365,12 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 			It("return an error when receiving a malformed resource", func() {
 				_, err := rc.Read(namespace1, malformedResourceName, clients.ReadOpts{})
+				Expect(err).To(HaveOccurred())
+				Expect(errors.IsNotExist(err)).To(BeFalse())
+			})
+
+			It("returns an error when retrieving a resource with an unexpected group version kind", func() {
+				_, err := rc.Read(namespace1, unexpectedVersionResourceName, clients.ReadOpts{})
 				Expect(err).To(HaveOccurred())
 				Expect(errors.IsNotExist(err)).To(BeFalse())
 			})
@@ -475,6 +496,8 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(util.CreateMockResource(clientset, namespace1, "res-2", "val-2")).NotTo(HaveOccurred())
 				Expect(util.CreateMockResource(clientset, namespace1, "res-3", "val-3")).NotTo(HaveOccurred())
 				Expect(util.CreateMockResource(clientset, namespace2, "res-4", "val-4")).NotTo(HaveOccurred())
+				// v2alpha1 resources should be ignored by this v1 MockResource client
+				Expect(util.CreateV2Alpha1MockResource(clientset, namespace2, "res-5", "val-5")).NotTo(HaveOccurred())
 
 				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1, namespace2, "empty"}, 0)
 				Expect(rc.Register()).NotTo(HaveOccurred())

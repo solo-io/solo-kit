@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Return empty list instead of error on vault client when no resources exist
+    issueLink: https://github.com/solo-io/solo-kit/issues/228

@@ -2,6 +2,7 @@ package typed
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -110,7 +111,9 @@ func (rct *ConsulRcTester) Setup(namespace string) factory.ResourceClientFactory
 	err = rct.consulInstance.Run()
 	Expect(err).NotTo(HaveOccurred())
 
-	consul, err := api.NewClient(api.DefaultConfig())
+	cfg := api.DefaultConfig()
+	cfg.Address = fmt.Sprintf("127.0.0.1:%v", rct.consulInstance.Ports.HttpPort)
+	consul, err := api.NewClient(cfg)
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.ConsulResourceClientFactory{
 		Consul:  consul,
@@ -279,7 +282,7 @@ func (rct *VaultRcTester) Setup(namespace string) factory.ResourceClientFactory 
 	Expect(err).NotTo(HaveOccurred())
 	rootKey := "/secret/" + namespace
 	cfg := vaultapi.DefaultConfig()
-	cfg.Address = "http://127.0.0.1:8200"
+	cfg.Address = fmt.Sprintf("http://127.0.0.1:%v", rct.vaultInstance.Port)
 	vault, err := vaultapi.NewClient(cfg)
 	vault.SetToken(rct.vaultInstance.Token())
 	Expect(err).NotTo(HaveOccurred())

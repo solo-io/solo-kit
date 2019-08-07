@@ -1,14 +1,13 @@
 package vault
 
 import (
-	"fmt"
-	"path/filepath"
 	"reflect"
-	"sort"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/hashicorp/vault/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -18,65 +17,63 @@ import (
 )
 
 const (
-	dataKey       = "data"
-	annotationKey = "resource_kind"
+	dataKey        = "data"
+	optionsKey     = "options"
+	checkAndSetKey = "cas"
 )
 
-func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resource, error) {
-	// not our secret
-	// should be an error on a Read, ignored on a list
-	if secret.Data[annotationKey] != rc.Kind() {
-		return nil, nil
+func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resource, bool, error) {
+	if secret.Data == nil {
+		return nil, false, errors.Errorf("secret data cannot be nil")
 	}
-
-	dataValue, ok := secret.Data[dataKey]
-	if !ok {
-		return nil, errors.Errorf("secret missing required key %v", dataKey)
-	}
-	data, ok := dataValue.(string)
-	if !ok {
-		return nil, errors.Errorf("key %v present but value was not string", dataKey)
-	}
-	// assumes the data is YAML-encoded
-	jsn, err := yaml.YAMLToJSON([]byte(data))
+	data, err := parseDataResponse(secret.Data)
 	if err != nil {
-		return nil, err
+		return nil, false, errors.Wrapf(err, "parsing data response")
 	}
+	// if deletion time set, the secret was deleted
+	deleted := data.Metadata.DeletionTime != "" || data.Metadata.Destroyed
+
 	resource := rc.NewResource()
-	return resource, protoutils.UnmarshalBytes(jsn, resource)
+	if err := protoutils.UnmarshalMap(data.Data, resource); err != nil {
+		return nil, false, err
+	}
+	resources.UpdateMetadata(resource, func(meta *core.Metadata) {
+		meta.ResourceVersion = strconv.Itoa(data.Metadata.Version)
+	})
+	return resource, deleted, nil
 }
 
 func (rc *ResourceClient) toVaultSecret(resource resources.Resource) (map[string]interface{}, error) {
-	values := make(map[string]interface{})
-	jsn, err := protoutils.MarshalBytes(resource)
-	if err != nil {
-		return nil, err
+	var version int
+	if rv := resource.GetMetadata().ResourceVersion; rv != "" {
+		var err error
+		version, err = strconv.Atoi(resource.GetMetadata().ResourceVersion)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid resource version: %v (must be int)", rv)
+		}
+	} else {
+		version = 0
 	}
-	data, err := yaml.JSONToYAML(jsn)
-	if err != nil {
-		return nil, err
-	}
-	values[dataKey] = string(data)
-	values[annotationKey] = rc.Kind()
-	return values, nil
-}
 
-// util methods
-func newOrIncrementResourceVer(resourceVersion string) string {
-	curr, err := strconv.Atoi(resourceVersion)
+	values := make(map[string]interface{})
+	data, err := protoutils.MarshalMap(resource)
 	if err != nil {
-		curr = 1
+		return nil, err
 	}
-	return fmt.Sprintf("%v", curr+1)
+	values[dataKey] = data
+	values[optionsKey] = map[string]interface{}{
+		checkAndSetKey: version,
+	}
+	return values, nil
 }
 
 type ResourceClient struct {
 	vault        *api.Client
 	root         string
-	resourceType resources.Resource
+	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, resourceType resources.Resource) *ResourceClient {
+func NewResourceClient(client *api.Client, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
 	return &ResourceClient{
 		vault:        client,
 		root:         rootKey,
@@ -111,12 +108,12 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, errors.NewNotExistErr(namespace, name)
 	}
 
-	resource, err := rc.fromVaultSecret(secret)
+	resource, deleted, err := rc.fromVaultSecret(secret)
 	if err != nil {
 		return nil, err
 	}
-	if resource == nil {
-		return nil, errors.Errorf("secret %v is not kind %v", key, rc.Kind())
+	if deleted {
+		return nil, errors.NewNotExistErr(namespace, name)
 	}
 	return resource, nil
 }
@@ -127,7 +124,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
+
+	if meta.Namespace == "" {
+		return nil, errors.Errorf("namespace cannot be empty for vault-backed resources")
+	}
 	key := rc.resourceKey(meta.Namespace, meta.Name)
 
 	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{})
@@ -135,14 +135,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		if !opts.OverwriteExisting {
 			return nil, errors.NewExistErr(meta)
 		}
-		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
-			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
-		}
 	}
 
 	// mutate and return clone
 	clone := resources.Clone(resource)
-	meta.ResourceVersion = newOrIncrementResourceVer(meta.ResourceVersion)
 	clone.SetMetadata(meta)
 
 	secret, err := rc.toVaultSecret(clone)
@@ -159,45 +155,65 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
-	key := rc.resourceKey(namespace, name)
+
+	if namespace == "" {
+		return errors.Errorf("namespace cannot be empty for vault-backed resources")
+	}
+
 	if !opts.IgnoreNotExist {
 		if _, err := rc.Read(namespace, name, clients.ReadOpts{Ctx: opts.Ctx}); err != nil {
-			return errors.NewNotExistErr(namespace, name, err)
+			return err
 		}
 	}
-	_, err := rc.vault.Logical().Delete(key)
-	if err != nil {
+	metaKey := rc.resourceMetadataKey(namespace, name)
+
+	if _, err := rc.vault.Logical().Delete(metaKey); err != nil {
 		return errors.Wrapf(err, "deleting resource %v", name)
 	}
 	return nil
 }
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
-	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+	if namespace != "" {
+		// list on a single namespace
+		return rc.listSingleNamespace(namespace, opts)
+	}
 
-	namespacePrefix := filepath.Join(rc.root, namespace)
-	secrets, err := rc.vault.Logical().List(namespacePrefix)
+	// handle NamespaceAll case
+
+	var namespaces []string
+
+	resourceMetaDir := rc.resourceDirectory("", directoryTypeMetadata)
+
+	namespaces, err := rc.listKeys(resourceMetaDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading namespace root")
 	}
-	val, ok := secrets.Data["keys"]
-	if !ok {
-		return nil, errors.Errorf("vault secret list at root %s did not contain key \"keys\"", namespacePrefix)
+
+	var resourceList resources.ResourceList
+	for _, ns := range namespaces {
+		nsResources, err := rc.listSingleNamespace(ns, opts)
+		if err != nil {
+			return nil, err
+		}
+		resourceList = append(resourceList, nsResources...)
 	}
-	keys, ok := val.([]interface{})
-	if !ok {
-		return nil, errors.Errorf("expected secret list of type []interface{} but got %v", reflect.TypeOf(val))
+	return resourceList.Sort(), nil
+}
+
+func (rc *ResourceClient) listSingleNamespace(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+	opts = opts.WithDefaults()
+
+	resourceMetaDir := rc.resourceDirectory(namespace, directoryTypeMetadata)
+
+	secretKeys, err := rc.listKeys(resourceMetaDir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "reading resource namespace directory")
 	}
 
 	var resourceList resources.ResourceList
-	for _, keyAsInterface := range keys {
-		key, ok := keyAsInterface.(string)
-		if !ok {
-			return nil, errors.Errorf("expected key of type string but got %v", reflect.TypeOf(keyAsInterface))
-		}
-		secret, err := rc.vault.Logical().Read(namespacePrefix + "/" + key)
+	for _, key := range secretKeys {
+		secret, err := rc.vault.Logical().Read(rc.resourceDirectory(namespace, directoryTypeData) + "/" + key)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting secret %s", key)
 		}
@@ -205,33 +221,52 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 			return nil, errors.Errorf("unexpected nil err on %v", key)
 		}
 
-		resource, err := rc.fromVaultSecret(secret)
+		resource, deleted, err := rc.fromVaultSecret(secret)
 		if err != nil {
 			return nil, err
 		}
-		// not our resource, ignore it
-		if resource == nil {
-			continue
-		}
-		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
+		if !deleted && labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
 			resourceList = append(resourceList, resource)
 		}
 	}
-	return resourceList, nil
+	return resourceList.Sort(), nil
+}
 
-	sort.SliceStable(resourceList, func(i, j int) bool {
-		return resourceList[i].GetMetadata().Name < resourceList[j].GetMetadata().Name
-	})
+// list on a single namespace
+func (rc *ResourceClient) listKeys(directory string) ([]string, error) {
+	keyList, err := rc.vault.Logical().List(directory)
+	if err != nil {
+		return nil, errors.Wrapf(err, "listing directory %v", directory)
+	}
+	if keyList == nil {
+		return []string{}, nil
+	}
+	val, ok := keyList.Data["keys"]
+	if !ok {
+		return nil, errors.Errorf("vault secret list at root %s did not contain key \"keys\"", directory)
+	}
+	keys, ok := val.([]interface{})
+	if !ok {
+		return nil, errors.Errorf("expected secret list of type []interface{} but got %v", reflect.TypeOf(val))
+	}
 
-	return resourceList, nil
+	var keysAsStrings []string
+	for _, keyAsInterface := range keys {
+		key, ok := keyAsInterface.(string)
+		if !ok {
+			return nil, errors.Errorf("expected key of type string but got %v", reflect.TypeOf(keyAsInterface))
+		}
+		keysAsStrings = append(keysAsStrings, key)
+	}
+
+	return keysAsStrings, nil
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
+
 	resourcesChan := make(chan resources.ResourceList)
 	errs := make(chan error)
-	var cached resources.ResourceList
 	go func() {
 		// watch should open up with an initial read
 		list, err := rc.List(namespace, clients.ListOpts{
@@ -242,7 +277,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 			errs <- err
 			return
 		}
-		cached = list
 		resourcesChan <- list
 		for {
 			select {
@@ -253,10 +287,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 				if err != nil {
 					errs <- err
 				}
-				if list != nil && !reflect.DeepEqual(list, cached) {
-					cached = list
-					resourcesChan <- list
-				}
+				resourcesChan <- list
 			case <-opts.Ctx.Done():
 				close(resourcesChan)
 				close(errs)
@@ -268,6 +299,31 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
+const (
+	directoryTypeData     = "data"
+	directoryTypeMetadata = "metadata"
+)
+
+func (rc *ResourceClient) resourceDirectory(namespace, directoryType string) string {
+	return strings.Join([]string{
+		"secret",
+		directoryType,
+		rc.root,
+		rc.resourceType.GroupVersionKind().Group,
+		rc.resourceType.GroupVersionKind().Version,
+		rc.resourceType.GroupVersionKind().Kind,
+		namespace,
+	}, "/")
+}
+
 func (rc *ResourceClient) resourceKey(namespace, name string) string {
-	return filepath.Join(rc.root, namespace, name)
+	return strings.Join([]string{
+		rc.resourceDirectory(namespace, directoryTypeData),
+		name}, "/")
+}
+
+func (rc *ResourceClient) resourceMetadataKey(namespace, name string) string {
+	return strings.Join([]string{
+		rc.resourceDirectory(namespace, directoryTypeMetadata),
+		name}, "/")
 }

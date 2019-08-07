@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,6 +30,7 @@ var _ = Describe("kube core cache tests", func() {
 			cancel    context.CancelFunc
 			selectors = labels.SelectorFromSet(make(map[string]string))
 		)
+
 		BeforeEach(func() {
 			var err error
 			cfg, err = kubeutils.GetConfig("", "")
@@ -36,39 +38,90 @@ var _ = Describe("kube core cache tests", func() {
 
 			ctx, cancel = context.WithCancel(context.TODO())
 			client = kubernetes.NewForConfigOrDie(cfg)
-
-			cache, err = NewKubeCoreCache(ctx, client)
-			Expect(err).NotTo(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			cancel()
+		Context("all namesapces", func() {
+
+			BeforeEach(func() {
+				var err error
+				cache, err = NewKubeCoreCache(ctx, client)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				cancel()
+			})
+
+			It("Allows for multiple subscribers", func() {
+				watches := make([]<-chan struct{}, 3)
+				for i := 0; i < 4; i++ {
+					watches = append(watches, cache.Subscribe())
+				}
+
+				for _, watch := range watches {
+					cache.Unsubscribe(watch)
+					Expect(cache.cacheUpdatedWatchers).NotTo(ContainElement(watch))
+				}
+			})
+
+			It("can list resources for all listers", func() {
+				namespaces, err := cache.NamespaceLister().List(selectors)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(namespaces).NotTo(HaveLen(0))
+				_, err = cache.PodLister().List(selectors)
+				Expect(err).NotTo(HaveOccurred())
+				_, err = cache.ConfigMapLister().List(selectors)
+				Expect(err).NotTo(HaveOccurred())
+				_, err = cache.SecretLister().List(selectors)
+				Expect(err).NotTo(HaveOccurred())
+			})
 		})
 
-		It("Allows for multiple subscribers", func() {
-			watches := make([]<-chan struct{}, 3)
-			for i := 0; i < 4; i++ {
-				watches = append(watches, cache.Subscribe())
-			}
+		Context("single namesapces", func() {
 
-			for _, watch := range watches {
-				cache.Unsubscribe(watch)
-				Expect(cache.cacheUpdatedWatchers).NotTo(ContainElement(watch))
-			}
+			BeforeEach(func() {
+				var err error
+				cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default"})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("can list resources for all listers", func() {
+				Expect(cache.NamespaceLister()).To(BeNil())
+				_, err := cache.NamespacedPodLister("default").List(selectors)
+				Expect(err).NotTo(HaveOccurred())
+				_, err = cache.NamespacedConfigMapLister("default").List(selectors)
+				Expect(err).NotTo(HaveOccurred())
+				_, err = cache.NamespacedSecretLister("default").List(selectors)
+				Expect(err).NotTo(HaveOccurred())
+			})
 		})
+		Context("2 namesapces", func() {
+			Context("valid namesapces", func() {
 
-		It("can list resources for all listers", func() {
-			namespaces, err := cache.NamespaceLister().List(selectors)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(namespaces).NotTo(HaveLen(0))
-			_, err = cache.PodLister().List(selectors)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = cache.ConfigMapLister().List(selectors)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = cache.SecretLister().List(selectors)
-			Expect(err).NotTo(HaveOccurred())
+				BeforeEach(func() {
+					var err error
+					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default", "default2"})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("can list resources for all listers", func() {
+					Expect(cache.NamespaceLister()).To(BeNil())
+					_, err := cache.NamespacedPodLister("default").List(selectors)
+					Expect(err).NotTo(HaveOccurred())
+					_, err = cache.NamespacedConfigMapLister("default").List(selectors)
+					Expect(err).NotTo(HaveOccurred())
+					_, err = cache.NamespacedSecretLister("default").List(selectors)
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			Context("Invalid namesapces", func() {
+				It("should error with invalid namespace config", func() {
+					var err error
+					_, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default", ""})
+					Expect(err).To(HaveOccurred())
+				})
+			})
 		})
-
 	})
-
 })

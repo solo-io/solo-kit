@@ -35,7 +35,7 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  version = "0.9.4"
+  version = "0.9.9"
 
 [[constraint]]
   version = ">=0.8.0"

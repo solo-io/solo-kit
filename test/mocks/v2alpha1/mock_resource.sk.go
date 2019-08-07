@@ -42,6 +42,10 @@ func (r *MockResource) Hash() uint64 {
 	)
 }
 
+func (r *MockResource) GroupVersionKind() schema.GroupVersionKind {
+	return MockResourceGVK
+}
+
 type MockResourceList []*MockResource
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -123,8 +127,6 @@ func (list MockResourceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &MockResource{}
-
 // Kubernetes Adapter for MockResource
 
 func (o *MockResource) GetObjectKind() schema.ObjectKind {
@@ -137,11 +139,6 @@ func (o *MockResource) DeepCopyObject() runtime.Object {
 }
 
 var (
-	MockResourceGVK = schema.GroupVersionKind{
-		Version: "v2alpha1",
-		Group:   "testing.solo.io",
-		Kind:    "MockResource",
-	}
 	MockResourceCrd = crd.NewCrd(
 		"mocks",
 		MockResourceGVK.Group,
@@ -157,3 +154,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	MockResourceGVK = schema.GroupVersionKind{
+		Version: "v2alpha1",
+		Group:   "testing.solo.io",
+		Kind:    "MockResource",
+	}
+)

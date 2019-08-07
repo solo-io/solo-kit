@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewKubeNamespace(namespace, name string) *KubeNamespace {
@@ -47,6 +48,10 @@ func (r *KubeNamespace) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *KubeNamespace) GroupVersionKind() schema.GroupVersionKind {
+	return KubeNamespaceGVK
 }
 
 type KubeNamespaceList []*KubeNamespace
@@ -121,3 +126,11 @@ func (list KubeNamespaceList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	KubeNamespaceGVK = schema.GroupVersionKind{
+		Version: "kubernetes",
+		Group:   "kubernetes.solo.io",
+		Kind:    "KubeNamespace",
+	}
+)

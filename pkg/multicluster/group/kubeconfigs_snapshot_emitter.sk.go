@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	mKubeconfigsSnapshotIn  = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mKubeconfigsSnapshotOut = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mKubeconfigsSnapshotIn     = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mKubeconfigsSnapshotOut    = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mKubeconfigsSnapshotMissed = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	kubeconfigssnapshotInView = &view.View{
 		Name:        "kubeconfigs.multicluster.solo.io_snap_emitter/snap_in",
@@ -35,10 +36,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	kubeconfigssnapshotMissedView = &view.View{
+		Name:        "kubeconfigs.multicluster.solo.io/snap_emitter/snap_missed",
+		Measure:     mKubeconfigsSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(kubeconfigssnapshotInView, kubeconfigssnapshotOutView)
+	view.Register(kubeconfigssnapshotInView, kubeconfigssnapshotOutView, kubeconfigssnapshotMissedView)
 }
 
 type KubeconfigsEmitter interface {
@@ -97,8 +105,19 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	}
 	kubeConfigChan := make(chan kubeConfigListWithNamespace)
 
+	var initialKubeConfigList github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList
+
+	currentSnapshot := KubeconfigsSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for KubeConfig */
+		{
+			kubeconfigs, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial KubeConfig list")
+			}
+			initialKubeConfigList = append(initialKubeConfigList, kubeconfigs...)
+		}
 		kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting KubeConfig watch")
@@ -126,21 +145,31 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Kubeconfigs */
+	currentSnapshot.Kubeconfigs = initialKubeConfigList.Sort()
 
 	snapshots := make(chan *KubeconfigsSnapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := KubeconfigsSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
 
-			stats.Record(ctx, mKubeconfigsSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mKubeconfigsSnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, mKubeconfigsSnapshotMissed.M(1))
+			}
 		}
 		kubeconfigsByNamespace := make(map[string]github_com_solo_io_solo_kit_api_multicluster_v1.KubeConfigList)
 

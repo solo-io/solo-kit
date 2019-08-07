@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: enable use of List and Watch on NamespaceAll in Vault Consul and File clients
+  issueLink: https://github.com/solo-io/solo-kit/issues/217

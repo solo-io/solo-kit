@@ -31,29 +31,30 @@ var _ = Describe("PlainConfigmap", func() {
 		return
 	}
 	var (
-		namespace string
+		ns1, ns2  string
 		client    *ResourceClient
 		kube      kubernetes.Interface
 		kubeCache cache.KubeCoreCache
 	)
 	BeforeEach(func() {
-		namespace = helpers.RandString(8)
+		ns1, ns2 = helpers.RandString(8), helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
+		err := kubeutils.CreateNamespacesInParallel(kube, ns1, ns2)
+		Expect(err).NotTo(HaveOccurred())
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client, err = NewResourceClient(kube, &v1.MockResource{}, kubeCache, true)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("CRUDs resources", func() {
 		selector := map[string]string{
 			helpers.TestLabel: helpers.RandString(8),
 		}
-		generic.TestCrudClient(namespace, client, clients.WatchOpts{
+		generic.TestCrudClient(ns1, ns2, client, clients.WatchOpts{
 			Selector:    selector,
 			Ctx:         context.TODO(),
 			RefreshRate: time.Minute,
@@ -61,7 +62,7 @@ var _ = Describe("PlainConfigmap", func() {
 	})
 	It("does not escape string fields", func() {
 		foo := "test-data-keys"
-		input := v1.NewMockResource(namespace, foo)
+		input := v1.NewMockResource(ns1, foo)
 		data := "hello: goodbye"
 		input.Data = data
 		labels := map[string]string{"pick": "me"}
@@ -80,7 +81,7 @@ var _ = Describe("PlainConfigmap", func() {
 	})
 	It("emits empty fields", func() {
 		foo := "test-data-keys"
-		input := v1.NewMockResource(namespace, foo)
+		input := v1.NewMockResource(ns1, foo)
 		data := ""
 		input.Data = data
 		labels := map[string]string{"pick": "me"}

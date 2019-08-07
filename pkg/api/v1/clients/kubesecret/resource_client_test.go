@@ -31,7 +31,7 @@ var _ = Describe("Base", func() {
 	})
 
 	var (
-		ns1            string
+		ns1, ns2       string
 		kube           kubernetes.Interface
 		client         *ResourceClient
 		kubeCache      cache.KubeCoreCache
@@ -39,23 +39,24 @@ var _ = Describe("Base", func() {
 	)
 	BeforeEach(func() {
 		ns1 = helpers.RandString(8)
+		ns2 = helpers.RandString(8)
 		localTestLabel = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, ns1)
+		err := kubeutils.CreateNamespacesInParallel(kube, ns1, ns2)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client, err = NewResourceClient(kube, &v1.MockResource{}, false, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns1)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("CRUDs resources", func() {
 		selectors := map[string]string{
 			helpers.TestLabel: localTestLabel,
 		}
-		generic.TestCrudClient(ns1, client, clients.WatchOpts{
+		generic.TestCrudClient(ns1, ns2, client, clients.WatchOpts{
 			Ctx:         context.TODO(),
 			Selector:    selectors,
 			RefreshRate: time.Minute,

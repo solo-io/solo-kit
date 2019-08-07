@@ -20,8 +20,8 @@ import (
 {{- if not $.IsCustom }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 {{- end }}
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {
@@ -96,6 +96,11 @@ func (r *{{ .Name }}) Hash() uint64 {
 }
 
 {{- end }}
+
+
+func (r *{{ .Name }}) GroupVersionKind() schema.GroupVersionKind {
+	return {{ .Name }}GVK
+}
 
 type {{ .Name }}List []*{{ .Name }}
 
@@ -180,9 +185,12 @@ func (list {{ .Name }}List) AsInterfaces() []interface{}{
 	return asInterfaces
 }
 
-{{- if not $.IsCustom }}
+{{- $crdGroupName := .ParentVersion.ProtoPackage }}
+{{- if ne .ParentVersion.VersionConfig.ApiGroup.CrdGroupOverride "" }}
+{{- $crdGroupName = .ParentVersion.VersionConfig.ApiGroup.CrdGroupOverride }}
+{{- end}}
 
-var _ resources.Resource = &{{ .Name }}{}
+{{- if not $.IsCustom }}
 
 // Kubernetes Adapter for {{ .Name }}
 
@@ -195,18 +203,7 @@ func (o *{{ .Name }}) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*{{ .Name }})
 }
 
-{{- $crdGroupName := .ParentVersion.ProtoPackage }}
-{{- if ne .ParentVersion.VersionConfig.ApiGroup.CrdGroupOverride "" }}
-{{- $crdGroupName = .ParentVersion.VersionConfig.ApiGroup.CrdGroupOverride }}
-{{- end}}
-
-
 var (
-	{{ .Name }}GVK = schema.GroupVersionKind{
-		Version: "{{ .ParentVersion.VersionConfig.Version }}",
-		Group: "{{ $crdGroupName }}",
-		Kind: "{{ .Name }}",
-	}
 	{{ .Name }}Crd = crd.NewCrd(
 		"{{ lowercase (upper_camel .PluralName) }}",
 		{{ .Name }}GVK.Group,
@@ -224,4 +221,12 @@ func init() {
 }
 
 {{- end}}
+
+var (
+	{{ .Name }}GVK = schema.GroupVersionKind{
+		Version: "{{ .ParentVersion.VersionConfig.Version }}",
+		Group: "{{ $crdGroupName }}",
+		Kind: "{{ .Name }}",
+	}
+)
 `))
