@@ -41,7 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/google/protobuf/any.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/google/protobuf/any.proto)
+##### Source File: `google/protobuf/any.proto`
 
 
 

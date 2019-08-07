@@ -170,7 +170,7 @@ GRPC stuff
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `resourceList` | [[]google.protobuf.Any](../../../../api/external/google/protobuf/any.proto.sk.md#Any) |  |  |
+| `resourceList` | [[]google.protobuf.Any](../../../../../../../google/protobuf/any.proto.sk.md#Any) |  |  |
 
 
 
@@ -206,7 +206,7 @@ GRPC stuff
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `resourceList` | [[]google.protobuf.Any](../../../../api/external/google/protobuf/any.proto.sk.md#Any) |  |  |
+| `resourceList` | [[]google.protobuf.Any](../../../../../../../google/protobuf/any.proto.sk.md#Any) |  |  |
 
 
 
