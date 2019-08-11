@@ -48,6 +48,11 @@ func failHandler(message string, callerSkip ...int) {
 	for _, prefail := range preFails {
 		prefail()
 	}
+
+	if len(callerSkip) > 0 {
+		callerSkip[0] = callerSkip[0] + 1
+	}
+
 	Fail(message, callerSkip...)
 
 }
