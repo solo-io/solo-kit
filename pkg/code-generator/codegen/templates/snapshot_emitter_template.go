@@ -220,11 +220,14 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 		originalSnapshot := {{ .GoName }}Snapshot{}
 		timer := time.NewTicker(time.Second * 1)
-
+		var originalHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if originalHash == currentHash {
 				return
 			}
+
+			originalHash = currentHash
 
 			sentSnapshot := currentSnapshot.Clone()
 			select {
