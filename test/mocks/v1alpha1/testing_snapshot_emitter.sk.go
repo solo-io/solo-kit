@@ -154,11 +154,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 		originalSnapshot := TestingSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
-
+		var originalHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if originalHash == currentHash {
 				return
 			}
+
+			originalHash = currentHash
 
 			sentSnapshot := currentSnapshot.Clone()
 			select {

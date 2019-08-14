@@ -48,10 +48,14 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 		originalSnapshot := TestingSnapshot{}
 		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+		var originalHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if originalHash == currentHash {
 				return
 			}
+
+			originalHash = currentHash
 
 			stats.Record(ctx, mTestingSnapshotOut.M(1))
 			originalSnapshot = currentSnapshot.Clone()
