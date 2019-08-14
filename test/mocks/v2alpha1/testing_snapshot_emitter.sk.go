@@ -198,11 +198,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
-		originalSnapshot := TestingSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
-
+		var previousHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if previousHash == currentHash {
 				return
 			}
 
@@ -210,7 +210,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			select {
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mTestingSnapshotOut.M(1))
-				originalSnapshot = currentSnapshot.Clone()
+				previousHash = currentHash
 			default:
 				stats.Record(ctx, mTestingSnapshotMissed.M(1))
 			}

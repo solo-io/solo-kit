@@ -218,11 +218,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
-		originalSnapshot := {{ .GoName }}Snapshot{}
 		timer := time.NewTicker(time.Second * 1)
-
+		var previousHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if previousHash == currentHash {
 				return
 			}
 
@@ -230,7 +230,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			select {
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, m{{ .GoName }}SnapshotOut.M(1))
-				originalSnapshot = currentSnapshot.Clone()
+				previousHash = currentHash
 			default:
 				stats.Record(ctx, m{{ .GoName }}SnapshotMissed.M(1))
 			}
