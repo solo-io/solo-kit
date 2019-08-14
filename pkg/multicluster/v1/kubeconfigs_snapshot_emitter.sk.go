@@ -152,22 +152,19 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
-		originalSnapshot := KubeconfigsSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
-		var originalHash uint64
+		var previousHash uint64
 		sync := func() {
 			currentHash := currentSnapshot.Hash()
-			if originalHash == currentHash {
+			if previousHash == currentHash {
 				return
 			}
-
-			originalHash = currentHash
 
 			sentSnapshot := currentSnapshot.Clone()
 			select {
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mKubeconfigsSnapshotOut.M(1))
-				originalSnapshot = currentSnapshot.Clone()
+				previousHash = currentHash
 			default:
 				stats.Record(ctx, mKubeconfigsSnapshotMissed.M(1))
 			}

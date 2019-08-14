@@ -54,20 +54,18 @@ func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) 
 	go errutils.AggregateErrs(ctx, errs, watchErrs, "{{ lower_camel .GoName }}-emitter")
 
 	go func() {
-		originalSnapshot := {{ .GoName }}Snapshot{}
-		currentSnapshot := originalSnapshot.Clone()
+		currentSnapshot := {{ .GoName }}Snapshot{}
 		timer := time.NewTicker(time.Second * 1)
-		var originalHash uint64
+		var previousHash uint64
 		sync := func() {
 			currentHash := currentSnapshot.Hash()
-			if originalHash == currentHash {
+			if previousHash == currentHash {
 				return
 			}
 
-			originalHash = currentHash
+			previousHash = currentHash
 
 			stats.Record(ctx, m{{ .GoName }}SnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
