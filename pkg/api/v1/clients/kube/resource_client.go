@@ -7,15 +7,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -410,16 +411,16 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 
 func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resources.Resource, error) {
 	resource := rc.NewResource()
-	if resourceCrd.Spec != nil {
-		if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
-			return nil, errors.Wrapf(err, "reading crd spec into %v", rc.resourceName)
-		}
-	}
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
 	if withStatus, ok := resource.(resources.InputResource); ok {
 		resources.UpdateStatus(withStatus, func(status *core.Status) {
 			*status = resourceCrd.Status
 		})
+	}
+	if resourceCrd.Spec != nil {
+		if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+			return nil, errors.Wrapf(err, "reading crd spec on resource %v in namespace %v into %v", resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
+		}
 	}
 	return resource, nil
 }
