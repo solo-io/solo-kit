@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Include resource name and namespace in error messages when encountering an error parsing the spec during kube list or read.
+    issueLink: https://github.com/solo-io/solo-kit/issues/242
