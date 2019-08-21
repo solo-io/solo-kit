@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix issue with kubecore cache not listing multiple namespaces
+    issueLink: https://github.com/solo-io/solo-kit/issues/244
