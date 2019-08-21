@@ -104,51 +104,68 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 	secrets := map[string]kubelisters.SecretLister{}
 
 	for _, nsToWatch := range namesapcesToWatch {
+		nsToWatch := nsToWatch
 		nsCtx := ctx
 		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(nsToWatch))); err == nil {
 			nsCtx = ctxWithTags
 		}
 
 		{
+			var typeCtx = nsCtx
+			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Pods")); err == nil {
+				typeCtx = ctxWithTags
+			}
 			// Pods
 			watch := client.CoreV1().Pods(nsToWatch).Watch
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
 				return client.CoreV1().Pods(nsToWatch).List(options)
 			}
-			informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Pod{}, list, watch)
+			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Pod{}, list, watch)
 			informers = append(informers, informer)
 			lister := kubelisters.NewPodLister(informer.GetIndexer())
 			pods[nsToWatch] = lister
 		}
 		{
+			var typeCtx = nsCtx
+			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Services")); err == nil {
+				typeCtx = ctxWithTags
+			}
 			// Services
 			watch := client.CoreV1().Services(nsToWatch).Watch
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
 				return client.CoreV1().Services(nsToWatch).List(options)
 			}
-			informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Service{}, list, watch)
+			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Service{}, list, watch)
 			informers = append(informers, informer)
 			lister := kubelisters.NewServiceLister(informer.GetIndexer())
 			services[nsToWatch] = lister
 		}
 		{
+			var typeCtx = nsCtx
+			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "ConfigMap")); err == nil {
+				typeCtx = ctxWithTags
+			}
 			// ConfigMap
 			watch := client.CoreV1().ConfigMaps(nsToWatch).Watch
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
 				return client.CoreV1().ConfigMaps(nsToWatch).List(options)
 			}
-			informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.ConfigMap{}, list, watch)
+			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.ConfigMap{}, list, watch)
 			informers = append(informers, informer)
 			lister := kubelisters.NewConfigMapLister(informer.GetIndexer())
 			configMaps[nsToWatch] = lister
 		}
 		{
+			var typeCtx = nsCtx
+			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Secrets")); err == nil {
+				typeCtx = ctxWithTags
+			}
 			// Secrets
 			watch := client.CoreV1().Secrets(nsToWatch).Watch
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
 				return client.CoreV1().Secrets(nsToWatch).List(options)
 			}
-			informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Secret{}, list, watch)
+			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Secret{}, list, watch)
 			informers = append(informers, informer)
 			lister := kubelisters.NewSecretLister(informer.GetIndexer())
 			secrets[nsToWatch] = lister
@@ -165,7 +182,7 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 			return client.CoreV1().Namespaces().List(options)
 		}
 		nsCtx := ctx
-		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(metav1.NamespaceAll))); err == nil {
+		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(metav1.NamespaceAll)), tag.Insert(skkube.KeyKind, "Namespaces")); err == nil {
 			nsCtx = ctxWithTags
 		}
 		informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Namespace{}, list, watch)
