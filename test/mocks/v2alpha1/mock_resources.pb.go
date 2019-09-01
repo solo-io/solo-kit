@@ -22,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 //
 //The best mock resource you ever done seen
@@ -148,115 +148,14 @@ func (m *MockResource) GetOneofTwo() bool {
 	return false
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*MockResource) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _MockResource_OneofMarshaler, _MockResource_OneofUnmarshaler, _MockResource_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*MockResource) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*MockResource_SomeDumbField)(nil),
 		(*MockResource_Data)(nil),
 		(*MockResource_OneofOne)(nil),
 		(*MockResource_OneofTwo)(nil),
 	}
-}
-
-func _MockResource_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*MockResource)
-	// we_stuck_it_in_a_oneof
-	switch x := m.WeStuckItInAOneof.(type) {
-	case *MockResource_SomeDumbField:
-		_ = b.EncodeVarint(100<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.SomeDumbField)
-	case *MockResource_Data:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.Data)
-	case nil:
-	default:
-		return fmt.Errorf("MockResource.WeStuckItInAOneof has unexpected type %T", x)
-	}
-	// test_oneof_fields
-	switch x := m.TestOneofFields.(type) {
-	case *MockResource_OneofOne:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.OneofOne)
-	case *MockResource_OneofTwo:
-		t := uint64(0)
-		if x.OneofTwo {
-			t = 1
-		}
-		_ = b.EncodeVarint(2<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(t)
-	case nil:
-	default:
-		return fmt.Errorf("MockResource.TestOneofFields has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _MockResource_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*MockResource)
-	switch tag {
-	case 100: // we_stuck_it_in_a_oneof.some_dumb_field
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.WeStuckItInAOneof = &MockResource_SomeDumbField{x}
-		return true, err
-	case 1: // we_stuck_it_in_a_oneof.data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.WeStuckItInAOneof = &MockResource_Data{x}
-		return true, err
-	case 3: // test_oneof_fields.oneof_one
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.TestOneofFields = &MockResource_OneofOne{x}
-		return true, err
-	case 2: // test_oneof_fields.oneof_two
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.TestOneofFields = &MockResource_OneofTwo{x != 0}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _MockResource_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*MockResource)
-	// we_stuck_it_in_a_oneof
-	switch x := m.WeStuckItInAOneof.(type) {
-	case *MockResource_SomeDumbField:
-		n += 2 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.SomeDumbField)))
-		n += len(x.SomeDumbField)
-	case *MockResource_Data:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Data)))
-		n += len(x.Data)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	// test_oneof_fields
-	switch x := m.TestOneofFields.(type) {
-	case *MockResource_OneofOne:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.OneofOne)))
-		n += len(x.OneofOne)
-	case *MockResource_OneofTwo:
-		n += 1 // tag and wire
-		n += 1
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {
