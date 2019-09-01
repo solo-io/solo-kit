@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix duplicate snapshot on emitter start
+    issueLink: https://github.com/solo-io/solo-kit/issues/246
