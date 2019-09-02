@@ -6,13 +6,14 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/solo-io/solo-kit/pkg/utils/syncutils"
+
 	"github.com/solo-io/go-utils/log"
 
 	"io/ioutil"
 
 	"time"
 
-	"bytes"
 	"io"
 	"regexp"
 	"strings"
@@ -134,7 +135,7 @@ func (i *VaultInstance) RunWithPort() error {
 		"-dev-root-token-id=root",
 		fmt.Sprintf("-dev-listen-address=0.0.0.0:%v", i.Port),
 	)
-	buf := &bytes.Buffer{}
+	buf := &syncutils.Buffer{}
 	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = w
@@ -144,18 +145,7 @@ func (i *VaultInstance) RunWithPort() error {
 		return err
 	}
 	i.cmd = cmd
-	time.Sleep(time.Millisecond * 1500)
-
-	// enable kv storage
-	enableCmdOut, err := exec.Command(i.vaultpath,
-		"secrets",
-		"enable",
-		fmt.Sprintf("-address=http://127.0.0.1:%v", i.Port),
-		"-version=2",
-		"kv").CombinedOutput()
-	if err != nil {
-		return errors.Wrapf(err, "enabling kv storage failed: %s", enableCmdOut)
-	}
+	time.Sleep(time.Millisecond * 2500)
 
 	tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(buf.String(), 1)
 	if len(tokenSlice) < 1 {
@@ -164,6 +154,19 @@ func (i *VaultInstance) RunWithPort() error {
 
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
 
+	enableCmd := exec.Command(i.vaultpath,
+		"secrets",
+		"enable",
+		fmt.Sprintf("-address=http://127.0.0.1:%v", i.Port),
+		"-version=2",
+		"kv")
+	enableCmd.Env = append(enableCmd.Env, "VAULT_TOKEN="+i.token)
+
+	// enable kv storage
+	enableCmdOut, err := enableCmd.CombinedOutput()
+	if err != nil {
+		return errors.Wrapf(err, "enabling kv storage failed: %s", enableCmdOut)
+	}
 	return nil
 }
 

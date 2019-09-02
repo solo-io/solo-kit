@@ -167,9 +167,14 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			It("correctly handles multiple events", func() {
 
 				var watchResults []string
+
+				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
+
 				go func() {
 					for {
 						select {
+						case <-ctx.Done():
+							return
 						case res := <-watch:
 							watchResults = append(watchResults, res.ObjectMeta.Name)
 						}
@@ -181,8 +186,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-3", "test")).To(BeNil())
 				go Expect(util.DeleteMockResource(clientset, namespace1, "mock-res-1")).To(BeNil())
 
-				// Wait for results to be collected
-				time.Sleep(50 * time.Millisecond)
+				<-ctx.Done()
 
 				Expect(len(watchResults)).To(BeEquivalentTo(3))
 				Expect(watchResults).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1"))
@@ -204,10 +208,13 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			It("all watches receive the same events", func() {
 
 				watchResults := [][]string{{}, {}, {}}
+				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
 				for i, watch := range watches {
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
+							case <-ctx.Done():
+								return
 							case res := <-watchChan:
 								watchResults[index] = append(watchResults[index], res.ObjectMeta.Name)
 							}
@@ -224,6 +231,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				// Wait for results to be collected
 				time.Sleep(100 * time.Millisecond)
+
+				<-ctx.Done()
 
 				for _, watchResult := range watchResults {
 					Expect(len(watchResult)).To(BeEquivalentTo(4))

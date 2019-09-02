@@ -1,6 +1,7 @@
 package wrapper_test
 
 import (
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -41,6 +42,8 @@ var _ = Describe("watchAggregator", func() {
 		watch, errs, err := watcher.Watch("", clients.WatchOpts{RefreshRate: time.Millisecond})
 		Expect(err).NotTo(HaveOccurred())
 
+		l := sync.Mutex{}
+
 		go func() {
 			defer GinkgoRecover()
 			_, err = cluster1.Write(v1.NewMockResource("a", "a"), clients.WriteOpts{})
@@ -55,10 +58,12 @@ var _ = Describe("watchAggregator", func() {
 			err = watcher.AddWatch(cluster3)
 			Expect(err).NotTo(HaveOccurred())
 
+			l.Lock()
 			_, err = cluster3.Write(v1.NewMockResource("a", "a"), clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			_, err = cluster3.Write(v1.NewMockResource("a", "b"), clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+			l.Unlock()
 
 		}()
 
@@ -89,8 +94,10 @@ var _ = Describe("watchAggregator", func() {
 		}))
 
 		go func() {
+			l.Lock()
 			watcher.RemoveWatch(cluster3)
 			err = watcher.AddWatch(cluster4)
+			l.Unlock()
 			Expect(err).NotTo(HaveOccurred())
 
 			// update

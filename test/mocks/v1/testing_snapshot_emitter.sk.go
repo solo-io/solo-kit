@@ -357,7 +357,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		snapshots <- &initialSnapshot
 
 		timer := time.NewTicker(time.Second * 1)
-		previousHash := initialSnapshot.Hash()
+		previousHash := currentSnapshot.Hash()
 		sync := func() {
 			currentHash := currentSnapshot.Hash()
 			if previousHash == currentHash {
