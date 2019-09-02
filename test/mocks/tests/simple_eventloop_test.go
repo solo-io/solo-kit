@@ -2,6 +2,7 @@ package tests_test
 
 import (
 	"context"
+	"sync"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,19 +28,19 @@ var _ = Describe("SimpleEventLoop", func() {
 			}()
 
 			Eventually(func() int {
-				return shouldSyncer.syncs
+				return shouldSyncer.Syncs()
 			}).Should(Equal(50))
 
 			Eventually(func() int {
-				return shouldSyncer.cancels
+				return shouldSyncer.Cancels()
 			}).Should(Equal(49))
 
 			cancel()
 			Eventually(func() int {
-				return shouldSyncer.cancels
+				return shouldSyncer.Cancels()
 			}).Should(Equal(50))
 
-			Expect(shouldNotSyncer.syncs).To(Equal(0))
+			Expect(shouldNotSyncer.Syncs()).To(Equal(0))
 		})
 	})
 	Context("syncer implements SyncDecider", func() {
@@ -60,19 +61,19 @@ var _ = Describe("SimpleEventLoop", func() {
 			}()
 
 			Eventually(func() int {
-				return shouldSyncer.syncs
+				return shouldSyncer.Syncs()
 			}).Should(Equal(50))
 
 			Eventually(func() int {
-				return shouldSyncer.cancels
+				return shouldSyncer.Cancels()
 			}).Should(Equal(49))
 
 			cancel()
 			Eventually(func() int {
-				return shouldSyncer.cancels
+				return shouldSyncer.Cancels()
 			}).Should(Equal(50))
 
-			Expect(shouldNotSyncer.syncs).To(Equal(0))
+			Expect(shouldNotSyncer.Syncs()).To(Equal(0))
 		})
 	})
 })
@@ -82,11 +83,13 @@ type (
 		shouldSync bool
 		syncs      int
 		cancels    int
+		l          sync.Mutex
 	}
 	mockSyncerCtx struct {
 		shouldSync bool
 		syncs      int
 		cancels    int
+		l          sync.Mutex
 	}
 	mockEmitter struct{}
 )
@@ -110,14 +113,30 @@ func (e *mockEmitter) Snapshots(ctx context.Context) (<-chan *v1.TestingSnapshot
 func (m *mockSyncer) Sync(ctx context.Context, snap *v1.TestingSnapshot) error {
 	go func() {
 		<-ctx.Done()
+		m.l.Lock()
+		defer m.l.Unlock()
 		m.cancels++
 	}()
+	m.l.Lock()
+	defer m.l.Unlock()
 	m.syncs++
 	// set a limit of 50
 	if m.syncs >= 50 {
 		m.shouldSync = false
 	}
 	return nil
+}
+
+func (m *mockSyncer) Syncs() int {
+	m.l.Lock()
+	defer m.l.Unlock()
+	return m.syncs
+}
+
+func (m *mockSyncer) Cancels() int {
+	m.l.Lock()
+	defer m.l.Unlock()
+	return m.cancels
 }
 
 func (m *mockSyncer) ShouldSync(old, new *v1.TestingSnapshot) bool {
@@ -127,8 +146,12 @@ func (m *mockSyncer) ShouldSync(old, new *v1.TestingSnapshot) bool {
 func (m *mockSyncerCtx) Sync(ctx context.Context, snap *v1.TestingSnapshot) error {
 	go func() {
 		<-ctx.Done()
+		m.l.Lock()
+		defer m.l.Unlock()
 		m.cancels++
 	}()
+	m.l.Lock()
+	defer m.l.Unlock()
 	m.syncs++
 	// set a limit of 50
 	if m.syncs >= 50 {
@@ -139,4 +162,16 @@ func (m *mockSyncerCtx) Sync(ctx context.Context, snap *v1.TestingSnapshot) erro
 
 func (m *mockSyncerCtx) ShouldSync(ctx context.Context, old, new *v1.TestingSnapshot) bool {
 	return m.shouldSync
+}
+
+func (m *mockSyncerCtx) Syncs() int {
+	m.l.Lock()
+	defer m.l.Unlock()
+	return m.syncs
+}
+
+func (m *mockSyncerCtx) Cancels() int {
+	m.l.Lock()
+	defer m.l.Unlock()
+	return m.cancels
 }
