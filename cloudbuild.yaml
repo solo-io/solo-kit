@@ -69,7 +69,7 @@ steps:
       - 'SKIP_MOCK_GEN=1'
       - 'CLOUD_BUILD=1'
       - 'GOPATH=/workspace/gopath'
-    args: ['-r', '-v', '-p', '-tags', '-race', 'solokit']
+    args: ['-r', '-v', '-p', '-race', '-tags', 'solokit']
     id: 'test'
     waitFor: ['check-code-and-docs-gen']
 
