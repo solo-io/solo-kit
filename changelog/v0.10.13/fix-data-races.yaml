@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix data races in test and generated code
+    issueLink: https://github.com/solo-io/solo-kit/pull/250

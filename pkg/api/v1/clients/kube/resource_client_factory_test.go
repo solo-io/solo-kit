@@ -167,11 +167,14 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			It("correctly handles multiple events", func() {
 
 				var watchResults []string
+				l := &sync.Mutex{}
 				go func() {
 					for {
 						select {
 						case res := <-watch:
+							l.Lock()
 							watchResults = append(watchResults, res.ObjectMeta.Name)
+							l.Unlock()
 						}
 					}
 				}()
@@ -183,6 +186,9 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				// Wait for results to be collected
 				time.Sleep(50 * time.Millisecond)
+
+				// stop reading watches
+				l.Lock()
 
 				Expect(len(watchResults)).To(BeEquivalentTo(3))
 				Expect(watchResults).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1"))
@@ -204,12 +210,15 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			It("all watches receive the same events", func() {
 
 				watchResults := [][]string{{}, {}, {}}
+				l := &sync.Mutex{}
 				for i, watch := range watches {
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
 							case res := <-watchChan:
+								l.Lock()
 								watchResults[index] = append(watchResults[index], res.ObjectMeta.Name)
+								l.Unlock()
 							}
 						}
 					}(i, watch)
@@ -224,6 +233,9 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				// Wait for results to be collected
 				time.Sleep(100 * time.Millisecond)
+
+				// stop reading watches
+				l.Lock()
 
 				for _, watchResult := range watchResults {
 					Expect(len(watchResult)).To(BeEquivalentTo(4))

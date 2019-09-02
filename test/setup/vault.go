@@ -6,13 +6,14 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/solo-io/solo-kit/pkg/utils/syncutils"
+
 	"github.com/solo-io/go-utils/log"
 
 	"io/ioutil"
 
 	"time"
 
-	"bytes"
 	"io"
 	"regexp"
 	"strings"
@@ -134,7 +135,7 @@ func (i *VaultInstance) RunWithPort() error {
 		"-dev-root-token-id=root",
 		fmt.Sprintf("-dev-listen-address=0.0.0.0:%v", i.Port),
 	)
-	buf := &bytes.Buffer{}
+	buf := &syncutils.Buffer{}
 	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = w
