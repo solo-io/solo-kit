@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -55,6 +56,9 @@ var _ = Describe("Base", func() {
 	AfterEach(func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
+
+		kubehelpers.WaitForNamespaceTeardown(ns1)
+		kubehelpers.WaitForNamespaceTeardown(ns2)
 	})
 	It("CRUDs resources", func() {
 		selector := map[string]string{
