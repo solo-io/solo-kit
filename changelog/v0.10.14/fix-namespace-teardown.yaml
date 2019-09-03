@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix namespace teardown race
+    issueLink: https://github.com/solo-io/solo-kit/pull/252
