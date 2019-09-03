@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
@@ -179,6 +180,8 @@ func (s *server) process(stream Stream, reqCh <-chan *v2.DiscoveryRequest, defau
 
 	responses := make(chan TypedResponse)
 
+	// node may only be set on the first discovery request
+	var node = &core.Node{}
 	for {
 		select {
 		// config watcher can send the requested resources types in any order
@@ -207,6 +210,12 @@ func (s *server) process(stream Stream, reqCh <-chan *v2.DiscoveryRequest, defau
 				return status.Errorf(codes.Unavailable, "empty request")
 			}
 
+			// node field in discovery request is delta-compressed
+			if req.Node != nil {
+				node = req.Node
+			} else {
+				req.Node = node
+			}
 			// nonces can be reused across streams; we verify nonce only if nonce is not initialized
 			nonce := req.GetResponseNonce()
 
