@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -39,6 +40,7 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		ns1 = helpers.RandString(8)
 		ns2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
+
 		err := kubeutils.CreateNamespacesInParallel(kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
 		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
@@ -48,6 +50,9 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 	AfterEach(func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
+
+		kubehelpers.WaitForNamespaceTeardown(ns1)
+		kubehelpers.WaitForNamespaceTeardown(ns2)
 	})
 	It("CRUDs resources", func() {
 		selectors := map[string]string{
