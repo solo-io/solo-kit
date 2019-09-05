@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add kube generation to solo-kit metadata
+    issueLink: https://github.com/solo-io/solo-kit/pull/255

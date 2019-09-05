@@ -13,6 +13,7 @@ func FromKubeMeta(meta metav1.ObjectMeta) core.Metadata {
 		ResourceVersion: meta.ResourceVersion,
 		Labels:          copyMap(meta.Labels),
 		Annotations:     copyMap(meta.Annotations),
+		Generation:      meta.Generation,
 	}
 }
 
@@ -23,6 +24,7 @@ func ToKubeMeta(meta core.Metadata) metav1.ObjectMeta {
 		ResourceVersion: meta.ResourceVersion,
 		Labels:          copyMap(meta.Labels),
 		Annotations:     copyMap(meta.Annotations),
+		Generation:      meta.Generation,
 	}
 }
 
