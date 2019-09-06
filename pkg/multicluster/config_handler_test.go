@@ -3,6 +3,7 @@ package multicluster_test
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -46,6 +47,7 @@ var _ = Describe("ConfigHandler", func() {
 })
 
 type mockHandler struct {
+	l       sync.Mutex
 	added   map[string]string
 	removed map[string]string
 }
@@ -58,11 +60,15 @@ func newMockHandler() *mockHandler {
 }
 
 func (h *mockHandler) ClusterAdded(cluster string, restConfig *rest.Config) {
+	h.l.Lock()
 	h.added[cluster] = restConfig.Host
+	h.l.Unlock()
 }
 
 func (h *mockHandler) ClusterRemoved(cluster string, restConfig *rest.Config) {
+	h.l.Lock()
 	h.removed[cluster] = restConfig.Host
+	h.l.Unlock()
 }
 
 type fakeKCWatcher struct {
