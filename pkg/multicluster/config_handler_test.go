@@ -36,10 +36,14 @@ var _ = Describe("ConfigHandler", func() {
 		}()
 
 		<-watcher.done
+		h1.l.Lock()
+		defer h1.l.Unlock()
 		Expect(h1.added).To(HaveKey("cluster-0"))
 		Expect(h1.added).To(HaveKey("cluster-1"))
 		Expect(h1.removed).To(HaveKey("cluster-1"))
 
+		h2.l.Lock()
+		defer h2.l.Unlock()
 		Expect(h2.added).To(HaveKey("cluster-0"))
 		Expect(h2.added).To(HaveKey("cluster-1"))
 		Expect(h2.removed).To(HaveKey("cluster-1"))
