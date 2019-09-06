@@ -21,10 +21,11 @@ type ClusterHandler interface {
 }
 
 type RestConfigHandler struct {
-	kcWatcher KubeConfigWatcher
-	handlers  []ClusterHandler
-	cache     RestConfigs
-	access    sync.RWMutex
+	kcWatcher     KubeConfigWatcher
+	handlers      []ClusterHandler
+	cache         RestConfigs
+	cacheAccess   sync.Mutex
+	handlerAccess sync.Mutex
 }
 
 func NewRestConfigHandler(kcWatcher KubeConfigWatcher, handlers ...ClusterHandler) *RestConfigHandler {
@@ -61,7 +62,8 @@ func (h *RestConfigHandler) Run(ctx context.Context, local *rest.Config, kubeCli
 }
 
 func (h *RestConfigHandler) handleNewRestConfigs(cfgs RestConfigs) {
-	h.access.RLock()
+	h.cacheAccess.Lock()
+	defer h.cacheAccess.Unlock()
 	for cluster, oldCfg := range h.cache {
 		if _, persisted := cfgs[cluster]; persisted {
 			continue
@@ -74,25 +76,21 @@ func (h *RestConfigHandler) handleNewRestConfigs(cfgs RestConfigs) {
 		}
 		h.clusterAdded(cluster, newCfg)
 	}
-	h.access.RUnlock()
-
-	h.access.Lock()
 	// update cache
 	h.cache = cfgs
-	h.access.Unlock()
 }
 
 func (h *RestConfigHandler) clusterAdded(cluster string, cfg *rest.Config) {
-	h.access.RLock()
-	defer h.access.RUnlock()
+	h.handlerAccess.Lock()
+	defer h.handlerAccess.Unlock()
 	for _, handler := range h.handlers {
 		handler.ClusterAdded(cluster, cfg)
 	}
 }
 
 func (h *RestConfigHandler) clusterRemoved(cluster string, cfg *rest.Config) {
-	h.access.RLock()
-	defer h.access.RUnlock()
+	h.handlerAccess.Lock()
+	defer h.handlerAccess.Unlock()
 	for _, handler := range h.handlers {
 		handler.ClusterRemoved(cluster, cfg)
 	}
