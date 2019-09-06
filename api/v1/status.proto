@@ -4,6 +4,9 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+
+import "google/protobuf/struct.proto";
+
 /**
  * Status indicates whether a resource has been (in)validated by a reporter in the system.
  * Statuses are meant to be read-only by users
@@ -17,6 +20,9 @@ message Status {
         // Rejected indicates an invalid configuration by the user
         // Rejected resources may be propagated to the xDS server depending on their severity
         Rejected = 2;
+        // Warning indicates a partially invalid configuration by the user
+        // Resources with Warnings may be partially accepted by a controller, depending on the implementation
+        Warning = 3;
     }
     // State is the enum indicating the state of the resource
     State state = 1;
@@ -26,4 +32,7 @@ message Status {
     string reported_by = 3;
     // Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource
     map<string, Status> subresource_statuses = 4;
+
+    // Opaque details about status results
+    google.protobuf.Struct details = 5;
 }

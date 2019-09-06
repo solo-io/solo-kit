@@ -153,7 +153,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 	Context("multiple namespaces", func() {
 		var (
 			ns1, ns2       string
-			localTestLabel string
+			localTestLabel = "hi"
 		)
 		BeforeEach(func() {
 			ns1 = helpers.RandString(8)
@@ -216,14 +216,6 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(list).To(ContainElement(r1))
 			Expect(list).To(ContainElement(r2))
-
-			select {
-			case err := <-errs:
-				Expect(err).NotTo(HaveOccurred())
-			case list = <-w:
-			case <-time.After(time.Millisecond * 5):
-				Fail("expected a message in channel")
-			}
 
 			go func() {
 				defer GinkgoRecover()
