@@ -76,16 +76,16 @@ type isMockResource_TestOneofFields interface {
 }
 
 type MockResource_SomeDumbField struct {
-	SomeDumbField string `protobuf:"bytes,100,opt,name=some_dumb_field,json=someDumbField,proto3,oneof"`
+	SomeDumbField string `protobuf:"bytes,100,opt,name=some_dumb_field,json=someDumbField,proto3,oneof" json:"some_dumb_field,omitempty"`
 }
 type MockResource_Data struct {
-	Data string `protobuf:"bytes,1,opt,name=data,json=data.json,proto3,oneof"`
+	Data string `protobuf:"bytes,1,opt,name=data,json=data.json,proto3,oneof" json:"data.json"`
 }
 type MockResource_OneofOne struct {
-	OneofOne string `protobuf:"bytes,3,opt,name=oneof_one,json=oneofOne,proto3,oneof"`
+	OneofOne string `protobuf:"bytes,3,opt,name=oneof_one,json=oneofOne,proto3,oneof" json:"oneof_one,omitempty"`
 }
 type MockResource_OneofTwo struct {
-	OneofTwo bool `protobuf:"varint,2,opt,name=oneof_two,json=oneofTwo,proto3,oneof"`
+	OneofTwo bool `protobuf:"varint,2,opt,name=oneof_two,json=oneofTwo,proto3,oneof" json:"oneof_two,omitempty"`
 }
 
 func (*MockResource_SomeDumbField) isMockResource_WeStuckItInAOneof() {}
