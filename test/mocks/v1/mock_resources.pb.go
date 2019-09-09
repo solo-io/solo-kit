@@ -80,10 +80,10 @@ type isMockResource_TestOneofFields interface {
 }
 
 type MockResource_OneofOne struct {
-	OneofOne string `protobuf:"bytes,3,opt,name=oneof_one,json=oneofOne,proto3,oneof"`
+	OneofOne string `protobuf:"bytes,3,opt,name=oneof_one,json=oneofOne,proto3,oneof" json:"oneof_one,omitempty"`
 }
 type MockResource_OneofTwo struct {
-	OneofTwo bool `protobuf:"varint,2,opt,name=oneof_two,json=oneofTwo,proto3,oneof"`
+	OneofTwo bool `protobuf:"varint,2,opt,name=oneof_two,json=oneofTwo,proto3,oneof" json:"oneof_two,omitempty"`
 }
 
 func (*MockResource_OneofOne) isMockResource_TestOneofFields() {}
