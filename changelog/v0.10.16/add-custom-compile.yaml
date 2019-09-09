@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add option to compile custom protos during generation
+    issueLink: https://github.com/solo-io/solo-kit/pull/259
