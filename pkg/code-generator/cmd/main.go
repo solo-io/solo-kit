@@ -44,11 +44,14 @@ func Run(relativeRoot string, compileProtos bool, genDocs *DocsOptions, customIm
 }
 
 type GenerateOptions struct {
-	RelativeRoot  string
+	RelativeRoot string
+	// compile protos found in project directories (dirs with solo-kit.json) and their subdirs
 	CompileProtos bool
-	GenDocs       *DocsOptions
-	CustomImports []string
-	SkipDirs      []string
+	// compile protos found in these directories. can also point directly to .proto files
+	CustomCompileProtos []string
+	GenDocs             *DocsOptions
+	CustomImports       []string
+	SkipDirs            []string
 	// arguments for gogo_out=
 	CustomGogoOutArgs []string
 	// skip generated mocks
@@ -71,6 +74,16 @@ func Generate(opts GenerateOptions) error {
 	customGogoArgs := opts.CustomGogoOutArgs
 	skipDirs := opts.SkipDirs
 	skipDirs = append(skipDirs, "vendor/")
+
+	var customCompilePrefixes []string
+	for _, relativePath := range opts.CustomCompileProtos {
+		abs, err := filepath.Abs(relativePath)
+		if err != nil {
+			return err
+		}
+		customCompilePrefixes = append(customCompilePrefixes, abs)
+	}
+
 	absoluteRoot, err := filepath.Abs(relativeRoot)
 	if err != nil {
 		return err
@@ -94,6 +107,11 @@ func Generate(opts GenerateOptions) error {
 
 	// whether or not to do a regular gogo-proto generate while collecting descriptors
 	compileProto := func(protoFile string) bool {
+		for _, customCompilePrefix := range customCompilePrefixes {
+			if strings.HasPrefix(protoFile, customCompilePrefix) {
+				return true
+			}
+		}
 		if !compileProtos {
 			return false
 		}
