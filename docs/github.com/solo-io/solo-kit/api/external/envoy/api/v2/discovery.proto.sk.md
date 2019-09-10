@@ -52,7 +52,7 @@ a given Envoy node on some API.
 
 
 
-| `node` | [.envoy.api.v2.core.Node](../../../../../../../../../envoy/api/v2/core/base.proto.sk#node) |  The node making the request.  |  |
+| `node` | [.envoy.api.v2.core.Node](../core/base.proto.sk#node) |  The node making the request.  |  |
 
 
 
@@ -113,7 +113,7 @@ a given Envoy node on some API.
 
 
 
-| `controlPlane` | [.envoy.api.v2.core.ControlPlane](../../../../../../../../../envoy/api/v2/core/base.proto.sk#controlplane) |  [#not-implemented-hide:] The control plane instance that sent the response.  |  |
+| `controlPlane` | [.envoy.api.v2.core.ControlPlane](../core/base.proto.sk#controlplane) |  [#not-implemented-hide:] The control plane instance that sent the response.  |  |
 
 
 
@@ -164,7 +164,7 @@ DeltaDiscoveryRequest can be sent in 3 situations:
 
 
 
-| `node` | [.envoy.api.v2.core.Node](../../../../../../../../../envoy/api/v2/core/base.proto.sk#node) |  The node making the request.  |  |
+| `node` | [.envoy.api.v2.core.Node](../core/base.proto.sk#node) |  The node making the request.  |  |
 
 
 

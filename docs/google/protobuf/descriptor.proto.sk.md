@@ -85,7 +85,7 @@ without any other information (e.g. without reading its imports).
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/google/protobuf/descriptor.proto)
+##### Source File: `google/protobuf/descriptor.proto`
 
 
 
