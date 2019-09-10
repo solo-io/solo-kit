@@ -67,11 +67,11 @@ both a numerator and denominator that together determine the final fractional va
 
 
 
-| `numerator` | `int` |  Specifies the numerator. Defaults to 0..  |  |
+| `numerator` | `int` |  Specifies the numerator. Defaults to 0.  |  |
 
 
 
-| `denominator` | [.envoy.type.FractionalPercent.DenominatorType](../percent.proto.sk#denominatortype) |  Specifies the denominator. If the denominator specified is less than the numerator, the final fractional percentage is capped at 1 (100%)..  |  |
+| `denominator` | [.envoy.type.FractionalPercent.DenominatorType](../percent.proto.sk#denominatortype) |  Specifies the denominator. If the denominator specified is less than the numerator, the final fractional percentage is capped at 1 (100%).  |  |
 
 
 

@@ -3,7 +3,6 @@ package funcs
 import (
 	"bytes"
 	"fmt"
-	htmltemplate "html/template"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,6 +10,10 @@ import (
 	"strings"
 	"text/template"
 	"unicode"
+
+	htmltemplate "html/template"
+
+	"github.com/Masterminds/sprig"
 
 	"github.com/solo-io/go-utils/log"
 
@@ -121,6 +124,10 @@ func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) tem
 		"backtick": func() string {
 			return "`"
 		},
+	}
+	// add sprig funcs
+	for name, fn := range sprig.FuncMap() {
+		funcMap[name] = fn
 	}
 	funcs.Funcs = funcMap
 	return funcMap

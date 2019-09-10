@@ -45,11 +45,11 @@ Metadata contains general properties of resources for purposes of versioning, an
 
 
 
-| `name` | `string` |  Name of the resource. Names must be unique and follow the following syntax rules: One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters..  |  |
+| `name` | `string` |  Name of the resource. Names must be unique and follow the following syntax rules: One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.  |  |
 
 
 
-| `namespace` | `string` |  Namespace is used for the namespacing of resources..  |  |
+| `namespace` | `string` |  Namespace is used for the namespacing of resources.  |  |
 
 
 
@@ -57,7 +57,7 @@ Metadata contains general properties of resources for purposes of versioning, an
 
 
 
-| `resourceVersion` | `string` |  An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed..  |  |
+| `resourceVersion` | `string` |  An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed.  |  |
 
 
 
@@ -65,7 +65,7 @@ Metadata contains general properties of resources for purposes of versioning, an
 
 
 
-| `annotations` | `map<string, string>` |  Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata..  |  |
+| `annotations` | `map<string, string>` |  Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata.  |  |
 
 
 
