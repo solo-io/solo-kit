@@ -19,36 +19,36 @@ import (
 
 var (
 	// metrics for sending snapshots
-	mTestingSnapshotIn     = stats.Int64("$emitter_prefix/snap_in", "The number of snapshots in", "1")
-	mTestingSnapshotOut    = stats.Int64("$emitter_prefix/snap_out", "The number of snapshots out", "1")
-	mTestingSnapshotMissed = stats.Int64("$emitter_prefix/snap_missed", "The number of snapshots missed", "1")
+	mTestingSnapshotIn     = stats.Int64("testing.solo.io/emitter/snap_in", "The number of snapshots in", "1")
+	mTestingSnapshotOut    = stats.Int64("testing.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mTestingSnapshotMissed = stats.Int64("testing.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// metrics for resource watches
 
-	mTestingMocksListIn                = stats.Int64("Testing/mock_resource_emitter/mocks_in", "The number of Mocks lists received on watch channel", "1")
-	mTestingFakesListIn                = stats.Int64("Testing/fake_resource_emitter/fakes_in", "The number of Fakes lists received on watch channel", "1")
-	mTestingAnothermockresourcesListIn = stats.Int64("Testing/another_mock_resource_emitter/anothermockresources_in", "The number of Anothermockresources lists received on watch channel", "1")
-	mTestingClusterresourcesListIn     = stats.Int64("Testing/cluster_resource_emitter/clusterresources_in", "The number of Clusterresources lists received on watch channel", "1")
-	mTestingMctsListIn                 = stats.Int64("Testing/mock_custom_type_emitter/mcts_in", "The number of mcts lists received on watch channel", "1")
-	mTestingPodsListIn                 = stats.Int64("Testing/pod_emitter/pods_in", "The number of pods lists received on watch channel", "1")
+	mTestingMocksListIn                = stats.Int64("testing.solo.io/emitter/mock_resource_emitter/mocks_in", "The number of Mocks lists received on watch channel", "1")
+	mTestingFakesListIn                = stats.Int64("testing.solo.io/emitter/fake_resource_emitter/fakes_in", "The number of Fakes lists received on watch channel", "1")
+	mTestingAnothermockresourcesListIn = stats.Int64("testing.solo.io/emitter/another_mock_resource_emitter/anothermockresources_in", "The number of Anothermockresources lists received on watch channel", "1")
+	mTestingClusterresourcesListIn     = stats.Int64("testing.solo.io/emitter/cluster_resource_emitter/clusterresources_in", "The number of Clusterresources lists received on watch channel", "1")
+	mTestingMctsListIn                 = stats.Int64("testing.solo.io/emitter/mock_custom_type_emitter/mcts_in", "The number of mcts lists received on watch channel", "1")
+	mTestingPodsListIn                 = stats.Int64("testing.solo.io/emitter/pod_emitter/pods_in", "The number of pods lists received on watch channel", "1")
 
 	// views for snapshots
 	testingsnapshotInView = &view.View{
-		Name:        "testing/emitter/snap_in",
+		Name:        "testing.solo.io/emitter/snap_in",
 		Measure:     mTestingSnapshotIn,
 		Description: "The number of snapshots updates coming in",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	testingsnapshotOutView = &view.View{
-		Name:        "testing/emitter/snap_out",
+		Name:        "testing.solo.io/emitter/snap_out",
 		Measure:     mTestingSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	testingsnapshotMissedView = &view.View{
-		Name:        "testing/emitter/snap_missed",
+		Name:        "testing.solo.io/emitter/snap_missed",
 		Measure:     mTestingSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
@@ -59,7 +59,7 @@ var (
 
 	// views for resource watches
 	testingMocksListInView = &view.View{
-		Name:        "testing/mock_resource_emitter/mocks_in",
+		Name:        "testing.solo.io/emitter/mock_resource_emitter/mocks_in",
 		Measure:     mTestingMocksListIn,
 		Description: "The number of Mocks lists received on watch channel.",
 		Aggregation: view.Count(),
@@ -68,7 +68,7 @@ var (
 		},
 	}
 	testingFakesListInView = &view.View{
-		Name:        "testing/fake_resource_emitter/fakes_in",
+		Name:        "testing.solo.io/emitter/fake_resource_emitter/fakes_in",
 		Measure:     mTestingFakesListIn,
 		Description: "The number of Fakes lists received on watch channel.",
 		Aggregation: view.Count(),
@@ -77,7 +77,7 @@ var (
 		},
 	}
 	testingAnothermockresourcesListInView = &view.View{
-		Name:        "testing/another_mock_resource_emitter/anothermockresources_in",
+		Name:        "testing.solo.io/emitter/another_mock_resource_emitter/anothermockresources_in",
 		Measure:     mTestingAnothermockresourcesListIn,
 		Description: "The number of Anothermockresources lists received on watch channel.",
 		Aggregation: view.Count(),
@@ -86,14 +86,14 @@ var (
 		},
 	}
 	testingClusterresourcesListInView = &view.View{
-		Name:        "testing/cluster_resource_emitter/clusterresources_in",
+		Name:        "testing.solo.io/emitter/cluster_resource_emitter/clusterresources_in",
 		Measure:     mTestingClusterresourcesListIn,
 		Description: "The number of Clusterresources lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	testingMctsListInView = &view.View{
-		Name:        "testing/mock_custom_type_emitter/mcts_in",
+		Name:        "testing.solo.io/emitter/mock_custom_type_emitter/mcts_in",
 		Measure:     mTestingMctsListIn,
 		Description: "The number of mcts lists received on watch channel.",
 		Aggregation: view.Count(),
@@ -102,7 +102,7 @@ var (
 		},
 	}
 	testingPodsListInView = &view.View{
-		Name:        "testing/pod_emitter/pods_in",
+		Name:        "testing.solo.io/emitter/pod_emitter/pods_in",
 		Measure:     mTestingPodsListIn,
 		Description: "The number of pods lists received on watch channel.",
 		Aggregation: view.Count(),

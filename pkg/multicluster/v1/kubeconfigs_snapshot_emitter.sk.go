@@ -17,31 +17,31 @@ import (
 
 var (
 	// metrics for sending snapshots
-	mKubeconfigsSnapshotIn     = stats.Int64("$emitter_prefix/snap_in", "The number of snapshots in", "1")
-	mKubeconfigsSnapshotOut    = stats.Int64("$emitter_prefix/snap_out", "The number of snapshots out", "1")
-	mKubeconfigsSnapshotMissed = stats.Int64("$emitter_prefix/snap_missed", "The number of snapshots missed", "1")
+	mKubeconfigsSnapshotIn     = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_in", "The number of snapshots in", "1")
+	mKubeconfigsSnapshotOut    = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mKubeconfigsSnapshotMissed = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// metrics for resource watches
 
-	mKubeconfigsKubeconfigsListIn = stats.Int64("Kubeconfigs/kube_config_emitter/kubeconfigs_in", "The number of kubeconfigs lists received on watch channel", "1")
+	mKubeconfigsKubeconfigsListIn = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/kube_config_emitter/kubeconfigs_in", "The number of kubeconfigs lists received on watch channel", "1")
 
 	// views for snapshots
 	kubeconfigssnapshotInView = &view.View{
-		Name:        "kubeconfigs/emitter/snap_in",
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/snap_in",
 		Measure:     mKubeconfigsSnapshotIn,
 		Description: "The number of snapshots updates coming in",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	kubeconfigssnapshotOutView = &view.View{
-		Name:        "kubeconfigs/emitter/snap_out",
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/snap_out",
 		Measure:     mKubeconfigsSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	kubeconfigssnapshotMissedView = &view.View{
-		Name:        "kubeconfigs/emitter/snap_missed",
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/snap_missed",
 		Measure:     mKubeconfigsSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
@@ -52,7 +52,7 @@ var (
 
 	// views for resource watches
 	kubeconfigsKubeconfigsListInView = &view.View{
-		Name:        "kubeconfigs/kube_config_emitter/kubeconfigs_in",
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/kube_config_emitter/kubeconfigs_in",
 		Measure:     mKubeconfigsKubeconfigsListIn,
 		Description: "The number of kubeconfigs lists received on watch channel.",
 		Aggregation: view.Count(),

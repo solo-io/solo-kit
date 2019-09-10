@@ -30,19 +30,20 @@ import (
 	"github.com/solo-io/go-utils/errutils"
 )
 
-{{ $emitter_prefix := (print (snake .GoName) "/emitter") }}
+{{ $emitter_prefix := (print (snake .Name) "/emitter") }}
 
 var (
 	// metrics for sending snapshots
-	m{{ upper_camel .GoName }}SnapshotIn  = stats.Int64("$emitter_prefix/snap_in", "The number of snapshots in", "1")
-	m{{ upper_camel .GoName }}SnapshotOut = stats.Int64("$emitter_prefix/snap_out", "The number of snapshots out", "1")
-	m{{ upper_camel  .GoName }}SnapshotMissed = stats.Int64("$emitter_prefix/snap_missed", "The number of snapshots missed", "1")
+	m{{ upper_camel .GoName }}SnapshotIn  = stats.Int64("{{ $emitter_prefix }}/snap_in", "The number of snapshots in", "1")
+	m{{ upper_camel .GoName }}SnapshotOut = stats.Int64("{{ $emitter_prefix }}/snap_out", "The number of snapshots out", "1")
+	m{{ upper_camel  .GoName }}SnapshotMissed = stats.Int64("{{ $emitter_prefix }}/snap_missed", "The number of snapshots missed", "1")
 
 	// metrics for resource watches
 {{ $resource_group := upper_camel .GoName }}
-{{ $resource_group_lower := lower_camel .GoName }}
 {{- range .Resources}}
-	m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn  = stats.Int64("{{ $resource_group }}/{{ snake .Name }}_emitter/{{ snake .PluralName }}_in", "The number of {{ .PluralName }} lists received on watch channel", "1")
+	m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn  = stats.Int64(
+		"{{ $emitter_prefix }}/{{ snake .PluralName }}_in", 
+		"The number of {{ .Name }} lists received on watch channel", "1")
 {{- end}}
 
 	// views for snapshots
@@ -76,9 +77,9 @@ var (
 	// views for resource watches
 {{- range .Resources}}
 	{{ lower_camel $resource_group }}{{ upper_camel .PluralName }}ListInView = &view.View{
-			Name:        "{{ snake $resource_group }}/{{ snake .Name }}_emitter/{{ snake .PluralName }}_in",
+			Name:        "{{ $emitter_prefix }}/{{ snake .PluralName }}_in",
 			Measure:     m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn,
-			Description: "The number of {{ .PluralName }} lists received on watch channel.",
+			Description: "The number of {{ .Name }} lists received on watch channel.",
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{
 {{- if (not .ClusterScoped) }}

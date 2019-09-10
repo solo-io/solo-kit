@@ -17,31 +17,31 @@ import (
 
 var (
 	// metrics for sending snapshots
-	mTestingSnapshotIn     = stats.Int64("$emitter_prefix/snap_in", "The number of snapshots in", "1")
-	mTestingSnapshotOut    = stats.Int64("$emitter_prefix/snap_out", "The number of snapshots out", "1")
-	mTestingSnapshotMissed = stats.Int64("$emitter_prefix/snap_missed", "The number of snapshots missed", "1")
+	mTestingSnapshotIn     = stats.Int64("testing.solo.io/emitter/snap_in", "The number of snapshots in", "1")
+	mTestingSnapshotOut    = stats.Int64("testing.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mTestingSnapshotMissed = stats.Int64("testing.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
 
 	// metrics for resource watches
 
-	mTestingMocksListIn = stats.Int64("Testing/mock_resource_emitter/mocks_in", "The number of Mocks lists received on watch channel", "1")
+	mTestingMocksListIn = stats.Int64("testing.solo.io/emitter/mock_resource_emitter/mocks_in", "The number of Mocks lists received on watch channel", "1")
 
 	// views for snapshots
 	testingsnapshotInView = &view.View{
-		Name:        "testing/emitter/snap_in",
+		Name:        "testing.solo.io/emitter/snap_in",
 		Measure:     mTestingSnapshotIn,
 		Description: "The number of snapshots updates coming in",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	testingsnapshotOutView = &view.View{
-		Name:        "testing/emitter/snap_out",
+		Name:        "testing.solo.io/emitter/snap_out",
 		Measure:     mTestingSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	testingsnapshotMissedView = &view.View{
-		Name:        "testing/emitter/snap_missed",
+		Name:        "testing.solo.io/emitter/snap_missed",
 		Measure:     mTestingSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
@@ -52,7 +52,7 @@ var (
 
 	// views for resource watches
 	testingMocksListInView = &view.View{
-		Name:        "testing/mock_resource_emitter/mocks_in",
+		Name:        "testing.solo.io/emitter/mock_resource_emitter/mocks_in",
 		Measure:     mTestingMocksListIn,
 		Description: "The number of Mocks lists received on watch channel.",
 		Aggregation: view.Count(),
