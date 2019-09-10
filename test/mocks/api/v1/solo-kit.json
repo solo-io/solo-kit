@@ -2,7 +2,6 @@
   "title": "Solo-Kit Testing",
   "name": "testing.solo.io",
   "version": "v1",
-  "docs_dir": "../doc",
   "imports": [
     "github.com/solo-io/solo-kit/api/external/kubernetes"
   ],
