@@ -48,7 +48,7 @@ var (
 		TagKeys:     []tag.Key{},
 	}
 
-	namespaceKey, _ = tag.NewKey("namespace")
+	testingNamespaceKey, _ = tag.NewKey("namespace")
 
 	// views for resource watches
 	testingMocksListInView = &view.View{
@@ -57,7 +57,7 @@ var (
 		Description: "The number of Mocks lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
-			"namespace",
+			testingNamespaceKey,
 		},
 	}
 )
@@ -216,7 +216,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(namespaceKey, namespace)},
+					[]tag.Mutator{tag.Insert(testingNamespaceKey, namespace)},
 					mTestingMocksListIn.M(1),
 				)
 
