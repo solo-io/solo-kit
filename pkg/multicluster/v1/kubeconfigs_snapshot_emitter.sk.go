@@ -16,16 +16,10 @@ import (
 )
 
 var (
-	// metrics for sending snapshots
 	mKubeconfigsSnapshotIn     = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_in", "The number of snapshots in", "1")
 	mKubeconfigsSnapshotOut    = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_out", "The number of snapshots out", "1")
 	mKubeconfigsSnapshotMissed = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
-
-	// metrics for resource watches
-
-	mKubeconfigsKubeconfigsListIn = stats.Int64(
-		"kubeconfigs.multicluster.solo.io/emitter/kubeconfigs_in",
-		"The number of KubeConfig lists received on watch channel", "1")
+	mKubeconfigsResourcesIn    = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
 
 	// views for snapshots
 	kubeconfigssnapshotInView = &view.View{
@@ -51,15 +45,16 @@ var (
 	}
 
 	kubeconfigsNamespaceKey, _ = tag.NewKey("namespace")
+	kubeconfigsResourceKey, _  = tag.NewKey("resource")
 
-	// views for resource watches
-	kubeconfigsKubeconfigsListInView = &view.View{
-		Name:        "kubeconfigs.multicluster.solo.io/emitter/kubeconfigs_in",
-		Measure:     mKubeconfigsKubeconfigsListIn,
-		Description: "The number of KubeConfig lists received on watch channel.",
+	kubeconfigsResourcesInView = &view.View{
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/resources_in",
+		Measure:     mKubeconfigsResourcesIn,
+		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			kubeconfigsNamespaceKey,
+			kubeconfigsResourceKey,
 		},
 	}
 )
@@ -69,7 +64,7 @@ func init() {
 		kubeconfigssnapshotInView,
 		kubeconfigssnapshotOutView,
 		kubeconfigssnapshotMissedView,
-		kubeconfigsKubeconfigsListInView,
+		kubeconfigsResourcesInView,
 	)
 }
 
@@ -218,8 +213,11 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(kubeconfigsNamespaceKey, namespace)},
-					mKubeconfigsKubeconfigsListIn.M(1),
+					[]tag.Mutator{
+						tag.Insert(kubeconfigsNamespaceKey, namespace),
+						tag.Insert(kubeconfigsResourceKey, "kube_config"),
+					},
+					mKubeconfigsResourcesIn.M(1),
 				)
 
 				// merge lists by namespace

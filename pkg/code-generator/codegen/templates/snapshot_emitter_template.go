@@ -31,25 +31,17 @@ import (
 )
 
 {{ $emitter_prefix := (print (snake .Name) "/emitter") }}
-
-var (
-	// metrics for sending snapshots
-	m{{ upper_camel .GoName }}SnapshotIn  = stats.Int64("{{ $emitter_prefix }}/snap_in", "The number of snapshots in", "1")
-	m{{ upper_camel .GoName }}SnapshotOut = stats.Int64("{{ $emitter_prefix }}/snap_out", "The number of snapshots out", "1")
-	m{{ upper_camel  .GoName }}SnapshotMissed = stats.Int64("{{ $emitter_prefix }}/snap_missed", "The number of snapshots missed", "1")
-
-	// metrics for resource watches
 {{ $resource_group := upper_camel .GoName }}
-{{- range .Resources}}
-	m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn  = stats.Int64(
-		"{{ $emitter_prefix }}/{{ snake .PluralName }}_in", 
-		"The number of {{ .Name }} lists received on watch channel", "1")
-{{- end}}
+var (
+	m{{ $resource_group }}SnapshotIn  = stats.Int64("{{ $emitter_prefix }}/snap_in", "The number of snapshots in", "1")
+	m{{ $resource_group }}SnapshotOut = stats.Int64("{{ $emitter_prefix }}/snap_out", "The number of snapshots out", "1")
+	m{{ $resource_group }}SnapshotMissed = stats.Int64("{{ $emitter_prefix }}/snap_missed", "The number of snapshots missed", "1")
+	m{{ $resource_group }}ResourcesIn = stats.Int64("{{ $emitter_prefix }}/resources_in", "The number of resource lists received on open watch channels", "1")
 
 	// views for snapshots
 	{{ lower_camel .GoName }}snapshotInView = &view.View{
 		Name:        "{{ $emitter_prefix }}/snap_in",
-		Measure:     m{{ upper_camel .GoName }}SnapshotIn,
+		Measure:     m{{ $resource_group }}SnapshotIn,
 		Description: "The number of snapshots updates coming in",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{
@@ -57,7 +49,7 @@ var (
 	}
 	{{ lower_camel .GoName }}snapshotOutView = &view.View{
 		Name:        "{{ $emitter_prefix }}/snap_out",
-		Measure:     m{{ upper_camel .GoName }}SnapshotOut,
+		Measure:     m{{ $resource_group }}SnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{
@@ -65,7 +57,7 @@ var (
 	}
 	{{ lower_camel .GoName }}snapshotMissedView = &view.View{
 			Name:        "{{ $emitter_prefix }}/snap_missed",
-			Measure:     m{{ upper_camel .GoName }}SnapshotMissed,
+			Measure:     m{{ $resource_group }}SnapshotMissed,
 			Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{
@@ -73,21 +65,18 @@ var (
 	}
 
 	{{ lower_camel $resource_group }}NamespaceKey, _ = tag.NewKey("namespace")
+	{{ lower_camel $resource_group }}ResourceKey, _ = tag.NewKey("resource")
 
-	// views for resource watches
-{{- range .Resources}}
-	{{ lower_camel $resource_group }}{{ upper_camel .PluralName }}ListInView = &view.View{
-			Name:        "{{ $emitter_prefix }}/{{ snake .PluralName }}_in",
-			Measure:     m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn,
-			Description: "The number of {{ .Name }} lists received on watch channel.",
+	{{ lower_camel .GoName }}ResourcesInView = &view.View{
+			Name:        "{{ $emitter_prefix }}/resources_in",
+			Measure:     m{{ $resource_group }}ResourcesIn,
+			Description: "The number of resource lists received on open watch channels",
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{
-{{- if (not .ClusterScoped) }}
 				{{ lower_camel $resource_group }}NamespaceKey,
-{{- end}}
+				{{ lower_camel $resource_group }}ResourceKey,
 			},
 	}
-{{- end}}
 
 )
 
@@ -96,9 +85,7 @@ func init() {
 		{{ lower_camel .GoName }}snapshotInView, 
 		{{ lower_camel .GoName }}snapshotOutView, 
 		{{ lower_camel .GoName }}snapshotMissedView,
-{{- range .Resources}}
-		{{ lower_camel $resource_group }}{{ upper_camel .PluralName }}ListInView,
-{{- end}}
+		{{ lower_camel .GoName }}ResourcesInView,
 	)
 }
 
@@ -298,9 +285,13 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}Chan:
 				record()
 
-				stats.Record(
+				stats.RecordWithTags(
 					ctx,
-					m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn.M(1),
+					[]tag.Mutator{
+						tag.Insert({{ lower_camel $resource_group }}NamespaceKey, "cluster-scoped"),
+						tag.Insert({{ lower_camel $resource_group }}ResourceKey, "{{ snake .Name }}"),
+					},
+					m{{ $resource_group }}ResourcesIn.M(1),
 				)
 
 				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List
@@ -312,8 +303,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert({{ lower_camel $resource_group }}NamespaceKey, namespace)},
-					m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn.M(1),
+					[]tag.Mutator{
+						tag.Insert({{ lower_camel $resource_group }}NamespaceKey, namespace),
+						tag.Insert({{ lower_camel $resource_group }}ResourceKey, "{{ snake .Name }}"),
+					},
+					m{{ $resource_group }}ResourcesIn.M(1),
 				)
 
 				// merge lists by namespace
