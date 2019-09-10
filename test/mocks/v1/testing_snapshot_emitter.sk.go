@@ -55,27 +55,35 @@ var (
 		TagKeys:     []tag.Key{},
 	}
 
+	namespaceKey, _ = tag.NewKey("namespace")
+
 	// views for resource watches
 	testingMocksListInView = &view.View{
 		Name:        "testing/mock_resource_emitter/mocks_in",
 		Measure:     mTestingMocksListIn,
 		Description: "The number of Mocks lists received on watch channel.",
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{},
+		TagKeys: []tag.Key{
+			"namespace",
+		},
 	}
 	testingFakesListInView = &view.View{
 		Name:        "testing/fake_resource_emitter/fakes_in",
 		Measure:     mTestingFakesListIn,
 		Description: "The number of Fakes lists received on watch channel.",
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{},
+		TagKeys: []tag.Key{
+			"namespace",
+		},
 	}
 	testingAnothermockresourcesListInView = &view.View{
 		Name:        "testing/another_mock_resource_emitter/anothermockresources_in",
 		Measure:     mTestingAnothermockresourcesListIn,
 		Description: "The number of Anothermockresources lists received on watch channel.",
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{},
+		TagKeys: []tag.Key{
+			"namespace",
+		},
 	}
 	testingClusterresourcesListInView = &view.View{
 		Name:        "testing/cluster_resource_emitter/clusterresources_in",
@@ -89,14 +97,18 @@ var (
 		Measure:     mTestingMctsListIn,
 		Description: "The number of mcts lists received on watch channel.",
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{},
+		TagKeys: []tag.Key{
+			"namespace",
+		},
 	}
 	testingPodsListInView = &view.View{
 		Name:        "testing/pod_emitter/pods_in",
 		Measure:     mTestingPodsListIn,
 		Description: "The number of pods lists received on watch channel.",
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{},
+		TagKeys: []tag.Key{
+			"namespace",
+		},
 	}
 )
 
@@ -465,7 +477,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					[]tag.Mutator{tag.Insert(namespaceKey, namespace)},
 					mTestingMocksListIn.M(1),
 				)
 
@@ -483,7 +495,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					[]tag.Mutator{tag.Insert(namespaceKey, namespace)},
 					mTestingFakesListIn.M(1),
 				)
 
@@ -501,7 +513,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					[]tag.Mutator{tag.Insert(namespaceKey, namespace)},
 					mTestingAnothermockresourcesListIn.M(1),
 				)
 
@@ -515,9 +527,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			case clusterResourceList := <-clusterResourceChan:
 				record()
 
-				stats.RecordWithTags(
+				stats.Record(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), "cluster_scoped")},
 					mTestingClusterresourcesListIn.M(1),
 				)
 
@@ -529,7 +540,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					[]tag.Mutator{tag.Insert(namespaceKey, namespace)},
 					mTestingMctsListIn.M(1),
 				)
 
@@ -547,7 +558,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					[]tag.Mutator{tag.Insert(namespaceKey, namespace)},
 					mTestingPodsListIn.M(1),
 				)
 

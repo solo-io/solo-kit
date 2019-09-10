@@ -71,6 +71,8 @@ var (
 			},
 	}
 
+	{{ lower_camel $resource_group }}NamespaceKey, _ = tag.NewKey("namespace")
+
 	// views for resource watches
 {{- range .Resources}}
 	{{ lower_camel $resource_group }}{{ upper_camel .PluralName }}ListInView = &view.View{
@@ -79,6 +81,9 @@ var (
 			Description: "The number of {{ .PluralName }} lists received on watch channel.",
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{
+{{- if (not .ClusterScoped) }}
+				{{ lower_camel $resource_group }}NamespaceKey,
+{{- end}}
 			},
 	}
 {{- end}}
@@ -292,9 +297,8 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}Chan:
 				record()
 
-				stats.RecordWithTags(
+				stats.Record(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), "cluster_scoped")},
 					m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn.M(1),
 				)
 
@@ -307,7 +311,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					[]tag.Mutator{tag.Insert({{ lower_camel $resource_group }}NamespaceKey, namespace)},
 					m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn.M(1),
 				)
 

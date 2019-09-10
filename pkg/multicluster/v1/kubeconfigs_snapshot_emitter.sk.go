@@ -48,13 +48,17 @@ var (
 		TagKeys:     []tag.Key{},
 	}
 
+	namespaceKey, _ = tag.NewKey("namespace")
+
 	// views for resource watches
 	kubeconfigsKubeconfigsListInView = &view.View{
 		Name:        "kubeconfigs/kube_config_emitter/kubeconfigs_in",
 		Measure:     mKubeconfigsKubeconfigsListIn,
 		Description: "The number of kubeconfigs lists received on watch channel.",
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{},
+		TagKeys: []tag.Key{
+			"namespace",
+		},
 	}
 )
 
@@ -212,7 +216,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 
 				stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					[]tag.Mutator{tag.Insert(namespaceKey, namespace)},
 					mKubeconfigsKubeconfigsListIn.M(1),
 				)
 
