@@ -20,18 +20,33 @@ import (
 )
 
 var (
-	mTestingSnapshotIn     = stats.Int64("testing.solo.io/emitter/snap_in", "The number of snapshots in", "1")
+	// Deprecated. See mTestingResourcesIn
+	mTestingSnapshotIn = stats.Int64("testing.solo.io/emitter/snap_in", "Deprecated. Use testing.solo.io/emitter/resources_in. The number of snapshots in", "1")
+
+	// metrics for emitter
+	mTestingResourcesIn    = stats.Int64("testing.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
 	mTestingSnapshotOut    = stats.Int64("testing.solo.io/emitter/snap_out", "The number of snapshots out", "1")
 	mTestingSnapshotMissed = stats.Int64("testing.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
-	mTestingResourcesIn    = stats.Int64("testing.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
 
-	// views for snapshots
+	// views for emitter
+	// deprecated: see testingResourcesInView
 	testingsnapshotInView = &view.View{
 		Name:        "testing.solo.io/emitter/snap_in",
 		Measure:     mTestingSnapshotIn,
-		Description: "The number of snapshots updates coming in",
+		Description: "Deprecated. Use testing.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
+	}
+
+	testingResourcesInView = &view.View{
+		Name:        "testing.solo.io/emitter/resources_in",
+		Measure:     mTestingResourcesIn,
+		Description: "The number of resource lists received on open watch channels",
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{
+			skstats.NamespaceKey,
+			skstats.ResourceKey,
+		},
 	}
 	testingsnapshotOutView = &view.View{
 		Name:        "testing.solo.io/emitter/snap_out",
@@ -46,17 +61,6 @@ var (
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
-	}
-
-	testingResourcesInView = &view.View{
-		Name:        "testing.solo.io/emitter/resources_in",
-		Measure:     mTestingResourcesIn,
-		Description: "The number of resource lists received on open watch channels",
-		Aggregation: view.Count(),
-		TagKeys: []tag.Key{
-			skstats.NamespaceKey,
-			skstats.ResourceKey,
-		},
 	}
 )
 
@@ -257,13 +261,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				namespace := mockResourceNamespacedList.namespace
 
-				stats.RecordWithTags(
+				skstats.IncrementResourceCount(
 					ctx,
-					[]tag.Mutator{
-						tag.Insert(skstats.NamespaceKey, namespace),
-						tag.Insert(skstats.ResourceKey, "mock_resource"),
-					},
-					mTestingResourcesIn.M(1),
+					namespace,
+					"mock_resource",
+					mTestingResourcesIn,
 				)
 
 				// merge lists by namespace
@@ -278,13 +280,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				namespace := fakeResourceNamespacedList.namespace
 
-				stats.RecordWithTags(
+				skstats.IncrementResourceCount(
 					ctx,
-					[]tag.Mutator{
-						tag.Insert(skstats.NamespaceKey, namespace),
-						tag.Insert(skstats.ResourceKey, "fake_resource"),
-					},
-					mTestingResourcesIn.M(1),
+					namespace,
+					"fake_resource",
+					mTestingResourcesIn,
 				)
 
 				// merge lists by namespace

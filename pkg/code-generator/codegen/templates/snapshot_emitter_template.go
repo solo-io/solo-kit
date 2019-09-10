@@ -35,19 +35,34 @@ import (
 {{ $emitter_prefix := (print (snake .Name) "/emitter") }}
 {{ $resource_group := upper_camel .GoName }}
 var (
-	m{{ $resource_group }}SnapshotIn  = stats.Int64("{{ $emitter_prefix }}/snap_in", "The number of snapshots in", "1")
+	// Deprecated. See m{{ $resource_group }}ResourcesIn
+	m{{ $resource_group }}SnapshotIn  = stats.Int64("{{ $emitter_prefix }}/snap_in", "Deprecated. Use {{ $emitter_prefix }}/resources_in. The number of snapshots in", "1")
+	
+	// metrics for emitter
+	m{{ $resource_group }}ResourcesIn = stats.Int64("{{ $emitter_prefix }}/resources_in", "The number of resource lists received on open watch channels", "1")
 	m{{ $resource_group }}SnapshotOut = stats.Int64("{{ $emitter_prefix }}/snap_out", "The number of snapshots out", "1")
 	m{{ $resource_group }}SnapshotMissed = stats.Int64("{{ $emitter_prefix }}/snap_missed", "The number of snapshots missed", "1")
-	m{{ $resource_group }}ResourcesIn = stats.Int64("{{ $emitter_prefix }}/resources_in", "The number of resource lists received on open watch channels", "1")
 
-	// views for snapshots
+	// views for emitter
+	// deprecated: see {{ lower_camel .GoName }}ResourcesInView
 	{{ lower_camel .GoName }}snapshotInView = &view.View{
 		Name:        "{{ $emitter_prefix }}/snap_in",
 		Measure:     m{{ $resource_group }}SnapshotIn,
-		Description: "The number of snapshots updates coming in",
+		Description: "Deprecated. Use {{ $emitter_prefix }}/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{
 		},
+	}
+
+	{{ lower_camel .GoName }}ResourcesInView = &view.View{
+			Name:        "{{ $emitter_prefix }}/resources_in",
+			Measure:     m{{ $resource_group }}ResourcesIn,
+			Description: "The number of resource lists received on open watch channels",
+			Aggregation: view.Count(),
+			TagKeys:     []tag.Key{
+				skstats.NamespaceKey,
+				skstats.ResourceKey,
+			},
 	}
 	{{ lower_camel .GoName }}snapshotOutView = &view.View{
 		Name:        "{{ $emitter_prefix }}/snap_out",
@@ -66,16 +81,6 @@ var (
 			},
 	}
 
-	{{ lower_camel .GoName }}ResourcesInView = &view.View{
-			Name:        "{{ $emitter_prefix }}/resources_in",
-			Measure:     m{{ $resource_group }}ResourcesIn,
-			Description: "The number of resource lists received on open watch channels",
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{
-				skstats.NamespaceKey,
-				skstats.ResourceKey,
-			},
-	}
 
 )
 
@@ -252,10 +257,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			sentSnapshot := currentSnapshot.Clone()
 			select {
 			case snapshots <- &sentSnapshot:
-				stats.Record(ctx, m{{ .GoName }}SnapshotOut.M(1))
+				stats.Record(ctx, m{{ $resource_group }}SnapshotOut.M(1))
 				previousHash = currentHash
 			default:
-				stats.Record(ctx, m{{ .GoName }}SnapshotMissed.M(1))
+				stats.Record(ctx, m{{ $resource_group }}SnapshotMissed.M(1))
 			}
 		}
 
@@ -266,7 +271,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		{{- end }}
 
 		for {
-			record := func(){stats.Record(ctx, m{{ .GoName }}SnapshotIn.M(1))}
+			record := func(){stats.Record(ctx, m{{ $resource_group }}SnapshotIn.M(1))}
 			
 			select {
 			case <-timer.C:
@@ -284,13 +289,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}Chan:
 				record()
 
-				stats.RecordWithTags(
+				skstats.IncrementResourceCount(
 					ctx,
-					[]tag.Mutator{
-						tag.Insert(skstats.NamespaceKey, "cluster-scoped"),
-						tag.Insert(skstats.ResourceKey, "{{ snake .Name }}"),
-					},
-					m{{ $resource_group }}ResourcesIn.M(1),
+					"<all>",
+					"{{ snake .Name }}",
+					m{{ $resource_group }}ResourcesIn,
 				)
 
 				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List
@@ -300,13 +303,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 				namespace := {{ lower_camel .Name }}NamespacedList.namespace
 
-				stats.RecordWithTags(
+				skstats.IncrementResourceCount(
 					ctx,
-					[]tag.Mutator{
-						tag.Insert(skstats.NamespaceKey, namespace),
-						tag.Insert(skstats.ResourceKey, "{{ snake .Name }}"),
-					},
-					m{{ $resource_group }}ResourcesIn.M(1),
+					namespace,
+					"{{ snake .Name }}",
+					m{{ $resource_group }}ResourcesIn,
 				)
 
 				// merge lists by namespace
