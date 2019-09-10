@@ -20,6 +20,9 @@ message Resource {
     bool cluster_scoped = 3;
     // indicates whether documentation generation has to be skipped for the given resource, defaults to false
     bool skip_docs_gen = 4;
+    // indicates whether annotations should be excluded from the resource's generated hash function.
+    // if set to true, changes in annotations will not cause a new snapshot to be emitted
+    bool skip_hashing_annotations = 5;
 }
 
 extend google.protobuf.FieldOptions {

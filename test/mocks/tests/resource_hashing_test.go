@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
+	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
 )
 
 var _ = Describe("Resource Hashing", func() {
@@ -16,6 +17,18 @@ var _ = Describe("Resource Hashing", func() {
 		snapWithSensitiveChanged := snapWithFields(hashSensitiveField+" changed", hashInsensitiveField)
 		Expect(originalSnap.Hash()).To(Equal(snapWithInsensitiveChanged.Hash()))
 		Expect(originalSnap.Hash()).NotTo(Equal(snapWithSensitiveChanged.Hash()))
+	})
+	Context("skip_hashing_annotations=true", func() {
+		It("ignores the resource meta annotations in the hash", func() {
+			res1 := v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b")
+			res2 := v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b")
+
+			// sanity check
+			Expect(res1.Hash()).To(Equal(res2.Hash()))
+
+			res1.Metadata.Annotations = map[string]string{"ignore": "me"}
+			Expect(res1.Hash()).To(Equal(res2.Hash()))
+		})
 	})
 })
 
