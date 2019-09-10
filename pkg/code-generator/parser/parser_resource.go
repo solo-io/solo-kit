@@ -97,16 +97,17 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 		impPrefix = strings.Replace(impPrefix, ".", "_", -1)
 		impPrefix = strings.Replace(impPrefix, "-", "_", -1)
 		resources = append(resources, &model.Resource{
-			Name:               custom.Type,
-			ShortName:          custom.ShortName,
-			PluralName:         custom.PluralName,
-			GoPackage:          custom.Package,
-			ClusterScoped:      custom.ClusterScoped,
-			CustomImportPrefix: impPrefix,
-			SkipDocsGen:        true,
-			Project:            project,
-			IsCustom:           true,
-			CustomResource:     custom,
+			Name:                   custom.Type,
+			ShortName:              custom.ShortName,
+			PluralName:             custom.PluralName,
+			GoPackage:              custom.Package,
+			ClusterScoped:          custom.ClusterScoped,
+			SkipHashingAnnotations: custom.SkipHashingAnnotations,
+			CustomImportPrefix:     impPrefix,
+			SkipDocsGen:            true,
+			Project:                project,
+			IsCustom:               true,
+			CustomResource:         custom,
 		})
 	}
 
@@ -193,8 +194,8 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 
 	name := msg.GetName()
 	var (
-		shortName, pluralName      string
-		clusterScoped, skipDocsGen bool
+		shortName, pluralName                              string
+		clusterScoped, skipDocsGen, skipHashingAnnotations bool
 	)
 	resourceOpts, err := proto.GetExtension(msg.Options, core.E_Resource)
 	if err != nil {
@@ -220,6 +221,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 		pluralName = res.PluralName
 		clusterScoped = res.ClusterScoped
 		skipDocsGen = res.SkipDocsGen
+		skipHashingAnnotations = res.SkipHashingAnnotations
 	}
 
 	// always make it upper camel
@@ -231,17 +233,18 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 	oneofs := collectOneofs(msg)
 
 	return &model.Resource{
-		Name:          name,
-		ProtoPackage:  msg.GetPackage(),
-		GoPackage:     messageWrapper.GoPackage,
-		ShortName:     shortName,
-		PluralName:    pluralName,
-		HasStatus:     hasStatus,
-		Fields:        fields,
-		Oneofs:        oneofs,
-		ClusterScoped: clusterScoped,
-		SkipDocsGen:   skipDocsGen,
-		Filename:      msg.GetFile().GetName(),
-		Original:      msg,
+		Name:                   name,
+		ProtoPackage:           msg.GetPackage(),
+		GoPackage:              messageWrapper.GoPackage,
+		ShortName:              shortName,
+		PluralName:             pluralName,
+		HasStatus:              hasStatus,
+		Fields:                 fields,
+		Oneofs:                 oneofs,
+		ClusterScoped:          clusterScoped,
+		SkipHashingAnnotations: skipHashingAnnotations,
+		SkipDocsGen:            skipDocsGen,
+		Filename:               msg.GetFile().GetName(),
+		Original:               msg,
 	}, nil
 }

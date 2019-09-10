@@ -61,6 +61,10 @@ func (r *{{ .Name }}) Hash() uint64 {
 
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
+
+		{{- if $.SkipHashingAnnotations }}
+		meta.Annotations = nil
+		{{- end }}
 	})
 
 	return hashutils.HashAll(clone)
@@ -82,6 +86,9 @@ func (r *{{ .Name }}) SetStatus(status core.Status) {
 func (r *{{ .Name }}) Hash() uint64 {
 	metaCopy := r.GetMetadata()
 	metaCopy.ResourceVersion = ""
+	{{- if $.SkipHashingAnnotations }}
+	metaCopy.Annotations = nil
+	{{- end }}
 	return hashutils.HashAll(
 		metaCopy,
 {{- range .Fields }}

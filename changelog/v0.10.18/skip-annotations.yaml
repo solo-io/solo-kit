@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add option to ignore annotations for the purposes of hashing a resource
+    issueLink: https://github.com/solo-io/solo-kit/pull/266

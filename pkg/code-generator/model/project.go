@@ -64,11 +64,11 @@ type CustomResourceConfig struct {
 	// the import path for the Go Type
 	Package string `json:"package"`
 	// the name of the Go Type
-	Type          string `json:"type"`
-	PluralName    string `json:"plural_name"`
-	ShortName     string `json:"short_name"`
-	ClusterScoped bool   `json:"cluster_scoped"`
-
+	Type                   string `json:"type"`
+	PluralName             string `json:"plural_name"`
+	ShortName              string `json:"short_name"`
+	ClusterScoped          bool   `json:"cluster_scoped"`
+	SkipHashingAnnotations bool   `json:"skip_hashing_annotations"`
 	// set by load
 	Imported bool
 }
@@ -101,6 +101,8 @@ type Resource struct {
 	IsCustom           bool                 // if true, this will be treated as a custom resource without a proto file behind it
 	CustomResource     CustomResourceConfig // this struct will be empty unless IsCustom is true
 	CustomImportPrefix string               // import prefix for the struct type the generated wrapper will wrap
+
+	SkipHashingAnnotations bool // if true, zero out annotations in the generated hash func
 
 	Fields []*Field
 	Oneofs []*Oneof
