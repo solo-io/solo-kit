@@ -23,7 +23,9 @@ var (
 
 	// metrics for resource watches
 
-	mTestingMocksListIn = stats.Int64("testing.solo.io/emitter/mock_resource_emitter/mocks_in", "The number of Mocks lists received on watch channel", "1")
+	mTestingMocksListIn = stats.Int64(
+		"testing.solo.io/emitter/mocks_in",
+		"The number of MockResource lists received on watch channel", "1")
 
 	// views for snapshots
 	testingsnapshotInView = &view.View{
@@ -52,9 +54,9 @@ var (
 
 	// views for resource watches
 	testingMocksListInView = &view.View{
-		Name:        "testing.solo.io/emitter/mock_resource_emitter/mocks_in",
+		Name:        "testing.solo.io/emitter/mocks_in",
 		Measure:     mTestingMocksListIn,
-		Description: "The number of Mocks lists received on watch channel.",
+		Description: "The number of MockResource lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			testingNamespaceKey,

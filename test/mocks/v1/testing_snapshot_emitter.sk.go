@@ -25,12 +25,24 @@ var (
 
 	// metrics for resource watches
 
-	mTestingMocksListIn                = stats.Int64("testing.solo.io/emitter/mock_resource_emitter/mocks_in", "The number of Mocks lists received on watch channel", "1")
-	mTestingFakesListIn                = stats.Int64("testing.solo.io/emitter/fake_resource_emitter/fakes_in", "The number of Fakes lists received on watch channel", "1")
-	mTestingAnothermockresourcesListIn = stats.Int64("testing.solo.io/emitter/another_mock_resource_emitter/anothermockresources_in", "The number of Anothermockresources lists received on watch channel", "1")
-	mTestingClusterresourcesListIn     = stats.Int64("testing.solo.io/emitter/cluster_resource_emitter/clusterresources_in", "The number of Clusterresources lists received on watch channel", "1")
-	mTestingMctsListIn                 = stats.Int64("testing.solo.io/emitter/mock_custom_type_emitter/mcts_in", "The number of mcts lists received on watch channel", "1")
-	mTestingPodsListIn                 = stats.Int64("testing.solo.io/emitter/pod_emitter/pods_in", "The number of pods lists received on watch channel", "1")
+	mTestingMocksListIn = stats.Int64(
+		"testing.solo.io/emitter/mocks_in",
+		"The number of MockResource lists received on watch channel", "1")
+	mTestingFakesListIn = stats.Int64(
+		"testing.solo.io/emitter/fakes_in",
+		"The number of FakeResource lists received on watch channel", "1")
+	mTestingAnothermockresourcesListIn = stats.Int64(
+		"testing.solo.io/emitter/anothermockresources_in",
+		"The number of AnotherMockResource lists received on watch channel", "1")
+	mTestingClusterresourcesListIn = stats.Int64(
+		"testing.solo.io/emitter/clusterresources_in",
+		"The number of ClusterResource lists received on watch channel", "1")
+	mTestingMctsListIn = stats.Int64(
+		"testing.solo.io/emitter/mcts_in",
+		"The number of MockCustomType lists received on watch channel", "1")
+	mTestingPodsListIn = stats.Int64(
+		"testing.solo.io/emitter/pods_in",
+		"The number of Pod lists received on watch channel", "1")
 
 	// views for snapshots
 	testingsnapshotInView = &view.View{
@@ -59,52 +71,52 @@ var (
 
 	// views for resource watches
 	testingMocksListInView = &view.View{
-		Name:        "testing.solo.io/emitter/mock_resource_emitter/mocks_in",
+		Name:        "testing.solo.io/emitter/mocks_in",
 		Measure:     mTestingMocksListIn,
-		Description: "The number of Mocks lists received on watch channel.",
+		Description: "The number of MockResource lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			testingNamespaceKey,
 		},
 	}
 	testingFakesListInView = &view.View{
-		Name:        "testing.solo.io/emitter/fake_resource_emitter/fakes_in",
+		Name:        "testing.solo.io/emitter/fakes_in",
 		Measure:     mTestingFakesListIn,
-		Description: "The number of Fakes lists received on watch channel.",
+		Description: "The number of FakeResource lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			testingNamespaceKey,
 		},
 	}
 	testingAnothermockresourcesListInView = &view.View{
-		Name:        "testing.solo.io/emitter/another_mock_resource_emitter/anothermockresources_in",
+		Name:        "testing.solo.io/emitter/anothermockresources_in",
 		Measure:     mTestingAnothermockresourcesListIn,
-		Description: "The number of Anothermockresources lists received on watch channel.",
+		Description: "The number of AnotherMockResource lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			testingNamespaceKey,
 		},
 	}
 	testingClusterresourcesListInView = &view.View{
-		Name:        "testing.solo.io/emitter/cluster_resource_emitter/clusterresources_in",
+		Name:        "testing.solo.io/emitter/clusterresources_in",
 		Measure:     mTestingClusterresourcesListIn,
-		Description: "The number of Clusterresources lists received on watch channel.",
+		Description: "The number of ClusterResource lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	testingMctsListInView = &view.View{
-		Name:        "testing.solo.io/emitter/mock_custom_type_emitter/mcts_in",
+		Name:        "testing.solo.io/emitter/mcts_in",
 		Measure:     mTestingMctsListIn,
-		Description: "The number of mcts lists received on watch channel.",
+		Description: "The number of MockCustomType lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			testingNamespaceKey,
 		},
 	}
 	testingPodsListInView = &view.View{
-		Name:        "testing.solo.io/emitter/pod_emitter/pods_in",
+		Name:        "testing.solo.io/emitter/pods_in",
 		Measure:     mTestingPodsListIn,
-		Description: "The number of pods lists received on watch channel.",
+		Description: "The number of Pod lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			testingNamespaceKey,

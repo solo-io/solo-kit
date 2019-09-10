@@ -23,7 +23,9 @@ var (
 
 	// metrics for resource watches
 
-	mKubeconfigsKubeconfigsListIn = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/kube_config_emitter/kubeconfigs_in", "The number of kubeconfigs lists received on watch channel", "1")
+	mKubeconfigsKubeconfigsListIn = stats.Int64(
+		"kubeconfigs.multicluster.solo.io/emitter/kubeconfigs_in",
+		"The number of KubeConfig lists received on watch channel", "1")
 
 	// views for snapshots
 	kubeconfigssnapshotInView = &view.View{
@@ -52,9 +54,9 @@ var (
 
 	// views for resource watches
 	kubeconfigsKubeconfigsListInView = &view.View{
-		Name:        "kubeconfigs.multicluster.solo.io/emitter/kube_config_emitter/kubeconfigs_in",
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/kubeconfigs_in",
 		Measure:     mKubeconfigsKubeconfigsListIn,
-		Description: "The number of kubeconfigs lists received on watch channel.",
+		Description: "The number of KubeConfig lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
 			kubeconfigsNamespaceKey,
