@@ -55,6 +55,7 @@ func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) tem
 		"para":               gendoc.ParaFilter,
 		"nobr":               gendoc.NoBrFilter,
 		"fieldType":          fieldType(project),
+		"getOneofMessage":    getOneofMessage,
 		"yamlType":           yamlType,
 		"noescape":           noEscape,
 		"linkForField":       linkForField(project, docsOptions),
@@ -178,6 +179,41 @@ func yamlType(longType, label string) string {
 
 func noEscape(s string) htmltemplate.HTML {
 	return htmltemplate.HTML(s)
+}
+
+func getOneofMessage(field *protokit.FieldDescriptor) string {
+	if field.OneofIndex == nil {
+		return ""
+
+	}
+	idx := field.GetOneofIndex()
+	sameOneOf := []string{field.GetJsonName()}
+	// collect other fields which share this oneof
+	for _, f := range field.Message.Fields {
+		if f.GetName() == field.GetName() {
+			continue
+		}
+		if f.OneofIndex != nil && f.GetOneofIndex() == idx {
+			// same oneof
+			sameOneOf = append(sameOneOf, f.GetJsonName())
+		}
+	}
+	if len(sameOneOf) == 1 {
+		return ""
+	}
+
+	for i := range sameOneOf {
+		// add backtics
+		sameOneOf[i] = "`" + sameOneOf[i] + "`"
+	}
+
+	if len(sameOneOf) == 2 {
+		return fmt.Sprintf("Only one of %s or %s can be set.", sameOneOf[0], sameOneOf[1])
+	}
+
+	joinedOneofNames := strings.Join(sameOneOf[:len(sameOneOf)-2], ", ")
+	joinedOneofNames += ", or " + sameOneOf[len(sameOneOf)-1]
+	return fmt.Sprintf("Only one of %s can be set.", joinedOneofNames)
 }
 
 func fieldType(project *model.Project) func(field *protokit.FieldDescriptor) (string, error) {

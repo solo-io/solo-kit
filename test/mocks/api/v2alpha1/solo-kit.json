@@ -2,6 +2,7 @@
   "title": "Solo-Kit Testing v2alpha1",
   "name": "testing.solo.io",
   "version": "v2alpha1",
+  "docs_dir": "docs/",
   "resource_groups": {
     "testing.solo.io": [
       {
