@@ -10,9 +10,11 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
+
+	"github.com/solo-io/go-utils/errutils"
 )
 
 var (
@@ -44,17 +46,14 @@ var (
 		TagKeys:     []tag.Key{},
 	}
 
-	testingNamespaceKey, _ = tag.NewKey("namespace")
-	testingResourceKey, _  = tag.NewKey("resource")
-
 	testingResourcesInView = &view.View{
 		Name:        "testing.solo.io/emitter/resources_in",
 		Measure:     mTestingResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
-			testingNamespaceKey,
-			testingResourceKey,
+			skstats.NamespaceKey,
+			skstats.ResourceKey,
 		},
 	}
 )
@@ -214,8 +213,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				stats.RecordWithTags(
 					ctx,
 					[]tag.Mutator{
-						tag.Insert(testingNamespaceKey, namespace),
-						tag.Insert(testingResourceKey, "mock_resource"),
+						tag.Insert(skstats.NamespaceKey, namespace),
+						tag.Insert(skstats.ResourceKey, "mock_resource"),
 					},
 					mTestingResourcesIn.M(1),
 				)

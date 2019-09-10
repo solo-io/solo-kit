@@ -10,9 +10,11 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
+
+	"github.com/solo-io/go-utils/errutils"
 )
 
 var (
@@ -44,17 +46,14 @@ var (
 		TagKeys:     []tag.Key{},
 	}
 
-	kubeconfigsNamespaceKey, _ = tag.NewKey("namespace")
-	kubeconfigsResourceKey, _  = tag.NewKey("resource")
-
 	kubeconfigsResourcesInView = &view.View{
 		Name:        "kubeconfigs.multicluster.solo.io/emitter/resources_in",
 		Measure:     mKubeconfigsResourcesIn,
 		Description: "The number of resource lists received on open watch channels",
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{
-			kubeconfigsNamespaceKey,
-			kubeconfigsResourceKey,
+			skstats.NamespaceKey,
+			skstats.ResourceKey,
 		},
 	}
 )
@@ -214,8 +213,8 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				stats.RecordWithTags(
 					ctx,
 					[]tag.Mutator{
-						tag.Insert(kubeconfigsNamespaceKey, namespace),
-						tag.Insert(kubeconfigsResourceKey, "kube_config"),
+						tag.Insert(skstats.NamespaceKey, namespace),
+						tag.Insert(skstats.ResourceKey, "kube_config"),
 					},
 					mKubeconfigsResourcesIn.M(1),
 				)

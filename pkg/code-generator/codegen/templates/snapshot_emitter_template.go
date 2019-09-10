@@ -27,6 +27,8 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
+	
 	"github.com/solo-io/go-utils/errutils"
 )
 
@@ -64,17 +66,14 @@ var (
 			},
 	}
 
-	{{ lower_camel $resource_group }}NamespaceKey, _ = tag.NewKey("namespace")
-	{{ lower_camel $resource_group }}ResourceKey, _ = tag.NewKey("resource")
-
 	{{ lower_camel .GoName }}ResourcesInView = &view.View{
 			Name:        "{{ $emitter_prefix }}/resources_in",
 			Measure:     m{{ $resource_group }}ResourcesIn,
 			Description: "The number of resource lists received on open watch channels",
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{
-				{{ lower_camel $resource_group }}NamespaceKey,
-				{{ lower_camel $resource_group }}ResourceKey,
+				skstats.NamespaceKey,
+				skstats.ResourceKey,
 			},
 	}
 
@@ -288,8 +287,8 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				stats.RecordWithTags(
 					ctx,
 					[]tag.Mutator{
-						tag.Insert({{ lower_camel $resource_group }}NamespaceKey, "cluster-scoped"),
-						tag.Insert({{ lower_camel $resource_group }}ResourceKey, "{{ snake .Name }}"),
+						tag.Insert(skstats.NamespaceKey, "cluster-scoped"),
+						tag.Insert(skstats.ResourceKey, "{{ snake .Name }}"),
 					},
 					m{{ $resource_group }}ResourcesIn.M(1),
 				)
@@ -304,8 +303,8 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				stats.RecordWithTags(
 					ctx,
 					[]tag.Mutator{
-						tag.Insert({{ lower_camel $resource_group }}NamespaceKey, namespace),
-						tag.Insert({{ lower_camel $resource_group }}ResourceKey, "{{ snake .Name }}"),
+						tag.Insert(skstats.NamespaceKey, namespace),
+						tag.Insert(skstats.ResourceKey, "{{ snake .Name }}"),
 					},
 					m{{ $resource_group }}ResourcesIn.M(1),
 				)
