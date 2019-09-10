@@ -18,35 +18,100 @@ import (
 )
 
 var (
-	mTestingSnapshotIn     = stats.Int64("testing.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mTestingSnapshotOut    = stats.Int64("testing.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mTestingSnapshotMissed = stats.Int64("testing.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	// metrics for sending snapshots
+	mTestingSnapshotIn     = stats.Int64("$emitter_prefix/snap_in", "The number of snapshots in", "1")
+	mTestingSnapshotOut    = stats.Int64("$emitter_prefix/snap_out", "The number of snapshots out", "1")
+	mTestingSnapshotMissed = stats.Int64("$emitter_prefix/snap_missed", "The number of snapshots missed", "1")
 
+	// metrics for resource watches
+
+	mTestingMocksListIn                = stats.Int64("Testing/mock_resource_emitter/mocks_in", "The number of Mocks lists received on watch channel", "1")
+	mTestingFakesListIn                = stats.Int64("Testing/fake_resource_emitter/fakes_in", "The number of Fakes lists received on watch channel", "1")
+	mTestingAnothermockresourcesListIn = stats.Int64("Testing/another_mock_resource_emitter/anothermockresources_in", "The number of Anothermockresources lists received on watch channel", "1")
+	mTestingClusterresourcesListIn     = stats.Int64("Testing/cluster_resource_emitter/clusterresources_in", "The number of Clusterresources lists received on watch channel", "1")
+	mTestingMctsListIn                 = stats.Int64("Testing/mock_custom_type_emitter/mcts_in", "The number of mcts lists received on watch channel", "1")
+	mTestingPodsListIn                 = stats.Int64("Testing/pod_emitter/pods_in", "The number of pods lists received on watch channel", "1")
+
+	// views for snapshots
 	testingsnapshotInView = &view.View{
-		Name:        "testing.solo.io_snap_emitter/snap_in",
+		Name:        "testing/emitter/snap_in",
 		Measure:     mTestingSnapshotIn,
 		Description: "The number of snapshots updates coming in",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	testingsnapshotOutView = &view.View{
-		Name:        "testing.solo.io/snap_emitter/snap_out",
+		Name:        "testing/emitter/snap_out",
 		Measure:     mTestingSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	testingsnapshotMissedView = &view.View{
-		Name:        "testing.solo.io/snap_emitter/snap_missed",
+		Name:        "testing/emitter/snap_missed",
 		Measure:     mTestingSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
+
+	// views for resource watches
+	testingMocksListInView = &view.View{
+		Name:        "testing/mock_resource_emitter/mocks_in",
+		Measure:     mTestingMocksListIn,
+		Description: "The number of Mocks lists received on watch channel.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
+	testingFakesListInView = &view.View{
+		Name:        "testing/fake_resource_emitter/fakes_in",
+		Measure:     mTestingFakesListIn,
+		Description: "The number of Fakes lists received on watch channel.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
+	testingAnothermockresourcesListInView = &view.View{
+		Name:        "testing/another_mock_resource_emitter/anothermockresources_in",
+		Measure:     mTestingAnothermockresourcesListIn,
+		Description: "The number of Anothermockresources lists received on watch channel.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
+	testingClusterresourcesListInView = &view.View{
+		Name:        "testing/cluster_resource_emitter/clusterresources_in",
+		Measure:     mTestingClusterresourcesListIn,
+		Description: "The number of Clusterresources lists received on watch channel.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
+	testingMctsListInView = &view.View{
+		Name:        "testing/mock_custom_type_emitter/mcts_in",
+		Measure:     mTestingMctsListIn,
+		Description: "The number of mcts lists received on watch channel.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
+	testingPodsListInView = &view.View{
+		Name:        "testing/pod_emitter/pods_in",
+		Measure:     mTestingPodsListIn,
+		Description: "The number of pods lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 )
 
 func init() {
-	view.Register(testingsnapshotInView, testingsnapshotOutView, testingsnapshotMissedView)
+	view.Register(
+		testingsnapshotInView,
+		testingsnapshotOutView,
+		testingsnapshotMissedView,
+		testingMocksListInView,
+		testingFakesListInView,
+		testingAnothermockresourcesListInView,
+		testingClusterresourcesListInView,
+		testingMctsListInView,
+		testingPodsListInView,
+	)
 }
 
 type TestingEmitter interface {
@@ -398,6 +463,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				namespace := mockResourceNamespacedList.namespace
 
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					mTestingMocksListIn.M(1),
+				)
+
 				// merge lists by namespace
 				mocksByNamespace[namespace] = mockResourceNamespacedList.list
 				var mockResourceList MockResourceList
@@ -409,6 +480,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				record()
 
 				namespace := fakeResourceNamespacedList.namespace
+
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					mTestingFakesListIn.M(1),
+				)
 
 				// merge lists by namespace
 				fakesByNamespace[namespace] = fakeResourceNamespacedList.list
@@ -422,6 +499,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				namespace := anotherMockResourceNamespacedList.namespace
 
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					mTestingAnothermockresourcesListIn.M(1),
+				)
+
 				// merge lists by namespace
 				anothermockresourcesByNamespace[namespace] = anotherMockResourceNamespacedList.list
 				var anotherMockResourceList AnotherMockResourceList
@@ -431,11 +514,24 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				currentSnapshot.Anothermockresources = anotherMockResourceList.Sort()
 			case clusterResourceList := <-clusterResourceChan:
 				record()
+
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), "cluster_scoped")},
+					mTestingClusterresourcesListIn.M(1),
+				)
+
 				currentSnapshot.Clusterresources = clusterResourceList
 			case mockCustomTypeNamespacedList := <-mockCustomTypeChan:
 				record()
 
 				namespace := mockCustomTypeNamespacedList.namespace
+
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					mTestingMctsListIn.M(1),
+				)
 
 				// merge lists by namespace
 				mctsByNamespace[namespace] = mockCustomTypeNamespacedList.list
@@ -448,6 +544,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				record()
 
 				namespace := podNamespacedList.namespace
+
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					mTestingPodsListIn.M(1),
+				)
 
 				// merge lists by namespace
 				podsByNamespace[namespace] = podNamespacedList.list

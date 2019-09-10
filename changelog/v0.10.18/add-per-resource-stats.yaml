@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add per-resource stats
+    issueLink: https://github.com/solo-io/solo-kit/pull/262

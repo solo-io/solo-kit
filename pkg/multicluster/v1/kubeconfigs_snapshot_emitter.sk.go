@@ -16,35 +16,55 @@ import (
 )
 
 var (
-	mKubeconfigsSnapshotIn     = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mKubeconfigsSnapshotOut    = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mKubeconfigsSnapshotMissed = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	// metrics for sending snapshots
+	mKubeconfigsSnapshotIn     = stats.Int64("$emitter_prefix/snap_in", "The number of snapshots in", "1")
+	mKubeconfigsSnapshotOut    = stats.Int64("$emitter_prefix/snap_out", "The number of snapshots out", "1")
+	mKubeconfigsSnapshotMissed = stats.Int64("$emitter_prefix/snap_missed", "The number of snapshots missed", "1")
 
+	// metrics for resource watches
+
+	mKubeconfigsKubeconfigsListIn = stats.Int64("Kubeconfigs/kube_config_emitter/kubeconfigs_in", "The number of kubeconfigs lists received on watch channel", "1")
+
+	// views for snapshots
 	kubeconfigssnapshotInView = &view.View{
-		Name:        "kubeconfigs.multicluster.solo.io_snap_emitter/snap_in",
+		Name:        "kubeconfigs/emitter/snap_in",
 		Measure:     mKubeconfigsSnapshotIn,
 		Description: "The number of snapshots updates coming in",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	kubeconfigssnapshotOutView = &view.View{
-		Name:        "kubeconfigs.multicluster.solo.io/snap_emitter/snap_out",
+		Name:        "kubeconfigs/emitter/snap_out",
 		Measure:     mKubeconfigsSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	kubeconfigssnapshotMissedView = &view.View{
-		Name:        "kubeconfigs.multicluster.solo.io/snap_emitter/snap_missed",
+		Name:        "kubeconfigs/emitter/snap_missed",
 		Measure:     mKubeconfigsSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
+
+	// views for resource watches
+	kubeconfigsKubeconfigsListInView = &view.View{
+		Name:        "kubeconfigs/kube_config_emitter/kubeconfigs_in",
+		Measure:     mKubeconfigsKubeconfigsListIn,
+		Description: "The number of kubeconfigs lists received on watch channel.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 )
 
 func init() {
-	view.Register(kubeconfigssnapshotInView, kubeconfigssnapshotOutView, kubeconfigssnapshotMissedView)
+	view.Register(
+		kubeconfigssnapshotInView,
+		kubeconfigssnapshotOutView,
+		kubeconfigssnapshotMissedView,
+		kubeconfigsKubeconfigsListInView,
+	)
 }
 
 type KubeconfigsEmitter interface {
@@ -189,6 +209,12 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				record()
 
 				namespace := kubeConfigNamespacedList.namespace
+
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					mKubeconfigsKubeconfigsListIn.M(1),
+				)
 
 				// merge lists by namespace
 				kubeconfigsByNamespace[namespace] = kubeConfigNamespacedList.list

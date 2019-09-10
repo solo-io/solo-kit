@@ -30,39 +30,70 @@ import (
 	"github.com/solo-io/go-utils/errutils"
 )
 
-var (
-	m{{ .GoName }}SnapshotIn  = stats.Int64("{{ .Name }}/snap_emitter/snap_in", "The number of snapshots in", "1")
-	m{{ .GoName }}SnapshotOut = stats.Int64("{{ .Name }}/snap_emitter/snap_out", "The number of snapshots out", "1")
-	m{{ .GoName }}SnapshotMissed = stats.Int64("{{ .Name }}/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+{{ $emitter_prefix := (print (snake .GoName) "/emitter") }}
 
+var (
+	// metrics for sending snapshots
+	m{{ upper_camel .GoName }}SnapshotIn  = stats.Int64("$emitter_prefix/snap_in", "The number of snapshots in", "1")
+	m{{ upper_camel .GoName }}SnapshotOut = stats.Int64("$emitter_prefix/snap_out", "The number of snapshots out", "1")
+	m{{ upper_camel  .GoName }}SnapshotMissed = stats.Int64("$emitter_prefix/snap_missed", "The number of snapshots missed", "1")
+
+	// metrics for resource watches
+{{ $resource_group := upper_camel .GoName }}
+{{ $resource_group_lower := lower_camel .GoName }}
+{{- range .Resources}}
+	m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn  = stats.Int64("{{ $resource_group }}/{{ snake .Name }}_emitter/{{ snake .PluralName }}_in", "The number of {{ .PluralName }} lists received on watch channel", "1")
+{{- end}}
+
+	// views for snapshots
 	{{ lower_camel .GoName }}snapshotInView = &view.View{
-		Name:        "{{ .Name }}_snap_emitter/snap_in",
-		Measure:     m{{ .GoName }}SnapshotIn,
+		Name:        "{{ $emitter_prefix }}/snap_in",
+		Measure:     m{{ upper_camel .GoName }}SnapshotIn,
 		Description: "The number of snapshots updates coming in",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{
 		},
 	}
 	{{ lower_camel .GoName }}snapshotOutView = &view.View{
-		Name:        "{{ .Name }}/snap_emitter/snap_out",
-		Measure:     m{{ .GoName }}SnapshotOut,
+		Name:        "{{ $emitter_prefix }}/snap_out",
+		Measure:     m{{ upper_camel .GoName }}SnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{
 		},
 	}
 	{{ lower_camel .GoName }}snapshotMissedView = &view.View{
-			Name:        "{{ .Name }}/snap_emitter/snap_missed",
-			Measure:     m{{ .GoName }}SnapshotMissed,
+			Name:        "{{ $emitter_prefix }}/snap_missed",
+			Measure:     m{{ upper_camel .GoName }}SnapshotMissed,
 			Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{
 			},
 	}
+
+	// views for resource watches
+{{- range .Resources}}
+	{{ lower_camel $resource_group }}{{ upper_camel .PluralName }}ListInView = &view.View{
+			Name:        "{{ snake $resource_group }}/{{ snake .Name }}_emitter/{{ snake .PluralName }}_in",
+			Measure:     m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn,
+			Description: "The number of {{ .PluralName }} lists received on watch channel.",
+			Aggregation: view.Count(),
+			TagKeys:     []tag.Key{
+			},
+	}
+{{- end}}
+
 )
 
 func init() {
-	view.Register({{ lower_camel .GoName }}snapshotInView, {{ lower_camel .GoName }}snapshotOutView, {{ lower_camel .GoName }}snapshotMissedView)
+	view.Register(
+		{{ lower_camel .GoName }}snapshotInView, 
+		{{ lower_camel .GoName }}snapshotOutView, 
+		{{ lower_camel .GoName }}snapshotMissedView,
+{{- range .Resources}}
+		{{ lower_camel $resource_group }}{{ upper_camel .PluralName }}ListInView,
+{{- end}}
+	)
 }
 
 type {{ .GoName }}Emitter interface {
@@ -260,12 +291,25 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- if .ClusterScoped }}
 			case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}Chan:
 				record()
+
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), "cluster_scoped")},
+					m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn.M(1),
+				)
+
 				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List
 {{- else }}
 			case {{ lower_camel .Name }}NamespacedList := <- {{ lower_camel .Name }}Chan:
 				record()
 
 				namespace := {{ lower_camel .Name }}NamespacedList.namespace
+
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Insert(tag.NewKey("namespace"), namespace)},
+					m{{ $resource_group }}{{ upper_camel .PluralName }}ListIn.M(1),
+				)
 
 				// merge lists by namespace
 				{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .Name }}NamespacedList.list
