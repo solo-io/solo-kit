@@ -71,10 +71,14 @@ func init() {
 	)
 }
 
+type KubeconfigsSnapshotEmitter interface {
+	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *KubeconfigsSnapshot, <-chan error, error)
+}
+
 type KubeconfigsEmitter interface {
+	KubeconfigsSnapshotEmitter
 	Register() error
 	KubeConfig() KubeConfigClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *KubeconfigsSnapshot, <-chan error, error)
 }
 
 func NewKubeconfigsEmitter(kubeConfigClient KubeConfigClient) KubeconfigsEmitter {

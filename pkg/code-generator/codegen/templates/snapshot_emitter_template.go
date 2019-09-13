@@ -93,12 +93,16 @@ func init() {
 	)
 }
 
+type {{ .GoName }}SnapshotEmitter interface {
+	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error)
+}
+
 type {{ .GoName }}Emitter interface {
+	{{ .GoName }}SnapshotEmitter
 	Register() error
 {{- range .Resources}}
 	{{ .Name }}() {{ .ImportPrefix }}{{ .Name }}Client
 {{- end}}
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error)
 }
 
 func New{{ .GoName }}Emitter({{ $client_declarations }}) {{ .GoName }}Emitter {

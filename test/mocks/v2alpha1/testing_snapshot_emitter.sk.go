@@ -73,11 +73,15 @@ func init() {
 	)
 }
 
+type TestingSnapshotEmitter interface {
+	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
+}
+
 type TestingEmitter interface {
+	TestingSnapshotEmitter
 	Register() error
 	MockResource() MockResourceClient
 	FakeResource() testing_solo_io.FakeResourceClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
 }
 
 func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient) TestingEmitter {

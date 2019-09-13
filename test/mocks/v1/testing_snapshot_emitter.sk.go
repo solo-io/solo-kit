@@ -73,7 +73,12 @@ func init() {
 	)
 }
 
+type TestingSnapshotEmitter interface {
+	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
+}
+
 type TestingEmitter interface {
+	TestingSnapshotEmitter
 	Register() error
 	MockResource() MockResourceClient
 	FakeResource() FakeResourceClient
@@ -81,7 +86,6 @@ type TestingEmitter interface {
 	ClusterResource() ClusterResourceClient
 	MockCustomType() MockCustomTypeClient
 	Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error)
 }
 
 func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
