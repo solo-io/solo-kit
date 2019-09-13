@@ -42,6 +42,9 @@ install-codegen-deps:
 	go get -v -u github.com/gogo/protobuf/proto
 	go get -v -u github.com/gogo/protobuf/jsonpb
 	go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
+	mkdir -p $$GOPATH/src/github.com/envoyproxy
+	# use a specific commit (9eff07ddfcb4001aa1aab280648153f46e1a8ddc)
+	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git fetch && git checkout 9eff07ddfcb4001aa1aab280648153f46e1a8ddc && make build
 	go get -v -u github.com/gogo/protobuf/gogoproto
 	go get -v -u golang.org/x/tools/cmd/goimports
 	go get -v -u github.com/golang/mock/gomock
