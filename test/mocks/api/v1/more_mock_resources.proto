@@ -10,6 +10,8 @@ import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
 
 /*
 Description of the AnotherMockResource
@@ -21,7 +23,7 @@ message AnotherMockResource {
     core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
 
     // comments that go above the basic field in our docs
-    string basic_field = 2;
+    string basic_field = 2 [(validate.rules).string.min_bytes = 1];
 
 }
 

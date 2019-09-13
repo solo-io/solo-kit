@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 )
@@ -16,7 +14,8 @@ func main() {
 		RelativeRoot:  ".",
 		CompileProtos: true,
 		SkipGenMocks:  true,
-		CustomImports: []string{os.ExpandEnv("$GOPATH/src/github.com/envoyproxy/protoc-gen-validate")},
+		SkipDirs:      []string{"vendor"},
+		// CustomImports: []string{os.ExpandEnv("$GOPATH/src/github.com/envoyproxy/protoc-gen-validate")},
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
