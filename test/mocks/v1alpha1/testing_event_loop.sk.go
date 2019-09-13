@@ -90,9 +90,7 @@ func (el *testingEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-
 					default:
 						logger.Errorf("write error channel is full! could not propagate err: %v", err)
 					}
-				}
-
-				if !channelClosed {
+				} else if !channelClosed {
 					channelClosed = true
 					close(el.ready)
 				}

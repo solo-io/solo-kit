@@ -9,7 +9,7 @@ import (
 // common interface for event loops
 type EventLoop interface {
 	Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error)
-	// Ready returns a channel that will be closed after the first loop iteration is complete.
+	// Ready returns a channel that will be closed after the first loop iteration is completed successfully.
 	Ready() <-chan struct{}
 }
 

@@ -2,6 +2,7 @@ package tests_test
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,25 +16,26 @@ var _ = Describe("Eventloop", func() {
 	Context("ready flag works", func() {
 		It("should signal ready after first sync", func() {
 			emitter := &singleSnapEmitter{}
-			syncer := &waitingSyncer{c: make(chan struct{})}
+			syncer := &waitingSyncer{c: make(chan error)}
 			eventLoop := v1.NewTestingEventLoop(emitter, syncer)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			eventLoop.Run(nil, clients.WatchOpts{Ctx: ctx})
 			Consistently(eventLoop.Ready()).ShouldNot(Receive())
-			close(syncer.c)
+			syncer.c <- fmt.Errorf("error")
+			Consistently(eventLoop.Ready()).ShouldNot(Receive())
+			syncer.c <- nil
 			Eventually(eventLoop.Ready()).Should(BeClosed())
 		})
 	})
 })
 
 type waitingSyncer struct {
-	c chan struct{}
+	c chan error
 }
 
 func (e *waitingSyncer) Sync(context.Context, *v1.TestingSnapshot) error {
-	<-e.c
-	return nil
+	return <-e.c
 }
 
 type singleSnapEmitter struct {
@@ -43,9 +45,12 @@ func (e *singleSnapEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	snaps := make(chan *v1.TestingSnapshot)
 	errs := make(chan error)
 	go func() {
-		select {
-		case <-opts.Ctx.Done():
-		case snaps <- &v1.TestingSnapshot{}:
+		// this test needs to snapshots
+		for i := 0; i < 2; i++ {
+			select {
+			case <-opts.Ctx.Done():
+			case snaps <- &v1.TestingSnapshot{}:
+			}
 		}
 	}()
 	return snaps, errs, nil
