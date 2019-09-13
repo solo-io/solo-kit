@@ -14,8 +14,6 @@ func main() {
 		RelativeRoot:  ".",
 		CompileProtos: true,
 		SkipGenMocks:  true,
-		SkipDirs:      []string{"vendor"},
-		// CustomImports: []string{os.ExpandEnv("$GOPATH/src/github.com/envoyproxy/protoc-gen-validate")},
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}

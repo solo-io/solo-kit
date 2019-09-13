@@ -10,7 +10,7 @@ import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
-import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "validate/validate.proto";
 
 
 /*
