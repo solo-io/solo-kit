@@ -39,12 +39,12 @@ func ToKubeMetaMaintainNamespace(meta core.Metadata) metav1.ObjectMeta {
 }
 
 func copyKubernetesOwnerReferences(references []metav1.OwnerReference) []*core.Metadata_OwnerReference {
-	result := make([]*core.Metadata_OwnerReference, len(references))
+	result := make([]*core.Metadata_OwnerReference, 0, len(references))
 	for _, ref := range references {
 		skRef := &core.Metadata_OwnerReference{
 			ApiVersion: ref.APIVersion,
 			Kind:       ref.Kind,
-			Name:       ref.APIVersion,
+			Name:       ref.Name,
 			Uid:        string(ref.UID),
 		}
 		if ref.Controller != nil {
@@ -63,9 +63,9 @@ func copyKubernetesOwnerReferences(references []metav1.OwnerReference) []*core.M
 }
 
 func copySoloKitOwnerReferences(skReferences []*core.Metadata_OwnerReference) []metav1.OwnerReference {
-	result := make([]metav1.OwnerReference, len(skReferences))
+	result := make([]metav1.OwnerReference, 0, len(skReferences))
 	for _, skRef := range skReferences {
-		ref := &metav1.OwnerReference{
+		ref := metav1.OwnerReference{
 			APIVersion: skRef.GetApiVersion(),
 			Kind:       skRef.GetKind(),
 			Name:       skRef.GetName(),
@@ -79,6 +79,7 @@ func copySoloKitOwnerReferences(skReferences []*core.Metadata_OwnerReference) []
 			boolValue := skRef.GetController().GetValue()
 			ref.Controller = &boolValue
 		}
+		result = append(result, ref)
 	}
 	return result
 }
