@@ -1,3 +1,4 @@
 changelog:
-  - type: NON_USER_FACING
+  - type: NEW_FEATURE
     description: Add Ready() functionality to event loops
+    issueLink: https://github.com/solo-io/solo-kit/pull/271
