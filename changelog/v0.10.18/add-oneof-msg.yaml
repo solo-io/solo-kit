@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add oneof message to gen docs
+    issueLink: https://github.com/solo-io/solo-kit/pull/264

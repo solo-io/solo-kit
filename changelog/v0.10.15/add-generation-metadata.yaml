@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add kube generation to solo-kit metadata
+    issueLink: https://github.com/solo-io/solo-kit/pull/255
+  - type: NEW_FEATURE
+    description: add Warning state to status
+    issueLink: https://github.com/solo-io/solo-kit/pull/257
+  - type: NEW_FEATURE
+    description: add details struct to status
+    issueLink: https://github.com/solo-io/solo-kit/pull/257

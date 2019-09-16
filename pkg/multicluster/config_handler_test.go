@@ -3,6 +3,7 @@ package multicluster_test
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -35,10 +36,14 @@ var _ = Describe("ConfigHandler", func() {
 		}()
 
 		<-watcher.done
+		h1.l.Lock()
+		defer h1.l.Unlock()
 		Expect(h1.added).To(HaveKey("cluster-0"))
 		Expect(h1.added).To(HaveKey("cluster-1"))
 		Expect(h1.removed).To(HaveKey("cluster-1"))
 
+		h2.l.Lock()
+		defer h2.l.Unlock()
 		Expect(h2.added).To(HaveKey("cluster-0"))
 		Expect(h2.added).To(HaveKey("cluster-1"))
 		Expect(h2.removed).To(HaveKey("cluster-1"))
@@ -46,6 +51,7 @@ var _ = Describe("ConfigHandler", func() {
 })
 
 type mockHandler struct {
+	l       sync.Mutex
 	added   map[string]string
 	removed map[string]string
 }
@@ -58,11 +64,15 @@ func newMockHandler() *mockHandler {
 }
 
 func (h *mockHandler) ClusterAdded(cluster string, restConfig *rest.Config) {
+	h.l.Lock()
 	h.added[cluster] = restConfig.Host
+	h.l.Unlock()
 }
 
 func (h *mockHandler) ClusterRemoved(cluster string, restConfig *rest.Config) {
+	h.l.Lock()
 	h.removed[cluster] = restConfig.Host
+	h.l.Unlock()
 }
 
 type fakeKCWatcher struct {

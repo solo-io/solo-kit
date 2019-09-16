@@ -25,6 +25,30 @@
   version = "v11.1.1"
 
 [[projects]]
+  digest = "1:3b10c6fd33854dc41de2cf78b7bae105da94c2789b6fa5b9ac9e593ea43484ac"
+  name = "github.com/Masterminds/goutils"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "41ac8693c5c10a92ea1ff5ac3a7f95646f6123b0"
+  version = "v1.1.0"
+
+[[projects]]
+  digest = "1:55388fd080150b9a072912f97b1f5891eb0b50df43401f8b75fb4273d3fec9fc"
+  name = "github.com/Masterminds/semver"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c7af12943936e8c39859482e61f0574c2fd7fc75"
+  version = "v1.4.2"
+
+[[projects]]
+  digest = "1:ab506cfc00b11d6d406789c15abb0b341e8db076640e3f5255615a7e327398c1"
+  name = "github.com/Masterminds/sprig"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "258b00ffa7318e8b109a141349980ffbd30a35db"
+  version = "v2.20.0"
+
+[[projects]]
   digest = "1:1c9dffe45896d21dc8e183fdc3cdb405249e6c7dd3d00792e534af3597d5e4fc"
   name = "github.com/avast/retry-go"
   packages = ["."]
@@ -125,6 +149,14 @@
   pruneopts = "UT"
   revision = "0ca988a254f991240804bf9821f3450d87ccbb1b"
   version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:b7cb6054d3dff43b38ad2e92492f220f57ae6087ee797dca298139776749ace8"
+  name = "github.com/golang/groupcache"
+  packages = ["lru"]
+  pruneopts = "UT"
+  revision = "869f871628b6baa9cfbc11732cdf6546b17c1298"
 
 [[projects]]
   digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
@@ -364,6 +396,14 @@
   revision = "a1dbeea552b7c8df4b542c66073e393de198a800"
 
 [[projects]]
+  digest = "1:f9a5e090336881be43cfc1cf468330c1bdd60abdc9dd194e0b1ab69f4b94dd7c"
+  name = "github.com/huandu/xstrings"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f02667b379e2fb5916c3cda2cf31e0eb885d79f8"
+  version = "v1.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:32a62f9393d4b982aae329c535e81e77146924f96ef8b069e4d16c92e22db147"
   name = "github.com/iancoleman/strcase"
@@ -574,7 +614,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:5dd2d00c9726046d285699a353e6cad45dc606fa77a2f1f378c777bb047d0af4"
+  digest = "1:dc0972707c2d7362020673111dbf1db20315636b7012c0946e8195cb10034328"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
@@ -592,8 +632,8 @@
     "versionutils/kubeapi",
   ]
   pruneopts = "UT"
-  revision = "8eada3e906dc4de9810cf93455a476e7121fa5f4"
-  version = "v0.9.9"
+  revision = "075c4b07de59a9b7b20475b7eab02dcdc6a62d64"
+  version = "v0.10.0"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -604,12 +644,15 @@
   version = "v1.0.1"
 
 [[projects]]
-  digest = "1:64c18dbf9c05549d0b0189cb0325e2145d788d1acc05735103746589c61dcff1"
+  digest = "1:74accd9945e4e51580cbe9b9428c228c1a7d37180cf2647ac33a1dff7197546a"
   name = "go.opencensus.io"
   packages = [
     ".",
     "internal",
     "internal/tagencoding",
+    "metric/metricdata",
+    "metric/metricproducer",
+    "resource",
     "stats",
     "stats/internal",
     "stats/view",
@@ -619,8 +662,8 @@
     "trace/tracestate",
   ]
   pruneopts = "UT"
-  revision = "b11f239c032624b045c4c2bfd3d1287b4012ce89"
-  version = "v0.16.0"
+  revision = "59d1ce35d30f3c25ba762169da2a37eab6ffa041"
+  version = "v0.22.1"
 
 [[projects]]
   digest = "1:3c1a69cdae3501bf75e76d0d86dc6f2b0a7421bc205c0cb7b96b19eed464a34d"
@@ -655,9 +698,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3f3a05ae0b95893d90b9b3b5afdb79a9b3d96e4e36e099d841ae602e4aca0da8"
+  digest = "1:69b3fcb7a41b18436a85471cbdcfc70ad10ba3206f8c87563e1c773610e1bcad"
   name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
+  packages = [
+    "pbkdf2",
+    "scrypt",
+    "ssh/terminal",
+  ]
   pruneopts = "UT"
   revision = "a2144134853fc9a27a7b1e3eb4f19f1a76df13c9"
 
@@ -1240,6 +1287,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Masterminds/sprig",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/core",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",

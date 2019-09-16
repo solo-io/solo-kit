@@ -42,6 +42,8 @@ var (
 		testutils.ErrorNotOccuredOrNotFound(err)
 		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("fakes.testing.solo.io", &metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("fcars.testing.solo.io", &metav1.DeleteOptions{})
+		testutils.ErrorNotOccuredOrNotFound(err)
 		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("mocks.testing.solo.io", &metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 		Expect(lock.ReleaseLock()).NotTo(HaveOccurred())

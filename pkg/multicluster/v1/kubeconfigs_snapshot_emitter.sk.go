@@ -10,32 +10,51 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
+
+	"github.com/solo-io/go-utils/errutils"
 )
 
 var (
-	mKubeconfigsSnapshotIn     = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mKubeconfigsSnapshotOut    = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mKubeconfigsSnapshotMissed = stats.Int64("kubeconfigs.multicluster.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	// Deprecated. See mKubeconfigsResourcesIn
+	mKubeconfigsSnapshotIn = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_in", "Deprecated. Use kubeconfigs.multicluster.solo.io/emitter/resources_in. The number of snapshots in", "1")
 
+	// metrics for emitter
+	mKubeconfigsResourcesIn    = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mKubeconfigsSnapshotOut    = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mKubeconfigsSnapshotMissed = stats.Int64("kubeconfigs.multicluster.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+
+	// views for emitter
+	// deprecated: see kubeconfigsResourcesInView
 	kubeconfigssnapshotInView = &view.View{
-		Name:        "kubeconfigs.multicluster.solo.io_snap_emitter/snap_in",
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/snap_in",
 		Measure:     mKubeconfigsSnapshotIn,
-		Description: "The number of snapshots updates coming in",
+		Description: "Deprecated. Use kubeconfigs.multicluster.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+
+	kubeconfigsResourcesInView = &view.View{
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/resources_in",
+		Measure:     mKubeconfigsResourcesIn,
+		Description: "The number of resource lists received on open watch channels",
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{
+			skstats.NamespaceKey,
+			skstats.ResourceKey,
+		},
+	}
 	kubeconfigssnapshotOutView = &view.View{
-		Name:        "kubeconfigs.multicluster.solo.io/snap_emitter/snap_out",
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/snap_out",
 		Measure:     mKubeconfigsSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	kubeconfigssnapshotMissedView = &view.View{
-		Name:        "kubeconfigs.multicluster.solo.io/snap_emitter/snap_missed",
+		Name:        "kubeconfigs.multicluster.solo.io/emitter/snap_missed",
 		Measure:     mKubeconfigsSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
@@ -44,7 +63,12 @@ var (
 )
 
 func init() {
-	view.Register(kubeconfigssnapshotInView, kubeconfigssnapshotOutView, kubeconfigssnapshotMissedView)
+	view.Register(
+		kubeconfigssnapshotInView,
+		kubeconfigssnapshotOutView,
+		kubeconfigssnapshotMissedView,
+		kubeconfigsResourcesInView,
+	)
 }
 
 type KubeconfigsEmitter interface {
@@ -189,6 +213,13 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				record()
 
 				namespace := kubeConfigNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"kube_config",
+					mKubeconfigsResourcesIn,
+				)
 
 				// merge lists by namespace
 				kubeconfigsByNamespace[namespace] = kubeConfigNamespacedList.list

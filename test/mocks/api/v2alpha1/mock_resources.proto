@@ -28,3 +28,13 @@ message MockResource {
         bool oneof_two = 2;
     };
 }
+
+message FrequentlyChangingAnnotationsResource {
+    option (core.solo.io.resource).short_name = "fcar";
+    option (core.solo.io.resource).plural_name = "fcars";
+    option (core.solo.io.resource).skip_hashing_annotations = true;
+
+    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+
+    string blah = 1 ;
+}

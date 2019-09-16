@@ -64,7 +64,10 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 {{range .Fields -}}
-| {{backtick}}{{ lower_camel (printfptr "%v" .Name) }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ remove_magic_comments (nobr .Comments.Leading) }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+{{ $description := remove_magic_comments (nobr .Comments.Leading) }}
+{{ $oneofmsg := getOneofMessage . }}
+
+| {{backtick}}{{ lower_camel (printfptr "%v" .Name) }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ if $description }} {{trimSuffix "." $description}}.{{ end }} {{ if $oneofmsg }} {{$oneofmsg}}{{ end }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
 ` + "`" + ` }}
