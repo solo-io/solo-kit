@@ -83,7 +83,7 @@ func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
 	spec := v1.Spec(data)
 	return &v1.Resource{
 		TypeMeta:   d.TypeMeta(),
-		ObjectMeta: kubeutils.ToKubeMeta(resource.GetMetadata()),
+		ObjectMeta: kubeutils.ToKubeMetaMaintainNamespace(resource.GetMetadata()),
 		Status:     resource.GetStatus(),
 		Spec:       &spec,
 	}
