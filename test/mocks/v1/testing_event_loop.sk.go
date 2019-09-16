@@ -33,15 +33,21 @@ func (s TestingSyncers) Sync(ctx context.Context, snapshot *TestingSnapshot) err
 }
 
 type testingEventLoop struct {
-	emitter TestingEmitter
+	emitter TestingSnapshotEmitter
 	syncer  TestingSyncer
+	ready   chan struct{}
 }
 
-func NewTestingEventLoop(emitter TestingEmitter, syncer TestingSyncer) eventloop.EventLoop {
+func NewTestingEventLoop(emitter TestingSnapshotEmitter, syncer TestingSyncer) eventloop.EventLoop {
 	return &testingEventLoop{
 		emitter: emitter,
 		syncer:  syncer,
+		ready:   make(chan struct{}),
 	}
+}
+
+func (el *testingEventLoop) Ready() <-chan struct{} {
+	return el.ready
 }
 
 func (el *testingEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error) {
@@ -58,6 +64,7 @@ func (el *testingEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-
 	}
 	go errutils.AggregateErrs(opts.Ctx, errs, emitterErrs, "v1.emitter errors")
 	go func() {
+		var channelClosed bool
 		// create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
 		// use closure to allow cancel function to be updated as context changes
@@ -83,6 +90,9 @@ func (el *testingEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-
 					default:
 						logger.Errorf("write error channel is full! could not propagate err: %v", err)
 					}
+				} else if !channelClosed {
+					channelClosed = true
+					close(el.ready)
 				}
 			case <-opts.Ctx.Done():
 				return

@@ -37,15 +37,22 @@ func (s {{ .GoName }}Syncers) Sync(ctx context.Context, snapshot *{{ .GoName }}S
 }
 
 type {{ lower_camel .GoName }}EventLoop struct {
-	emitter {{ .GoName }}Emitter
+	emitter {{ .GoName }}SnapshotEmitter
 	syncer  {{ .GoName }}Syncer
+	ready chan struct{}
 }
 
-func New{{ .GoName }}EventLoop(emitter {{ .GoName }}Emitter, syncer {{ .GoName }}Syncer) eventloop.EventLoop {
+func New{{ .GoName }}EventLoop(emitter {{ .GoName }}SnapshotEmitter, syncer {{ .GoName }}Syncer) eventloop.EventLoop {
 	return &{{ lower_camel .GoName }}EventLoop{
 		emitter: emitter,
 		syncer:  syncer,
+		ready: make(chan struct{}),
 	}
+}
+
+
+func (el *{{ lower_camel .GoName }}EventLoop) Ready() <-chan struct{} {
+	return el.ready
 }
 
 func (el *{{ lower_camel .GoName }}EventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error) {
@@ -62,6 +69,7 @@ func (el *{{ lower_camel .GoName }}EventLoop) Run(namespaces []string, opts clie
 	}
 	go errutils.AggregateErrs(opts.Ctx, errs, emitterErrs, "{{ .Project.ProjectConfig.Version }}.emitter errors")
 	go func() {
+		var channelClosed bool
 		// create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
 		// use closure to allow cancel function to be updated as context changes
@@ -87,6 +95,9 @@ func (el *{{ lower_camel .GoName }}EventLoop) Run(namespaces []string, opts clie
 					default:
 						logger.Errorf("write error channel is full! could not propagate err: %v", err)
 					}
+				} else if !channelClosed {
+					channelClosed = true
+					close(el.ready)
 				}
 			case <-opts.Ctx.Done():
 				return

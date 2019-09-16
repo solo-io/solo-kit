@@ -825,15 +825,14 @@
   revision = "8a6051197512ff9cbf65108d80613b631fe0b4f3"
 
 [[projects]]
-  branch = "master"
-  digest = "1:c44a77760372a998be8d4656e8d3c865f68735ec4cad1743a245903a58f64249"
+  digest = "1:7b5ce208ea2ca1f96322e6a5b616839fe49ea798648a013039f300475a1aadfc"
   name = "golang.org/x/xerrors"
   packages = [
     ".",
     "internal",
   ]
   pruneopts = "UT"
-  revision = "3ee3066db522c6628d440a3a91c4abdd7f5ef22f"
+  revision = "a985d3407aa71f30cf86696ee0a2f409709f22e1"
 
 [[projects]]
   digest = "1:fa026a5c59bd2df343ec4a3538e6288dcf4e2ec5281d743ae82c120affe6926a"
