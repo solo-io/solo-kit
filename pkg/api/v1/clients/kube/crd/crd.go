@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,16 +82,10 @@ func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
 	delete(data, "status")
 	spec := v1.Spec(data)
 	return &v1.Resource{
-		TypeMeta: d.TypeMeta(),
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       resource.GetMetadata().Namespace,
-			Name:            resource.GetMetadata().Name,
-			ResourceVersion: resource.GetMetadata().ResourceVersion,
-			Labels:          resource.GetMetadata().Labels,
-			Annotations:     resource.GetMetadata().Annotations,
-		},
-		Status: resource.GetStatus(),
-		Spec:   &spec,
+		TypeMeta:   d.TypeMeta(),
+		ObjectMeta: kubeutils.ToKubeMetaMaintainNamespace(resource.GetMetadata()),
+		Status:     resource.GetStatus(),
+		Spec:       &spec,
 	}
 }
 

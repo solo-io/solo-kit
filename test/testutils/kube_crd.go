@@ -1,4 +1,4 @@
-package kubeutils
+package testutils
 
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
