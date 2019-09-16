@@ -5,6 +5,8 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
+import "google/protobuf/wrappers.proto";
+
 /**
  * Metadata contains general properties of resources for purposes of versioning, annotating, and namespacing.
  */
@@ -42,4 +44,19 @@ message Metadata {
     // A sequence number representing a specific generation of the desired state.
     // Currently only populated for resources backed by Kubernetes
     int64 generation = 8;
+
+    // proto message representing kubernertes owner reference
+    // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#ownerreference-v1-meta
+    message OwnerReference {
+        string api_version = 1;
+        google.protobuf.BoolValue block_owner_deletion = 2;
+        google.protobuf.BoolValue controller = 3;
+        string kind = 4;
+        string name = 5;
+        string uid =  6;
+    }
+
+    //List of objects depended by this object.
+    // Currently only populated for resources backed by Kubernetes
+    repeated OwnerReference owner_references = 9;
 }
