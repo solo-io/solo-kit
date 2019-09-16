@@ -45,7 +45,7 @@ func (e *singleSnapEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	snaps := make(chan *v1.TestingSnapshot)
 	errs := make(chan error)
 	go func() {
-		// this test needs to snapshots
+		// this test needs two snapshots
 		for i := 0; i < 2; i++ {
 			select {
 			case <-opts.Ctx.Done():
