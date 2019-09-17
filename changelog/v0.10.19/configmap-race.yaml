@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Fix race condition in config map tests
+  issueLink: https://github.com/solo-io/solo-kit/pull/274

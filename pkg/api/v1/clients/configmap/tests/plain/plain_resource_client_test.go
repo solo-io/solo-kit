@@ -1,4 +1,4 @@
-package configmap_test
+package plain_test
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 
 	"github.com/solo-io/go-utils/kubeutils"
 	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/test/tests/generic"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
@@ -19,7 +19,6 @@ import (
 	"github.com/solo-io/go-utils/log"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/kubernetes"
 
 	// Needed to run tests in GKE
@@ -38,7 +37,8 @@ var _ = Describe("PlainConfigmap", func() {
 		kubeCache cache.KubeCoreCache
 	)
 	BeforeEach(func() {
-		ns1, ns2 = helpers.RandString(8), helpers.RandString(8)
+		randomSeed, node := GinkgoRandomSeed(), GinkgoParallelNode()
+		ns1, ns2 = helpers.RandStringGinkgo(8, randomSeed, node), helpers.RandStringGinkgo(8, randomSeed, node)
 		kube = helpers.MustKubeClient()
 		err := kubeutils.CreateNamespacesInParallel(kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
