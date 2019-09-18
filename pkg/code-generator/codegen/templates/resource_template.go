@@ -86,6 +86,8 @@ func (r *{{ .Name }}) SetStatus(status core.Status) {
 func (r *{{ .Name }}) Hash() uint64 {
 	metaCopy := r.GetMetadata()
 	metaCopy.ResourceVersion = ""
+	metaCopy.Generation = 0
+	// investigate zeroing out owner refs as well
 	{{- if $.SkipHashingAnnotations }}
 	metaCopy.Annotations = nil
 	{{- end }}
