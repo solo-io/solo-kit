@@ -1,16 +1,16 @@
-package configmap_test
+package struct_test
 
 import (
 	"context"
 	"os"
 	"time"
 
+	"github.com/solo-io/go-utils/kubeutils"
 	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/test/tests/generic"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +22,6 @@ import (
 	"github.com/solo-io/go-utils/log"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/tests/generic"
 	"k8s.io/client-go/kubernetes"
 
 	// Needed to run tests in GKE
@@ -42,8 +41,8 @@ var _ = Describe("Base", func() {
 		localTestLabel string
 	)
 	BeforeEach(func() {
-		ns1 = "ns1-" + helpers.RandString(8)
-		ns2 = "ns2-" + helpers.RandString(8)
+		randomSeed, node := GinkgoRandomSeed(), GinkgoParallelNode()
+		ns1, ns2 = helpers.RandStringGinkgo(8, randomSeed, node), helpers.RandStringGinkgo(8, randomSeed, node)
 		localTestLabel = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
 		err := kubeutils.CreateNamespacesInParallel(kube, ns1, ns2)
@@ -92,12 +91,12 @@ var _ = Describe("Base", func() {
 
 	Context("multiple namespaces", func() {
 		var (
-			ns2 string
+			ns3 string
 		)
 		BeforeEach(func() {
-			ns2 = helpers.RandString(8)
+			ns3 = helpers.RandString(8)
 
-			err := kubeutils.CreateNamespacesInParallel(kube, ns2)
+			err := kubeutils.CreateNamespacesInParallel(kube, ns3)
 			Expect(err).NotTo(HaveOccurred())
 
 			kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
@@ -107,7 +106,7 @@ var _ = Describe("Base", func() {
 		})
 
 		AfterEach(func() {
-			err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns2)
+			err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns3)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("can watch resources across namespaces when using NamespaceAll", func() {
@@ -144,7 +143,7 @@ var _ = Describe("Base", func() {
 					Data: data,
 					Metadata: core.Metadata{
 						Name:      goo,
-						Namespace: ns2,
+						Namespace: ns3,
 						Labels:    selectors,
 					},
 				}, clients.WriteOpts{})

@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -17,4 +18,9 @@ func RandString(length int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(b)
+}
+
+func RandStringGinkgo(length int, ginkgoSeed int64, node int) string {
+	seedStr := RandString(length)
+	return fmt.Sprintf("%s-%d-%d", seedStr, ginkgoSeed, node)
 }
