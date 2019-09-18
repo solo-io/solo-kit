@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Ignore generation when hashing resources
+  issueLink: https://github.com/solo-io/solo-kit/issues/276

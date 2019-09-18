@@ -31,6 +31,8 @@ func (r *FrequentlyChangingAnnotationsResource) SetMetadata(meta core.Metadata) 
 func (r *FrequentlyChangingAnnotationsResource) Hash() uint64 {
 	metaCopy := r.GetMetadata()
 	metaCopy.ResourceVersion = ""
+	metaCopy.Generation = 0
+	// investigate zeroing out owner refs as well
 	metaCopy.Annotations = nil
 	return hashutils.HashAll(
 		metaCopy,
