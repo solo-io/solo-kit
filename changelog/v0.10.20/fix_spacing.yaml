@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix spacing in doc generation.
+    issueLink: https://github.com/solo-io/solo-kit/issues/264
