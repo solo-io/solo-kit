@@ -66,7 +66,6 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 {{range .Fields -}}
 {{ $description := remove_magic_comments (nobr .Comments.Leading) }}
 {{ $oneofmsg := getOneofMessage . }}
-
 | {{backtick}}{{ lower_camel (printfptr "%v" .Name) }}{{backtick}} | {{linkForField (getFileForMessage $Message) . }} | {{ if $description }} {{trimSuffix "." $description}}.{{ end }} {{ if $oneofmsg }} {{$oneofmsg}}{{ end }} | {{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
 
