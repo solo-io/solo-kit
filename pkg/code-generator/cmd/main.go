@@ -172,21 +172,8 @@ func Generate(opts GenerateOptions) error {
 			return err
 		}
 
-		if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
-			docs, err := docgen.GenerateFiles(project, genDocs)
-			if err != nil {
-				return err
-			}
-
-			for _, file := range docs {
-				path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
-				if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-					return err
-				}
-				if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-					return err
-				}
-			}
+		if err := writePerProjectsDocs(project, genDocs, absoluteRoot); err != nil {
+			return err
 		}
 
 		outDir := filepath.Join(gopathSrc(), project.ProjectConfig.GoPackage)
@@ -572,4 +559,24 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 	}
 
 	return results, nil
+}
+
+func writePerProjectsDocs(project *model.Project, genDocs *options.DocsOptions, absoluteRoot string) error {
+	if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
+		docs, err := docgen.GenerateFiles(project, genDocs)
+		if err != nil {
+			return err
+		}
+
+		for _, file := range docs {
+			path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
+			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+				return err
+			}
+			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
