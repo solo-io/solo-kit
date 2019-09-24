@@ -20,7 +20,9 @@ import (
 )
 
 func WriteCrossProjectDocs(projectConfigs []*model.ProjectConfig, genDocs *options.DocsOptions, absoluteRoot string, protoDescriptors []*descriptor.FileDescriptorProto) error {
-
+	if genDocs == nil {
+		return nil
+	}
 	switch genDocs.Output {
 	case options.Hugo:
 		return WriteCrossProjectDocsHugo(projectConfigs, genDocs, absoluteRoot, protoDescriptors)
