@@ -7,6 +7,11 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/solo-io/go-utils/errors"
+	"gopkg.in/yaml.v2"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
+
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protokit"
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
@@ -27,6 +32,12 @@ var ignoredFiles = []string{
 	"validate/validate.proto",
 	"github.com/solo-io/solo-kit/api/external/validate/validate.proto",
 }
+
+var (
+	GenDataFileError = func(err error) error {
+		return errors.Wrapf(err, "unable to generate data file")
+	}
+)
 
 func (d *DocsGen) protoSuffix() string {
 	if d.DocsOptions.Output == options.Restructured {
@@ -86,7 +97,41 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 		}
 	}
 
+	dataFiles, err := d.generateDataFilesForProtoFiles(protoFiles)
+	if err != nil {
+		return nil, GenDataFileError(err)
+	}
+	for _, file := range dataFiles {
+		v = append(v, file)
+	}
+
 	return v, nil
+}
+
+func (d *DocsGen) generateDataFilesForProtoFiles(protoFiles []*protokit.FileDescriptor) (code_generator.Files, error) {
+	var dataFiles code_generator.Files
+	switch d.DocsOptions.Output {
+	case options.Hugo:
+		return d.generateHugoDataFiles(protoFiles)
+	default:
+		return dataFiles, nil
+	}
+}
+
+func (d *DocsGen) generateHugoDataFiles(protoFiles []*protokit.FileDescriptor) (code_generator.Files, error) {
+	var dataFiles code_generator.Files
+	hugoPbData := datafile.HugoProtobufData{
+		Apis: make(map[string]datafile.ApiSummary),
+	}
+	df := code_generator.File{}
+	dfBytes, err := yaml.Marshal(hugoPbData)
+	if err != nil {
+		return nil, err
+	}
+	df.Content = string(dfBytes)
+	df.Filename = datafile.HugoProtobufRelativeDataPath
+
+	return dataFiles, nil
 }
 
 func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (code_generator.Files, error) {

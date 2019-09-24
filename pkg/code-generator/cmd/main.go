@@ -74,6 +74,9 @@ func Generate(opts GenerateOptions) error {
 	customGogoArgs := opts.CustomGogoOutArgs
 	skipDirs := opts.SkipDirs
 	skipDirs = append(skipDirs, "vendor/")
+	if err := options.ValidateGenDocs(genDocs); err != nil {
+		return err
+	}
 
 	var customCompilePrefixes []string
 	for _, relativePath := range opts.CustomCompileProtos {
@@ -203,6 +206,9 @@ func Generate(opts GenerateOptions) error {
 				return err
 			}
 		}
+	}
+	if err := docgen.WriteCrossProjectDocs(projectConfigs, genDocs, absoluteRoot, protoDescriptors); err != nil {
+		return err
 	}
 
 	return nil

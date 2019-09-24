@@ -8,6 +8,11 @@ import (
 	"regexp"
 	"text/template"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
+	"gopkg.in/yaml.v2"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
@@ -21,7 +26,10 @@ var _ = Describe("DocsGen", func() {
 		testProjectConfigName = "solo-kit.json"
 	)
 
-	var tempDir string
+	var (
+		tempDir               string
+		relativePathToTempDir string
+	)
 
 	BeforeEach(func() {
 
@@ -31,7 +39,7 @@ var _ = Describe("DocsGen", func() {
 		projectRoot := filepath.Join(workingDir, "../../")
 		tempDir, err = ioutil.TempDir(projectRoot, "doc-gen-test-")
 		Expect(err).NotTo(HaveOccurred())
-		relativePathToTempDir := filepath.Join("github.com/solo-io/solo-kit", filepath.Base(tempDir))
+		relativePathToTempDir = filepath.Join("github.com/solo-io/solo-kit", filepath.Base(tempDir))
 
 		// Generate test proto file for which doc has to be generated
 		buf := &bytes.Buffer{}
@@ -54,12 +62,18 @@ var _ = Describe("DocsGen", func() {
 		err = ioutil.WriteFile(filepath.Join(tempDir, testProjectConfigName), []byte(buf.String()), 0644)
 		Expect(err).NotTo(HaveOccurred())
 
+		genDocs := &cmd.DocsOptions{
+			Output: options.Hugo,
+			HugoOptions: &options.HugoOptions{
+				DataDir: "data",
+			},
+		}
 		// Run code gen
 		opts := cmd.GenerateOptions{
 			RelativeRoot:  tempDir,
 			SkipGenMocks:  true,
 			CompileProtos: true,
-			GenDocs:       new(cmd.DocsOptions),
+			GenDocs:       genDocs,
 		}
 		err = cmd.Generate(opts)
 		Expect(err).NotTo(HaveOccurred())
@@ -99,6 +113,18 @@ var _ = Describe("DocsGen", func() {
 
 		Expect(foundExpectedDoc).To(BeTrue())
 		Expect(foundUnexpectedDoc).To(BeFalse())
+		dataFile, err := ioutil.ReadFile(filepath.Join(tempDir, "docs", "data", options.HugoProtoDataFile))
+		hugoProtoMap := &datafile.HugoProtobufData{}
+		Expect(yaml.Unmarshal(dataFile, hugoProtoMap)).NotTo(HaveOccurred())
+		apiSummary, ok := hugoProtoMap.Apis["testing.solo.io.GenerateDocsForMe"]
+		Expect(ok).To(BeTrue())
+		Expect(apiSummary).To(Equal(datafile.ApiSummary{
+			RelativePath: filepath.Join(
+				relativePathToTempDir,
+				"doc_gen_test.proto#GenerateDocsForMe"),
+			Package: "testing.solo.io",
+		}))
+
 	})
 
 })
