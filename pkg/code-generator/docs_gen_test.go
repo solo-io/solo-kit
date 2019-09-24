@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
@@ -24,6 +25,9 @@ var _ = Describe("DocsGen", func() {
 		testProtoName         = "doc_gen_test.proto"
 		testProtoNoDocsName   = "no_doc_gen_test.proto"
 		testProjectConfigName = "solo-kit.json"
+		hugoApiDir            = "api"
+		hugoDataDir           = "docs/data"
+		projectConfigDocsDir  = "docs/content"
 	)
 
 	var (
@@ -57,7 +61,7 @@ var _ = Describe("DocsGen", func() {
 
 		// Generate project config
 		buf = &bytes.Buffer{}
-		err = projectConfigFile().Execute(buf, "docs")
+		err = projectConfigFile().Execute(buf, projectConfigDocsDir)
 		Expect(err).NotTo(HaveOccurred())
 		err = ioutil.WriteFile(filepath.Join(tempDir, testProjectConfigName), []byte(buf.String()), 0644)
 		Expect(err).NotTo(HaveOccurred())
@@ -65,7 +69,8 @@ var _ = Describe("DocsGen", func() {
 		genDocs := &cmd.DocsOptions{
 			Output: options.Hugo,
 			HugoOptions: &options.HugoOptions{
-				DataDir: "data",
+				DataDir: hugoDataDir,
+				ApiDir:  hugoApiDir,
 			},
 		}
 		// Run code gen
@@ -113,17 +118,23 @@ var _ = Describe("DocsGen", func() {
 
 		Expect(foundExpectedDoc).To(BeTrue())
 		Expect(foundUnexpectedDoc).To(BeFalse())
-		dataFile, err := ioutil.ReadFile(filepath.Join(tempDir, "docs", "data", options.HugoProtoDataFile))
+		dataFile, err := ioutil.ReadFile(filepath.Join(tempDir, hugoDataDir, options.HugoProtoDataFile))
 		hugoProtoMap := &datafile.HugoProtobufData{}
 		Expect(yaml.Unmarshal(dataFile, hugoProtoMap)).NotTo(HaveOccurred())
 		apiSummary, ok := hugoProtoMap.Apis["testing.solo.io.GenerateDocsForMe"]
 		Expect(ok).To(BeTrue())
 		Expect(apiSummary).To(Equal(datafile.ApiSummary{
 			RelativePath: filepath.Join(
+				hugoApiDir,
 				relativePathToTempDir,
-				"doc_gen_test.proto#GenerateDocsForMe"),
+				"doc_gen_test.proto.sk#GenerateDocsForMe"),
 			Package: "testing.solo.io",
 		}))
+		By("verify that data file's mapping matches Hugo's served url")
+		servedFile := strings.Split(apiSummary.RelativePath, "#")[0]
+		diskFile := filepath.Join(tempDir, projectConfigDocsDir, servedFile+".md")
+		_, err = ioutil.ReadFile(diskFile)
+		Expect(err).NotTo(HaveOccurred())
 
 	})
 
@@ -194,7 +205,7 @@ func projectConfigFile() *template.Template {
   "title": "Solo-Kit Testing",
   "name": "testing.solo.io",
   "version": "v1",
-  "docs_dir": "{{.}}"
+  "docs_dir": "{{.}}/api"
 }
 
 `))

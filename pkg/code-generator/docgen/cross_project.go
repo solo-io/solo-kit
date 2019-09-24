@@ -38,14 +38,12 @@ func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *o
 	if hugoOptions == nil {
 		return nil
 	}
-	hugoDataDir := hugoOptions.DataDir
-	if hugoDataDir == "" {
+	if hugoOptions.DataDir == "" {
 		return nil
 	}
 	hugoPbData := datafile.HugoProtobufData{
 		Apis: make(map[string]datafile.ApiSummary),
 	}
-	docsDir := ""
 
 	for _, projectConfig := range projectConfigs {
 		project, err := parser.ProcessDescriptors(projectConfig, projectConfigs, protoDescriptors)
@@ -59,7 +57,6 @@ func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *o
 				skipMap[res.Filename] = true
 			}
 		}
-		docsDir = project.ProjectConfig.DocsDir
 		protoFiles := protokit.ParseCodeGenRequest(project.Request)
 		for _, pf := range protoFiles {
 			filename := pf.GetName()
@@ -69,11 +66,11 @@ func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *o
 			// TODO - apply if we decide to emit a singe docs page per proto pkg, rather than per proto file
 			// until then, it's not clear which file should be targeted
 			// package-level page link
-			//key, value := getApiSummaryKV(filename, *pf.Package, "")
+			//key, value := getApiSummaryKV(hugoOptions.ApiDir, filename, *pf.Package, "")
 			//hugoPbData.Apis[key] = value
 			for _, message := range pf.Messages {
 				// message-level sub-page link
-				key, value := getApiSummaryKV(filename, *pf.Package, *message.Name)
+				key, value := getApiSummaryKV(hugoOptions.ApiDir, filename, *pf.Package, *message.Name)
 				hugoPbData.Apis[key] = value
 			}
 		}
@@ -84,11 +81,12 @@ func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *o
 	}
 
 	file := code_generator.File{
-		Filename: filepath.Join(hugoDataDir, options.HugoProtoDataFile),
+		Filename: options.HugoProtoDataFile,
 		Content:  string(fileBytes),
 	}
 
-	path := filepath.Join(absoluteRoot, docsDir, file.Filename)
+	// note that the data file is saved in the DataDir, not the directory specified by the project spec
+	path := filepath.Join(absoluteRoot, hugoOptions.DataDir, file.Filename)
 	if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
 		return err
 	}
@@ -101,14 +99,15 @@ func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *o
 
 // util for populating the Hugo ProtoMap to enable allows lookup by
 //   somepkg.solo.io or SomeMessage.somepkg.solo.io
-func getApiSummaryKV(filename, packageName, fieldName string) (string, datafile.ApiSummary) {
+func getApiSummaryKV(apiDir, filename, packageName, fieldName string) (string, datafile.ApiSummary) {
 	key := packageName
 	hashPath := ""
 	if fieldName != "" {
 		hashPath = fmt.Sprintf("#%v", fieldName)
 		key = fmt.Sprintf("%v.%v", packageName, fieldName)
 	}
-	relativePath := fmt.Sprintf("%v%v", filename, hashPath)
+	filePath := filepath.Join(apiDir, filename+options.HugoResourceExtension)
+	relativePath := fmt.Sprintf("%v%v", filePath, hashPath)
 	value := datafile.ApiSummary{
 		RelativePath: relativePath,
 		Package:      packageName,

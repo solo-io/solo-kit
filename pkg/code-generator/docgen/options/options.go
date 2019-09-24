@@ -20,4 +20,8 @@ type DocsOptions struct {
 
 const (
 	HugoProtoDataFile = "ProtoMap.yaml"
+
+	// The relevant extensions when determining how to link to a resource
+	HugoResourceExtension    = ".sk"
+	DefaultResourceExtension = ".sk.md"
 )

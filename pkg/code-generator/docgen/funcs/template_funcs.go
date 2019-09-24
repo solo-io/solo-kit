@@ -362,13 +362,13 @@ func linkForResourceRestructured(resource *model.Resource) string {
 	return fmt.Sprintf(":ref:`%v`", resource.Original.FullName)
 }
 func linkForResourceHugo(resource *model.Resource) string {
-	ext := ".sk"
+	ext := options.HugoResourceExtension
 	prefix := "../"
 	name := strings.ToLower(resource.Name)
 	return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, name)
 }
 func linkForResourceDefault(resource *model.Resource) string {
-	ext := ".sk.md"
+	ext := options.DefaultResourceExtension
 	prefix := "./"
 	name := resource.Name
 	return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, name)
