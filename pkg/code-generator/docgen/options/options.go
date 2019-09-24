@@ -1,7 +1,5 @@
 package options
 
-import "fmt"
-
 type DocsOutput string
 
 const (
@@ -18,13 +16,6 @@ type HugoOptions struct {
 type DocsOptions struct {
 	Output      DocsOutput
 	HugoOptions *HugoOptions
-}
-
-func ValidateGenDocs(genDocs *DocsOptions) error {
-	if genDocs.HugoOptions != nil && genDocs.Output != Hugo {
-		return fmt.Errorf("must only specify HugoOptions for Hugo docs generation, currently generating docs for %v", genDocs.Output)
-	}
-	return nil
 }
 
 const (
