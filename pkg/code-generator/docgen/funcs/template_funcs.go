@@ -337,9 +337,8 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 }
 
 func linkForResource(project *model.Project, docsOptions *options.DocsOptions) func(resource *model.Resource) (string, error) {
-	protoFiles := protokit.ParseCodeGenRequest(project.Request)
 	fileMap := make(map[string]bool)
-	for _, file := range protoFiles {
+	for _, file := range project.Descriptors {
 		fileMap[file.GetName()] = true
 	}
 	return func(resource *model.Resource) (string, error) {

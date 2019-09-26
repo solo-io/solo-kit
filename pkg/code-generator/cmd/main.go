@@ -156,23 +156,18 @@ func Generate(opts GenerateOptions) error {
 		}
 	}
 
-	for _, projectConfig := range projectConfigs {
+	projectMap, err := parser.ProcessDescriptorsFromConfigs(projectConfigs, protoDescriptors)
+	if err != nil {
+		return err
+	}
 
-		// Build a 'Project' object that contains a resource for each message that:
-		// - is contained in the FileDescriptor and
-		// - is a solo kit resource (i.e. it has a field named 'metadata')
-
-		project, err := parser.ProcessDescriptors(projectConfig, projectConfigs, protoDescriptors)
-		if err != nil {
-			return err
-		}
-
+	for _, project := range projectMap {
 		code, err := codegen.GenerateFiles(project, true, opts.SkipGeneratedTests)
 		if err != nil {
 			return err
 		}
 
-		if err := writePerProjectsDocs(project, genDocs, absoluteRoot); err != nil {
+		if err := docgen.WritePerProjectsDocs(project, genDocs, absoluteRoot); err != nil {
 			return err
 		}
 
@@ -204,7 +199,7 @@ func Generate(opts GenerateOptions) error {
 			}
 		}
 	}
-	if err := docgen.WriteCrossProjectDocs(projectConfigs, genDocs, absoluteRoot, protoDescriptors); err != nil {
+	if err := docgen.WriteCrossProjectDocs(genDocs, absoluteRoot, projectMap); err != nil {
 		return err
 	}
 
@@ -562,24 +557,4 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 	}
 
 	return results, nil
-}
-
-func writePerProjectsDocs(project *model.Project, genDocs *options.DocsOptions, absoluteRoot string) error {
-	if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
-		docs, err := docgen.GenerateFiles(project, genDocs)
-		if err != nil {
-			return err
-		}
-
-		for _, file := range docs {
-			path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-				return err
-			}
-			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

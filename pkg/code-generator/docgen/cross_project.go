@@ -6,33 +6,39 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 
 	"gopkg.in/yaml.v2"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
 
-	"github.com/ilackarms/protokit"
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
-	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func WriteCrossProjectDocs(projectConfigs []*model.ProjectConfig, genDocs *options.DocsOptions, absoluteRoot string, protoDescriptors []*descriptor.FileDescriptorProto) error {
+// write docs that are produced from the content of multiple projects
+func WriteCrossProjectDocs(
+	genDocs *options.DocsOptions,
+	absoluteRoot string,
+	projectMap parser.ProjectMap,
+) error {
 	if genDocs == nil {
 		return nil
 	}
 	switch genDocs.Output {
 	case options.Hugo:
-		return WriteCrossProjectDocsHugo(projectConfigs, genDocs, absoluteRoot, protoDescriptors)
+		return WriteCrossProjectDocsHugo(genDocs, absoluteRoot, projectMap)
 	default:
 		return nil
 	}
 }
 
 // Hugo docs require a datafile that is used by shortcodes
-func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *options.DocsOptions, absoluteRoot string, protoDescriptors []*descriptor.FileDescriptorProto) error {
+func WriteCrossProjectDocsHugo(
+	genDocs *options.DocsOptions,
+	absoluteRoot string,
+	projectMap parser.ProjectMap,
+) error {
 	// only write the data file if a data dir is specified
 	hugoOptions := genDocs.HugoOptions
 	if hugoOptions == nil {
@@ -45,11 +51,7 @@ func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *o
 		Apis: make(map[string]datafile.ApiSummary),
 	}
 
-	for _, projectConfig := range projectConfigs {
-		project, err := parser.ProcessDescriptors(projectConfig, projectConfigs, protoDescriptors)
-		if err != nil {
-			return err
-		}
+	for _, project := range projectMap {
 		// Collect names of files that contain resources for which doc gen has to be skipped
 		skipMap := make(map[string]bool)
 		for _, res := range project.Resources {
@@ -57,8 +59,7 @@ func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *o
 				skipMap[res.Filename] = true
 			}
 		}
-		protoFiles := protokit.ParseCodeGenRequest(project.Request)
-		for _, pf := range protoFiles {
+		for _, pf := range project.Descriptors {
 			filename := pf.GetName()
 			if skipMap[filename] {
 				continue
@@ -98,7 +99,7 @@ func WriteCrossProjectDocsHugo(projectConfigs []*model.ProjectConfig, genDocs *o
 }
 
 // util for populating the Hugo ProtoMap to enable allows lookup by
-//   somepkg.solo.io or SomeMessage.somepkg.solo.io
+//   somepkg.solo.io or somepkg.solo.io.SomeMessage
 func getApiSummaryKV(apiDir, filename, packageName, fieldName string) (string, datafile.ApiSummary) {
 	key := packageName
 	hashPath := ""
