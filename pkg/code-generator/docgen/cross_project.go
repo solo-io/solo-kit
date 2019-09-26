@@ -64,14 +64,24 @@ func WriteCrossProjectDocsHugo(
 			if skipMap[filename] {
 				continue
 			}
+			if pf.Package == nil {
+				fmt.Printf("underspecified project descriptor will not be added to the map: %v", pf)
+				continue
+			}
+			protoPkgName := *pf.Package
 			// TODO - apply if we decide to emit a singe docs page per proto pkg, rather than per proto file
 			// until then, it's not clear which file should be targeted
 			// package-level page link
 			//key, value := getApiSummaryKV(hugoOptions.ApiDir, filename, *pf.Package, "")
 			//hugoPbData.Apis[key] = value
 			for _, message := range pf.Messages {
+				if message.Name == nil {
+					fmt.Printf("underspecified message will not be added to the map: %v", message)
+					continue
+				}
+				protoMsgName := *message.Name
 				// message-level sub-page link
-				key, value := getApiSummaryKV(hugoOptions.ApiDir, filename, *pf.Package, *message.Name)
+				key, value := getApiSummaryKV(hugoOptions.ApiDir, filename, protoPkgName, protoMsgName)
 				hugoPbData.Apis[key] = value
 			}
 		}

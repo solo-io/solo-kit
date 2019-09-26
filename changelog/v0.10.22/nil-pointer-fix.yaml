@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Check for nil before accessing proto pkg and message names.
+    issueLink: https://github.com/solo-io/solo-kit/issues/281
