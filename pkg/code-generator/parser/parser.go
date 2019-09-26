@@ -13,7 +13,24 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func ProcessDescriptors(projectConfig *model.ProjectConfig, allProjectConfigs []*model.ProjectConfig, descriptors []*descriptor.FileDescriptorProto) (*model.Project, error) {
+type ProjectMap map[*model.ProjectConfig]*model.Project
+
+func ProcessDescriptorsFromConfigs(projectConfigs []*model.ProjectConfig, protoDescriptors []*descriptor.FileDescriptorProto) (ProjectMap, error) {
+	projectMap := make(ProjectMap)
+	for _, projectConfig := range projectConfigs {
+		project, err := ProcessDescriptorsFromConfig(projectConfig, projectConfigs, protoDescriptors)
+		if err != nil {
+			return nil, err
+		}
+		projectMap[projectConfig] = project
+	}
+	return projectMap, nil
+}
+
+// Build a 'Project' object that contains a resource for each message that:
+// - is contained in the FileDescriptor and
+// - is a solo kit resource (i.e. it has a field named 'metadata')
+func ProcessDescriptorsFromConfig(projectConfig *model.ProjectConfig, allProjectConfigs []*model.ProjectConfig, descriptors []*descriptor.FileDescriptorProto) (*model.Project, error) {
 	req := &plugin_go.CodeGeneratorRequest{}
 	for _, file := range descriptors {
 		var added bool
@@ -58,6 +75,7 @@ func parseRequest(projectConfig *model.ProjectConfig, allProjectConfigs []*model
 		ProjectConfig: *projectConfig,
 		ProtoPackage:  projectConfig.Name,
 		Request:       req,
+		Descriptors:   descriptors,
 	}
 	resources, resourceGroups, err := getResources(project, allProjectConfigs, messages)
 	if err != nil {

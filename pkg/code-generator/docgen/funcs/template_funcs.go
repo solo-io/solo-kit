@@ -337,29 +337,40 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 }
 
 func linkForResource(project *model.Project, docsOptions *options.DocsOptions) func(resource *model.Resource) (string, error) {
-	protoFiles := protokit.ParseCodeGenRequest(project.Request)
-	return func(resource *model.Resource) (string, error) {
-		for _, file := range protoFiles {
-			if file.GetName() == resource.Filename {
-				// TODO: turn this X.proto.sk.md convention into a function lest this linking break
-				if docsOptions.Output == options.Restructured {
-					return fmt.Sprintf(":ref:`%v`", resource.Original.FullName), nil
-				}
-				ext := ".sk.md"
-				prefix := "./"
-				name := resource.Name
-				if docsOptions.Output == options.Hugo {
-					ext = ".sk"
-					prefix = "../"
-					name = strings.ToLower(name)
-				}
-
-				return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, name), nil
-			}
-		}
-		return "", errors.Errorf("internal error: could not find file for resource %v in project %v",
-			resource.Filename, project.ProjectConfig.Name)
+	fileMap := make(map[string]bool)
+	for _, file := range project.Descriptors {
+		fileMap[file.GetName()] = true
 	}
+	return func(resource *model.Resource) (string, error) {
+		if _, ok := fileMap[resource.Filename]; !ok {
+			return "", errors.Errorf("internal error: could not find file for resource %v in project %v",
+				resource.Filename, project.ProjectConfig.Name)
+		}
+		switch docsOptions.Output {
+		case options.Restructured:
+			return linkForResourceRestructured(resource), nil
+		case options.Hugo:
+			return linkForResourceHugo(resource), nil
+		default:
+			return linkForResourceDefault(resource), nil
+		}
+	}
+}
+
+func linkForResourceRestructured(resource *model.Resource) string {
+	return fmt.Sprintf(":ref:`%v`", resource.Original.FullName)
+}
+func linkForResourceHugo(resource *model.Resource) string {
+	ext := options.HugoResourceExtension
+	prefix := "../"
+	name := strings.ToLower(resource.Name)
+	return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, name)
+}
+func linkForResourceDefault(resource *model.Resource) string {
+	ext := options.DefaultResourceExtension
+	prefix := "./"
+	name := resource.Name
+	return fmt.Sprintf("[%v](%v%v%v#%v)", resource.Name, prefix, resource.Filename, ext, name)
 }
 
 func resourceForMessage(project *model.Project) func(msg *protokit.Descriptor) (*model.Resource, error) {

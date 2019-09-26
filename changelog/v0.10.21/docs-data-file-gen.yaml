@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add datafile output to hugo docs generation for enhanced API links.
+    issueLink: https://github.com/solo-io/solo-kit/issues/280

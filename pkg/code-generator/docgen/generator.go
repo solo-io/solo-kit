@@ -3,6 +3,8 @@ package docgen
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -26,6 +28,57 @@ type DocsGen struct {
 var ignoredFiles = []string{
 	"validate/validate.proto",
 	"github.com/solo-io/solo-kit/api/external/validate/validate.proto",
+}
+
+// write docs that are produced from the content of a single project
+func WritePerProjectsDocs(project *model.Project, genDocs *options.DocsOptions, absoluteRoot string) error {
+	if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
+		docs, err := GenerateFiles(project, genDocs)
+		if err != nil {
+			return err
+		}
+
+		for _, file := range docs {
+			path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
+			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+				return err
+			}
+			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (code_generator.Files, error) {
+	if docsOptions == nil {
+		docsOptions = &options.DocsOptions{}
+	}
+
+	if docsOptions.Output == "" {
+		docsOptions.Output = options.Markdown
+	}
+
+	docGenerator := DocsGen{
+		DocsOptions: *docsOptions,
+		Project:     project,
+	}
+
+	files, err := docGenerator.GenerateFilesForProject()
+	if err != nil {
+		return nil, err
+	}
+	messageFiles, err := docGenerator.GenerateFilesForProtoFiles(project.Descriptors)
+	if err != nil {
+		return nil, err
+	}
+	files = append(files, messageFiles...)
+
+	for i := range files {
+		files[i].Content = docGenerator.FileHeader(files[i].Filename) + files[i].Content
+	}
+	return files, nil
 }
 
 func (d *DocsGen) protoSuffix() string {
@@ -87,37 +140,6 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 	}
 
 	return v, nil
-}
-
-func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (code_generator.Files, error) {
-	protoFiles := protokit.ParseCodeGenRequest(project.Request)
-	if docsOptions == nil {
-		docsOptions = &options.DocsOptions{}
-	}
-
-	if docsOptions.Output == "" {
-		docsOptions.Output = options.Markdown
-	}
-
-	docGenerator := DocsGen{
-		DocsOptions: *docsOptions,
-		Project:     project,
-	}
-
-	files, err := docGenerator.GenerateFilesForProject()
-	if err != nil {
-		return nil, err
-	}
-	messageFiles, err := docGenerator.GenerateFilesForProtoFiles(protoFiles)
-	if err != nil {
-		return nil, err
-	}
-	files = append(files, messageFiles...)
-
-	for i := range files {
-		files[i].Content = docGenerator.FileHeader(files[i].Filename) + files[i].Content
-	}
-	return files, nil
 }
 
 func (d *DocsGen) FileHeader(filename string) string {
