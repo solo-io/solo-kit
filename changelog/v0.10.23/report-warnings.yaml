@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Enable reporting warnings with V2 Reporter
+    issueLink: https://github.com/solo-io/solo-kit/pull/283
+  - type: NEW_FEATURE
+    description: add protoutil -> unmarshal kube yaml
+    issueLink: https://github.com/solo-io/solo-kit/pull/285
