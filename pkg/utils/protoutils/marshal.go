@@ -7,6 +7,10 @@ import (
 	"bytes"
 	"encoding/json"
 
+	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+
 	"sigs.k8s.io/yaml"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -129,4 +133,26 @@ func MapStringInterfaceToMapStringString(interfaceMap map[string]interface{}) (m
 		stringMap[k] = string(yml)
 	}
 	return stringMap, nil
+}
+
+// convert raw Kube JSON to a Solo-Kit resource
+func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
+	var resourceCrd v1.Resource
+	if err := json.Unmarshal(kubeJson, &resourceCrd); err != nil {
+		return errors.Wrapf(err, "unmarshalling from raw json")
+	}
+	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
+	if withStatus, ok := resource.(resources.InputResource); ok {
+		resources.UpdateStatus(withStatus, func(status *core.Status) {
+			*status = resourceCrd.Status
+		})
+	}
+
+	if resourceCrd.Spec != nil {
+		if err := UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+			return errors.Wrapf(err, "parsing resource from crd spec %v in namespace %v into %T", resourceCrd.Name, resourceCrd.Namespace, resource)
+		}
+	}
+
+	return nil
 }
