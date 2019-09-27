@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// TODO: fix tests
 func TestReporter(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Reporter Suite")

@@ -24,8 +24,6 @@ var _ = Describe("Reporter", func() {
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", mockResourceClient, fakeResourceClient)
 	})
-	AfterEach(func() {
-	})
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
