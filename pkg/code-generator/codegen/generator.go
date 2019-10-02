@@ -26,6 +26,13 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 	if err != nil {
 		return nil, err
 	}
+	if genKubeTypes {
+		kubeFiles, err := generateKubeFilesForProject(project)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, kubeFiles...)
+	}
 	for _, res := range project.Resources {
 		// only generate files for the resources in our group, otherwise we import
 		if !project.ProjectConfig.IsOurProto(res.Filename) && !res.IsCustom {
@@ -46,7 +53,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 		}
 		files = append(files, fs...)
 
-		if genKubeTypes {
+		if genKubeTypes && res.Project == project {
 			generatedKubeTypeFiles, err := generateKubeFilesForResource(res)
 			if err != nil {
 				return nil, err
@@ -128,23 +135,6 @@ func generateFilesForResource(resource *model.Resource) (code_generator.Files, e
 	return v, nil
 }
 
-func generateKubeFilesForResource(resource *model.Resource) (code_generator.Files, error) {
-	var v code_generator.Files
-	for suffix, tmpl := range map[string]*template.Template{
-		".kube.sk.go": kube.ResourceTemplate,
-	} {
-		content, err := generateResourceFile(resource, tmpl)
-		if err != nil {
-			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource %v failed", tmpl.ParseName, resource.Name)
-		}
-		v = append(v, code_generator.File{
-			Filename: filepath.Join("kube", strcase.ToSnake(resource.Name)+suffix),
-			Content:  content,
-		})
-	}
-	return v, nil
-}
-
 func generateFilesForResourceGroup(rg *model.ResourceGroup) (code_generator.Files, error) {
 	var v code_generator.Files
 	for suffix, tmpl := range map[string]*template.Template{
@@ -179,6 +169,41 @@ func generateFilesForProject(project *model.Project) (code_generator.Files, erro
 		}
 		v = append(v, code_generator.File{
 			Filename: strcase.ToSnake(project.ProjectConfig.Name) + suffix,
+			Content:  content,
+		})
+	}
+	return v, nil
+}
+
+func generateKubeFilesForProject(project *model.Project) (code_generator.Files, error) {
+	var v code_generator.Files
+	for suffix, tmpl := range map[string]*template.Template{
+		"_doc.go":      kube.DocTemplate,
+		"_register.go": kube.RegisterTemplate,
+	} {
+		content, err := generateProjectFile(project, tmpl)
+		if err != nil {
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for project %v failed", tmpl.ParseName, project.ProjectConfig.Name)
+		}
+		v = append(v, code_generator.File{
+			Filename: filepath.Join("kube", strcase.ToSnake(project.ProjectConfig.Name)+suffix),
+			Content:  content,
+		})
+	}
+	return v, nil
+}
+
+func generateKubeFilesForResource(resource *model.Resource) (code_generator.Files, error) {
+	var v code_generator.Files
+	for suffix, tmpl := range map[string]*template.Template{
+		".kube.sk.go": kube.ResourceTemplate,
+	} {
+		content, err := generateResourceFile(resource, tmpl)
+		if err != nil {
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource %v failed", tmpl.ParseName, resource.Name)
+		}
+		v = append(v, code_generator.File{
+			Filename: filepath.Join("kube", strcase.ToSnake(resource.Name)+suffix),
 			Content:  content,
 		})
 	}
