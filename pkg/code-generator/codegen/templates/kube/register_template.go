@@ -24,18 +24,22 @@ var (
 
 const (
 	// Package-wide consts from generator "register".
-	GroupName = {{ .ProjectConfig.Name }}
+	GroupName = "{{ .ProjectConfig.Name }}"
 )
 
 func Resource(resource string) schema.GroupResource {
 	return SchemeGroupVersion.WithResource(resource).GroupResource()
 }
 
+{{ $project := . }}
+
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 {{- range .Resources }}
+{{- if resourceBelongsToProject $project . }}
 		&{{ .Name }}{},
 		&{{ .Name }}List{},
+{{- end }}
 {{- end }}
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

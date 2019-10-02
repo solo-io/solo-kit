@@ -175,6 +175,10 @@ func generateFilesForProject(project *model.Project) (code_generator.Files, erro
 	return v, nil
 }
 
+func kubeProjectPrefix(projectName, version string) string {
+	return filepath.Join("kube", "apis", projectName, version)
+}
+
 func generateKubeFilesForProject(project *model.Project) (code_generator.Files, error) {
 	var v code_generator.Files
 	for suffix, tmpl := range map[string]*template.Template{
@@ -186,7 +190,7 @@ func generateKubeFilesForProject(project *model.Project) (code_generator.Files, 
 			return nil, errors.Wrapf(err, "internal error: processing template '%v' for project %v failed", tmpl.ParseName, project.ProjectConfig.Name)
 		}
 		v = append(v, code_generator.File{
-			Filename: filepath.Join("kube", strcase.ToSnake(project.ProjectConfig.Name)+suffix),
+			Filename: filepath.Join(kubeProjectPrefix(project.ProjectConfig.Name, project.ProjectConfig.Version), strcase.ToSnake(project.ProjectConfig.Name)+suffix),
 			Content:  content,
 		})
 	}
@@ -203,7 +207,7 @@ func generateKubeFilesForResource(resource *model.Resource) (code_generator.File
 			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource %v failed", tmpl.ParseName, resource.Name)
 		}
 		v = append(v, code_generator.File{
-			Filename: filepath.Join("kube", strcase.ToSnake(resource.Name)+suffix),
+			Filename: filepath.Join(kubeProjectPrefix(resource.Project.ProjectConfig.Name, resource.Version), strcase.ToSnake(resource.Name)+suffix),
 			Content:  content,
 		})
 	}
