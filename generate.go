@@ -14,6 +14,7 @@ func main() {
 		RelativeRoot:  ".",
 		CompileProtos: true,
 		SkipGenMocks:  true,
+		GenKubeTypes:  true,
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}

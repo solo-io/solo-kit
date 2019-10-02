@@ -82,6 +82,9 @@ var Funcs = template.FuncMap{
 		}
 		return result
 	},
+	"backtick": func() string {
+		return "`"
+	},
 }
 
 func printPointer(format string, p *string) string {
