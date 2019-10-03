@@ -58,9 +58,6 @@ type GenerateOptions struct {
 	SkipGenMocks bool
 	// skip generated tests
 	SkipGeneratedTests bool
-
-	// Generate Kubernetes clients and types
-	GenKubeTypes bool
 }
 
 type DescriptorWithPath struct {
@@ -165,7 +162,7 @@ func Generate(opts GenerateOptions) error {
 	}
 
 	for _, project := range projectMap {
-		code, err := codegen.GenerateFiles(project, true, opts.SkipGeneratedTests, opts.GenKubeTypes)
+		code, err := codegen.GenerateFiles(project, true, opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
 		if err != nil {
 			return err
 		}

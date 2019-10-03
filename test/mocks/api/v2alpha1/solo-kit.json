@@ -16,5 +16,6 @@
         "version": "v1"
       }
     ]
-  }
+  },
+  "gen_kube_types": true
 }

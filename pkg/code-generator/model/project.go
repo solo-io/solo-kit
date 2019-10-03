@@ -38,6 +38,9 @@ type ProjectConfig struct {
 	// set by load if not specified
 	GoPackage string `json:"go_package"`
 
+	// Generate Kube clientset & types
+	GenKubeTypes bool `json:"gen_kube_types"`
+
 	// set by load
 	ProjectFile   string
 	ProjectProtos []string
