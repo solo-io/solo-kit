@@ -990,8 +990,7 @@
   revision = "7f0e3c78365f6feb94a923557976d4a305de441b"
 
 [[projects]]
-  branch = "master"
-  digest = "1:a76b4d3f21998bf273d501aa43c7904efe9dc6f5d1e214e7d8d8dbe21b5b0909"
+  digest = "1:9fea3529b893ec9961f43e80880cff67ddde3216499e1390b8aae3ae2b36ea39"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -1038,7 +1037,8 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "0cd393178e09f379032a493f73993dc600e1959d"
+  revision = "86fb29eff6288413d76bd8506874fddd9fccdff0"
+  version = "kubernetes-1.13.4"
 
 [[projects]]
   digest = "1:fc2406e4cef882f2372bfe728ee1f020fca2089acbce44347f1f5071582119f9"

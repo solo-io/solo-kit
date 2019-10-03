@@ -53,13 +53,6 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 		}
 		files = append(files, fs...)
 
-		if genKubeTypes && res.Project == project {
-			generatedKubeTypeFiles, err := generateKubeFilesForResource(res)
-			if err != nil {
-				return nil, err
-			}
-			files = append(files, generatedKubeTypeFiles...)
-		}
 	}
 	for _, grp := range project.ResourceGroups {
 		if skipOutOfPackageFiles && !(strings.HasSuffix(grp.Name, "."+project.ProtoPackage) || grp.Name == project.ProtoPackage) {
@@ -182,32 +175,16 @@ func kubeProjectPrefix(projectName, version string) string {
 func generateKubeFilesForProject(project *model.Project) (code_generator.Files, error) {
 	var v code_generator.Files
 	for suffix, tmpl := range map[string]*template.Template{
-		"_doc.go":      kube.DocTemplate,
-		"_register.go": kube.RegisterTemplate,
+		"doc.go":      kube.DocTemplate,
+		"register.go": kube.RegisterTemplate,
+		"types.go":    kube.TypesTemplate,
 	} {
 		content, err := generateProjectFile(project, tmpl)
 		if err != nil {
 			return nil, errors.Wrapf(err, "internal error: processing template '%v' for project %v failed", tmpl.ParseName, project.ProjectConfig.Name)
 		}
 		v = append(v, code_generator.File{
-			Filename: filepath.Join(kubeProjectPrefix(project.ProjectConfig.Name, project.ProjectConfig.Version), strcase.ToSnake(project.ProjectConfig.Name)+suffix),
-			Content:  content,
-		})
-	}
-	return v, nil
-}
-
-func generateKubeFilesForResource(resource *model.Resource) (code_generator.Files, error) {
-	var v code_generator.Files
-	for suffix, tmpl := range map[string]*template.Template{
-		".kube.sk.go": kube.ResourceTemplate,
-	} {
-		content, err := generateResourceFile(resource, tmpl)
-		if err != nil {
-			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource %v failed", tmpl.ParseName, resource.Name)
-		}
-		v = append(v, code_generator.File{
-			Filename: filepath.Join(kubeProjectPrefix(resource.Project.ProjectConfig.Name, resource.Version), strcase.ToSnake(resource.Name)+suffix),
+			Filename: filepath.Join(kubeProjectPrefix(project.ProjectConfig.Name, project.ProjectConfig.Version), suffix),
 			Content:  content,
 		})
 	}
