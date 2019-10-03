@@ -139,6 +139,11 @@ func (o *AnotherMockResource) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*AnotherMockResource)
 }
 
+func (o *AnotherMockResource) DeepCopyInto(out *AnotherMockResource) {
+	clone := resources.Clone(o).(*AnotherMockResource)
+	*out = *clone
+}
+
 var (
 	AnotherMockResourceCrd = crd.NewCrd(
 		"anothermockresources",
