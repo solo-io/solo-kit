@@ -6,7 +6,6 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
 	"k8s.io/client-go/rest"
@@ -23,15 +22,23 @@ type clusterClientTuple struct {
 }
 
 // TODO update this to be a complete snapshot's worth of clients
-type WatchAggregator struct {
+type KubeWatchAggregator struct {
 	clients chan clusterClientTuple
 	cancels map[string]contextCancelTuple
 }
 
-func (w WatchAggregator) ClusterAdded(cluster string, restConfig *rest.Config) {
+func NewKubeWatchAggregator() KubeWatchAggregator {
+	return KubeWatchAggregator{
+		clients: make(chan clusterClientTuple),
+		cancels: make(map[string]contextCancelTuple),
+	}
+}
+
+func (w KubeWatchAggregator) ClusterAdded(cluster string, restConfig *rest.Config) {
+	// TODO generate inline or pass in a means of generating base resource clients here.
 	krc := &factory.KubeResourceClientFactory{
 		Cluster: cluster,
-		Crd:     crd.Crd{}, // TODO generate
+		Crd:     v2alpha1.MockResourceCrd, // TODO generate
 		Cfg:     restConfig,
 		// TODO Pass in through opts to aggregator
 		SharedCache:        nil,
@@ -52,7 +59,7 @@ func (w WatchAggregator) ClusterAdded(cluster string, restConfig *rest.Config) {
 	w.cancels[cluster] = contextCancelTuple{ctx: ctx, cancel: cancel}
 }
 
-func (w WatchAggregator) ClusterRemoved(cluster string, restConfig *rest.Config) {
+func (w KubeWatchAggregator) ClusterRemoved(cluster string, restConfig *rest.Config) {
 	// cancel watch
 	cc, ok := w.cancels[cluster]
 	if !ok {
@@ -62,7 +69,7 @@ func (w WatchAggregator) ClusterRemoved(cluster string, restConfig *rest.Config)
 	delete(w.cancels, cluster)
 }
 
-func (w WatchAggregator) AggregatedWatch(namespace string) clients.ResourceWatch {
+func (w KubeWatchAggregator) AggregatedWatch(namespace string) clients.ResourceWatch {
 	// spin up clients based on stream
 	return func(ctx context.Context) (<-chan resources.ResourceList, <-chan error, error) {
 		listsByWatcher := newResourcesByWatchIndex()
