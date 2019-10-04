@@ -7,6 +7,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/multicluster"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
@@ -19,15 +20,25 @@ func bar() {
 
 	// Get setup to watch config
 	kcw := multicluster.NewKubeConfigWatcher()
-	watchAggregator := multicluster.NewKubeWatchAggregator()
-	restConfigHandler := multicluster.NewRestConfigHandler(kcw, watchAggregator)
+
+	mockClientSet := multicluster.NewMockResourceClientSet()
+	restConfigHandler := multicluster.NewRestConfigHandler(kcw, mockClientSet)
+
 	cfg, _ := kubeutils.GetConfig("", "")
 	kubeclient, _ := kubernetes.NewForConfig(cfg)
 	kubeCache, _ := cache.NewKubeCoreCache(ctx, kubeclient)
+
+	watchAggregator := multicluster.NewKubeWatchAggregator()
 	errs, err := restConfigHandler.Run(ctx, cfg, kubeclient, kubeCache)
 
 	emitter := v1.NewTestingSimpleEmitter(watchAggregator.AggregatedWatch(""))
 	errs, err = v1.NewTestingSimpleEventLoop(emitter, testSyncer{}).Run(ctx)
+
+	exampleClient, err := mockClientSet.ClientFor("")
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Fatal(zap.Error(err))
+	}
+	exampleClient.List("", clients.ListOpts{})
 
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Fatal(zap.Error(err))
