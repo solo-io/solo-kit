@@ -15,7 +15,7 @@ type coreCacheWrapper struct {
 }
 
 type KubeCoreCacheGetter interface {
-	GetCache(cluster string) cache.KubeCoreCache
+	GetCache(cluster string, restConfig *rest.Config) cache.KubeCoreCache
 }
 
 type KubeCoreCacheManager interface {
@@ -39,16 +39,19 @@ func NewKubeCoreCacheManager(ctx context.Context) *manager {
 	}
 }
 
-// TODO should this just be a noop since GetCache can handle provisioning new caches?
 func (m *manager) ClusterAdded(cluster string, restConfig *rest.Config) {
+	// noop -- new caches are added lazily via GetCache
+}
+
+func (m *manager) addCluster(cluster string, restConfig *rest.Config) coreCacheWrapper {
 	ctx, cancel := context.WithCancel(m.ctx)
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return
+		return coreCacheWrapper{}
 	}
 	coreCache, err := cache.NewKubeCoreCache(ctx, kubeClient)
 	if err != nil {
-		return
+		return coreCacheWrapper{}
 	}
 
 	cw := coreCacheWrapper{
@@ -58,6 +61,7 @@ func (m *manager) ClusterAdded(cluster string, restConfig *rest.Config) {
 	m.cacheAccess.Lock()
 	defer m.cacheAccess.Unlock()
 	m.caches[cluster] = cw
+	return cw
 }
 
 func (m *manager) ClusterRemoved(cluster string, restConfig *rest.Config) {
@@ -69,12 +73,12 @@ func (m *manager) ClusterRemoved(cluster string, restConfig *rest.Config) {
 	}
 }
 
-func (m *manager) GetCache(cluster string) cache.KubeCoreCache {
+func (m *manager) GetCache(cluster string, restConfig *rest.Config) cache.KubeCoreCache {
 	m.cacheAccess.RLock()
-	defer m.cacheAccess.RUnlock()
 	cw, exists := m.caches[cluster]
+	m.cacheAccess.RUnlock()
 	if exists {
 		return cw.coreCache
 	}
-	return nil
+	return m.addCluster(cluster, restConfig).coreCache
 }

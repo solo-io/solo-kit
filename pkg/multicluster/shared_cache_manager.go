@@ -38,8 +38,11 @@ func NewKubeSharedCacheManager(ctx context.Context) *sharedCacheManager {
 	}
 }
 
-// TODO should this just be a noop since GetCache can handle provisioning new caches?
 func (m *sharedCacheManager) ClusterAdded(cluster string, restConfig *rest.Config) {
+	// noop -- new caches are added lazily via GetCache
+}
+
+func (m *sharedCacheManager) addCluster(cluster string) sharedCacheWrapper {
 	m.cacheAccess.Lock()
 	defer m.cacheAccess.Unlock()
 	ctx, cancel := context.WithCancel(m.ctx)
@@ -48,6 +51,7 @@ func (m *sharedCacheManager) ClusterAdded(cluster string, restConfig *rest.Confi
 		sharedCache: kube.NewKubeCache(ctx),
 	}
 	m.caches[cluster] = cw
+	return cw
 }
 
 func (m *sharedCacheManager) ClusterRemoved(cluster string, restConfig *rest.Config) {
@@ -63,8 +67,8 @@ func (m *sharedCacheManager) GetCache(cluster string) kube.SharedCache {
 	m.cacheAccess.RLock()
 	defer m.cacheAccess.RUnlock()
 	cw, exists := m.caches[cluster]
-	if !exists {
-		return nil
+	if exists {
+		return cw.sharedCache
 	}
-
+	return m.addCluster(cluster).sharedCache
 }
