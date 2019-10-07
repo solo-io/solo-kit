@@ -1,73 +1,56 @@
 package multicluster
 
 import (
-	"context"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
 	"k8s.io/client-go/rest"
 )
 
-// TODO this should be a shared struct
-type ClusterClient struct {
-	Client  clients.ResourceClient
-	Cluster string
-	// TODO maybe don't export these
-	Ctx    context.Context
-	Cancel context.CancelFunc
-}
-
-// TODO this should be a shared interface
-type ClientSet interface {
-	Clients() chan *ClusterClient
-}
-
-type ccWrapper struct {
-	cc          *ClusterClient
-	typedClient v2alpha1.MockResourceClient
-}
-
-type MockResourceClientSet interface {
+type MockResourceMultiClusterClient interface {
 	ClusterHandler
-	ClientSet
 	// TODO generate strongly typed client here
 	ClientFor(cluster string) (v2alpha1.MockResourceClient, error)
 }
 
 type mockResourceClientSet struct {
-	clients      map[string]*ccWrapper
-	clientStream chan *ClusterClient
+	clients    map[string]v2alpha1.MockResourceClient
+	aggregator wrapper.WatchAggregator
+	// TODO this should be different depending on which kind of client we have
+	// Maybe it's more of a client factory
+	cacheGetter CacheGetter
 }
 
-// TODO support some config, e.g. shared cache
-func NewMockResourceClientSet() *mockResourceClientSet {
+func NewMockResourceClientSet(cacheGetter CacheGetter) *mockResourceClientSet {
+	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil)
+}
+
+func NewMockResourceClientWithWatchAggregator(cacheGetter CacheGetter, aggregator wrapper.WatchAggregator) *mockResourceClientSet {
 	return &mockResourceClientSet{
-		clients:      make(map[string]*ccWrapper),
-		clientStream: make(chan *ClusterClient),
+		clients:     make(map[string]v2alpha1.MockResourceClient),
+		cacheGetter: cacheGetter,
+		aggregator:  aggregator,
 	}
 }
 
-func (c *mockResourceClientSet) Clients() chan *ClusterClient {
-	return c.clientStream
-}
-
 func (c *mockResourceClientSet) ClientFor(cluster string) (v2alpha1.MockResourceClient, error) {
-	if cc, ok := c.clients[cluster]; ok {
-		return cc.typedClient, nil
+	if client, ok := c.clients[cluster]; ok {
+		return client, nil
 	}
 	return nil, errors.Errorf("DNE")
 }
 
 func (c *mockResourceClientSet) ClusterAdded(cluster string, restConfig *rest.Config) {
 	// TODO generate, support other types of clients
+	cache := c.cacheGetter.GetCache(cluster)
+
 	krc := &factory.KubeResourceClientFactory{
-		Cluster: cluster,
-		Crd:     v2alpha1.MockResourceCrd,
-		Cfg:     restConfig,
+		Cluster:     cluster,
+		Crd:         v2alpha1.MockResourceCrd,
+		Cfg:         restConfig,
+		SharedCache: cache,
 		// TODO Pass in through opts to constructor
-		SharedCache:        nil,
 		SkipCrdCreation:    false,
 		NamespaceWhitelist: nil,
 		ResyncPeriod:       0,
@@ -79,28 +62,21 @@ func (c *mockResourceClientSet) ClusterAdded(cluster string, restConfig *rest.Co
 	if err := client.Register(); err != nil {
 		return
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	cc := &ClusterClient{
-		Client:  client.BaseClient(),
-		Cluster: cluster,
-		Ctx:     ctx,
-		Cancel:  cancel,
-	}
-	wrapper := &ccWrapper{
-		cc:          cc,
-		typedClient: client,
-	}
 	// TODO handle cases where clients for the cluster already exist ?
-	c.clients[cluster] = wrapper
-	c.clientStream <- cc
+	c.clients[cluster] = client
+	if c.aggregator != nil {
+		if err := c.aggregator.AddWatch(client.BaseClient()); err != nil {
+			// TODO
+		}
+	}
 }
 
 func (c *mockResourceClientSet) ClusterRemoved(cluster string, restConfig *rest.Config) {
-	// cancel context associated with the ClusterClient, remove it from the set
-	wrapper, ok := c.clients[cluster]
-	if !ok {
-		return
+	if client, ok := c.clients[cluster]; ok {
+		delete(c.clients, cluster)
+
+		if c.aggregator != nil {
+			c.aggregator.RemoveWatch(client.BaseClient())
+		}
 	}
-	wrapper.cc.Cancel()
-	delete(c.clients, cluster)
 }
