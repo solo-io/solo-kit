@@ -1,15 +1,17 @@
 package multicluster
 
 import (
+	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
 	"k8s.io/client-go/rest"
 )
 
 type MockResourceMultiClusterClient interface {
 	ClusterHandler
+	v2alpha1.MockResourceClient
 	// TODO generate strongly typed client here
 	ClientFor(cluster string) (v2alpha1.MockResourceClient, error)
 }
@@ -21,6 +23,8 @@ type mockResourceClientSet struct {
 	// Maybe it's more of a client factory
 	cacheGetter CacheGetter
 }
+
+var _ MockResourceMultiClusterClient = &mockResourceClientSet{}
 
 func NewMockResourceClientSet(cacheGetter CacheGetter) *mockResourceClientSet {
 	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil)
@@ -79,4 +83,54 @@ func (c *mockResourceClientSet) ClusterRemoved(cluster string, restConfig *rest.
 			c.aggregator.RemoveWatch(client.BaseClient())
 		}
 	}
+}
+
+func (c *mockResourceClientSet) BaseClient() clients.ResourceClient {
+	// TODO this doesn't make sense here.
+	panic("not implemented")
+}
+
+func (c *mockResourceClientSet) Register() error {
+	// TODO this doesn't make sense here.
+	return errors.Errorf("not implemented")
+}
+
+func (c *mockResourceClientSet) Read(namespace, name string, opts clients.ReadOpts) (*v2alpha1.MockResource, error) {
+	clusterClient, err := c.ClientFor(opts.Cluster)
+	if err != nil {
+		return nil, errors.Errorf("Cluster %v is not accessible", opts.Cluster)
+	}
+	return clusterClient.Read(namespace, name, opts)
+}
+
+func (c *mockResourceClientSet) Write(resource *v2alpha1.MockResource, opts clients.WriteOpts) (*v2alpha1.MockResource, error) {
+	clusterClient, err := c.ClientFor(resource.GetMetadata().GetCluster())
+	if err != nil {
+		return nil, errors.Errorf("Cluster %v is not accessible", resource.GetMetadata().GetCluster())
+	}
+	return clusterClient.Write(resource, opts)
+}
+
+func (c *mockResourceClientSet) Delete(namespace, name string, opts clients.DeleteOpts) error {
+	clusterClient, err := c.ClientFor(opts.Cluster)
+	if err != nil {
+		return errors.Errorf("Cluster %v is not accessible", opts.Cluster)
+	}
+	return clusterClient.Delete(namespace, name, opts)
+}
+
+func (c *mockResourceClientSet) List(namespace string, opts clients.ListOpts) (v2alpha1.MockResourceList, error) {
+	clusterClient, err := c.ClientFor(opts.Cluster)
+	if err != nil {
+		return nil, errors.Errorf("Cluster %v is not accessible", opts.Cluster)
+	}
+	return clusterClient.List(namespace, opts)
+}
+
+func (c *mockResourceClientSet) Watch(namespace string, opts clients.WatchOpts) (<-chan v2alpha1.MockResourceList, <-chan error, error) {
+	clusterClient, err := c.ClientFor(opts.Cluster)
+	if err != nil {
+		return nil, nil, errors.Errorf("Cluster %v is not accessible", opts.Cluster)
+	}
+	return clusterClient.Watch(namespace, opts)
 }
