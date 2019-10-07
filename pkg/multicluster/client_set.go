@@ -21,16 +21,16 @@ type mockResourceClientSet struct {
 	aggregator wrapper.WatchAggregator
 	// TODO this should be different depending on which kind of client we have
 	// Maybe it's more of a client factory
-	cacheGetter CacheGetter
+	cacheGetter KubeSharedCacheGetter
 }
 
 var _ MockResourceMultiClusterClient = &mockResourceClientSet{}
 
-func NewMockResourceClientSet(cacheGetter CacheGetter) *mockResourceClientSet {
+func NewMockResourceClientSet(cacheGetter KubeSharedCacheGetter) *mockResourceClientSet {
 	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil)
 }
 
-func NewMockResourceClientWithWatchAggregator(cacheGetter CacheGetter, aggregator wrapper.WatchAggregator) *mockResourceClientSet {
+func NewMockResourceClientWithWatchAggregator(cacheGetter KubeSharedCacheGetter, aggregator wrapper.WatchAggregator) *mockResourceClientSet {
 	return &mockResourceClientSet{
 		clients:     make(map[string]v2alpha1.MockResourceClient),
 		cacheGetter: cacheGetter,
