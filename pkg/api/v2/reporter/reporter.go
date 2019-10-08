@@ -66,7 +66,7 @@ func (e ResourceReports) AddWarning(res resources.InputResource, warning string)
 
 func (e ResourceReports) Find(kind string, ref core.ResourceRef) (resources.InputResource, Report) {
 	for res, rpt := range e {
-		if resources.Kind(res) == kind {
+		if resources.Kind(res) == kind && ref == res.GetMetadata().Ref() {
 			return res, rpt
 		}
 	}
