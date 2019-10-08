@@ -34,6 +34,12 @@ func (e ResourceReports) Merge(resErrs ResourceReports) {
 	}
 }
 
+func (e ResourceReports) AddErrors(res resources.InputResource, errs ...error) {
+	for _, err := range errs {
+		e.AddError(res, err)
+	}
+}
+
 func (e ResourceReports) AddError(res resources.InputResource, err error) {
 	if err == nil {
 		return
@@ -43,6 +49,12 @@ func (e ResourceReports) AddError(res resources.InputResource, err error) {
 	e[res] = rpt
 }
 
+func (e ResourceReports) AddWarnings(res resources.InputResource, warning ...string) {
+	for _, warn := range warning {
+		e.AddWarning(res, warn)
+	}
+}
+
 func (e ResourceReports) AddWarning(res resources.InputResource, warning string) {
 	if warning == "" {
 		return
@@ -50,6 +62,15 @@ func (e ResourceReports) AddWarning(res resources.InputResource, warning string)
 	rpt := e[res]
 	rpt.Warnings = append(rpt.Warnings, warning)
 	e[res] = rpt
+}
+
+func (e ResourceReports) Find(kind string, ref core.ResourceRef) (resources.InputResource, Report) {
+	for res, rpt := range e {
+		if resources.Kind(res) == kind {
+			return res, rpt
+		}
+	}
+	return nil, Report{}
 }
 
 // ignores warnings
