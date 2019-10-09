@@ -14,7 +14,7 @@ import (
 
 type PodMultiClusterClient interface {
 	multicluster.ClusterHandler
-	PodClient
+	PodInterface
 }
 
 type podMultiClusterClient struct {
@@ -25,13 +25,13 @@ type podMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewPodMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewPodMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) PodMultiClusterClient {
+	return NewPodClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewPodMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &podClientSet{
-		clients:      make(map[string]PodClient),
+func NewPodMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) PodMultiClusterClient {
+	return &podMultiClusterClient{
+		clients:      make(map[string]PodInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewPodMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSh
 	}
 }
 
-func (c *podMultiClusterClient) clientFor(cluster string) (PodClient, error) {
+func (c *podMultiClusterClient) clientFor(cluster string) (PodInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *podMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Co
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewPodResourceClient(krc)
+	client, err := NewPodClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,16 +84,6 @@ func (c *podMultiClusterClient) ClusterRemoved(cluster string, restConfig *rest.
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *podMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *podMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
 func (c *podMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*Pod, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
@@ -102,12 +92,12 @@ func (c *podMultiClusterClient) Read(namespace, name string, opts clients.ReadOp
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *podMultiClusterClient) Write(resource *Pod, opts clients.WriteOpts) (*Pod, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *podMultiClusterClient) Write(pod *Pod, opts clients.WriteOpts) (*Pod, error) {
+	clusterClient, err := c.clientFor(pod.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(pod, opts)
 }
 
 func (c *podMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

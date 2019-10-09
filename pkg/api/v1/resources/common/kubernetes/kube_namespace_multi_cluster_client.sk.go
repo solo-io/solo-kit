@@ -14,7 +14,7 @@ import (
 
 type KubeNamespaceMultiClusterClient interface {
 	multicluster.ClusterHandler
-	KubeNamespaceClient
+	KubeNamespaceInterface
 }
 
 type kubeNamespaceMultiClusterClient struct {
@@ -25,13 +25,13 @@ type kubeNamespaceMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewKubeNamespaceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewKubeNamespaceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) KubeNamespaceMultiClusterClient {
+	return NewKubeNamespaceClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewKubeNamespaceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &kubeNamespaceClientSet{
-		clients:      make(map[string]KubeNamespaceClient),
+func NewKubeNamespaceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) KubeNamespaceMultiClusterClient {
+	return &kubeNamespaceMultiClusterClient{
+		clients:      make(map[string]KubeNamespaceInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewKubeNamespaceMultiClusterClientWithWatchAggregator(cacheGetter multiclus
 	}
 }
 
-func (c *kubeNamespaceMultiClusterClient) clientFor(cluster string) (KubeNamespaceClient, error) {
+func (c *kubeNamespaceMultiClusterClient) clientFor(cluster string) (KubeNamespaceInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *kubeNamespaceMultiClusterClient) ClusterAdded(cluster string, restConfi
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewKubeNamespaceResourceClient(krc)
+	client, err := NewKubeNamespaceClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,16 +84,6 @@ func (c *kubeNamespaceMultiClusterClient) ClusterRemoved(cluster string, restCon
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *kubeNamespaceMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *kubeNamespaceMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
 func (c *kubeNamespaceMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*KubeNamespace, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
@@ -102,12 +92,12 @@ func (c *kubeNamespaceMultiClusterClient) Read(namespace, name string, opts clie
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *kubeNamespaceMultiClusterClient) Write(resource *KubeNamespace, opts clients.WriteOpts) (*KubeNamespace, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *kubeNamespaceMultiClusterClient) Write(kubeNamespace *KubeNamespace, opts clients.WriteOpts) (*KubeNamespace, error) {
+	clusterClient, err := c.clientFor(kubeNamespace.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(kubeNamespace, opts)
 }
 
 func (c *kubeNamespaceMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

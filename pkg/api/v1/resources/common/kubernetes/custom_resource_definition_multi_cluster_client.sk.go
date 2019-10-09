@@ -14,7 +14,7 @@ import (
 
 type CustomResourceDefinitionMultiClusterClient interface {
 	multicluster.ClusterHandler
-	CustomResourceDefinitionClient
+	CustomResourceDefinitionInterface
 }
 
 type customResourceDefinitionMultiClusterClient struct {
@@ -25,13 +25,13 @@ type customResourceDefinitionMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewCustomResourceDefinitionMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewCustomResourceDefinitionMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) CustomResourceDefinitionMultiClusterClient {
+	return NewCustomResourceDefinitionClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &customResourceDefinitionClientSet{
-		clients:      make(map[string]CustomResourceDefinitionClient),
+func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) CustomResourceDefinitionMultiClusterClient {
+	return &customResourceDefinitionMultiClusterClient{
+		clients:      make(map[string]CustomResourceDefinitionInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(cacheGette
 	}
 }
 
-func (c *customResourceDefinitionMultiClusterClient) clientFor(cluster string) (CustomResourceDefinitionClient, error) {
+func (c *customResourceDefinitionMultiClusterClient) clientFor(cluster string) (CustomResourceDefinitionInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *customResourceDefinitionMultiClusterClient) ClusterAdded(cluster string
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewCustomResourceDefinitionResourceClient(krc)
+	client, err := NewCustomResourceDefinitionClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,16 +84,6 @@ func (c *customResourceDefinitionMultiClusterClient) ClusterRemoved(cluster stri
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *customResourceDefinitionMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *customResourceDefinitionMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
 func (c *customResourceDefinitionMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*CustomResourceDefinition, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
@@ -102,12 +92,12 @@ func (c *customResourceDefinitionMultiClusterClient) Read(namespace, name string
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *customResourceDefinitionMultiClusterClient) Write(resource *CustomResourceDefinition, opts clients.WriteOpts) (*CustomResourceDefinition, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *customResourceDefinitionMultiClusterClient) Write(customResourceDefinition *CustomResourceDefinition, opts clients.WriteOpts) (*CustomResourceDefinition, error) {
+	clusterClient, err := c.clientFor(customResourceDefinition.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(customResourceDefinition, opts)
 }
 
 func (c *customResourceDefinitionMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

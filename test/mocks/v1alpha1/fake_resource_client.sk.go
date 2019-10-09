@@ -14,14 +14,18 @@ type FakeResourceWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error)
 }
 
-type FakeResourceClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type FakeResourceInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*FakeResource, error)
 	Write(resource *FakeResource, opts clients.WriteOpts) (*FakeResource, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (FakeResourceList, error)
 	FakeResourceWatcher
+}
+
+type FakeResourceClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	FakeResourceInterface
 }
 
 type fakeResourceClient struct {

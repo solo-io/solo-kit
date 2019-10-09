@@ -14,14 +14,18 @@ type ClusterResourceWatcher interface {
 	Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error)
 }
 
-type ClusterResourceClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type ClusterResourceInterface interface {
 	Read(name string, opts clients.ReadOpts) (*ClusterResource, error)
 	Write(resource *ClusterResource, opts clients.WriteOpts) (*ClusterResource, error)
 	Delete(name string, opts clients.DeleteOpts) error
 	List(opts clients.ListOpts) (ClusterResourceList, error)
 	ClusterResourceWatcher
+}
+
+type ClusterResourceClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	ClusterResourceInterface
 }
 
 type clusterResourceClient struct {

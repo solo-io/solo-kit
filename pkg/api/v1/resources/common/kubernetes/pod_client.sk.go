@@ -14,14 +14,18 @@ type PodWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan PodList, <-chan error, error)
 }
 
-type PodClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type PodInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*Pod, error)
 	Write(resource *Pod, opts clients.WriteOpts) (*Pod, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (PodList, error)
 	PodWatcher
+}
+
+type PodClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	PodInterface
 }
 
 type podClient struct {

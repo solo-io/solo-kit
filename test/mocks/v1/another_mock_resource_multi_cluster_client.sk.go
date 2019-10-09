@@ -14,7 +14,7 @@ import (
 
 type AnotherMockResourceMultiClusterClient interface {
 	multicluster.ClusterHandler
-	AnotherMockResourceClient
+	AnotherMockResourceInterface
 }
 
 type anotherMockResourceMultiClusterClient struct {
@@ -25,13 +25,13 @@ type anotherMockResourceMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewAnotherMockResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewAnotherMockResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) AnotherMockResourceMultiClusterClient {
+	return NewAnotherMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewAnotherMockResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &anotherMockResourceClientSet{
-		clients:      make(map[string]AnotherMockResourceClient),
+func NewAnotherMockResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) AnotherMockResourceMultiClusterClient {
+	return &anotherMockResourceMultiClusterClient{
+		clients:      make(map[string]AnotherMockResourceInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewAnotherMockResourceMultiClusterClientWithWatchAggregator(cacheGetter mul
 	}
 }
 
-func (c *anotherMockResourceMultiClusterClient) clientFor(cluster string) (AnotherMockResourceClient, error) {
+func (c *anotherMockResourceMultiClusterClient) clientFor(cluster string) (AnotherMockResourceInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *anotherMockResourceMultiClusterClient) ClusterAdded(cluster string, res
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewAnotherMockResourceResourceClient(krc)
+	client, err := NewAnotherMockResourceClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,16 +84,6 @@ func (c *anotherMockResourceMultiClusterClient) ClusterRemoved(cluster string, r
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *anotherMockResourceMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *anotherMockResourceMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
 func (c *anotherMockResourceMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*AnotherMockResource, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
@@ -102,12 +92,12 @@ func (c *anotherMockResourceMultiClusterClient) Read(namespace, name string, opt
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *anotherMockResourceMultiClusterClient) Write(resource *AnotherMockResource, opts clients.WriteOpts) (*AnotherMockResource, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *anotherMockResourceMultiClusterClient) Write(anotherMockResource *AnotherMockResource, opts clients.WriteOpts) (*AnotherMockResource, error) {
+	clusterClient, err := c.clientFor(anotherMockResource.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(anotherMockResource, opts)
 }
 
 func (c *anotherMockResourceMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

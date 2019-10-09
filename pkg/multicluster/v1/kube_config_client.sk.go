@@ -14,14 +14,18 @@ type KubeConfigWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeConfigList, <-chan error, error)
 }
 
-type KubeConfigClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type KubeConfigInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*KubeConfig, error)
 	Write(resource *KubeConfig, opts clients.WriteOpts) (*KubeConfig, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (KubeConfigList, error)
 	KubeConfigWatcher
+}
+
+type KubeConfigClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	KubeConfigInterface
 }
 
 type kubeConfigClient struct {

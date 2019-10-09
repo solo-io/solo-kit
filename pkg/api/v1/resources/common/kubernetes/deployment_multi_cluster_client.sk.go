@@ -14,7 +14,7 @@ import (
 
 type DeploymentMultiClusterClient interface {
 	multicluster.ClusterHandler
-	DeploymentClient
+	DeploymentInterface
 }
 
 type deploymentMultiClusterClient struct {
@@ -25,13 +25,13 @@ type deploymentMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewDeploymentMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewDeploymentMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) DeploymentMultiClusterClient {
+	return NewDeploymentClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewDeploymentMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &deploymentClientSet{
-		clients:      make(map[string]DeploymentClient),
+func NewDeploymentMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) DeploymentMultiClusterClient {
+	return &deploymentMultiClusterClient{
+		clients:      make(map[string]DeploymentInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewDeploymentMultiClusterClientWithWatchAggregator(cacheGetter multicluster
 	}
 }
 
-func (c *deploymentMultiClusterClient) clientFor(cluster string) (DeploymentClient, error) {
+func (c *deploymentMultiClusterClient) clientFor(cluster string) (DeploymentInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *deploymentMultiClusterClient) ClusterAdded(cluster string, restConfig *
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewDeploymentResourceClient(krc)
+	client, err := NewDeploymentClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,16 +84,6 @@ func (c *deploymentMultiClusterClient) ClusterRemoved(cluster string, restConfig
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *deploymentMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *deploymentMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
 func (c *deploymentMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*Deployment, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
@@ -102,12 +92,12 @@ func (c *deploymentMultiClusterClient) Read(namespace, name string, opts clients
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *deploymentMultiClusterClient) Write(resource *Deployment, opts clients.WriteOpts) (*Deployment, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *deploymentMultiClusterClient) Write(deployment *Deployment, opts clients.WriteOpts) (*Deployment, error) {
+	clusterClient, err := c.clientFor(deployment.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(deployment, opts)
 }
 
 func (c *deploymentMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

@@ -14,14 +14,18 @@ type ConfigMapWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan ConfigMapList, <-chan error, error)
 }
 
-type ConfigMapClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type ConfigMapInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*ConfigMap, error)
 	Write(resource *ConfigMap, opts clients.WriteOpts) (*ConfigMap, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (ConfigMapList, error)
 	ConfigMapWatcher
+}
+
+type ConfigMapClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	ConfigMapInterface
 }
 
 type configMapClient struct {

@@ -14,14 +14,18 @@ type KubeNamespaceWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error)
 }
 
-type KubeNamespaceClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type KubeNamespaceInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*KubeNamespace, error)
 	Write(resource *KubeNamespace, opts clients.WriteOpts) (*KubeNamespace, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (KubeNamespaceList, error)
 	KubeNamespaceWatcher
+}
+
+type KubeNamespaceClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	KubeNamespaceInterface
 }
 
 type kubeNamespaceClient struct {

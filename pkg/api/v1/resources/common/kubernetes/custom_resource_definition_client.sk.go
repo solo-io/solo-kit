@@ -14,14 +14,18 @@ type CustomResourceDefinitionWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan CustomResourceDefinitionList, <-chan error, error)
 }
 
-type CustomResourceDefinitionClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type CustomResourceDefinitionInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*CustomResourceDefinition, error)
 	Write(resource *CustomResourceDefinition, opts clients.WriteOpts) (*CustomResourceDefinition, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (CustomResourceDefinitionList, error)
 	CustomResourceDefinitionWatcher
+}
+
+type CustomResourceDefinitionClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	CustomResourceDefinitionInterface
 }
 
 type customResourceDefinitionClient struct {

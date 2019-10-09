@@ -14,14 +14,18 @@ type DeploymentWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan DeploymentList, <-chan error, error)
 }
 
-type DeploymentClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type DeploymentInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*Deployment, error)
 	Write(resource *Deployment, opts clients.WriteOpts) (*Deployment, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (DeploymentList, error)
 	DeploymentWatcher
+}
+
+type DeploymentClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	DeploymentInterface
 }
 
 type deploymentClient struct {

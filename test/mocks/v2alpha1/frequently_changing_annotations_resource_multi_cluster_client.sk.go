@@ -14,7 +14,7 @@ import (
 
 type FrequentlyChangingAnnotationsResourceMultiClusterClient interface {
 	multicluster.ClusterHandler
-	FrequentlyChangingAnnotationsResourceClient
+	FrequentlyChangingAnnotationsResourceInterface
 }
 
 type frequentlyChangingAnnotationsResourceMultiClusterClient struct {
@@ -25,13 +25,13 @@ type frequentlyChangingAnnotationsResourceMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewFrequentlyChangingAnnotationsResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewFrequentlyChangingAnnotationsResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) FrequentlyChangingAnnotationsResourceMultiClusterClient {
+	return NewFrequentlyChangingAnnotationsResourceClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &frequentlyChangingAnnotationsResourceClientSet{
-		clients:      make(map[string]FrequentlyChangingAnnotationsResourceClient),
+func NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) FrequentlyChangingAnnotationsResourceMultiClusterClient {
+	return &frequentlyChangingAnnotationsResourceMultiClusterClient{
+		clients:      make(map[string]FrequentlyChangingAnnotationsResourceInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregat
 	}
 }
 
-func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) clientFor(cluster string) (FrequentlyChangingAnnotationsResourceClient, error) {
+func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) clientFor(cluster string) (FrequentlyChangingAnnotationsResourceInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) ClusterAdded(c
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewFrequentlyChangingAnnotationsResourceResourceClient(krc)
+	client, err := NewFrequentlyChangingAnnotationsResourceClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,16 +84,6 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) ClusterRemoved
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*FrequentlyChangingAnnotationsResource, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
@@ -102,12 +92,12 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Read(namespace
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Write(resource *FrequentlyChangingAnnotationsResource, opts clients.WriteOpts) (*FrequentlyChangingAnnotationsResource, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Write(frequentlyChangingAnnotationsResource *FrequentlyChangingAnnotationsResource, opts clients.WriteOpts) (*FrequentlyChangingAnnotationsResource, error) {
+	clusterClient, err := c.clientFor(frequentlyChangingAnnotationsResource.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(frequentlyChangingAnnotationsResource, opts)
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

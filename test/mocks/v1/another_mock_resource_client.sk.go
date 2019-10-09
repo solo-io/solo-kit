@@ -14,14 +14,18 @@ type AnotherMockResourceWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan AnotherMockResourceList, <-chan error, error)
 }
 
-type AnotherMockResourceClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type AnotherMockResourceInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*AnotherMockResource, error)
 	Write(resource *AnotherMockResource, opts clients.WriteOpts) (*AnotherMockResource, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (AnotherMockResourceList, error)
 	AnotherMockResourceWatcher
+}
+
+type AnotherMockResourceClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	AnotherMockResourceInterface
 }
 
 type anotherMockResourceClient struct {

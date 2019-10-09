@@ -23,9 +23,7 @@ type {{ .Name }}Watcher interface {
 {{- end }}
 }
 
-type {{ .Name }}Client interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type {{ .Name }}Interface interface {
 {{- if .ClusterScoped }}
 	Read(name string, opts clients.ReadOpts) (*{{ .Name }}, error)
 {{- else }}
@@ -40,6 +38,12 @@ type {{ .Name }}Client interface {
 	List(namespace string, opts clients.ListOpts) ({{ .Name }}List, error)
 {{- end }}
 	{{ .Name }}Watcher
+}
+
+type {{ .Name }}Client interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	{{ .Name }}Interface
 }
 
 type {{ lower_camel .Name }}Client struct {

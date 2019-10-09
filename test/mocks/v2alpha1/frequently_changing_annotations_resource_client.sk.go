@@ -14,14 +14,18 @@ type FrequentlyChangingAnnotationsResourceWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan FrequentlyChangingAnnotationsResourceList, <-chan error, error)
 }
 
-type FrequentlyChangingAnnotationsResourceClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type FrequentlyChangingAnnotationsResourceInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*FrequentlyChangingAnnotationsResource, error)
 	Write(resource *FrequentlyChangingAnnotationsResource, opts clients.WriteOpts) (*FrequentlyChangingAnnotationsResource, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (FrequentlyChangingAnnotationsResourceList, error)
 	FrequentlyChangingAnnotationsResourceWatcher
+}
+
+type FrequentlyChangingAnnotationsResourceClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	FrequentlyChangingAnnotationsResourceInterface
 }
 
 type frequentlyChangingAnnotationsResourceClient struct {

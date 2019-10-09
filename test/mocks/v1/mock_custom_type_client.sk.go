@@ -14,14 +14,18 @@ type MockCustomTypeWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan MockCustomTypeList, <-chan error, error)
 }
 
-type MockCustomTypeClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type MockCustomTypeInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*MockCustomType, error)
 	Write(resource *MockCustomType, opts clients.WriteOpts) (*MockCustomType, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (MockCustomTypeList, error)
 	MockCustomTypeWatcher
+}
+
+type MockCustomTypeClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	MockCustomTypeInterface
 }
 
 type mockCustomTypeClient struct {

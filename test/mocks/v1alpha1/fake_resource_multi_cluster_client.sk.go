@@ -14,7 +14,7 @@ import (
 
 type FakeResourceMultiClusterClient interface {
 	multicluster.ClusterHandler
-	FakeResourceClient
+	FakeResourceInterface
 }
 
 type fakeResourceMultiClusterClient struct {
@@ -25,13 +25,13 @@ type fakeResourceMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewFakeResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewFakeResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) FakeResourceMultiClusterClient {
+	return NewFakeResourceClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewFakeResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &fakeResourceClientSet{
-		clients:      make(map[string]FakeResourceClient),
+func NewFakeResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) FakeResourceMultiClusterClient {
+	return &fakeResourceMultiClusterClient{
+		clients:      make(map[string]FakeResourceInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewFakeResourceMultiClusterClientWithWatchAggregator(cacheGetter multiclust
 	}
 }
 
-func (c *fakeResourceMultiClusterClient) clientFor(cluster string) (FakeResourceClient, error) {
+func (c *fakeResourceMultiClusterClient) clientFor(cluster string) (FakeResourceInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *fakeResourceMultiClusterClient) ClusterAdded(cluster string, restConfig
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewFakeResourceResourceClient(krc)
+	client, err := NewFakeResourceClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,16 +84,6 @@ func (c *fakeResourceMultiClusterClient) ClusterRemoved(cluster string, restConf
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *fakeResourceMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *fakeResourceMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
 func (c *fakeResourceMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*FakeResource, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
@@ -102,12 +92,12 @@ func (c *fakeResourceMultiClusterClient) Read(namespace, name string, opts clien
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *fakeResourceMultiClusterClient) Write(resource *FakeResource, opts clients.WriteOpts) (*FakeResource, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *fakeResourceMultiClusterClient) Write(fakeResource *FakeResource, opts clients.WriteOpts) (*FakeResource, error) {
+	clusterClient, err := c.clientFor(fakeResource.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(fakeResource, opts)
 }
 
 func (c *fakeResourceMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

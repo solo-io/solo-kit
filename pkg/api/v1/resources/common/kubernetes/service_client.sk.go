@@ -14,14 +14,18 @@ type ServiceWatcher interface {
 	Watch(namespace string, opts clients.WatchOpts) (<-chan ServiceList, <-chan error, error)
 }
 
-type ServiceClient interface {
-	BaseClient() clients.ResourceClient
-	Register() error
+type ServiceInterface interface {
 	Read(namespace, name string, opts clients.ReadOpts) (*Service, error)
 	Write(resource *Service, opts clients.WriteOpts) (*Service, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (ServiceList, error)
 	ServiceWatcher
+}
+
+type ServiceClient interface {
+	BaseClient() clients.ResourceClient
+	Register() error
+	ServiceInterface
 }
 
 type serviceClient struct {

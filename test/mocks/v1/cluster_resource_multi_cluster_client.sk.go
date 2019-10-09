@@ -14,7 +14,7 @@ import (
 
 type ClusterResourceMultiClusterClient interface {
 	multicluster.ClusterHandler
-	ClusterResourceClient
+	ClusterResourceInterface
 }
 
 type clusterResourceMultiClusterClient struct {
@@ -25,13 +25,13 @@ type clusterResourceMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewClusterResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewClusterResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) ClusterResourceMultiClusterClient {
+	return NewClusterResourceClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewClusterResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &clusterResourceClientSet{
-		clients:      make(map[string]ClusterResourceClient),
+func NewClusterResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) ClusterResourceMultiClusterClient {
+	return &clusterResourceMultiClusterClient{
+		clients:      make(map[string]ClusterResourceInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewClusterResourceMultiClusterClientWithWatchAggregator(cacheGetter multicl
 	}
 }
 
-func (c *clusterResourceMultiClusterClient) clientFor(cluster string) (ClusterResourceClient, error) {
+func (c *clusterResourceMultiClusterClient) clientFor(cluster string) (ClusterResourceInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *clusterResourceMultiClusterClient) ClusterAdded(cluster string, restCon
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewClusterResourceResourceClient(krc)
+	client, err := NewClusterResourceClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,17 +84,7 @@ func (c *clusterResourceMultiClusterClient) ClusterRemoved(cluster string, restC
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *clusterResourceMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *clusterResourceMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
-func (c *clusterResourceMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*ClusterResource, error) {
+func (c *clusterResourceMultiClusterClient) Read(name string, opts clients.ReadOpts) (*ClusterResource, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
 		return nil, err
@@ -102,15 +92,15 @@ func (c *clusterResourceMultiClusterClient) Read(namespace, name string, opts cl
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *clusterResourceMultiClusterClient) Write(resource *ClusterResource, opts clients.WriteOpts) (*ClusterResource, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *clusterResourceMultiClusterClient) Write(clusterResource *ClusterResource, opts clients.WriteOpts) (*ClusterResource, error) {
+	clusterClient, err := c.clientFor(clusterResource.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(clusterResource, opts)
 }
 
-func (c *clusterResourceMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+func (c *clusterResourceMultiClusterClient) Delete(name string, opts clients.DeleteOpts) error {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
 		return err
@@ -118,7 +108,7 @@ func (c *clusterResourceMultiClusterClient) Delete(namespace, name string, opts 
 	return clusterClient.Delete(namespace, name, opts)
 }
 
-func (c *clusterResourceMultiClusterClient) List(namespace string, opts clients.ListOpts) (ClusterResourceList, error) {
+func (c *clusterResourceMultiClusterClient) List(opts clients.ListOpts) (ClusterResourceList, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
 		return nil, err
@@ -126,7 +116,7 @@ func (c *clusterResourceMultiClusterClient) List(namespace string, opts clients.
 	return clusterClient.List(namespace, opts)
 }
 
-func (c *clusterResourceMultiClusterClient) Watch(namespace string, opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error) {
+func (c *clusterResourceMultiClusterClient) Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err

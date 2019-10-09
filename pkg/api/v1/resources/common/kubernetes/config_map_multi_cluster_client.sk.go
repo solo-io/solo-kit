@@ -14,7 +14,7 @@ import (
 
 type ConfigMapMultiClusterClient interface {
 	multicluster.ClusterHandler
-	ConfigMapClient
+	ConfigMapInterface
 }
 
 type configMapMultiClusterClient struct {
@@ -25,13 +25,13 @@ type configMapMultiClusterClient struct {
 	opts         multicluster.KubeResourceFactoryOpts
 }
 
-func NewConfigMapMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewConfigMapMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) ConfigMapMultiClusterClient {
+	return NewConfigMapClientWithWatchAggregator(cacheGetter, nil, opts)
 }
 
-func NewConfigMapMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockResourceMultiClusterClient {
-	return &configMapClientSet{
-		clients:      make(map[string]ConfigMapClient),
+func NewConfigMapMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) ConfigMapMultiClusterClient {
+	return &configMapMultiClusterClient{
+		clients:      make(map[string]ConfigMapInterface),
 		clientAccess: sync.RWMutex{},
 		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
@@ -39,7 +39,7 @@ func NewConfigMapMultiClusterClientWithWatchAggregator(cacheGetter multicluster.
 	}
 }
 
-func (c *configMapMultiClusterClient) clientFor(cluster string) (ConfigMapClient, error) {
+func (c *configMapMultiClusterClient) clientFor(cluster string) (ConfigMapInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
@@ -58,7 +58,7 @@ func (c *configMapMultiClusterClient) ClusterAdded(cluster string, restConfig *r
 		NamespaceWhitelist: c.opts.NamespaceWhitelist,
 		ResyncPeriod:       c.opts.ResyncPeriod,
 	}
-	client, err := NewConfigMapResourceClient(krc)
+	client, err := NewConfigMapClient(krc)
 	if err != nil {
 		return
 	}
@@ -84,16 +84,6 @@ func (c *configMapMultiClusterClient) ClusterRemoved(cluster string, restConfig 
 	}
 }
 
-// TODO should we split this off the client interface?
-func (c *configMapMultiClusterClient) BaseClient() clients.ResourceClient {
-	panic("not implemented")
-}
-
-// TODO should we split this off the client interface?
-func (c *configMapMultiClusterClient) Register() error {
-	panic("not implemented")
-}
-
 func (c *configMapMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*ConfigMap, error) {
 	clusterClient, err := c.clientFor(opts.Cluster)
 	if err != nil {
@@ -102,12 +92,12 @@ func (c *configMapMultiClusterClient) Read(namespace, name string, opts clients.
 	return clusterClient.Read(namespace, name, opts)
 }
 
-func (c *configMapMultiClusterClient) Write(resource *ConfigMap, opts clients.WriteOpts) (*ConfigMap, error) {
-	clusterClient, err := c.clientFor(resource.GetMetadata().GetCluster())
+func (c *configMapMultiClusterClient) Write(configMap *ConfigMap, opts clients.WriteOpts) (*ConfigMap, error) {
+	clusterClient, err := c.clientFor(configMap.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(resource, opts)
+	return clusterClient.Write(configMap, opts)
 }
 
 func (c *configMapMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
