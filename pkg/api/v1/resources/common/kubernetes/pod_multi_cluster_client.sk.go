@@ -19,22 +19,22 @@ type PodMultiClusterClient interface {
 }
 
 type podMultiClusterClient struct {
-	clients      map[string]PodClient
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]PodClient
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
 func NewPodMultiClusterClient(getFactory factory.ResourceFactoryForCluster) PodMultiClusterClient {
 	return NewPodClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewPodMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) PodMultiClusterClient {
+func NewPodMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) PodMultiClusterClient {
 	return &podMultiClusterClient{
-		clients:      make(map[string]PodClient),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]PodClient),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -48,7 +48,7 @@ func (c *podMultiClusterClient) interfaceFor(cluster string) (PodInterface, erro
 }
 
 func (c *podMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := NewPodClient(c.factoryFor(cluster, restConfig))
+	client, err := NewPodClient(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}

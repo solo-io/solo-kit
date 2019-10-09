@@ -19,22 +19,22 @@ type FrequentlyChangingAnnotationsResourceMultiClusterClient interface {
 }
 
 type frequentlyChangingAnnotationsResourceMultiClusterClient struct {
-	clients      map[string]FrequentlyChangingAnnotationsResourceClient
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]FrequentlyChangingAnnotationsResourceClient
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
 func NewFrequentlyChangingAnnotationsResourceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) FrequentlyChangingAnnotationsResourceMultiClusterClient {
 	return NewFrequentlyChangingAnnotationsResourceClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) FrequentlyChangingAnnotationsResourceMultiClusterClient {
+func NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) FrequentlyChangingAnnotationsResourceMultiClusterClient {
 	return &frequentlyChangingAnnotationsResourceMultiClusterClient{
-		clients:      make(map[string]FrequentlyChangingAnnotationsResourceClient),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]FrequentlyChangingAnnotationsResourceClient),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -48,7 +48,7 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) interfaceFor(c
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := NewFrequentlyChangingAnnotationsResourceClient(c.factoryFor(cluster, restConfig))
+	client, err := NewFrequentlyChangingAnnotationsResourceClient(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}

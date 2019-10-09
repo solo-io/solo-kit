@@ -19,22 +19,22 @@ type MockResourceMultiClusterClient interface {
 }
 
 type mockResourceMultiClusterClient struct {
-	clients      map[string]MockResourceClient
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]MockResourceClient
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
 func NewMockResourceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) MockResourceMultiClusterClient {
 	return NewMockResourceClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewMockResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) MockResourceMultiClusterClient {
+func NewMockResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) MockResourceMultiClusterClient {
 	return &mockResourceMultiClusterClient{
-		clients:      make(map[string]MockResourceClient),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]MockResourceClient),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -48,7 +48,7 @@ func (c *mockResourceMultiClusterClient) interfaceFor(cluster string) (MockResou
 }
 
 func (c *mockResourceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := NewMockResourceClient(c.factoryFor(cluster, restConfig))
+	client, err := NewMockResourceClient(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}

@@ -19,22 +19,22 @@ type DeploymentMultiClusterClient interface {
 }
 
 type deploymentMultiClusterClient struct {
-	clients      map[string]DeploymentClient
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]DeploymentClient
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
 func NewDeploymentMultiClusterClient(getFactory factory.ResourceFactoryForCluster) DeploymentMultiClusterClient {
 	return NewDeploymentClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewDeploymentMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) DeploymentMultiClusterClient {
+func NewDeploymentMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) DeploymentMultiClusterClient {
 	return &deploymentMultiClusterClient{
-		clients:      make(map[string]DeploymentClient),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]DeploymentClient),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -48,7 +48,7 @@ func (c *deploymentMultiClusterClient) interfaceFor(cluster string) (DeploymentI
 }
 
 func (c *deploymentMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := NewDeploymentClient(c.factoryFor(cluster, restConfig))
+	client, err := NewDeploymentClient(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}

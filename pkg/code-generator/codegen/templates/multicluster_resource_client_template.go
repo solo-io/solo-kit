@@ -23,22 +23,22 @@ type {{ .Name }}MultiClusterClient interface {
 }
 
 type {{ lower_camel .Name }}MultiClusterClient struct {
-	clients      map[string]{{ .Name }}Client
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]{{ .Name }}Client
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
 func New{{ .Name }}MultiClusterClient(getFactory factory.ResourceFactoryForCluster) {{ .Name }}MultiClusterClient {
 	return New{{ .Name }}ClientWithWatchAggregator(nil, getFactory)
 }
 
-func New{{ .Name }}MultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) {{ .Name }}MultiClusterClient {
+func New{{ .Name }}MultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) {{ .Name }}MultiClusterClient {
 	return &{{ lower_camel .Name }}MultiClusterClient{
-		clients:      make(map[string]{{ .Name }}Client),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]{{ .Name }}Client),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -52,7 +52,7 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) interfaceFor(cluster string)
 }
 
 func (c *{{ lower_camel .Name }}MultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := New{{ .Name }}Client(c.factoryFor(cluster, restConfig))
+	client, err := New{{ .Name }}Client(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}

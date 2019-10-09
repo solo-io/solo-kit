@@ -19,22 +19,22 @@ type CustomResourceDefinitionMultiClusterClient interface {
 }
 
 type customResourceDefinitionMultiClusterClient struct {
-	clients      map[string]CustomResourceDefinitionClient
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]CustomResourceDefinitionClient
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
 func NewCustomResourceDefinitionMultiClusterClient(getFactory factory.ResourceFactoryForCluster) CustomResourceDefinitionMultiClusterClient {
 	return NewCustomResourceDefinitionClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) CustomResourceDefinitionMultiClusterClient {
+func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) CustomResourceDefinitionMultiClusterClient {
 	return &customResourceDefinitionMultiClusterClient{
-		clients:      make(map[string]CustomResourceDefinitionClient),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]CustomResourceDefinitionClient),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -48,7 +48,7 @@ func (c *customResourceDefinitionMultiClusterClient) interfaceFor(cluster string
 }
 
 func (c *customResourceDefinitionMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := NewCustomResourceDefinitionClient(c.factoryFor(cluster, restConfig))
+	client, err := NewCustomResourceDefinitionClient(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}

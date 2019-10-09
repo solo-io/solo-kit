@@ -19,22 +19,22 @@ type ConfigMapMultiClusterClient interface {
 }
 
 type configMapMultiClusterClient struct {
-	clients      map[string]ConfigMapClient
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]ConfigMapClient
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
 func NewConfigMapMultiClusterClient(getFactory factory.ResourceFactoryForCluster) ConfigMapMultiClusterClient {
 	return NewConfigMapClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewConfigMapMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) ConfigMapMultiClusterClient {
+func NewConfigMapMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) ConfigMapMultiClusterClient {
 	return &configMapMultiClusterClient{
-		clients:      make(map[string]ConfigMapClient),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]ConfigMapClient),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -48,7 +48,7 @@ func (c *configMapMultiClusterClient) interfaceFor(cluster string) (ConfigMapInt
 }
 
 func (c *configMapMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := NewConfigMapClient(c.factoryFor(cluster, restConfig))
+	client, err := NewConfigMapClient(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}

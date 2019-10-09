@@ -19,22 +19,22 @@ type KubeNamespaceMultiClusterClient interface {
 }
 
 type kubeNamespaceMultiClusterClient struct {
-	clients      map[string]KubeNamespaceClient
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]KubeNamespaceClient
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
 func NewKubeNamespaceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) KubeNamespaceMultiClusterClient {
 	return NewKubeNamespaceClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewKubeNamespaceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) KubeNamespaceMultiClusterClient {
+func NewKubeNamespaceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) KubeNamespaceMultiClusterClient {
 	return &kubeNamespaceMultiClusterClient{
-		clients:      make(map[string]KubeNamespaceClient),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]KubeNamespaceClient),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -48,7 +48,7 @@ func (c *kubeNamespaceMultiClusterClient) interfaceFor(cluster string) (KubeName
 }
 
 func (c *kubeNamespaceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := NewKubeNamespaceClient(c.factoryFor(cluster, restConfig))
+	client, err := NewKubeNamespaceClient(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}

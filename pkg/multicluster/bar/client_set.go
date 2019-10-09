@@ -22,34 +22,32 @@ type mgr struct {
 	manager multicluster.KubeSharedCacheManager
 }
 
-func (m *mgr) getFactory() factory.ResourceFactoryForCluster {
-	return func(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
-		return &factory.KubeResourceClientFactory{
-			Cluster:     cluster,
-			Crd:         v2alpha1.MockResourceCrd,
-			Cfg:         restConfig,
-			SharedCache: m.manager.GetCache(cluster),
-		}
+func (m *mgr) getFactory(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
+	return &factory.KubeResourceClientFactory{
+		Cluster:     cluster,
+		Crd:         v2alpha1.MockResourceCrd,
+		Cfg:         restConfig,
+		SharedCache: m.manager.GetCache(cluster),
 	}
 }
 
 type barBaz struct {
-	clients      map[string]KubeConfigClient
-	clientAccess sync.RWMutex
-	aggregator   wrapper.WatchAggregator
-	factoryFor   factory.ResourceFactoryForCluster
+	clients       map[string]KubeConfigClient
+	clientAccess  sync.RWMutex
+	aggregator    wrapper.WatchAggregator
+	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewFooBar(getFactory factory.ResourceFactoryForCluster) FooBar {
+func NewFooBar(getFactory factory.ResourceClientFactoryGetter) FooBar {
 	return NewFooBarWithWatchAggregator(nil, getFactory)
 }
 
-func NewFooBarWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) FooBar {
+func NewFooBarWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) FooBar {
 	return &barBaz{
-		clients:      make(map[string]KubeConfigClient),
-		clientAccess: sync.RWMutex{},
-		aggregator:   aggregator,
-		factoryFor:   getFactory,
+		clients:       make(map[string]KubeConfigClient),
+		clientAccess:  sync.RWMutex{},
+		aggregator:    aggregator,
+		factoryGetter: factoryGetter,
 	}
 }
 
@@ -63,7 +61,7 @@ func (c *barBaz) interfaceFor(cluster string) (KubeConfigInterface, error) {
 }
 
 func (c *barBaz) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := NewKubeConfigClient(c.factoryFor(cluster, restConfig))
+	client, err := NewKubeConfigClient(c.factoryGetter.ForCluster(cluster, restConfig))
 	if err != nil {
 		return
 	}
