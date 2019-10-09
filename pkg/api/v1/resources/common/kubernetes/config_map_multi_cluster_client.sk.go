@@ -5,6 +5,7 @@ package kubernetes
 import (
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -21,44 +22,33 @@ type configMapMultiClusterClient struct {
 	clients      map[string]ConfigMapClient
 	clientAccess sync.RWMutex
 	aggregator   wrapper.WatchAggregator
-	cacheGetter  multicluster.KubeSharedCacheGetter
-	opts         multicluster.KubeResourceFactoryOpts
+	factoryFor   factory.ResourceFactoryForCluster
 }
 
-func NewConfigMapMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) ConfigMapMultiClusterClient {
-	return NewConfigMapClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewConfigMapMultiClusterClient(getFactory factory.ResourceFactoryForCluster) ConfigMapMultiClusterClient {
+	return NewConfigMapClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewConfigMapMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) ConfigMapMultiClusterClient {
+func NewConfigMapMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) ConfigMapMultiClusterClient {
 	return &configMapMultiClusterClient{
-		clients:      make(map[string]ConfigMapInterface),
+		clients:      make(map[string]ConfigMapClient),
 		clientAccess: sync.RWMutex{},
-		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
-		opts:         opts,
+		factoryFor:   getFactory,
 	}
 }
 
-func (c *configMapMultiClusterClient) clientFor(cluster string) (ConfigMapInterface, error) {
+func (c *configMapMultiClusterClient) interfaceFor(cluster string) (ConfigMapInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, multicluster.NoClientForClusterError(ConfigMapCrd.GroupVersionKind().String(), cluster)
+	return nil, errors.Errorf("%v.%v client not found for cluster %v", "kubernetes", "ConfigMap", cluster)
 }
 
 func (c *configMapMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	krc := &factory.KubeResourceClientFactory{
-		Cluster:            cluster,
-		Crd:                ConfigMapCrd,
-		Cfg:                restConfig,
-		SharedCache:        c.cacheGetter.GetCache(cluster),
-		SkipCrdCreation:    c.opts.SkipCrdCreation,
-		NamespaceWhitelist: c.opts.NamespaceWhitelist,
-		ResyncPeriod:       c.opts.ResyncPeriod,
-	}
-	client, err := NewConfigMapClient(krc)
+	client, err := NewConfigMapClient(c.factoryFor(cluster, restConfig))
 	if err != nil {
 		return
 	}
@@ -85,41 +75,41 @@ func (c *configMapMultiClusterClient) ClusterRemoved(cluster string, restConfig 
 }
 
 func (c *configMapMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*ConfigMap, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Read(namespace, name, opts)
+	return clusterInterface.Read(namespace, name, opts)
 }
 
 func (c *configMapMultiClusterClient) Write(configMap *ConfigMap, opts clients.WriteOpts) (*ConfigMap, error) {
-	clusterClient, err := c.clientFor(configMap.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(configMap.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(configMap, opts)
+	return clusterInterface.Write(configMap, opts)
 }
 
 func (c *configMapMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return err
 	}
-	return clusterClient.Delete(namespace, name, opts)
+	return clusterInterface.Delete(namespace, name, opts)
 }
 
 func (c *configMapMultiClusterClient) List(namespace string, opts clients.ListOpts) (ConfigMapList, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.List(namespace, opts)
+	return clusterInterface.List(namespace, opts)
 }
 
 func (c *configMapMultiClusterClient) Watch(namespace string, opts clients.WatchOpts) (<-chan ConfigMapList, <-chan error, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err
 	}
-	return clusterClient.Watch(namespace, opts)
+	return clusterInterface.Watch(namespace, opts)
 }

@@ -5,6 +5,7 @@ package v1
 import (
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -21,44 +22,33 @@ type mockCustomTypeMultiClusterClient struct {
 	clients      map[string]MockCustomTypeClient
 	clientAccess sync.RWMutex
 	aggregator   wrapper.WatchAggregator
-	cacheGetter  multicluster.KubeSharedCacheGetter
-	opts         multicluster.KubeResourceFactoryOpts
+	factoryFor   factory.ResourceFactoryForCluster
 }
 
-func NewMockCustomTypeMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) MockCustomTypeMultiClusterClient {
-	return NewMockCustomTypeClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewMockCustomTypeMultiClusterClient(getFactory factory.ResourceFactoryForCluster) MockCustomTypeMultiClusterClient {
+	return NewMockCustomTypeClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewMockCustomTypeMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) MockCustomTypeMultiClusterClient {
+func NewMockCustomTypeMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) MockCustomTypeMultiClusterClient {
 	return &mockCustomTypeMultiClusterClient{
-		clients:      make(map[string]MockCustomTypeInterface),
+		clients:      make(map[string]MockCustomTypeClient),
 		clientAccess: sync.RWMutex{},
-		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
-		opts:         opts,
+		factoryFor:   getFactory,
 	}
 }
 
-func (c *mockCustomTypeMultiClusterClient) clientFor(cluster string) (MockCustomTypeInterface, error) {
+func (c *mockCustomTypeMultiClusterClient) interfaceFor(cluster string) (MockCustomTypeInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, multicluster.NoClientForClusterError(MockCustomTypeCrd.GroupVersionKind().String(), cluster)
+	return nil, errors.Errorf("%v.%v client not found for cluster %v", "v1", "MockCustomType", cluster)
 }
 
 func (c *mockCustomTypeMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	krc := &factory.KubeResourceClientFactory{
-		Cluster:            cluster,
-		Crd:                MockCustomTypeCrd,
-		Cfg:                restConfig,
-		SharedCache:        c.cacheGetter.GetCache(cluster),
-		SkipCrdCreation:    c.opts.SkipCrdCreation,
-		NamespaceWhitelist: c.opts.NamespaceWhitelist,
-		ResyncPeriod:       c.opts.ResyncPeriod,
-	}
-	client, err := NewMockCustomTypeClient(krc)
+	client, err := NewMockCustomTypeClient(c.factoryFor(cluster, restConfig))
 	if err != nil {
 		return
 	}
@@ -85,41 +75,41 @@ func (c *mockCustomTypeMultiClusterClient) ClusterRemoved(cluster string, restCo
 }
 
 func (c *mockCustomTypeMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*MockCustomType, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Read(namespace, name, opts)
+	return clusterInterface.Read(namespace, name, opts)
 }
 
 func (c *mockCustomTypeMultiClusterClient) Write(mockCustomType *MockCustomType, opts clients.WriteOpts) (*MockCustomType, error) {
-	clusterClient, err := c.clientFor(mockCustomType.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(mockCustomType.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(mockCustomType, opts)
+	return clusterInterface.Write(mockCustomType, opts)
 }
 
 func (c *mockCustomTypeMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return err
 	}
-	return clusterClient.Delete(namespace, name, opts)
+	return clusterInterface.Delete(namespace, name, opts)
 }
 
 func (c *mockCustomTypeMultiClusterClient) List(namespace string, opts clients.ListOpts) (MockCustomTypeList, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.List(namespace, opts)
+	return clusterInterface.List(namespace, opts)
 }
 
 func (c *mockCustomTypeMultiClusterClient) Watch(namespace string, opts clients.WatchOpts) (<-chan MockCustomTypeList, <-chan error, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err
 	}
-	return clusterClient.Watch(namespace, opts)
+	return clusterInterface.Watch(namespace, opts)
 }

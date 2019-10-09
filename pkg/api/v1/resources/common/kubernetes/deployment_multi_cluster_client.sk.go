@@ -5,6 +5,7 @@ package kubernetes
 import (
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -21,44 +22,33 @@ type deploymentMultiClusterClient struct {
 	clients      map[string]DeploymentClient
 	clientAccess sync.RWMutex
 	aggregator   wrapper.WatchAggregator
-	cacheGetter  multicluster.KubeSharedCacheGetter
-	opts         multicluster.KubeResourceFactoryOpts
+	factoryFor   factory.ResourceFactoryForCluster
 }
 
-func NewDeploymentMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) DeploymentMultiClusterClient {
-	return NewDeploymentClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewDeploymentMultiClusterClient(getFactory factory.ResourceFactoryForCluster) DeploymentMultiClusterClient {
+	return NewDeploymentClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewDeploymentMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) DeploymentMultiClusterClient {
+func NewDeploymentMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) DeploymentMultiClusterClient {
 	return &deploymentMultiClusterClient{
-		clients:      make(map[string]DeploymentInterface),
+		clients:      make(map[string]DeploymentClient),
 		clientAccess: sync.RWMutex{},
-		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
-		opts:         opts,
+		factoryFor:   getFactory,
 	}
 }
 
-func (c *deploymentMultiClusterClient) clientFor(cluster string) (DeploymentInterface, error) {
+func (c *deploymentMultiClusterClient) interfaceFor(cluster string) (DeploymentInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, multicluster.NoClientForClusterError(DeploymentCrd.GroupVersionKind().String(), cluster)
+	return nil, errors.Errorf("%v.%v client not found for cluster %v", "kubernetes", "Deployment", cluster)
 }
 
 func (c *deploymentMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	krc := &factory.KubeResourceClientFactory{
-		Cluster:            cluster,
-		Crd:                DeploymentCrd,
-		Cfg:                restConfig,
-		SharedCache:        c.cacheGetter.GetCache(cluster),
-		SkipCrdCreation:    c.opts.SkipCrdCreation,
-		NamespaceWhitelist: c.opts.NamespaceWhitelist,
-		ResyncPeriod:       c.opts.ResyncPeriod,
-	}
-	client, err := NewDeploymentClient(krc)
+	client, err := NewDeploymentClient(c.factoryFor(cluster, restConfig))
 	if err != nil {
 		return
 	}
@@ -85,41 +75,41 @@ func (c *deploymentMultiClusterClient) ClusterRemoved(cluster string, restConfig
 }
 
 func (c *deploymentMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*Deployment, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Read(namespace, name, opts)
+	return clusterInterface.Read(namespace, name, opts)
 }
 
 func (c *deploymentMultiClusterClient) Write(deployment *Deployment, opts clients.WriteOpts) (*Deployment, error) {
-	clusterClient, err := c.clientFor(deployment.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(deployment.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(deployment, opts)
+	return clusterInterface.Write(deployment, opts)
 }
 
 func (c *deploymentMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return err
 	}
-	return clusterClient.Delete(namespace, name, opts)
+	return clusterInterface.Delete(namespace, name, opts)
 }
 
 func (c *deploymentMultiClusterClient) List(namespace string, opts clients.ListOpts) (DeploymentList, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.List(namespace, opts)
+	return clusterInterface.List(namespace, opts)
 }
 
 func (c *deploymentMultiClusterClient) Watch(namespace string, opts clients.WatchOpts) (<-chan DeploymentList, <-chan error, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err
 	}
-	return clusterClient.Watch(namespace, opts)
+	return clusterInterface.Watch(namespace, opts)
 }

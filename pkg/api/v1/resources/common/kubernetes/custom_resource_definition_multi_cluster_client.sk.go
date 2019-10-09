@@ -5,6 +5,7 @@ package kubernetes
 import (
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -21,44 +22,33 @@ type customResourceDefinitionMultiClusterClient struct {
 	clients      map[string]CustomResourceDefinitionClient
 	clientAccess sync.RWMutex
 	aggregator   wrapper.WatchAggregator
-	cacheGetter  multicluster.KubeSharedCacheGetter
-	opts         multicluster.KubeResourceFactoryOpts
+	factoryFor   factory.ResourceFactoryForCluster
 }
 
-func NewCustomResourceDefinitionMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) CustomResourceDefinitionMultiClusterClient {
-	return NewCustomResourceDefinitionClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewCustomResourceDefinitionMultiClusterClient(getFactory factory.ResourceFactoryForCluster) CustomResourceDefinitionMultiClusterClient {
+	return NewCustomResourceDefinitionClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) CustomResourceDefinitionMultiClusterClient {
+func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) CustomResourceDefinitionMultiClusterClient {
 	return &customResourceDefinitionMultiClusterClient{
-		clients:      make(map[string]CustomResourceDefinitionInterface),
+		clients:      make(map[string]CustomResourceDefinitionClient),
 		clientAccess: sync.RWMutex{},
-		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
-		opts:         opts,
+		factoryFor:   getFactory,
 	}
 }
 
-func (c *customResourceDefinitionMultiClusterClient) clientFor(cluster string) (CustomResourceDefinitionInterface, error) {
+func (c *customResourceDefinitionMultiClusterClient) interfaceFor(cluster string) (CustomResourceDefinitionInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, multicluster.NoClientForClusterError(CustomResourceDefinitionCrd.GroupVersionKind().String(), cluster)
+	return nil, errors.Errorf("%v.%v client not found for cluster %v", "kubernetes", "CustomResourceDefinition", cluster)
 }
 
 func (c *customResourceDefinitionMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	krc := &factory.KubeResourceClientFactory{
-		Cluster:            cluster,
-		Crd:                CustomResourceDefinitionCrd,
-		Cfg:                restConfig,
-		SharedCache:        c.cacheGetter.GetCache(cluster),
-		SkipCrdCreation:    c.opts.SkipCrdCreation,
-		NamespaceWhitelist: c.opts.NamespaceWhitelist,
-		ResyncPeriod:       c.opts.ResyncPeriod,
-	}
-	client, err := NewCustomResourceDefinitionClient(krc)
+	client, err := NewCustomResourceDefinitionClient(c.factoryFor(cluster, restConfig))
 	if err != nil {
 		return
 	}
@@ -85,41 +75,41 @@ func (c *customResourceDefinitionMultiClusterClient) ClusterRemoved(cluster stri
 }
 
 func (c *customResourceDefinitionMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*CustomResourceDefinition, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Read(namespace, name, opts)
+	return clusterInterface.Read(namespace, name, opts)
 }
 
 func (c *customResourceDefinitionMultiClusterClient) Write(customResourceDefinition *CustomResourceDefinition, opts clients.WriteOpts) (*CustomResourceDefinition, error) {
-	clusterClient, err := c.clientFor(customResourceDefinition.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(customResourceDefinition.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(customResourceDefinition, opts)
+	return clusterInterface.Write(customResourceDefinition, opts)
 }
 
 func (c *customResourceDefinitionMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return err
 	}
-	return clusterClient.Delete(namespace, name, opts)
+	return clusterInterface.Delete(namespace, name, opts)
 }
 
 func (c *customResourceDefinitionMultiClusterClient) List(namespace string, opts clients.ListOpts) (CustomResourceDefinitionList, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.List(namespace, opts)
+	return clusterInterface.List(namespace, opts)
 }
 
 func (c *customResourceDefinitionMultiClusterClient) Watch(namespace string, opts clients.WatchOpts) (<-chan CustomResourceDefinitionList, <-chan error, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err
 	}
-	return clusterClient.Watch(namespace, opts)
+	return clusterInterface.Watch(namespace, opts)
 }

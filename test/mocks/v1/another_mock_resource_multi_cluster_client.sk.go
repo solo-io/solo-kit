@@ -5,6 +5,7 @@ package v1
 import (
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -21,44 +22,33 @@ type anotherMockResourceMultiClusterClient struct {
 	clients      map[string]AnotherMockResourceClient
 	clientAccess sync.RWMutex
 	aggregator   wrapper.WatchAggregator
-	cacheGetter  multicluster.KubeSharedCacheGetter
-	opts         multicluster.KubeResourceFactoryOpts
+	factoryFor   factory.ResourceFactoryForCluster
 }
 
-func NewAnotherMockResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) AnotherMockResourceMultiClusterClient {
-	return NewAnotherMockResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewAnotherMockResourceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) AnotherMockResourceMultiClusterClient {
+	return NewAnotherMockResourceClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewAnotherMockResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) AnotherMockResourceMultiClusterClient {
+func NewAnotherMockResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) AnotherMockResourceMultiClusterClient {
 	return &anotherMockResourceMultiClusterClient{
-		clients:      make(map[string]AnotherMockResourceInterface),
+		clients:      make(map[string]AnotherMockResourceClient),
 		clientAccess: sync.RWMutex{},
-		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
-		opts:         opts,
+		factoryFor:   getFactory,
 	}
 }
 
-func (c *anotherMockResourceMultiClusterClient) clientFor(cluster string) (AnotherMockResourceInterface, error) {
+func (c *anotherMockResourceMultiClusterClient) interfaceFor(cluster string) (AnotherMockResourceInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, multicluster.NoClientForClusterError(AnotherMockResourceCrd.GroupVersionKind().String(), cluster)
+	return nil, errors.Errorf("%v.%v client not found for cluster %v", "v1", "AnotherMockResource", cluster)
 }
 
 func (c *anotherMockResourceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	krc := &factory.KubeResourceClientFactory{
-		Cluster:            cluster,
-		Crd:                AnotherMockResourceCrd,
-		Cfg:                restConfig,
-		SharedCache:        c.cacheGetter.GetCache(cluster),
-		SkipCrdCreation:    c.opts.SkipCrdCreation,
-		NamespaceWhitelist: c.opts.NamespaceWhitelist,
-		ResyncPeriod:       c.opts.ResyncPeriod,
-	}
-	client, err := NewAnotherMockResourceClient(krc)
+	client, err := NewAnotherMockResourceClient(c.factoryFor(cluster, restConfig))
 	if err != nil {
 		return
 	}
@@ -85,41 +75,41 @@ func (c *anotherMockResourceMultiClusterClient) ClusterRemoved(cluster string, r
 }
 
 func (c *anotherMockResourceMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*AnotherMockResource, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Read(namespace, name, opts)
+	return clusterInterface.Read(namespace, name, opts)
 }
 
 func (c *anotherMockResourceMultiClusterClient) Write(anotherMockResource *AnotherMockResource, opts clients.WriteOpts) (*AnotherMockResource, error) {
-	clusterClient, err := c.clientFor(anotherMockResource.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(anotherMockResource.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(anotherMockResource, opts)
+	return clusterInterface.Write(anotherMockResource, opts)
 }
 
 func (c *anotherMockResourceMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return err
 	}
-	return clusterClient.Delete(namespace, name, opts)
+	return clusterInterface.Delete(namespace, name, opts)
 }
 
 func (c *anotherMockResourceMultiClusterClient) List(namespace string, opts clients.ListOpts) (AnotherMockResourceList, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.List(namespace, opts)
+	return clusterInterface.List(namespace, opts)
 }
 
 func (c *anotherMockResourceMultiClusterClient) Watch(namespace string, opts clients.WatchOpts) (<-chan AnotherMockResourceList, <-chan error, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err
 	}
-	return clusterClient.Watch(namespace, opts)
+	return clusterInterface.Watch(namespace, opts)
 }

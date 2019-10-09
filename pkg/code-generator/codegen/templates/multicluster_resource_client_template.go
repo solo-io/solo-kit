@@ -9,6 +9,7 @@ var MultiClusterResourceClientTemplate = template.Must(template.New("multi_clust
 import (
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -25,44 +26,33 @@ type {{ lower_camel .Name }}MultiClusterClient struct {
 	clients      map[string]{{ .Name }}Client
 	clientAccess sync.RWMutex
 	aggregator   wrapper.WatchAggregator
-	cacheGetter  multicluster.KubeSharedCacheGetter
-	opts         multicluster.KubeResourceFactoryOpts
+	factoryFor   factory.ResourceFactoryForCluster
 }
 
-func New{{ .Name }}MultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) {{ .Name }}MultiClusterClient {
-	return New{{ .Name }}ClientWithWatchAggregator(cacheGetter, nil, opts)
+func New{{ .Name }}MultiClusterClient(getFactory factory.ResourceFactoryForCluster) {{ .Name }}MultiClusterClient {
+	return New{{ .Name }}ClientWithWatchAggregator(nil, getFactory)
 }
 
-func New{{ .Name }}MultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) {{ .Name }}MultiClusterClient {
+func New{{ .Name }}MultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) {{ .Name }}MultiClusterClient {
 	return &{{ lower_camel .Name }}MultiClusterClient{
-		clients:      make(map[string]{{ .Name }}Interface),
+		clients:      make(map[string]{{ .Name }}Client),
 		clientAccess: sync.RWMutex{},
-		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
-		opts:         opts,
+		factoryFor:   getFactory,
 	}
 }
 
-func (c *{{ lower_camel .Name }}MultiClusterClient) clientFor(cluster string) ({{ .Name }}Interface, error) {
+func (c *{{ lower_camel .Name }}MultiClusterClient) interfaceFor(cluster string) ({{ .Name }}Interface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, multicluster.NoClientForClusterError({{ .Name }}Crd.GroupVersionKind().String(), cluster)
+	return nil, errors.Errorf("%v.%v client not found for cluster %v", "{{ .Project.ProjectConfig.Version }}", "{{ .Name }}", cluster)
 }
 
 func (c *{{ lower_camel .Name }}MultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	krc := &factory.KubeResourceClientFactory{
-		Cluster:            cluster,
-		Crd:                {{ .Name }}Crd,
-		Cfg:                restConfig,
-		SharedCache:        c.cacheGetter.GetCache(cluster),
-		SkipCrdCreation:    c.opts.SkipCrdCreation,
-		NamespaceWhitelist: c.opts.NamespaceWhitelist,
-		ResyncPeriod:       c.opts.ResyncPeriod,
-	}
-	client, err := New{{ .Name }}Client(krc)
+	client, err := New{{ .Name }}Client(c.factoryFor(cluster, restConfig))
 	if err != nil {
 		return
 	}
@@ -93,19 +83,19 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) Read(name string, opts clien
 {{- else }}
 func (c *{{ lower_camel .Name }}MultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*{{ .Name }}, error) {
 {{- end }}
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Read(namespace, name, opts)
+	return clusterInterface.Read(namespace, name, opts)
 }
 
 func (c *{{ lower_camel .Name }}MultiClusterClient) Write({{ lower_camel .Name }} *{{ .Name }}, opts clients.WriteOpts) (*{{ .Name }}, error) {
-	clusterClient, err := c.clientFor({{ lower_camel .Name }}.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor({{ lower_camel .Name }}.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write({{ lower_camel .Name }}, opts)
+	return clusterInterface.Write({{ lower_camel .Name }}, opts)
 }
 
 {{ if .ClusterScoped }}
@@ -113,11 +103,11 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) Delete(name string, opts cli
 {{- else }}
 func (c *{{ lower_camel .Name }}MultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 {{- end }}
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return err
 	}
-	return clusterClient.Delete(namespace, name, opts)
+	return clusterInterface.Delete(namespace, name, opts)
 }
 
 {{ if .ClusterScoped }}
@@ -125,11 +115,11 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) List(opts clients.ListOpts) 
 {{- else }}
 func (c *{{ lower_camel .Name }}MultiClusterClient) List(namespace string, opts clients.ListOpts) ({{ .Name }}List, error) {
 {{- end }}
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.List(namespace, opts)
+	return clusterInterface.List(namespace, opts)
 }
 
 {{ if .ClusterScoped }}
@@ -137,11 +127,11 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) Watch(opts clients.WatchOpts
 {{- else }}
 func (c *{{ lower_camel .Name }}MultiClusterClient) Watch(namespace string, opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error) {
 {{- end }}
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err
 	}
-	return clusterClient.Watch(namespace, opts)
+	return clusterInterface.Watch(namespace, opts)
 }
 
 `))

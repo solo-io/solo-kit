@@ -158,6 +158,8 @@ type ResourceClientFactory interface {
 	NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error)
 }
 
+type ResourceFactoryForCluster func(cluster string, restConfig *rest.Config) ResourceClientFactory
+
 // If SkipCrdCreation is set to 'true', the clients built with this factory will not attempt to create the given CRD
 // during registration. This allows us to create and register resource clients in cases where the given configuration
 // contains a token associated with a user that is not authorized to create CRDs.

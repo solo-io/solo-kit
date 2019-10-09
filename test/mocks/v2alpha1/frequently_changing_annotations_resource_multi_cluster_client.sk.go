@@ -5,6 +5,7 @@ package v2alpha1
 import (
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -21,44 +22,33 @@ type frequentlyChangingAnnotationsResourceMultiClusterClient struct {
 	clients      map[string]FrequentlyChangingAnnotationsResourceClient
 	clientAccess sync.RWMutex
 	aggregator   wrapper.WatchAggregator
-	cacheGetter  multicluster.KubeSharedCacheGetter
-	opts         multicluster.KubeResourceFactoryOpts
+	factoryFor   factory.ResourceFactoryForCluster
 }
 
-func NewFrequentlyChangingAnnotationsResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) FrequentlyChangingAnnotationsResourceMultiClusterClient {
-	return NewFrequentlyChangingAnnotationsResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewFrequentlyChangingAnnotationsResourceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) FrequentlyChangingAnnotationsResourceMultiClusterClient {
+	return NewFrequentlyChangingAnnotationsResourceClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) FrequentlyChangingAnnotationsResourceMultiClusterClient {
+func NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) FrequentlyChangingAnnotationsResourceMultiClusterClient {
 	return &frequentlyChangingAnnotationsResourceMultiClusterClient{
-		clients:      make(map[string]FrequentlyChangingAnnotationsResourceInterface),
+		clients:      make(map[string]FrequentlyChangingAnnotationsResourceClient),
 		clientAccess: sync.RWMutex{},
-		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
-		opts:         opts,
+		factoryFor:   getFactory,
 	}
 }
 
-func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) clientFor(cluster string) (FrequentlyChangingAnnotationsResourceInterface, error) {
+func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) interfaceFor(cluster string) (FrequentlyChangingAnnotationsResourceInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, multicluster.NoClientForClusterError(FrequentlyChangingAnnotationsResourceCrd.GroupVersionKind().String(), cluster)
+	return nil, errors.Errorf("%v.%v client not found for cluster %v", "v2alpha1", "FrequentlyChangingAnnotationsResource", cluster)
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	krc := &factory.KubeResourceClientFactory{
-		Cluster:            cluster,
-		Crd:                FrequentlyChangingAnnotationsResourceCrd,
-		Cfg:                restConfig,
-		SharedCache:        c.cacheGetter.GetCache(cluster),
-		SkipCrdCreation:    c.opts.SkipCrdCreation,
-		NamespaceWhitelist: c.opts.NamespaceWhitelist,
-		ResyncPeriod:       c.opts.ResyncPeriod,
-	}
-	client, err := NewFrequentlyChangingAnnotationsResourceClient(krc)
+	client, err := NewFrequentlyChangingAnnotationsResourceClient(c.factoryFor(cluster, restConfig))
 	if err != nil {
 		return
 	}
@@ -85,41 +75,41 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) ClusterRemoved
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Read(namespace, name string, opts clients.ReadOpts) (*FrequentlyChangingAnnotationsResource, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Read(namespace, name, opts)
+	return clusterInterface.Read(namespace, name, opts)
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Write(frequentlyChangingAnnotationsResource *FrequentlyChangingAnnotationsResource, opts clients.WriteOpts) (*FrequentlyChangingAnnotationsResource, error) {
-	clusterClient, err := c.clientFor(frequentlyChangingAnnotationsResource.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(frequentlyChangingAnnotationsResource.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(frequentlyChangingAnnotationsResource, opts)
+	return clusterInterface.Write(frequentlyChangingAnnotationsResource, opts)
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return err
 	}
-	return clusterClient.Delete(namespace, name, opts)
+	return clusterInterface.Delete(namespace, name, opts)
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) List(namespace string, opts clients.ListOpts) (FrequentlyChangingAnnotationsResourceList, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.List(namespace, opts)
+	return clusterInterface.List(namespace, opts)
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Watch(namespace string, opts clients.WatchOpts) (<-chan FrequentlyChangingAnnotationsResourceList, <-chan error, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err
 	}
-	return clusterClient.Watch(namespace, opts)
+	return clusterInterface.Watch(namespace, opts)
 }

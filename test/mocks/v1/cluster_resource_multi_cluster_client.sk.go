@@ -5,6 +5,7 @@ package v1
 import (
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -21,44 +22,33 @@ type clusterResourceMultiClusterClient struct {
 	clients      map[string]ClusterResourceClient
 	clientAccess sync.RWMutex
 	aggregator   wrapper.WatchAggregator
-	cacheGetter  multicluster.KubeSharedCacheGetter
-	opts         multicluster.KubeResourceFactoryOpts
+	factoryFor   factory.ResourceFactoryForCluster
 }
 
-func NewClusterResourceMultiClusterClient(cacheGetter multicluster.KubeSharedCacheGetter, opts multicluster.KubeResourceFactoryOpts) ClusterResourceMultiClusterClient {
-	return NewClusterResourceClientWithWatchAggregator(cacheGetter, nil, opts)
+func NewClusterResourceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) ClusterResourceMultiClusterClient {
+	return NewClusterResourceClientWithWatchAggregator(nil, getFactory)
 }
 
-func NewClusterResourceMultiClusterClientWithWatchAggregator(cacheGetter multicluster.KubeSharedCacheGetter, aggregator wrapper.WatchAggregator, opts multicluster.KubeResourceFactoryOpts) ClusterResourceMultiClusterClient {
+func NewClusterResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, getFactory factory.ResourceFactoryForCluster) ClusterResourceMultiClusterClient {
 	return &clusterResourceMultiClusterClient{
-		clients:      make(map[string]ClusterResourceInterface),
+		clients:      make(map[string]ClusterResourceClient),
 		clientAccess: sync.RWMutex{},
-		cacheGetter:  cacheGetter,
 		aggregator:   aggregator,
-		opts:         opts,
+		factoryFor:   getFactory,
 	}
 }
 
-func (c *clusterResourceMultiClusterClient) clientFor(cluster string) (ClusterResourceInterface, error) {
+func (c *clusterResourceMultiClusterClient) interfaceFor(cluster string) (ClusterResourceInterface, error) {
 	c.clientAccess.RLock()
 	defer c.clientAccess.RUnlock()
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, multicluster.NoClientForClusterError(ClusterResourceCrd.GroupVersionKind().String(), cluster)
+	return nil, errors.Errorf("%v.%v client not found for cluster %v", "v1", "ClusterResource", cluster)
 }
 
 func (c *clusterResourceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	krc := &factory.KubeResourceClientFactory{
-		Cluster:            cluster,
-		Crd:                ClusterResourceCrd,
-		Cfg:                restConfig,
-		SharedCache:        c.cacheGetter.GetCache(cluster),
-		SkipCrdCreation:    c.opts.SkipCrdCreation,
-		NamespaceWhitelist: c.opts.NamespaceWhitelist,
-		ResyncPeriod:       c.opts.ResyncPeriod,
-	}
-	client, err := NewClusterResourceClient(krc)
+	client, err := NewClusterResourceClient(c.factoryFor(cluster, restConfig))
 	if err != nil {
 		return
 	}
@@ -85,41 +75,41 @@ func (c *clusterResourceMultiClusterClient) ClusterRemoved(cluster string, restC
 }
 
 func (c *clusterResourceMultiClusterClient) Read(name string, opts clients.ReadOpts) (*ClusterResource, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Read(namespace, name, opts)
+	return clusterInterface.Read(namespace, name, opts)
 }
 
 func (c *clusterResourceMultiClusterClient) Write(clusterResource *ClusterResource, opts clients.WriteOpts) (*ClusterResource, error) {
-	clusterClient, err := c.clientFor(clusterResource.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(clusterResource.GetMetadata().GetCluster())
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.Write(clusterResource, opts)
+	return clusterInterface.Write(clusterResource, opts)
 }
 
 func (c *clusterResourceMultiClusterClient) Delete(name string, opts clients.DeleteOpts) error {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return err
 	}
-	return clusterClient.Delete(namespace, name, opts)
+	return clusterInterface.Delete(namespace, name, opts)
 }
 
 func (c *clusterResourceMultiClusterClient) List(opts clients.ListOpts) (ClusterResourceList, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, err
 	}
-	return clusterClient.List(namespace, opts)
+	return clusterInterface.List(namespace, opts)
 }
 
 func (c *clusterResourceMultiClusterClient) Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error) {
-	clusterClient, err := c.clientFor(opts.Cluster)
+	clusterInterface, err := c.interfaceFor(opts.Cluster)
 	if err != nil {
 		return nil, nil, err
 	}
-	return clusterClient.Watch(namespace, opts)
+	return clusterInterface.Watch(namespace, opts)
 }
