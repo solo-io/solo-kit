@@ -65,8 +65,8 @@ func (m *sharedCacheManager) ClusterRemoved(cluster string, restConfig *rest.Con
 
 func (m *sharedCacheManager) GetCache(cluster string) kube.SharedCache {
 	m.cacheAccess.RLock()
-	defer m.cacheAccess.RUnlock()
 	cw, exists := m.caches[cluster]
+	m.cacheAccess.RUnlock()
 	if exists {
 		return cw.sharedCache
 	}
