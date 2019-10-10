@@ -18,8 +18,8 @@ import (
 	"reflect"
 	"testing"
 
+	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -28,7 +28,7 @@ import (
 func TestConversion(t *testing.T) {
 	pb := &v2.DiscoveryRequest{
 		VersionInfo: "test",
-		Node:        &core.Node{Id: "proxy"},
+		Node:        &envoy_api_v2_core.Node{Id: "proxy"},
 	}
 	st, err := util.MessageToStruct(pb)
 	if err != nil {
