@@ -124,14 +124,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:e13cb038286ab79c110c415198e69fd8b02c5e7794cda168c04e3149736d8a21"
-  name = "github.com/gogo/googleapis"
-  packages = ["google/rpc"]
-  pruneopts = "UT"
-  revision = "08a7655d27152912db7aaf4f983275eaf8d128ef"
-  version = "v1.0.0"
-
-[[projects]]
   digest = "1:92af5d1e4774a8cceb6dfae9d31e3a2879cd44a84eb63c0bd571d9866c82e0f4"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -1292,7 +1284,6 @@
     "github.com/envoyproxy/protoc-gen-validate/validate",
     "github.com/fgrosse/zaptest",
     "github.com/ghodss/yaml",
-    "github.com/gogo/googleapis/google/rpc",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/jsonpb",
     "github.com/gogo/protobuf/proto",
@@ -1301,6 +1292,7 @@
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes/any",
     "github.com/grpc-ecosystem/go-grpc-middleware",
     "github.com/grpc-ecosystem/go-grpc-middleware/auth",
     "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap",
@@ -1336,6 +1328,7 @@
     "go.uber.org/zap",
     "golang.org/x/sync/errgroup",
     "google.golang.org/genproto/googleapis/api/annotations",
+    "google.golang.org/genproto/googleapis/rpc/status",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/metadata",
