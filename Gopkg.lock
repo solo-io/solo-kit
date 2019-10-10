@@ -73,7 +73,7 @@
   version = "v3.2.0"
 
 [[projects]]
-  digest = "1:bf1740b96a611a8373659ad57d6b308e8a38f17aabd6e5f4103a4bbcdee5e204"
+  digest = "1:27e237f9f654a6f8429b2bd825a24d9cc048009b4590275cda3d5485e491808f"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -86,7 +86,6 @@
     "envoy/service/discovery/v2",
     "envoy/type",
     "envoy/type/matcher",
-    "pkg/conversion",
   ]
   pruneopts = "UT"
   revision = "52b167a709f111e6298136064bbaae43419ab22f"
@@ -165,7 +164,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:36ec276c7f6fad2a465e547cd936266ab57f73cf350f261608592004ab331248"
+  digest = "1:021029438e3e03f4f40da0009c95b579b1a61d814eddf8b8c5b798d447b7dc42"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
@@ -181,8 +180,8 @@
     "ptypes/wrappers",
   ]
   pruneopts = "UT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
+  version = "v1.3.2"
 
 [[projects]]
   branch = "master"
@@ -1290,7 +1289,6 @@
     "github.com/envoyproxy/go-control-plane/envoy/api/v2",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/core",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
-    "github.com/envoyproxy/go-control-plane/pkg/conversion",
     "github.com/envoyproxy/protoc-gen-validate/validate",
     "github.com/fgrosse/zaptest",
     "github.com/ghodss/yaml",
