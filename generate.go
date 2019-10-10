@@ -11,9 +11,10 @@ func main() {
 
 	log.Printf("starting generate")
 	if err := cmd.Generate(cmd.GenerateOptions{
-		RelativeRoot:  ".",
-		CompileProtos: true,
-		SkipGenMocks:  true,
+		RelativeRoot:       ".",
+		CompileProtos:      true,
+		SkipGenMocks:       true,
+		SkipGeneratedTests: true,
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
