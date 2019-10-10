@@ -13,6 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	NoServiceClientForClusterError = func(cluster string) error {
+		return errors.Errorf("kubernetes.Service client not found for cluster %v", cluster)
+	}
+)
+
 type ServiceMultiClusterClient interface {
 	handler.ClusterHandler
 	ServiceInterface
@@ -44,7 +50,7 @@ func (c *serviceMultiClusterClient) interfaceFor(cluster string) (ServiceInterfa
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "kubernetes", "Service", cluster)
+	return nil, NoServiceClientForClusterError(cluster)
 }
 
 func (c *serviceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -79,6 +85,7 @@ func (c *serviceMultiClusterClient) Read(namespace, name string, opts clients.Re
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.Read(namespace, name, opts)
 }
 
@@ -95,6 +102,7 @@ func (c *serviceMultiClusterClient) Delete(namespace, name string, opts clients.
 	if err != nil {
 		return err
 	}
+
 	return clusterInterface.Delete(namespace, name, opts)
 }
 
@@ -103,6 +111,7 @@ func (c *serviceMultiClusterClient) List(namespace string, opts clients.ListOpts
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.List(namespace, opts)
 }
 
@@ -111,5 +120,6 @@ func (c *serviceMultiClusterClient) Watch(namespace string, opts clients.WatchOp
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return clusterInterface.Watch(namespace, opts)
 }

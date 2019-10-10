@@ -13,6 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	NoFrequentlyChangingAnnotationsResourceClientForClusterError = func(cluster string) error {
+		return errors.Errorf("v2alpha1.FrequentlyChangingAnnotationsResource client not found for cluster %v", cluster)
+	}
+)
+
 type FrequentlyChangingAnnotationsResourceMultiClusterClient interface {
 	handler.ClusterHandler
 	FrequentlyChangingAnnotationsResourceInterface
@@ -44,7 +50,7 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) interfaceFor(c
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "v2alpha1", "FrequentlyChangingAnnotationsResource", cluster)
+	return nil, NoFrequentlyChangingAnnotationsResourceClientForClusterError(cluster)
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -79,6 +85,7 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Read(namespace
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.Read(namespace, name, opts)
 }
 
@@ -95,6 +102,7 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Delete(namespa
 	if err != nil {
 		return err
 	}
+
 	return clusterInterface.Delete(namespace, name, opts)
 }
 
@@ -103,6 +111,7 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) List(namespace
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.List(namespace, opts)
 }
 
@@ -111,5 +120,6 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Watch(namespac
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return clusterInterface.Watch(namespace, opts)
 }

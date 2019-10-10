@@ -13,6 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	NoCustomResourceDefinitionClientForClusterError = func(cluster string) error {
+		return errors.Errorf("kubernetes.CustomResourceDefinition client not found for cluster %v", cluster)
+	}
+)
+
 type CustomResourceDefinitionMultiClusterClient interface {
 	handler.ClusterHandler
 	CustomResourceDefinitionInterface
@@ -44,7 +50,7 @@ func (c *customResourceDefinitionMultiClusterClient) interfaceFor(cluster string
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "kubernetes", "CustomResourceDefinition", cluster)
+	return nil, NoCustomResourceDefinitionClientForClusterError(cluster)
 }
 
 func (c *customResourceDefinitionMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -79,6 +85,7 @@ func (c *customResourceDefinitionMultiClusterClient) Read(namespace, name string
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.Read(namespace, name, opts)
 }
 
@@ -95,6 +102,7 @@ func (c *customResourceDefinitionMultiClusterClient) Delete(namespace, name stri
 	if err != nil {
 		return err
 	}
+
 	return clusterInterface.Delete(namespace, name, opts)
 }
 
@@ -103,6 +111,7 @@ func (c *customResourceDefinitionMultiClusterClient) List(namespace string, opts
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.List(namespace, opts)
 }
 
@@ -111,5 +120,6 @@ func (c *customResourceDefinitionMultiClusterClient) Watch(namespace string, opt
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return clusterInterface.Watch(namespace, opts)
 }

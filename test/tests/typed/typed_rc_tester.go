@@ -8,6 +8,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/test/helpers"
+	"k8s.io/client-go/rest"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 
@@ -31,6 +32,8 @@ type ResourceClientTester interface {
 	Skip() bool
 	Setup(namespace string) factory.ResourceClientFactory
 	Teardown(namespace string)
+	// NOTE: ResourceClientFactoryGetter functions will not work until setup has been called
+	factory.ResourceClientFactoryGetter
 }
 
 func skipKubeTests() bool {
@@ -80,6 +83,15 @@ func (rct *KubeRcTester) Teardown(namespace string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+func (rct *KubeRcTester) ForCluster(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
+	return &factory.KubeResourceClientFactory{
+		Crd:         rct.Crd,
+		Cfg:         restConfig,
+		SharedCache: kube.NewKubeCache(context.TODO()),
+		Cluster:     cluster,
+	}
+}
+
 /*
  *
  * Consul-KV
@@ -88,6 +100,8 @@ func (rct *KubeRcTester) Teardown(namespace string) {
 type ConsulRcTester struct {
 	consulInstance *setup.ConsulInstance
 	consulFactory  *setup.ConsulFactory
+	consul         *api.Client
+	namespace      string
 }
 
 func (rct *ConsulRcTester) Description() string {
@@ -115,6 +129,9 @@ func (rct *ConsulRcTester) Setup(namespace string) factory.ResourceClientFactory
 	cfg.Address = fmt.Sprintf("127.0.0.1:%v", rct.consulInstance.Ports.HttpPort)
 	consul, err := api.NewClient(cfg)
 	Expect(err).NotTo(HaveOccurred())
+
+	rct.consul = consul
+	rct.namespace = namespace
 	return &factory.ConsulResourceClientFactory{
 		Consul:  consul,
 		RootKey: namespace,
@@ -124,6 +141,13 @@ func (rct *ConsulRcTester) Setup(namespace string) factory.ResourceClientFactory
 func (rct *ConsulRcTester) Teardown(namespace string) {
 	rct.consulInstance.Clean()
 	rct.consulFactory.Clean()
+}
+
+func (rct *ConsulRcTester) ForCluster(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
+	return &factory.ConsulResourceClientFactory{
+		Consul:  rct.consul,
+		RootKey: rct.namespace,
+	}
 }
 
 /*
@@ -156,6 +180,12 @@ func (rct *FileRcTester) Teardown(namespace string) {
 	os.RemoveAll(rct.rootDir)
 }
 
+func (rct *FileRcTester) ForCluster(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
+	return &factory.FileResourceClientFactory{
+		RootDir: rct.rootDir,
+	}
+}
+
 /*
  *
  * Memory
@@ -183,6 +213,12 @@ func (rct *MemoryRcTester) Setup(namespace string) factory.ResourceClientFactory
 }
 
 func (rct *MemoryRcTester) Teardown(namespace string) {}
+
+func (rct *MemoryRcTester) ForCluster(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
+	return &factory.MemoryResourceClientFactory{
+		Cache: memory.NewInMemoryResourceCache(),
+	}
+}
 
 /*
  *
@@ -215,6 +251,16 @@ func (rct *KubeConfigMapRcTester) Teardown(namespace string) {
 	kubeClient := helpers.MustKubeClient()
 	err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func (rct *KubeConfigMapRcTester) ForCluster(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
+	kubeClient := helpers.MustKubeClient()
+	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
+	Expect(err).NotTo(HaveOccurred())
+	return &factory.KubeConfigMapClientFactory{
+		Clientset: kubeClient,
+		Cache:     kcache,
+	}
 }
 
 /*
@@ -250,6 +296,16 @@ func (rct *KubeSecretRcTester) Teardown(namespace string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+func (rct *KubeSecretRcTester) ForCluster(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
+	kubeClient := helpers.MustKubeClient()
+	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
+	Expect(err).NotTo(HaveOccurred())
+	return &factory.KubeSecretClientFactory{
+		Clientset: kubeClient,
+		Cache:     kcache,
+	}
+}
+
 /*
  *
  * Vault Secret
@@ -258,6 +314,8 @@ func (rct *KubeSecretRcTester) Teardown(namespace string) {
 type VaultRcTester struct {
 	vaultInstance *setup.VaultInstance
 	vaultFactory  *setup.VaultFactory
+	rootKey       string
+	vault         *vaultapi.Client
 }
 
 func (rct *VaultRcTester) Description() string {
@@ -286,6 +344,8 @@ func (rct *VaultRcTester) Setup(namespace string) factory.ResourceClientFactory 
 	vault, err := vaultapi.NewClient(cfg)
 	vault.SetToken(rct.vaultInstance.Token())
 	Expect(err).NotTo(HaveOccurred())
+	rct.rootKey = rootKey
+	rct.vault = vault
 	return &factory.VaultSecretClientFactory{
 		RootKey: rootKey,
 		Vault:   vault,
@@ -295,4 +355,11 @@ func (rct *VaultRcTester) Setup(namespace string) factory.ResourceClientFactory 
 func (rct *VaultRcTester) Teardown(namespace string) {
 	rct.vaultInstance.Clean()
 	rct.vaultFactory.Clean()
+}
+
+func (rct *VaultRcTester) ForCluster(cluster string, restConfig *rest.Config) factory.ResourceClientFactory {
+	return &factory.VaultSecretClientFactory{
+		RootKey: rct.rootKey,
+		Vault:   rct.vault,
+	}
 }

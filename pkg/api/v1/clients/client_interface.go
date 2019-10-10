@@ -123,7 +123,8 @@ type WatchOpts struct {
 	Ctx         context.Context
 	Selector    map[string]string
 	RefreshRate time.Duration
-	Cluster     string
+	// Cluster is ignored by aggregated watches, but is respected by multi cluster clients.
+	Cluster string
 }
 
 func (o WatchOpts) WithDefaults() WatchOpts {

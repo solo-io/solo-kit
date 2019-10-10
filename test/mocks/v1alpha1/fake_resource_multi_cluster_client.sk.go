@@ -13,6 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	NoFakeResourceClientForClusterError = func(cluster string) error {
+		return errors.Errorf("v1alpha1.FakeResource client not found for cluster %v", cluster)
+	}
+)
+
 type FakeResourceMultiClusterClient interface {
 	handler.ClusterHandler
 	FakeResourceInterface
@@ -44,7 +50,7 @@ func (c *fakeResourceMultiClusterClient) interfaceFor(cluster string) (FakeResou
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "v1alpha1", "FakeResource", cluster)
+	return nil, NoFakeResourceClientForClusterError(cluster)
 }
 
 func (c *fakeResourceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -79,6 +85,7 @@ func (c *fakeResourceMultiClusterClient) Read(namespace, name string, opts clien
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.Read(namespace, name, opts)
 }
 
@@ -95,6 +102,7 @@ func (c *fakeResourceMultiClusterClient) Delete(namespace, name string, opts cli
 	if err != nil {
 		return err
 	}
+
 	return clusterInterface.Delete(namespace, name, opts)
 }
 
@@ -103,6 +111,7 @@ func (c *fakeResourceMultiClusterClient) List(namespace string, opts clients.Lis
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.List(namespace, opts)
 }
 
@@ -111,5 +120,6 @@ func (c *fakeResourceMultiClusterClient) Watch(namespace string, opts clients.Wa
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return clusterInterface.Watch(namespace, opts)
 }

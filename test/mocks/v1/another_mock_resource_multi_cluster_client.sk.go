@@ -13,6 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	NoAnotherMockResourceClientForClusterError = func(cluster string) error {
+		return errors.Errorf("v1.AnotherMockResource client not found for cluster %v", cluster)
+	}
+)
+
 type AnotherMockResourceMultiClusterClient interface {
 	handler.ClusterHandler
 	AnotherMockResourceInterface
@@ -44,7 +50,7 @@ func (c *anotherMockResourceMultiClusterClient) interfaceFor(cluster string) (An
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "v1", "AnotherMockResource", cluster)
+	return nil, NoAnotherMockResourceClientForClusterError(cluster)
 }
 
 func (c *anotherMockResourceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -79,6 +85,7 @@ func (c *anotherMockResourceMultiClusterClient) Read(namespace, name string, opt
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.Read(namespace, name, opts)
 }
 
@@ -95,6 +102,7 @@ func (c *anotherMockResourceMultiClusterClient) Delete(namespace, name string, o
 	if err != nil {
 		return err
 	}
+
 	return clusterInterface.Delete(namespace, name, opts)
 }
 
@@ -103,6 +111,7 @@ func (c *anotherMockResourceMultiClusterClient) List(namespace string, opts clie
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.List(namespace, opts)
 }
 
@@ -111,5 +120,6 @@ func (c *anotherMockResourceMultiClusterClient) Watch(namespace string, opts cli
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return clusterInterface.Watch(namespace, opts)
 }

@@ -17,6 +17,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	No{{ .Name }}ClientForClusterError = func(cluster string) error {
+		return errors.Errorf("{{ .Project.ProjectConfig.Version }}.{{ .Name }} client not found for cluster %v", cluster)
+	}
+)
+
 type {{ .Name }}MultiClusterClient interface {
 	handler.ClusterHandler
 	{{ .Name }}Interface
@@ -48,7 +54,7 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) interfaceFor(cluster string)
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "{{ .Project.ProjectConfig.Version }}", "{{ .Name }}", cluster)
+	return nil, No{{ .Name }}ClientForClusterError(cluster)
 }
 
 func (c *{{ lower_camel .Name }}MultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -87,8 +93,11 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) Read(namespace, name string,
 	if err != nil {
 		return nil, err
 	}
+{{ if .ClusterScoped }}
+	return clusterInterface.Read(name, opts)
+{{- else }}
 	return clusterInterface.Read(namespace, name, opts)
-}
+{{- end }}}
 
 func (c *{{ lower_camel .Name }}MultiClusterClient) Write({{ lower_camel .Name }} *{{ .Name }}, opts clients.WriteOpts) (*{{ .Name }}, error) {
 	clusterInterface, err := c.interfaceFor({{ lower_camel .Name }}.GetMetadata().Cluster)
@@ -107,7 +116,11 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) Delete(namespace, name strin
 	if err != nil {
 		return err
 	}
+{{ if .ClusterScoped }}
+	return clusterInterface.Delete(name, opts)
+{{- else }}
 	return clusterInterface.Delete(namespace, name, opts)
+{{- end }}
 }
 
 {{ if .ClusterScoped }}
@@ -119,8 +132,11 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) List(namespace string, opts 
 	if err != nil {
 		return nil, err
 	}
+{{ if .ClusterScoped }}
+	return clusterInterface.List(opts)
+{{- else }}
 	return clusterInterface.List(namespace, opts)
-}
+{{- end }}}
 
 {{ if .ClusterScoped }}
 func (c *{{ lower_camel .Name }}MultiClusterClient) Watch(opts clients.WatchOpts) (<-chan {{ .Name }}List, <-chan error, error) {
@@ -131,7 +147,12 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) Watch(namespace string, opts
 	if err != nil {
 		return nil, nil, err
 	}
+
+{{ if .ClusterScoped }}
+	return clusterInterface.Watch(opts)
+{{- else }}
 	return clusterInterface.Watch(namespace, opts)
+{{- end }}
 }
 
 `))

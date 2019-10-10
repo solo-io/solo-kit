@@ -13,6 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	NoKubeNamespaceClientForClusterError = func(cluster string) error {
+		return errors.Errorf("kubernetes.KubeNamespace client not found for cluster %v", cluster)
+	}
+)
+
 type KubeNamespaceMultiClusterClient interface {
 	handler.ClusterHandler
 	KubeNamespaceInterface
@@ -44,7 +50,7 @@ func (c *kubeNamespaceMultiClusterClient) interfaceFor(cluster string) (KubeName
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "kubernetes", "KubeNamespace", cluster)
+	return nil, NoKubeNamespaceClientForClusterError(cluster)
 }
 
 func (c *kubeNamespaceMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -79,6 +85,7 @@ func (c *kubeNamespaceMultiClusterClient) Read(namespace, name string, opts clie
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.Read(namespace, name, opts)
 }
 
@@ -95,6 +102,7 @@ func (c *kubeNamespaceMultiClusterClient) Delete(namespace, name string, opts cl
 	if err != nil {
 		return err
 	}
+
 	return clusterInterface.Delete(namespace, name, opts)
 }
 
@@ -103,6 +111,7 @@ func (c *kubeNamespaceMultiClusterClient) List(namespace string, opts clients.Li
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.List(namespace, opts)
 }
 
@@ -111,5 +120,6 @@ func (c *kubeNamespaceMultiClusterClient) Watch(namespace string, opts clients.W
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return clusterInterface.Watch(namespace, opts)
 }

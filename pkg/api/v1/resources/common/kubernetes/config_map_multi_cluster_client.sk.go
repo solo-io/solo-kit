@@ -13,6 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	NoConfigMapClientForClusterError = func(cluster string) error {
+		return errors.Errorf("kubernetes.ConfigMap client not found for cluster %v", cluster)
+	}
+)
+
 type ConfigMapMultiClusterClient interface {
 	handler.ClusterHandler
 	ConfigMapInterface
@@ -44,7 +50,7 @@ func (c *configMapMultiClusterClient) interfaceFor(cluster string) (ConfigMapInt
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "kubernetes", "ConfigMap", cluster)
+	return nil, NoConfigMapClientForClusterError(cluster)
 }
 
 func (c *configMapMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -79,6 +85,7 @@ func (c *configMapMultiClusterClient) Read(namespace, name string, opts clients.
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.Read(namespace, name, opts)
 }
 
@@ -95,6 +102,7 @@ func (c *configMapMultiClusterClient) Delete(namespace, name string, opts client
 	if err != nil {
 		return err
 	}
+
 	return clusterInterface.Delete(namespace, name, opts)
 }
 
@@ -103,6 +111,7 @@ func (c *configMapMultiClusterClient) List(namespace string, opts clients.ListOp
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.List(namespace, opts)
 }
 
@@ -111,5 +120,6 @@ func (c *configMapMultiClusterClient) Watch(namespace string, opts clients.Watch
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return clusterInterface.Watch(namespace, opts)
 }

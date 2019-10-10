@@ -13,6 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	NoDeploymentClientForClusterError = func(cluster string) error {
+		return errors.Errorf("kubernetes.Deployment client not found for cluster %v", cluster)
+	}
+)
+
 type DeploymentMultiClusterClient interface {
 	handler.ClusterHandler
 	DeploymentInterface
@@ -44,7 +50,7 @@ func (c *deploymentMultiClusterClient) interfaceFor(cluster string) (DeploymentI
 	if client, ok := c.clients[cluster]; ok {
 		return client, nil
 	}
-	return nil, errors.Errorf("%v.%v client not found for cluster %v", "kubernetes", "Deployment", cluster)
+	return nil, NoDeploymentClientForClusterError(cluster)
 }
 
 func (c *deploymentMultiClusterClient) ClusterAdded(cluster string, restConfig *rest.Config) {
@@ -79,6 +85,7 @@ func (c *deploymentMultiClusterClient) Read(namespace, name string, opts clients
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.Read(namespace, name, opts)
 }
 
@@ -95,6 +102,7 @@ func (c *deploymentMultiClusterClient) Delete(namespace, name string, opts clien
 	if err != nil {
 		return err
 	}
+
 	return clusterInterface.Delete(namespace, name, opts)
 }
 
@@ -103,6 +111,7 @@ func (c *deploymentMultiClusterClient) List(namespace string, opts clients.ListO
 	if err != nil {
 		return nil, err
 	}
+
 	return clusterInterface.List(namespace, opts)
 }
 
@@ -111,5 +120,6 @@ func (c *deploymentMultiClusterClient) Watch(namespace string, opts clients.Watc
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return clusterInterface.Watch(namespace, opts)
 }
