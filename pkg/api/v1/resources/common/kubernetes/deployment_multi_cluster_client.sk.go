@@ -9,12 +9,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
 type DeploymentMultiClusterClient interface {
-	multicluster.ClusterHandler
+	handler.ClusterHandler
 	DeploymentInterface
 }
 
@@ -25,8 +25,8 @@ type deploymentMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewDeploymentMultiClusterClient(getFactory factory.ResourceFactoryForCluster) DeploymentMultiClusterClient {
-	return NewDeploymentClientWithWatchAggregator(nil, getFactory)
+func NewDeploymentMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) DeploymentMultiClusterClient {
+	return NewDeploymentMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
 func NewDeploymentMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) DeploymentMultiClusterClient {
@@ -83,7 +83,7 @@ func (c *deploymentMultiClusterClient) Read(namespace, name string, opts clients
 }
 
 func (c *deploymentMultiClusterClient) Write(deployment *Deployment, opts clients.WriteOpts) (*Deployment, error) {
-	clusterInterface, err := c.interfaceFor(deployment.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(deployment.GetMetadata().Cluster)
 	if err != nil {
 		return nil, err
 	}

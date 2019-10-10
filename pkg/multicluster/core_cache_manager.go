@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -19,7 +20,7 @@ type KubeCoreCacheGetter interface {
 }
 
 type KubeCoreCacheManager interface {
-	ClusterHandler
+	handler.ClusterHandler
 	KubeCoreCacheGetter
 }
 

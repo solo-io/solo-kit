@@ -9,12 +9,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
 type CustomResourceDefinitionMultiClusterClient interface {
-	multicluster.ClusterHandler
+	handler.ClusterHandler
 	CustomResourceDefinitionInterface
 }
 
@@ -25,8 +25,8 @@ type customResourceDefinitionMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewCustomResourceDefinitionMultiClusterClient(getFactory factory.ResourceFactoryForCluster) CustomResourceDefinitionMultiClusterClient {
-	return NewCustomResourceDefinitionClientWithWatchAggregator(nil, getFactory)
+func NewCustomResourceDefinitionMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) CustomResourceDefinitionMultiClusterClient {
+	return NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
 func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) CustomResourceDefinitionMultiClusterClient {
@@ -83,7 +83,7 @@ func (c *customResourceDefinitionMultiClusterClient) Read(namespace, name string
 }
 
 func (c *customResourceDefinitionMultiClusterClient) Write(customResourceDefinition *CustomResourceDefinition, opts clients.WriteOpts) (*CustomResourceDefinition, error) {
-	clusterInterface, err := c.interfaceFor(customResourceDefinition.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(customResourceDefinition.GetMetadata().Cluster)
 	if err != nil {
 		return nil, err
 	}

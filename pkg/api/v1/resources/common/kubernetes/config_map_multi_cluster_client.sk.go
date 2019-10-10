@@ -9,12 +9,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
 type ConfigMapMultiClusterClient interface {
-	multicluster.ClusterHandler
+	handler.ClusterHandler
 	ConfigMapInterface
 }
 
@@ -25,8 +25,8 @@ type configMapMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewConfigMapMultiClusterClient(getFactory factory.ResourceFactoryForCluster) ConfigMapMultiClusterClient {
-	return NewConfigMapClientWithWatchAggregator(nil, getFactory)
+func NewConfigMapMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) ConfigMapMultiClusterClient {
+	return NewConfigMapMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
 func NewConfigMapMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) ConfigMapMultiClusterClient {
@@ -83,7 +83,7 @@ func (c *configMapMultiClusterClient) Read(namespace, name string, opts clients.
 }
 
 func (c *configMapMultiClusterClient) Write(configMap *ConfigMap, opts clients.WriteOpts) (*ConfigMap, error) {
-	clusterInterface, err := c.interfaceFor(configMap.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(configMap.GetMetadata().Cluster)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package multicluster
+package config
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -15,25 +17,20 @@ import (
 
 type RestConfigs map[string]*rest.Config
 
-type ClusterHandler interface {
-	ClusterAdded(cluster string, restConfig *rest.Config)
-	ClusterRemoved(cluster string, restConfig *rest.Config)
-}
-
 type RestConfigHandler struct {
-	kcWatcher     KubeConfigWatcher
-	handlers      []ClusterHandler
+	kcWatcher     multicluster.KubeConfigWatcher
+	handlers      []handler.ClusterHandler
 	cache         RestConfigs
 	cacheAccess   sync.Mutex
 	handlerAccess sync.Mutex
 }
 
-func NewRestConfigHandler(kcWatcher KubeConfigWatcher, handlers ...ClusterHandler) *RestConfigHandler {
+func NewRestConfigHandler(kcWatcher multicluster.KubeConfigWatcher, handlers ...ClusterHandler) *RestConfigHandler {
 	return &RestConfigHandler{kcWatcher: kcWatcher, handlers: handlers}
 }
 
 func (h *RestConfigHandler) Run(ctx context.Context, local *rest.Config, kubeClient kubernetes.Interface, kubeCache cache.KubeCoreCache) (<-chan error, error) {
-	kubeConfigs, errs, err := h.kcWatcher.WatchKubeConfigs(ctx, kubeClient, kubeCache)
+	kubeConfigs, errs, err := multicluster.WatchKubeConfigs(ctx, kubeClient, kubeCache)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +96,7 @@ func (h *RestConfigHandler) clusterRemoved(cluster string, cfg *rest.Config) {
 func parseRestConfigs(local *rest.Config, kcs v1.KubeConfigList) (RestConfigs, error) {
 	cfgs := RestConfigs{}
 	if local != nil {
-		cfgs[LocalCluster] = local
+		cfgs[multicluster.LocalCluster] = local
 	}
 
 	for _, kc := range kcs {

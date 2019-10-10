@@ -13,12 +13,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
 type {{ .Name }}MultiClusterClient interface {
-	multicluster.ClusterHandler
+	handler.ClusterHandler
 	{{ .Name }}Interface
 }
 
@@ -29,8 +29,8 @@ type {{ lower_camel .Name }}MultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func New{{ .Name }}MultiClusterClient(getFactory factory.ResourceFactoryForCluster) {{ .Name }}MultiClusterClient {
-	return New{{ .Name }}ClientWithWatchAggregator(nil, getFactory)
+func New{{ .Name }}MultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) {{ .Name }}MultiClusterClient {
+	return New{{ .Name }}MultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
 func New{{ .Name }}MultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) {{ .Name }}MultiClusterClient {
@@ -91,7 +91,7 @@ func (c *{{ lower_camel .Name }}MultiClusterClient) Read(namespace, name string,
 }
 
 func (c *{{ lower_camel .Name }}MultiClusterClient) Write({{ lower_camel .Name }} *{{ .Name }}, opts clients.WriteOpts) (*{{ .Name }}, error) {
-	clusterInterface, err := c.interfaceFor({{ lower_camel .Name }}.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor({{ lower_camel .Name }}.GetMetadata().Cluster)
 	if err != nil {
 		return nil, err
 	}

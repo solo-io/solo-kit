@@ -22,17 +22,6 @@ var _ = Describe("Shared Cache Manager", func() {
 		Expect(cache1).NotTo(BeNil())
 		cache2 := manager.GetCache(cluster2)
 		Expect(cache2).NotTo(BeNil())
-		Expect(cache1).NotTo(Equal(cache2))
-
-		cache1.Start()
-		ch := cache1.AddWatch(10)
-		go func() {
-			for {
-				select {
-				case <-ch:
-					Fail("unexpected read from channel")
-				}
-			}
-		}()
+		Expect(cache1 == cache2).To(BeFalse(), "each has a unique cache")
 	})
 })

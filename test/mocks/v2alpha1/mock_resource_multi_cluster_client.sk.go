@@ -9,12 +9,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
 type MockResourceMultiClusterClient interface {
-	multicluster.ClusterHandler
+	handler.ClusterHandler
 	MockResourceInterface
 }
 
@@ -25,8 +25,8 @@ type mockResourceMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewMockResourceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) MockResourceMultiClusterClient {
-	return NewMockResourceClientWithWatchAggregator(nil, getFactory)
+func NewMockResourceMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) MockResourceMultiClusterClient {
+	return NewMockResourceMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
 func NewMockResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) MockResourceMultiClusterClient {
@@ -83,7 +83,7 @@ func (c *mockResourceMultiClusterClient) Read(namespace, name string, opts clien
 }
 
 func (c *mockResourceMultiClusterClient) Write(mockResource *MockResource, opts clients.WriteOpts) (*MockResource, error) {
-	clusterInterface, err := c.interfaceFor(mockResource.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(mockResource.GetMetadata().Cluster)
 	if err != nil {
 		return nil, err
 	}

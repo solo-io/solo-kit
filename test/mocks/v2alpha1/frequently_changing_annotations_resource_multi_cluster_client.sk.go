@@ -9,12 +9,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
 type FrequentlyChangingAnnotationsResourceMultiClusterClient interface {
-	multicluster.ClusterHandler
+	handler.ClusterHandler
 	FrequentlyChangingAnnotationsResourceInterface
 }
 
@@ -25,8 +25,8 @@ type frequentlyChangingAnnotationsResourceMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewFrequentlyChangingAnnotationsResourceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) FrequentlyChangingAnnotationsResourceMultiClusterClient {
-	return NewFrequentlyChangingAnnotationsResourceClientWithWatchAggregator(nil, getFactory)
+func NewFrequentlyChangingAnnotationsResourceMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) FrequentlyChangingAnnotationsResourceMultiClusterClient {
+	return NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
 func NewFrequentlyChangingAnnotationsResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) FrequentlyChangingAnnotationsResourceMultiClusterClient {
@@ -83,7 +83,7 @@ func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Read(namespace
 }
 
 func (c *frequentlyChangingAnnotationsResourceMultiClusterClient) Write(frequentlyChangingAnnotationsResource *FrequentlyChangingAnnotationsResource, opts clients.WriteOpts) (*FrequentlyChangingAnnotationsResource, error) {
-	clusterInterface, err := c.interfaceFor(frequentlyChangingAnnotationsResource.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(frequentlyChangingAnnotationsResource.GetMetadata().Cluster)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package multicluster_test
+package config_test
 
 import (
 	"context"
@@ -16,8 +16,6 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	. "github.com/solo-io/solo-kit/pkg/multicluster"
 )
 
 var _ = Describe("ConfigHandler", func() {

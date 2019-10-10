@@ -9,12 +9,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
 type KubeNamespaceMultiClusterClient interface {
-	multicluster.ClusterHandler
+	handler.ClusterHandler
 	KubeNamespaceInterface
 }
 
@@ -25,8 +25,8 @@ type kubeNamespaceMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewKubeNamespaceMultiClusterClient(getFactory factory.ResourceFactoryForCluster) KubeNamespaceMultiClusterClient {
-	return NewKubeNamespaceClientWithWatchAggregator(nil, getFactory)
+func NewKubeNamespaceMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) KubeNamespaceMultiClusterClient {
+	return NewKubeNamespaceMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
 func NewKubeNamespaceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) KubeNamespaceMultiClusterClient {
@@ -83,7 +83,7 @@ func (c *kubeNamespaceMultiClusterClient) Read(namespace, name string, opts clie
 }
 
 func (c *kubeNamespaceMultiClusterClient) Write(kubeNamespace *KubeNamespace, opts clients.WriteOpts) (*KubeNamespace, error) {
-	clusterInterface, err := c.interfaceFor(kubeNamespace.GetMetadata().GetCluster())
+	clusterInterface, err := c.interfaceFor(kubeNamespace.GetMetadata().Cluster)
 	if err != nil {
 		return nil, err
 	}
