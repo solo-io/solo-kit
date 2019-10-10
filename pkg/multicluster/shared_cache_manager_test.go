@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var _ = FDescribe("Shared Cache Manager", func() {
+var _ = Describe("Shared Cache Manager", func() {
 	var manager multicluster.KubeSharedCacheManager
 
 	BeforeEach(func() {
