@@ -14,7 +14,8 @@
       "package": "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
       "type": "KubeNamespace",
       "plural_name": "kubenamespaces",
-      "short_name": "kn"
+      "short_name": "kn",
+      "cluster_scoped": true
     },
     {
       "package": "github.com/solo-io/solo-kit/api/external/kubernetes/configmap",
@@ -32,13 +33,14 @@
       "package": "github.com/solo-io/solo-kit/api/external/kubernetes/deployment",
       "type": "Deployment",
       "plural_name": "deployments",
-      "short_name": "dp "
+      "short_name": "dp"
     },
     {
       "package": "github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition",
       "type": "CustomResourceDefinition",
       "plural_name": "customresourcedefinition",
-      "short_name": "crd "
+      "short_name": "crd",
+      "cluster_scoped": true
     }
   ]
 }

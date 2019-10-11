@@ -18,17 +18,7 @@ import (
 )
 
 var _ = Describe("CustomResourceDefinitionClient", func() {
-	var (
-		namespace string
-	)
-	for _, test := range []typed.ResourceClientTester{
-		&typed.ConsulRcTester{},
-		&typed.FileRcTester{},
-		&typed.MemoryRcTester{},
-		&typed.VaultRcTester{},
-		&typed.KubeSecretRcTester{},
-		&typed.KubeConfigMapRcTester{},
-	} {
+	for _, test := range []typed.ResourceClientTester{} {
 		Context("resource client backed by "+test.Description(), func() {
 			var (
 				client              CustomResourceDefinitionClient
@@ -37,27 +27,28 @@ var _ = Describe("CustomResourceDefinitionClient", func() {
 			)
 
 			BeforeEach(func() {
-				namespace = helpers.RandString(6)
-				factory := test.Setup(namespace)
+				factory := test.Setup("")
 				client, err = NewCustomResourceDefinitionClient(factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				test.Teardown(namespace)
+				client.Delete(name1, clients.DeleteOpts{})
+				client.Delete(name2, clients.DeleteOpts{})
+				client.Delete(name3, clients.DeleteOpts{})
 			})
 			It("CRUDs CustomResourceDefinitions "+test.Description(), func() {
-				CustomResourceDefinitionClientTest(namespace, client, name1, name2, name3)
+				CustomResourceDefinitionClientTest(client, name1, name2, name3)
 			})
 		})
 	}
 })
 
-func CustomResourceDefinitionClientTest(namespace string, client CustomResourceDefinitionClient, name1, name2, name3 string) {
+func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, name1, name2, name3 string) {
 	err := client.Register()
 	Expect(err).NotTo(HaveOccurred())
 
 	name := name1
-	input := NewCustomResourceDefinition(namespace, name)
+	input := NewCustomResourceDefinition("", name)
 
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -68,7 +59,6 @@ func CustomResourceDefinitionClientTest(namespace string, client CustomResourceD
 
 	Expect(r1).To(BeAssignableToTypeOf(&CustomResourceDefinition{}))
 	Expect(r1.GetMetadata().Name).To(Equal(name))
-	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
 	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
 	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 
@@ -84,48 +74,44 @@ func CustomResourceDefinitionClientTest(namespace string, client CustomResourceD
 		OverwriteExisting: true,
 	})
 	Expect(err).NotTo(HaveOccurred())
-	read, err := client.Read(namespace, name, clients.ReadOpts{})
+	read, err := client.Read(name, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(read).To(Equal(r1))
-	_, err = client.Read("doesntexist", name, clients.ReadOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsNotExist(err)).To(BeTrue())
 
 	name = name2
 	input = &CustomResourceDefinition{}
 
 	input.SetMetadata(core.Metadata{
-		Name:      name,
-		Namespace: namespace,
+		Name: name,
 	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
-	list, err := client.List(namespace, clients.ListOpts{})
+	list, err := client.List(clients.ListOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(list).To(ContainElement(r1))
 	Expect(list).To(ContainElement(r2))
-	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{})
+	err = client.Delete("adsfw", clients.DeleteOpts{})
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsNotExist(err)).To(BeTrue())
-	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{
+	err = client.Delete("adsfw", clients.DeleteOpts{
 		IgnoreNotExist: true,
 	})
 	Expect(err).NotTo(HaveOccurred())
-	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
+	err = client.Delete(r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
 	Eventually(func() CustomResourceDefinitionList {
-		list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(ContainElement(r1))
 	Eventually(func() CustomResourceDefinitionList {
-		list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
-	w, errs, err := client.Watch(namespace, clients.WatchOpts{
+	w, errs, err := client.Watch(clients.WatchOpts{
 		RefreshRate: time.Hour,
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -146,8 +132,7 @@ func CustomResourceDefinitionClientTest(namespace string, client CustomResourceD
 		input = &CustomResourceDefinition{}
 		Expect(err).NotTo(HaveOccurred())
 		input.SetMetadata(core.Metadata{
-			Name:      name,
-			Namespace: namespace,
+			Name: name,
 		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
