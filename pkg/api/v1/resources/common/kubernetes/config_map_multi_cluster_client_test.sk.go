@@ -2,7 +2,7 @@
 
 // +build solokit
 
-package v1
+package kubernetes
 
 import (
 	"time"

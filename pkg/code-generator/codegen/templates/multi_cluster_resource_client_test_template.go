@@ -6,7 +6,7 @@ import (
 
 var MultiClusterResourceClientTestTemplate = template.Must(template.New("multi_cluster_client_test").Funcs(Funcs).Parse(`// +build solokit
 
-package v1
+package {{ .Project.ProjectConfig.Version }}
 
 import (
 	"time"
