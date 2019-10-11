@@ -357,13 +357,11 @@ func {{ .Name }}MultiClusterClientWatchAggregationTest(client {{ .Name }}MultiCl
 	client.ClusterAdded("", cfg)
 	input := &{{ .Name }}{}
 	input.SetMetadata(core.Metadata{
-		Cluster:   "write",
 		Name:      "bar",
 {{- if (not .ClusterScoped) }}
 		Namespace: namespace,
 {{- end }}
 	})
-	_, err = client.Write(input, clients.WriteOpts{})
 	written, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(written))))

@@ -231,11 +231,9 @@ func PodMultiClusterClientWatchAggregationTest(client PodMultiClusterClient, agg
 	client.ClusterAdded("", cfg)
 	input := &Pod{}
 	input.SetMetadata(core.Metadata{
-		Cluster:   "write",
 		Name:      "bar",
 		Namespace: namespace,
 	})
-	_, err = client.Write(input, clients.WriteOpts{})
 	written, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(written))))
