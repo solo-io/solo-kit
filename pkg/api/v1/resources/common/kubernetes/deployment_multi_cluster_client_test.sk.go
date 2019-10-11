@@ -199,7 +199,7 @@ func DeploymentMultiClusterClientCrudErrorsTest(client DeploymentMultiClusterCli
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoDeploymentClientForClusterError("delete").Error()))
 
-	input = &Deployment{}
+	input := &Deployment{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -212,7 +212,6 @@ func DeploymentMultiClusterClientCrudErrorsTest(client DeploymentMultiClusterCli
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoDeploymentClientForClusterError("watch").Error()))
 }
-
 func DeploymentMultiClusterClientWatchAggregationTest(client DeploymentMultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -231,7 +230,7 @@ func DeploymentMultiClusterClientWatchAggregationTest(client DeploymentMultiClus
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &Deployment{}
+	input := &Deployment{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",

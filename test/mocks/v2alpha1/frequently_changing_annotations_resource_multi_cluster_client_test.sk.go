@@ -201,7 +201,7 @@ func FrequentlyChangingAnnotationsResourceMultiClusterClientCrudErrorsTest(clien
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoFrequentlyChangingAnnotationsResourceClientForClusterError("delete").Error()))
 
-	input = &FrequentlyChangingAnnotationsResource{}
+	input := &FrequentlyChangingAnnotationsResource{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -214,7 +214,6 @@ func FrequentlyChangingAnnotationsResourceMultiClusterClientCrudErrorsTest(clien
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoFrequentlyChangingAnnotationsResourceClientForClusterError("watch").Error()))
 }
-
 func FrequentlyChangingAnnotationsResourceMultiClusterClientWatchAggregationTest(client FrequentlyChangingAnnotationsResourceMultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -233,7 +232,7 @@ func FrequentlyChangingAnnotationsResourceMultiClusterClientWatchAggregationTest
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &FrequentlyChangingAnnotationsResource{}
+	input := &FrequentlyChangingAnnotationsResource{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",

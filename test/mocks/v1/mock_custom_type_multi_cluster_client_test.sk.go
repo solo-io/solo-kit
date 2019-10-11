@@ -199,7 +199,7 @@ func MockCustomTypeMultiClusterClientCrudErrorsTest(client MockCustomTypeMultiCl
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoMockCustomTypeClientForClusterError("delete").Error()))
 
-	input = &MockCustomType{}
+	input := &MockCustomType{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -212,7 +212,6 @@ func MockCustomTypeMultiClusterClientCrudErrorsTest(client MockCustomTypeMultiCl
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoMockCustomTypeClientForClusterError("watch").Error()))
 }
-
 func MockCustomTypeMultiClusterClientWatchAggregationTest(client MockCustomTypeMultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -231,7 +230,7 @@ func MockCustomTypeMultiClusterClientWatchAggregationTest(client MockCustomTypeM
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &MockCustomType{}
+	input := &MockCustomType{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",

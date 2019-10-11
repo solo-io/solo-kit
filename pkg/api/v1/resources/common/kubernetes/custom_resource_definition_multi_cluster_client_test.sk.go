@@ -199,7 +199,7 @@ func CustomResourceDefinitionMultiClusterClientCrudErrorsTest(client CustomResou
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoCustomResourceDefinitionClientForClusterError("delete").Error()))
 
-	input = &CustomResourceDefinition{}
+	input := &CustomResourceDefinition{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -212,7 +212,6 @@ func CustomResourceDefinitionMultiClusterClientCrudErrorsTest(client CustomResou
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoCustomResourceDefinitionClientForClusterError("watch").Error()))
 }
-
 func CustomResourceDefinitionMultiClusterClientWatchAggregationTest(client CustomResourceDefinitionMultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -231,7 +230,7 @@ func CustomResourceDefinitionMultiClusterClientWatchAggregationTest(client Custo
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &CustomResourceDefinition{}
+	input := &CustomResourceDefinition{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",

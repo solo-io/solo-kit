@@ -199,7 +199,7 @@ func PodMultiClusterClientCrudErrorsTest(client PodMultiClusterClient) {
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoPodClientForClusterError("delete").Error()))
 
-	input = &Pod{}
+	input := &Pod{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -212,7 +212,6 @@ func PodMultiClusterClientCrudErrorsTest(client PodMultiClusterClient) {
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoPodClientForClusterError("watch").Error()))
 }
-
 func PodMultiClusterClientWatchAggregationTest(client PodMultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -231,7 +230,7 @@ func PodMultiClusterClientWatchAggregationTest(client PodMultiClusterClient, agg
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &Pod{}
+	input := &Pod{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",

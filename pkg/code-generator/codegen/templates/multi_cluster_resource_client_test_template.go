@@ -308,7 +308,7 @@ func {{ .Name }}MultiClusterClientCrudErrorsTest(client {{ .Name }}MultiClusterC
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(No{{ .Name }}ClientForClusterError("delete").Error()))
 
-	input = &{{ .Name }}{}
+	input := &{{ .Name }}{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -328,8 +328,16 @@ func {{ .Name }}MultiClusterClientCrudErrorsTest(client {{ .Name }}MultiClusterC
 	Expect(err.Error()).To(Equal(No{{ .Name }}ClientForClusterError("watch").Error()))
 }
 
+{{- if .ClusterScoped }}
+func {{ .Name }}MultiClusterClientWatchAggregationTest(client {{ .Name }}MultiClusterClient, aggregator wrapper.WatchAggregator) {
+{{- else }}
 func {{ .Name }}MultiClusterClientWatchAggregationTest(client {{ .Name }}MultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
+{{- end }}
+{{- if .ClusterScoped }}
+	w, errs, err := aggregator.Watch(clients.WatchOpts{})
+{{- else }}
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
+{{- end }}
 	Expect(err).NotTo(HaveOccurred())
 	go func() {
 		defer GinkgoRecover()
@@ -346,7 +354,7 @@ func {{ .Name }}MultiClusterClientWatchAggregationTest(client {{ .Name }}MultiCl
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &{{ .Name }}{}
+	input := &{{ .Name }}{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",

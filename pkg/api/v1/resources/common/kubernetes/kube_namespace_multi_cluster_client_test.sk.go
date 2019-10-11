@@ -199,7 +199,7 @@ func KubeNamespaceMultiClusterClientCrudErrorsTest(client KubeNamespaceMultiClus
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoKubeNamespaceClientForClusterError("delete").Error()))
 
-	input = &KubeNamespace{}
+	input := &KubeNamespace{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -212,7 +212,6 @@ func KubeNamespaceMultiClusterClientCrudErrorsTest(client KubeNamespaceMultiClus
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoKubeNamespaceClientForClusterError("watch").Error()))
 }
-
 func KubeNamespaceMultiClusterClientWatchAggregationTest(client KubeNamespaceMultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -231,7 +230,7 @@ func KubeNamespaceMultiClusterClientWatchAggregationTest(client KubeNamespaceMul
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &KubeNamespace{}
+	input := &KubeNamespace{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",

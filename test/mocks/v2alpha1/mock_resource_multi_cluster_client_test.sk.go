@@ -201,7 +201,7 @@ func MockResourceMultiClusterClientCrudErrorsTest(client MockResourceMultiCluste
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoMockResourceClientForClusterError("delete").Error()))
 
-	input = &MockResource{}
+	input := &MockResource{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -214,7 +214,6 @@ func MockResourceMultiClusterClientCrudErrorsTest(client MockResourceMultiCluste
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoMockResourceClientForClusterError("watch").Error()))
 }
-
 func MockResourceMultiClusterClientWatchAggregationTest(client MockResourceMultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -233,7 +232,7 @@ func MockResourceMultiClusterClientWatchAggregationTest(client MockResourceMulti
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &MockResource{}
+	input := &MockResource{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",

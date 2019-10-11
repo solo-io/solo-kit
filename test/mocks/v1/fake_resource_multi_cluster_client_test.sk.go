@@ -201,7 +201,7 @@ func FakeResourceMultiClusterClientCrudErrorsTest(client FakeResourceMultiCluste
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoFakeResourceClientForClusterError("delete").Error()))
 
-	input = &FakeResource{}
+	input := &FakeResource{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
@@ -214,7 +214,6 @@ func FakeResourceMultiClusterClientCrudErrorsTest(client FakeResourceMultiCluste
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal(NoFakeResourceClientForClusterError("watch").Error()))
 }
-
 func FakeResourceMultiClusterClientWatchAggregationTest(client FakeResourceMultiClusterClient, aggregator wrapper.WatchAggregator, namespace string) {
 	w, errs, err := aggregator.Watch(namespace, clients.WatchOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -233,7 +232,7 @@ func FakeResourceMultiClusterClientWatchAggregationTest(client FakeResourceMulti
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	client.ClusterAdded("", cfg)
-	input = &FakeResource{}
+	input := &FakeResource{}
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
