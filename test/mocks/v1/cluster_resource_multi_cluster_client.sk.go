@@ -31,11 +31,13 @@ type clusterResourceMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewClusterResourceMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) ClusterResourceMultiClusterClient {
+var _ ClusterResourceMultiClusterClient = &clusterResourceMultiClusterClient{}
+
+func NewClusterResourceMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) *clusterResourceMultiClusterClient {
 	return NewClusterResourceMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
-func NewClusterResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) ClusterResourceMultiClusterClient {
+func NewClusterResourceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) *clusterResourceMultiClusterClient {
 	return &clusterResourceMultiClusterClient{
 		clients:       make(map[string]ClusterResourceClient),
 		clientAccess:  sync.RWMutex{},

@@ -35,11 +35,13 @@ type {{ lower_camel .Name }}MultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func New{{ .Name }}MultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) {{ .Name }}MultiClusterClient {
+var _ {{ .Name }}MultiClusterClient = &{{ lower_camel .Name }}MultiClusterClient{} 
+
+func New{{ .Name }}MultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) *{{ lower_camel .Name }}MultiClusterClient {
 	return New{{ .Name }}MultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
-func New{{ .Name }}MultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) {{ .Name }}MultiClusterClient {
+func New{{ .Name }}MultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) *{{ lower_camel .Name }}MultiClusterClient {
 	return &{{ lower_camel .Name }}MultiClusterClient{
 		clients:       make(map[string]{{ .Name }}Client),
 		clientAccess:  sync.RWMutex{},

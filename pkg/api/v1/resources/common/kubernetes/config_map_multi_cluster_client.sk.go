@@ -31,11 +31,13 @@ type configMapMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewConfigMapMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) ConfigMapMultiClusterClient {
+var _ ConfigMapMultiClusterClient = &configMapMultiClusterClient{}
+
+func NewConfigMapMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) *configMapMultiClusterClient {
 	return NewConfigMapMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
-func NewConfigMapMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) ConfigMapMultiClusterClient {
+func NewConfigMapMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) *configMapMultiClusterClient {
 	return &configMapMultiClusterClient{
 		clients:       make(map[string]ConfigMapClient),
 		clientAccess:  sync.RWMutex{},

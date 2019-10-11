@@ -31,11 +31,13 @@ type kubeNamespaceMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewKubeNamespaceMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) KubeNamespaceMultiClusterClient {
+var _ KubeNamespaceMultiClusterClient = &kubeNamespaceMultiClusterClient{}
+
+func NewKubeNamespaceMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) *kubeNamespaceMultiClusterClient {
 	return NewKubeNamespaceMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
-func NewKubeNamespaceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) KubeNamespaceMultiClusterClient {
+func NewKubeNamespaceMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) *kubeNamespaceMultiClusterClient {
 	return &kubeNamespaceMultiClusterClient{
 		clients:       make(map[string]KubeNamespaceClient),
 		clientAccess:  sync.RWMutex{},

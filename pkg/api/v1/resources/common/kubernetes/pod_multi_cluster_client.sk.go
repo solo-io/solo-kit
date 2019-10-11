@@ -31,11 +31,13 @@ type podMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewPodMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) PodMultiClusterClient {
+var _ PodMultiClusterClient = &podMultiClusterClient{}
+
+func NewPodMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) *podMultiClusterClient {
 	return NewPodMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
-func NewPodMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) PodMultiClusterClient {
+func NewPodMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) *podMultiClusterClient {
 	return &podMultiClusterClient{
 		clients:       make(map[string]PodClient),
 		clientAccess:  sync.RWMutex{},

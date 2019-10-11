@@ -31,11 +31,13 @@ type mockCustomTypeMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewMockCustomTypeMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) MockCustomTypeMultiClusterClient {
+var _ MockCustomTypeMultiClusterClient = &mockCustomTypeMultiClusterClient{}
+
+func NewMockCustomTypeMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) *mockCustomTypeMultiClusterClient {
 	return NewMockCustomTypeMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
-func NewMockCustomTypeMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) MockCustomTypeMultiClusterClient {
+func NewMockCustomTypeMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) *mockCustomTypeMultiClusterClient {
 	return &mockCustomTypeMultiClusterClient{
 		clients:       make(map[string]MockCustomTypeClient),
 		clientAccess:  sync.RWMutex{},

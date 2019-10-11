@@ -31,11 +31,13 @@ type customResourceDefinitionMultiClusterClient struct {
 	factoryGetter factory.ResourceClientFactoryGetter
 }
 
-func NewCustomResourceDefinitionMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) CustomResourceDefinitionMultiClusterClient {
+var _ CustomResourceDefinitionMultiClusterClient = &customResourceDefinitionMultiClusterClient{}
+
+func NewCustomResourceDefinitionMultiClusterClient(factoryGetter factory.ResourceClientFactoryGetter) *customResourceDefinitionMultiClusterClient {
 	return NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(nil, factoryGetter)
 }
 
-func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) CustomResourceDefinitionMultiClusterClient {
+func NewCustomResourceDefinitionMultiClusterClientWithWatchAggregator(aggregator wrapper.WatchAggregator, factoryGetter factory.ResourceClientFactoryGetter) *customResourceDefinitionMultiClusterClient {
 	return &customResourceDefinitionMultiClusterClient{
 		clients:       make(map[string]CustomResourceDefinitionClient),
 		clientAccess:  sync.RWMutex{},
