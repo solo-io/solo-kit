@@ -11,6 +11,9 @@ import "google/protobuf/duration.proto";
 
 import "validate/validate.proto";
 
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
 // [#protodoc-title: HTTP Service URI ]
 
 // Envoy external URI descriptor

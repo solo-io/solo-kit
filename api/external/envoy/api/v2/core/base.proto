@@ -12,14 +12,11 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 import "envoy/api/v2/core/http_uri.proto";
 
-
 import "validate/validate.proto";
-import "gogoproto/gogo.proto";
-
 import "envoy/type/percent.proto";
 
+import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
-option (gogoproto.stable_marshaler_all) = true;
 
 // [#protodoc-title: Common types]
 

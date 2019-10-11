@@ -69,7 +69,7 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: $(OUTPUT_DIR)/.generated-code verify-envoy-protos
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
@@ -78,6 +78,11 @@ $(OUTPUT_DIR)/.generated-code:
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	touch $@
+
+.PHONY: verify-envoy-protos
+verify-envoy-protos:
+	@echo Verifying validity of generated envoy files...
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
 
 #----------------------------------------------------------------------------------
 # {gogo,golang}/protobuf dependencies
