@@ -65,7 +65,7 @@ func WriteCrossProjectDocsHugo(
 				continue
 			}
 			if pf.Package == nil {
-				fmt.Printf("underspecified project descriptor will not be added to the map: %v", pf)
+				// if there is no package we will not generate doc links for the descriptor
 				continue
 			}
 			protoPkgName := *pf.Package
