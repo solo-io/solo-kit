@@ -176,7 +176,6 @@ func ClusterResourceMultiClusterClientTest(client ClusterResourceMultiClusterCli
 
 	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }
-
 func ClusterResourceMultiClusterClientCrudErrorsTest(client ClusterResourceMultiClusterClient) {
 	_, err := client.Read("bar", clients.ReadOpts{Cluster: "read"})
 	Expect(err).To(HaveOccurred())

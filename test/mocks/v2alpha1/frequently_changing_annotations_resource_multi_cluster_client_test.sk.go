@@ -189,7 +189,6 @@ func FrequentlyChangingAnnotationsResourceMultiClusterClientTest(namespace strin
 
 	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }
-
 func FrequentlyChangingAnnotationsResourceMultiClusterClientCrudErrorsTest(client FrequentlyChangingAnnotationsResourceMultiClusterClient) {
 	_, err := client.Read("foo", "bar", clients.ReadOpts{Cluster: "read"})
 	Expect(err).To(HaveOccurred())
@@ -205,7 +204,7 @@ func FrequentlyChangingAnnotationsResourceMultiClusterClientCrudErrorsTest(clien
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
-		Namespace: namespace,
+		Namespace: "foo",
 	})
 	_, err = client.Write(input, clients.WriteOpts{})
 	Expect(err).To(HaveOccurred())

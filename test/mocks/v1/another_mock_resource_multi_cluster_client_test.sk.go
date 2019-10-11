@@ -190,7 +190,6 @@ func AnotherMockResourceMultiClusterClientTest(namespace string, client AnotherM
 
 	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }
-
 func AnotherMockResourceMultiClusterClientCrudErrorsTest(client AnotherMockResourceMultiClusterClient) {
 	_, err := client.Read("foo", "bar", clients.ReadOpts{Cluster: "read"})
 	Expect(err).To(HaveOccurred())
@@ -206,7 +205,7 @@ func AnotherMockResourceMultiClusterClientCrudErrorsTest(client AnotherMockResou
 	input.SetMetadata(core.Metadata{
 		Cluster:   "write",
 		Name:      "bar",
-		Namespace: namespace,
+		Namespace: "foo",
 	})
 	_, err = client.Write(input, clients.WriteOpts{})
 	Expect(err).To(HaveOccurred())

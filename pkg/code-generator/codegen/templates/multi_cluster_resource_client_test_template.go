@@ -285,6 +285,7 @@ func {{ .Name }}MultiClusterClientTest(namespace string, client {{ .Name }}Multi
 	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }
 
+{{- /* namespaces are abitrary here since we error before making calls against a particular cluster */}}
 func {{ .Name }}MultiClusterClientCrudErrorsTest(client {{ .Name }}MultiClusterClient) {
 {{- if .ClusterScoped }}
 	_, err := client.Read("bar", clients.ReadOpts{Cluster: "read"})
@@ -313,7 +314,7 @@ func {{ .Name }}MultiClusterClientCrudErrorsTest(client {{ .Name }}MultiClusterC
 		Cluster:   "write",
 		Name:      "bar",
 {{- if (not .ClusterScoped) }}
-		Namespace: namespace,
+		Namespace: "foo",
 {{- end }}
 	})
 	_, err = client.Write(input, clients.WriteOpts{})

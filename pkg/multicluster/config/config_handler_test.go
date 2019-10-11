@@ -12,6 +12,7 @@ import (
 	v12 "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/multicluster/config"
 	"github.com/solo-io/solo-kit/pkg/multicluster/secretconverter"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 	"k8s.io/client-go/kubernetes"
@@ -23,7 +24,7 @@ var _ = Describe("ConfigHandler", func() {
 		h1, h2 := newMockHandler(), newMockHandler()
 		watcher := &fakeKCWatcher{}
 
-		clusters := NewRestConfigHandler(watcher, h1, h2)
+		clusters := config.NewRestConfigHandler(watcher, h1, h2)
 
 		errs, err := clusters.Run(context.TODO(), nil, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
