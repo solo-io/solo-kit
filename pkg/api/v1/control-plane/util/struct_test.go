@@ -15,51 +15,65 @@
 package util_test
 
 import (
+	"fmt"
 	"reflect"
-	"testing"
 
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/types"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 )
 
-func TestConversion(t *testing.T) {
-	pb := &v2.DiscoveryRequest{
-		VersionInfo: "test",
-		Node:        &envoy_api_v2_core.Node{Id: "proxy"},
-	}
-	st, err := util.MessageToStruct(pb)
-	if err != nil {
-		t.Fatalf("unexpected error %v", err)
-	}
-	pbst := map[string]*types.Value{
-		"version_info": &types.Value{Kind: &types.Value_StringValue{StringValue: "test"}},
-		"node": &types.Value{Kind: &types.Value_StructValue{StructValue: &types.Struct{
-			Fields: map[string]*types.Value{
-				"id": &types.Value{Kind: &types.Value_StringValue{StringValue: "proxy"}},
-			},
-		}}},
-	}
-	if !reflect.DeepEqual(st.Fields, pbst) {
-		t.Errorf("MessageToStruct(%v) => got %v, want %v", pb, st.Fields, pbst)
-	}
+var _ = Describe("util tests", func() {
+	Context("go-control-plane tests", func() {
 
-	out := &v2.DiscoveryRequest{}
-	err = util.StructToMessage(st, out)
-	if err != nil {
-		t.Fatalf("unexpected error %v", err)
-	}
-	if !reflect.DeepEqual(pb, out) {
-		t.Errorf("StructToMessage(%v) => got %v, want %v", st, out, pb)
-	}
+		var (
+			st *types.Struct
+			pb *v2.DiscoveryRequest
+		)
 
-	if _, err = util.MessageToStruct(nil); err == nil {
-		t.Error("MessageToStruct(nil) => got no error")
-	}
+		BeforeEach(func() {
+			pb = &v2.DiscoveryRequest{
+				VersionInfo: "test",
+				Node:        &envoy_api_v2_core.Node{Id: "proxy"},
+			}
+			var err error
+			st, err = util.MessageToStruct(pb)
+			Expect(err).NotTo(HaveOccurred())
+		})
 
-	if err = util.StructToMessage(nil, &v2.DiscoveryRequest{}); err == nil {
-		t.Error("StructToMessage(nil) => got no error")
-	}
-}
+		It("can transform objects", func() {
+			pbst := map[string]*types.Value{
+				"version_info": &types.Value{Kind: &types.Value_StringValue{StringValue: "test"}},
+				"node": &types.Value{Kind: &types.Value_StructValue{StructValue: &types.Struct{
+					Fields: map[string]*types.Value{
+						"id": &types.Value{Kind: &types.Value_StringValue{StringValue: "proxy"}},
+					},
+				}}},
+			}
+			if !reflect.DeepEqual(st.Fields, pbst) {
+				Fail(fmt.Sprintf("MessageToStruct(%v) => got %v, want %v", pb, st.Fields, pbst))
+			}
+		})
+
+		It("can error when improper types re given", func() {
+			out := &v2.DiscoveryRequest{}
+			err := util.StructToMessage(st, out)
+			Expect(err).NotTo(HaveOccurred())
+			if !reflect.DeepEqual(pb, out) {
+				Fail(fmt.Sprintf("StructToMessage(%v) => got %v, want %v", st, out, pb))
+			}
+		})
+
+		It("will error when given nil inputs", func() {
+			_, err := util.MessageToStruct(nil)
+			Expect(err).To(HaveOccurred())
+
+			err = util.StructToMessage(nil, &v2.DiscoveryRequest{})
+			Expect(err).To(HaveOccurred())
+		})
+	})
+})
