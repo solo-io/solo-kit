@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Generate multi-cluster client sets for managing clients acrosss multiple clusters.
+    issueLink: https://github.com/solo-io/solo-kit/issues/295
