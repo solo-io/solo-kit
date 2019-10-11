@@ -28,7 +28,7 @@ var _ = Describe("KubeNamespaceClient", func() {
 
 			BeforeEach(func() {
 				factory := test.Setup("")
-				client, err = NewClusterResourceClient(factory)
+				client, err = NewKubeNamespaceClient(factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {

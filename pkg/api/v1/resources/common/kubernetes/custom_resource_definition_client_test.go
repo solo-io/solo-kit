@@ -28,7 +28,7 @@ var _ = Describe("CustomResourceDefinitionClient", func() {
 
 			BeforeEach(func() {
 				factory := test.Setup("")
-				client, err = NewClusterResourceClient(factory)
+				client, err = NewCustomResourceDefinitionClient(factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
