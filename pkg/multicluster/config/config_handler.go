@@ -25,7 +25,7 @@ type RestConfigHandler struct {
 	handlerAccess sync.Mutex
 }
 
-func NewRestConfigHandler(kcWatcher multicluster.KubeConfigWatcher, handlers ...handler.sClusterHandler) *RestConfigHandler {
+func NewRestConfigHandler(kcWatcher multicluster.KubeConfigWatcher, handlers ...handler.ClusterHandler) *RestConfigHandler {
 	return &RestConfigHandler{kcWatcher: kcWatcher, handlers: handlers}
 }
 
