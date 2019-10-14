@@ -5,11 +5,12 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	resources "github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	rest "k8s.io/client-go/rest"
-	reflect "reflect"
 )
 
 // MockClientGetter is a mock of ClientGetter interface
