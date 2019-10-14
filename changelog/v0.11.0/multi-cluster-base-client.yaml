@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Multi-cluster base client.
+    issueLink: https://github.com/solo-io/solo-kit/issues/295

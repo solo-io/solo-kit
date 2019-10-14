@@ -108,7 +108,16 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 			opts.ResyncPeriod,
 		)
 		return clusterClient(client, opts.Cluster), nil
-
+	case *MultiClusterResourceClientFactory:
+		if opts.ClientGetter == nil {
+			return nil, errors.Errorf("the multi cluster resource client requires a ClientGetter")
+		}
+		client := kube.NewMultiClusterResourceClient(
+			opts.ClientGetter,
+			opts.WatchAggregator,
+			resourceType,
+		)
+		return client, nil
 	case *ConsulResourceClientFactory:
 		versionedResource, ok := params.ResourceType.(resources.VersionedResource)
 		if !ok {
@@ -177,6 +186,15 @@ type KubeResourceClientFactory struct {
 }
 
 func (f *KubeResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(f, params)
+}
+
+type MultiClusterResourceClientFactory struct {
+	ClientGetter    kube.ClientGetter
+	WatchAggregator wrapper.WatchAggregator
+}
+
+func (f *MultiClusterResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
 	return newResourceClient(f, params)
 }
 

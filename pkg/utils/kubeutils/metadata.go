@@ -8,6 +8,7 @@ import (
 	kubetypes "k8s.io/apimachinery/pkg/types"
 )
 
+// TODO (joekelley) we need a solution for Cluster / ClusterName, as it's ignored by the apiserver
 func FromKubeMeta(meta metav1.ObjectMeta) core.Metadata {
 	return core.Metadata{
 		Name:            meta.Name,
