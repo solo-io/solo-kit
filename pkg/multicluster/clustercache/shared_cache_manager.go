@@ -1,10 +1,11 @@
-package multicluster
+package clustercache
 
 import (
 	"context"
 	"sync"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
@@ -18,7 +19,7 @@ type KubeSharedCacheGetter interface {
 }
 
 type KubeSharedCacheManager interface {
-	ClusterHandler
+	handler.ClusterHandler
 	KubeSharedCacheGetter
 }
 

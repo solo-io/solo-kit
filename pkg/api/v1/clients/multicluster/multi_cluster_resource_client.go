@@ -1,4 +1,4 @@
-package kube
+package multicluster
 
 import (
 	"sync"
@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"k8s.io/client-go/rest"
 )
 
@@ -19,7 +19,7 @@ var (
 
 type MultiClusterResourceClient interface {
 	clients.ResourceClient
-	multicluster.ClusterHandler
+	handler.ClusterHandler
 }
 
 type ClientGetter interface {

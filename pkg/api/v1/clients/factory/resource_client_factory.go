@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 
 	"github.com/hashicorp/consul/api"
@@ -112,7 +113,7 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		if opts.ClientGetter == nil {
 			return nil, errors.Errorf("the multi cluster resource client requires a ClientGetter")
 		}
-		client := kube.NewMultiClusterResourceClient(
+		client := multicluster.NewMultiClusterResourceClient(
 			opts.ClientGetter,
 			opts.WatchAggregator,
 			resourceType,
@@ -190,7 +191,7 @@ func (f *KubeResourceClientFactory) NewResourceClient(params NewResourceClientPa
 }
 
 type MultiClusterResourceClientFactory struct {
-	ClientGetter    kube.ClientGetter
+	ClientGetter    multicluster.ClientGetter
 	WatchAggregator wrapper.WatchAggregator
 }
 

@@ -1,19 +1,19 @@
-package multicluster_test
+package clustercache_test
 
 import (
 	"context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	. "github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("Shared Cache Manager", func() {
-	var manager multicluster.KubeSharedCacheManager
+	var manager KubeSharedCacheManager
 
 	BeforeEach(func() {
-		manager = multicluster.NewKubeSharedCacheManager(context.Background())
+		manager = NewKubeSharedCacheManager(context.Background())
 	})
 
 	It("assigns a unique cache to each cluster", func() {

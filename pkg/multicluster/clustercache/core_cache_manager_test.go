@@ -1,4 +1,4 @@
-package multicluster_test
+package clustercache_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/multicluster"
+	. "github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/rest"
 )
 
@@ -20,12 +20,12 @@ var _ = Describe("Core Cache Manager", func() {
 	}
 
 	var (
-		manager    multicluster.KubeCoreCacheManager
+		manager    KubeCoreCacheManager
 		restConfig *rest.Config
 	)
 
 	BeforeEach(func() {
-		manager = multicluster.NewKubeCoreCacheManager(context.Background())
+		manager = NewKubeCoreCacheManager(context.Background())
 		var err error
 		restConfig, err = kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
 		Expect(err).NotTo(HaveOccurred(), "getting kube config")
