@@ -17,34 +17,38 @@ var (
 	}
 )
 
-type MultiClusterResourceClient interface {
-	clients.ResourceClient
-	handler.ClusterHandler
-}
+//go:generate mockgen -destination=./mocks/client_getter.go -source multi_cluster_resource_client.go -package mocks
 
 type ClientGetter interface {
 	GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error)
 }
 
+type MultiClusterResourceClient interface {
+	clients.ResourceClient
+	handler.ClusterHandler
+}
+
 type multiClusterResourceClient struct {
-	clientGetter    ClientGetter
 	resourceType    resources.Resource
+	clientGetter    ClientGetter
+	watchAggregator wrapper.WatchAggregator
 	clients         map[string]clients.ResourceClient
 	clientAccess    sync.RWMutex
-	watchAggregator wrapper.WatchAggregator
 }
 
 var _ MultiClusterResourceClient = &multiClusterResourceClient{}
 
 func NewMultiClusterResourceClient(
+	resourceType resources.Resource,
 	clientGetter ClientGetter,
 	watchAggregator wrapper.WatchAggregator,
-	resourceType resources.Resource,
 ) *multiClusterResourceClient {
 	return &multiClusterResourceClient{
+		resourceType:    resourceType,
 		clientGetter:    clientGetter,
 		watchAggregator: watchAggregator,
-		resourceType:    resourceType,
+		clients:         make(map[string]clients.ResourceClient),
+		clientAccess:    sync.RWMutex{},
 	}
 }
 

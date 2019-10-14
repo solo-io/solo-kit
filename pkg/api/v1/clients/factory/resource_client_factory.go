@@ -114,9 +114,9 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 			return nil, errors.Errorf("the multi cluster resource client requires a ClientGetter")
 		}
 		client := multicluster.NewMultiClusterResourceClient(
+			resourceType,
 			opts.ClientGetter,
 			opts.WatchAggregator,
-			resourceType,
 		)
 		return client, nil
 	case *ConsulResourceClientFactory:
