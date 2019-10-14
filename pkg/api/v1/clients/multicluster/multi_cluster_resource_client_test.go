@@ -277,12 +277,30 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		})
 	})
 
-	Describe("ClusterAdded", func() {
+	Describe("ClusterAdded and ClusterRemoved", func() {
+		Context("with a watch aggregator", func() {
+			It("works", func() {
+				// ClusterAdded
+				mockClientGetter.EXPECT().GetClient(cluster1, &rest.Config{}).Return(mockResourceClient1, nil)
+				mockResourceClient1.EXPECT().Register().Return(nil)
+				mockWatch.EXPECT().AddWatch(mockResourceClient1)
+				subject.ClusterAdded(cluster1, &rest.Config{})
 
-	})
+				// Use the added cluster client to verify it is there
+				mockResourceClient1.EXPECT().Delete(namespace, "foo", clients.DeleteOpts{Cluster: cluster1}).Return(nil)
+				err := subject.Delete(namespace, "foo", clients.DeleteOpts{Cluster: cluster1})
+				Expect(err).NotTo(HaveOccurred())
 
-	Describe("ClusterRemoved", func() {
+				// ClusterRemoved
+				mockWatch.EXPECT().RemoveWatch(mockResourceClient1)
+				subject.ClusterRemoved(cluster1, &rest.Config{})
 
+				// Attempt to use the removed cluster to verify it is gone
+				err = subject.Delete(namespace, "bar", clients.DeleteOpts{Cluster: cluster1})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(multicluster.NoClientForClusterError(subject.Kind(), cluster1).Error()))
+			})
+		})
 	})
 
 })
