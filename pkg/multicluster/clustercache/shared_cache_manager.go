@@ -9,6 +9,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+//go:generate mockgen -destination=./mocks/shared_cache_manager.go -source shared_cache_manager.go -package mocks
+
 type sharedCacheWrapper struct {
 	cancel      context.CancelFunc
 	sharedCache kube.SharedCache

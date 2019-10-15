@@ -10,6 +10,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+//go:generate mockgen -destination=./mocks/core_cache_manager.go -source core_cache_manager.go -package mocks
+
 type coreCacheWrapper struct {
 	cancel    context.CancelFunc
 	coreCache cache.KubeCoreCache
