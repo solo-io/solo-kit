@@ -1,4 +1,4 @@
-package multicluster
+package subclients
 
 import (
 	"time"

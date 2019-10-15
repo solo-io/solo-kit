@@ -24,7 +24,7 @@ type podResourceClient struct {
 	common.KubeCoreResourceClient
 }
 
-func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *podResourceClient {
+func NewResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *podResourceClient {
 	return &podResourceClient{
 		cache: cache,
 		Kube:  kube,
@@ -35,7 +35,7 @@ func newResourceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) *po
 }
 
 func NewPodClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skkube.PodClient {
-	resourceClient := newResourceClient(kube, cache)
+	resourceClient := NewResourceClient(kube, cache)
 	return skkube.NewPodClientWithBase(resourceClient)
 }
 
