@@ -127,11 +127,11 @@ var _ = Describe("DocsGen", func() {
 			RelativePath: filepath.Join(
 				hugoApiDir,
 				relativePathToTempDir,
-				"doc_gen_test.proto.sk#GenerateDocsForMe"),
+				"doc_gen_test.proto.sk/#GenerateDocsForMe"),
 			Package: "testing.solo.io",
 		}))
 		By("verify that data file's mapping matches Hugo's served url")
-		servedFile := strings.Split(apiSummary.RelativePath, "#")[0]
+		servedFile := strings.Split(apiSummary.RelativePath, "/#")[0]
 		diskFile := filepath.Join(tempDir, projectConfigDocsDir, servedFile+".md")
 		_, err = ioutil.ReadFile(diskFile)
 		Expect(err).NotTo(HaveOccurred())
