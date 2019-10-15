@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 
 	"github.com/hashicorp/consul/api"
@@ -109,16 +108,6 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 			opts.ResyncPeriod,
 		)
 		return clusterClient(client, opts.Cluster), nil
-	case *MultiClusterResourceClientFactory:
-		if opts.ClientGetter == nil {
-			return nil, errors.Errorf("the multi cluster resource client requires a ClientGetter")
-		}
-		client := multicluster.NewMultiClusterResourceClient(
-			resourceType,
-			opts.ClientGetter,
-			opts.WatchAggregator,
-		)
-		return client, nil
 	case *ConsulResourceClientFactory:
 		versionedResource, ok := params.ResourceType.(resources.VersionedResource)
 		if !ok {
@@ -187,15 +176,6 @@ type KubeResourceClientFactory struct {
 }
 
 func (f *KubeResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
-	return newResourceClient(f, params)
-}
-
-type MultiClusterResourceClientFactory struct {
-	ClientGetter    multicluster.ClientGetter
-	WatchAggregator wrapper.WatchAggregator
-}
-
-func (f *MultiClusterResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
 	return newResourceClient(f, params)
 }
 
