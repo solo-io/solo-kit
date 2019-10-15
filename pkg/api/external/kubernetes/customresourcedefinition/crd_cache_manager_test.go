@@ -1,4 +1,4 @@
-package clustercache_test
+package customresourcedefinition_test
 
 import (
 	"context"
@@ -7,8 +7,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/customresourcedefinition"
+
 	"github.com/solo-io/go-utils/kubeutils"
-	. "github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/rest"
 )
 

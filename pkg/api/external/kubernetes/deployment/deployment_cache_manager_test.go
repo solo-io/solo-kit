@@ -1,4 +1,4 @@
-package clustercache_test
+package deployment_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
-	. "github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
+	. "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/deployment"
 	"k8s.io/client-go/rest"
 )
 

@@ -1,24 +1,21 @@
-package clustercache
+package customresourcedefinition
 
 import (
 	"context"
 	"sync"
 
-	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/customresourcedefinition"
 	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/rest"
 )
 
-//go:generate mockgen -destination=./mocks/core_cache_manager.go -source core_cache_manager.go -package mocks
-
 type crdCacheWrapper struct {
 	cancel   context.CancelFunc
-	crdCache customresourcedefinition.KubeCustomResourceDefinitionCache
+	crdCache KubeCustomResourceDefinitionCache
 }
 
 type CrdCacheGetter interface {
-	GetCache(cluster string, restConfig *rest.Config) customresourcedefinition.KubeCustomResourceDefinitionCache
+	GetCache(cluster string, restConfig *rest.Config) KubeCustomResourceDefinitionCache
 }
 
 type CrdCacheManager interface {
@@ -52,7 +49,7 @@ func (m *crdCacheManager) addCluster(cluster string, restConfig *rest.Config) cr
 	if err != nil {
 		return crdCacheWrapper{}
 	}
-	crdCache, err := customresourcedefinition.NewKubeCustomResourceDefinitionCache(ctx, kubeClient)
+	crdCache, err := NewKubeCustomResourceDefinitionCache(ctx, kubeClient)
 	if err != nil {
 		return crdCacheWrapper{}
 	}
@@ -76,7 +73,7 @@ func (m *crdCacheManager) ClusterRemoved(cluster string, restConfig *rest.Config
 	}
 }
 
-func (m *crdCacheManager) GetCache(cluster string, restConfig *rest.Config) customresourcedefinition.KubeCustomResourceDefinitionCache {
+func (m *crdCacheManager) GetCache(cluster string, restConfig *rest.Config) KubeCustomResourceDefinitionCache {
 	m.cacheAccess.RLock()
 	cw, exists := m.caches[cluster]
 	m.cacheAccess.RUnlock()

@@ -1,4 +1,4 @@
-package clustercache
+package deployment
 
 import (
 	"context"
@@ -9,8 +9,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
-
-//go:generate mockgen -destination=./mocks/core_cache_deploymentCacheManager.go -source core_cache_deploymentCacheManager.go -package mocks
 
 type deploymentCacheWrapper struct {
 	cancel          context.CancelFunc

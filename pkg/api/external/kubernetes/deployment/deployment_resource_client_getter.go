@@ -3,18 +3,17 @@ package deployment
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
-	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 type deploymentResourceClientGetter struct {
-	cacheGetter clustercache.KubeDeploymentCacheGetter
+	cacheGetter KubeDeploymentCacheGetter
 }
 
 var _ multicluster.ClientGetter = &deploymentResourceClientGetter{}
 
-func NewDeploymentResourceClientGetter(cacheGetter clustercache.KubeDeploymentCacheGetter) *deploymentResourceClientGetter {
+func NewDeploymentResourceClientGetter(cacheGetter KubeDeploymentCacheGetter) *deploymentResourceClientGetter {
 	return &deploymentResourceClientGetter{cacheGetter: cacheGetter}
 }
 
