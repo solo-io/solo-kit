@@ -18,10 +18,10 @@ func NewPodResourceClientGetter(coreCacheGetter clustercache.KubeCoreCacheGetter
 	return &podResourceClientGetter{coreCacheGetter: coreCacheGetter}
 }
 
-func (p *podResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *podResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
 	}
-	return newResourceClient(kube, p.coreCacheGetter.GetCache(cluster, restConfig)), nil
+	return newResourceClient(kube, g.coreCacheGetter.GetCache(cluster, restConfig)), nil
 }
