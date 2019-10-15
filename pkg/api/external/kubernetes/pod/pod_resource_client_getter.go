@@ -1,7 +1,6 @@
-package subclients
+package pod
 
 import (
-	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/pod"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
@@ -24,5 +23,5 @@ func (p *podResourceClientGetter) GetClient(cluster string, restConfig *rest.Con
 	if err != nil {
 		return nil, err
 	}
-	return pod.NewResourceClient(kube, p.coreCacheGetter.GetCache(cluster, restConfig)), nil
+	return newResourceClient(kube, p.coreCacheGetter.GetCache(cluster, restConfig)), nil
 }

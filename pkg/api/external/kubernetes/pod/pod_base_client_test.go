@@ -35,7 +35,7 @@ var _ = Describe("PodBaseClient", func() {
 		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
-		client = NewResourceClient(kube, kubeCache)
+		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {

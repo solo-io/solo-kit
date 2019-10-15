@@ -17,12 +17,6 @@ var (
 	}
 )
 
-//go:generate mockgen -destination=./mocks/client_getter.go -source multi_cluster_resource_client.go -package mocks
-
-type ClientGetter interface {
-	GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error)
-}
-
 type MultiClusterResourceClient interface {
 	clients.ResourceClient
 	handler.ClusterHandler

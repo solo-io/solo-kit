@@ -1,4 +1,4 @@
-package subclients
+package kube
 
 import (
 	"time"
