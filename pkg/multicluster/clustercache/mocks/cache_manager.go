@@ -47,31 +47,31 @@ func (mr *MockPerClusterCacheMockRecorder) IsPerCluster() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPerCluster", reflect.TypeOf((*MockPerClusterCache)(nil).IsPerCluster))
 }
 
-// MockPerClusterCacheGetter is a mock of CacheGetter interface
-type MockPerClusterCacheGetter struct {
+// MockCacheGetter is a mock of CacheGetter interface
+type MockCacheGetter struct {
 	ctrl     *gomock.Controller
-	recorder *MockPerClusterCacheGetterMockRecorder
+	recorder *MockCacheGetterMockRecorder
 }
 
-// MockPerClusterCacheGetterMockRecorder is the mock recorder for MockPerClusterCacheGetter
-type MockPerClusterCacheGetterMockRecorder struct {
-	mock *MockPerClusterCacheGetter
+// MockCacheGetterMockRecorder is the mock recorder for MockCacheGetter
+type MockCacheGetterMockRecorder struct {
+	mock *MockCacheGetter
 }
 
-// NewMockPerClusterCacheGetter creates a new mock instance
-func NewMockPerClusterCacheGetter(ctrl *gomock.Controller) *MockPerClusterCacheGetter {
-	mock := &MockPerClusterCacheGetter{ctrl: ctrl}
-	mock.recorder = &MockPerClusterCacheGetterMockRecorder{mock}
+// NewMockCacheGetter creates a new mock instance
+func NewMockCacheGetter(ctrl *gomock.Controller) *MockCacheGetter {
+	mock := &MockCacheGetter{ctrl: ctrl}
+	mock.recorder = &MockCacheGetterMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockPerClusterCacheGetter) EXPECT() *MockPerClusterCacheGetterMockRecorder {
+func (m *MockCacheGetter) EXPECT() *MockCacheGetterMockRecorder {
 	return m.recorder
 }
 
 // GetCache mocks base method
-func (m *MockPerClusterCacheGetter) GetCache(cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func (m *MockCacheGetter) GetCache(cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCache", cluster, restConfig)
 	ret0, _ := ret[0].(clustercache.PerClusterCache)
@@ -79,60 +79,60 @@ func (m *MockPerClusterCacheGetter) GetCache(cluster string, restConfig *rest.Co
 }
 
 // GetCache indicates an expected call of GetCache
-func (mr *MockPerClusterCacheGetterMockRecorder) GetCache(cluster, restConfig interface{}) *gomock.Call {
+func (mr *MockCacheGetterMockRecorder) GetCache(cluster, restConfig interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCache", reflect.TypeOf((*MockPerClusterCacheGetter)(nil).GetCache), cluster, restConfig)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCache", reflect.TypeOf((*MockCacheGetter)(nil).GetCache), cluster, restConfig)
 }
 
-// MockPerClusterCacheManager is a mock of CacheManager interface
-type MockPerClusterCacheManager struct {
+// MockCacheManager is a mock of CacheManager interface
+type MockCacheManager struct {
 	ctrl     *gomock.Controller
-	recorder *MockPerClusterCacheManagerMockRecorder
+	recorder *MockCacheManagerMockRecorder
 }
 
-// MockPerClusterCacheManagerMockRecorder is the mock recorder for MockPerClusterCacheManager
-type MockPerClusterCacheManagerMockRecorder struct {
-	mock *MockPerClusterCacheManager
+// MockCacheManagerMockRecorder is the mock recorder for MockCacheManager
+type MockCacheManagerMockRecorder struct {
+	mock *MockCacheManager
 }
 
-// NewMockPerClusterCacheManager creates a new mock instance
-func NewMockPerClusterCacheManager(ctrl *gomock.Controller) *MockPerClusterCacheManager {
-	mock := &MockPerClusterCacheManager{ctrl: ctrl}
-	mock.recorder = &MockPerClusterCacheManagerMockRecorder{mock}
+// NewMockCacheManager creates a new mock instance
+func NewMockCacheManager(ctrl *gomock.Controller) *MockCacheManager {
+	mock := &MockCacheManager{ctrl: ctrl}
+	mock.recorder = &MockCacheManagerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockPerClusterCacheManager) EXPECT() *MockPerClusterCacheManagerMockRecorder {
+func (m *MockCacheManager) EXPECT() *MockCacheManagerMockRecorder {
 	return m.recorder
 }
 
 // ClusterAdded mocks base method
-func (m *MockPerClusterCacheManager) ClusterAdded(cluster string, restConfig *rest.Config) {
+func (m *MockCacheManager) ClusterAdded(cluster string, restConfig *rest.Config) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ClusterAdded", cluster, restConfig)
 }
 
 // ClusterAdded indicates an expected call of ClusterAdded
-func (mr *MockPerClusterCacheManagerMockRecorder) ClusterAdded(cluster, restConfig interface{}) *gomock.Call {
+func (mr *MockCacheManagerMockRecorder) ClusterAdded(cluster, restConfig interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterAdded", reflect.TypeOf((*MockPerClusterCacheManager)(nil).ClusterAdded), cluster, restConfig)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterAdded", reflect.TypeOf((*MockCacheManager)(nil).ClusterAdded), cluster, restConfig)
 }
 
 // ClusterRemoved mocks base method
-func (m *MockPerClusterCacheManager) ClusterRemoved(cluster string, restConfig *rest.Config) {
+func (m *MockCacheManager) ClusterRemoved(cluster string, restConfig *rest.Config) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ClusterRemoved", cluster, restConfig)
 }
 
 // ClusterRemoved indicates an expected call of ClusterRemoved
-func (mr *MockPerClusterCacheManagerMockRecorder) ClusterRemoved(cluster, restConfig interface{}) *gomock.Call {
+func (mr *MockCacheManagerMockRecorder) ClusterRemoved(cluster, restConfig interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterRemoved", reflect.TypeOf((*MockPerClusterCacheManager)(nil).ClusterRemoved), cluster, restConfig)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterRemoved", reflect.TypeOf((*MockCacheManager)(nil).ClusterRemoved), cluster, restConfig)
 }
 
 // GetCache mocks base method
-func (m *MockPerClusterCacheManager) GetCache(cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func (m *MockCacheManager) GetCache(cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCache", cluster, restConfig)
 	ret0, _ := ret[0].(clustercache.PerClusterCache)
@@ -140,7 +140,7 @@ func (m *MockPerClusterCacheManager) GetCache(cluster string, restConfig *rest.C
 }
 
 // GetCache indicates an expected call of GetCache
-func (mr *MockPerClusterCacheManagerMockRecorder) GetCache(cluster, restConfig interface{}) *gomock.Call {
+func (mr *MockCacheManagerMockRecorder) GetCache(cluster, restConfig interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCache", reflect.TypeOf((*MockPerClusterCacheManager)(nil).GetCache), cluster, restConfig)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCache", reflect.TypeOf((*MockCacheManager)(nil).GetCache), cluster, restConfig)
 }
