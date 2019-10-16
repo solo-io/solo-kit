@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add multi cluster wrappers for kube caches.
+    issueLink: https://github.com/solo-io/solo-kit/issues/295
