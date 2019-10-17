@@ -12,39 +12,39 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-// MockPerClusterCache is a mock of ClusterCache interface
-type MockPerClusterCache struct {
+// MockClusterCache is a mock of ClusterCache interface
+type MockClusterCache struct {
 	ctrl     *gomock.Controller
-	recorder *MockPerClusterCacheMockRecorder
+	recorder *MockClusterCacheMockRecorder
 }
 
-// MockPerClusterCacheMockRecorder is the mock recorder for MockPerClusterCache
-type MockPerClusterCacheMockRecorder struct {
-	mock *MockPerClusterCache
+// MockClusterCacheMockRecorder is the mock recorder for MockClusterCache
+type MockClusterCacheMockRecorder struct {
+	mock *MockClusterCache
 }
 
-// NewMockPerClusterCache creates a new mock instance
-func NewMockPerClusterCache(ctrl *gomock.Controller) *MockPerClusterCache {
-	mock := &MockPerClusterCache{ctrl: ctrl}
-	mock.recorder = &MockPerClusterCacheMockRecorder{mock}
+// NewMockClusterCache creates a new mock instance
+func NewMockClusterCache(ctrl *gomock.Controller) *MockClusterCache {
+	mock := &MockClusterCache{ctrl: ctrl}
+	mock.recorder = &MockClusterCacheMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockPerClusterCache) EXPECT() *MockPerClusterCacheMockRecorder {
+func (m *MockClusterCache) EXPECT() *MockClusterCacheMockRecorder {
 	return m.recorder
 }
 
 // IsClusterCache mocks base method
-func (m *MockPerClusterCache) IsClusterCache() {
+func (m *MockClusterCache) IsClusterCache() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "IsClusterCache")
 }
 
 // IsClusterCache indicates an expected call of IsClusterCache
-func (mr *MockPerClusterCacheMockRecorder) IsPerCluster() *gomock.Call {
+func (mr *MockClusterCacheMockRecorder) IsClusterCache() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsClusterCache", reflect.TypeOf((*MockPerClusterCache)(nil).IsClusterCache))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsClusterCache", reflect.TypeOf((*MockClusterCache)(nil).IsClusterCache))
 }
 
 // MockCacheGetter is a mock of CacheGetter interface
