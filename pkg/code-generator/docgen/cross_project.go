@@ -65,7 +65,7 @@ func WriteCrossProjectDocsHugo(
 				continue
 			}
 			if pf.Package == nil {
-				fmt.Printf("underspecified project descriptor will not be added to the map: %v", pf)
+				// if there is no package we will not generate doc links for the descriptor
 				continue
 			}
 			protoPkgName := *pf.Package
@@ -118,7 +118,12 @@ func getApiSummaryKV(apiDir, filename, packageName, fieldName string) (string, d
 		key = fmt.Sprintf("%v.%v", packageName, fieldName)
 	}
 	filePath := filepath.Join(apiDir, filename+options.HugoResourceExtension)
-	relativePath := fmt.Sprintf("%v%v", filePath, hashPath)
+	// hugo requires a / before the #hash content
+	// valid:
+	// http://docs.solo.io/gloo/latest/api/etc/some.proto.sk/#field
+	// not valid:
+	// http://docs.solo.io/gloo/latest/api/etc/some.proto.sk#field
+	relativePath := fmt.Sprintf("%v/%v", filePath, hashPath)
 	value := datafile.ApiSummary{
 		RelativePath: relativePath,
 		Package:      packageName,

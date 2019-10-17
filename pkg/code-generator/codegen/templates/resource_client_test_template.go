@@ -54,7 +54,7 @@ var _ = Describe("{{ .Name }}Client", func() {
 {{/* cluster-scoped resources get no namespace, must delete individual resources*/}}
 			BeforeEach(func() {
 				factory := test.Setup("")
-				client, err = NewClusterResourceClient(factory)
+				client, err = New{{ .Name }}Client(factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
