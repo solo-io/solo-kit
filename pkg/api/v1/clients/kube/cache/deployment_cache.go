@@ -16,7 +16,7 @@ import (
 )
 
 type KubeDeploymentCache interface {
-	clustercache.PerClusterCache
+	clustercache.ClusterCache
 	DeploymentLister() kubelisters.DeploymentLister
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
@@ -55,7 +55,7 @@ func NewKubeDeploymentCache(ctx context.Context, client kubernetes.Interface) (*
 	return k, nil
 }
 
-func NewDeploymentCacheFromConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func NewDeploymentCacheFromConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil
@@ -67,7 +67,7 @@ func NewDeploymentCacheFromConfig(ctx context.Context, cluster string, restConfi
 	return c
 }
 
-var _ clustercache.FromConfig = NewDeploymentCacheFromConfig
+var _ clustercache.NewClusterCacheForConfig = NewDeploymentCacheFromConfig
 
 func (k *kubeDeploymentCache) DeploymentLister() kubelisters.DeploymentLister {
 	return k.deploymentLister
@@ -92,7 +92,7 @@ func (k *kubeDeploymentCache) Unsubscribe(c <-chan struct{}) {
 	}
 }
 
-func (k *kubeDeploymentCache) IsPerCluster() {}
+func (k *kubeDeploymentCache) IsClusterCache() {}
 
 func (k *kubeDeploymentCache) updatedOccured() {
 	k.cacheUpdatedWatchersMutex.Lock()

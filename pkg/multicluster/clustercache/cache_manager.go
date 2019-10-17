@@ -13,17 +13,20 @@ import (
 
 type cacheWrapper struct {
 	cancel    context.CancelFunc
-	coreCache PerClusterCache
+	coreCache ClusterCache
 }
 
-type PerClusterCache interface {
-	IsPerCluster()
+// PerClusterCaches are caches that can be created from a *rest.Config and shared per-cluster
+// by the CacheManager. All kube caches should be PerClusterCaches so that we can maintain
+// exactly one cache per registered cluster.
+type ClusterCache interface {
+	IsClusterCache()
 }
 
-type FromConfig func(ctx context.Context, cluster string, restConfig *rest.Config) PerClusterCache
+type NewClusterCacheForConfig func(ctx context.Context, cluster string, restConfig *rest.Config) ClusterCache
 
 type CacheGetter interface {
-	GetCache(cluster string, restConfig *rest.Config) PerClusterCache
+	GetCache(cluster string, restConfig *rest.Config) ClusterCache
 }
 
 type CacheManager interface {
@@ -32,24 +35,24 @@ type CacheManager interface {
 }
 
 type manager struct {
-	ctx         context.Context
-	caches      map[string]cacheWrapper
-	cacheAccess sync.RWMutex
-	fromConfig  FromConfig
+	ctx          context.Context
+	caches       map[string]cacheWrapper
+	cacheAccess  sync.RWMutex
+	newForConfig NewClusterCacheForConfig
 }
 
 var _ CacheManager = &manager{}
 
-func NewCacheManager(ctx context.Context, fromConfig FromConfig) (*manager, error) {
-	if fromConfig == nil {
+func NewCacheManager(ctx context.Context, newForConfig NewClusterCacheForConfig) (*manager, error) {
+	if newForConfig == nil {
 		return nil, errors.Errorf("cache manager requires a callback for generating per-cluster caches")
 	}
 
 	return &manager{
-		ctx:         ctx,
-		caches:      make(map[string]cacheWrapper),
-		cacheAccess: sync.RWMutex{},
-		fromConfig:  fromConfig,
+		ctx:          ctx,
+		caches:       make(map[string]cacheWrapper),
+		cacheAccess:  sync.RWMutex{},
+		newForConfig: newForConfig,
 	}, nil
 }
 
@@ -61,7 +64,7 @@ func (m *manager) addCluster(cluster string, restConfig *rest.Config) cacheWrapp
 	ctx, cancel := context.WithCancel(m.ctx)
 	cw := cacheWrapper{
 		cancel:    cancel,
-		coreCache: m.fromConfig(ctx, cluster, restConfig),
+		coreCache: m.newForConfig(ctx, cluster, restConfig),
 	}
 	m.cacheAccess.Lock()
 	defer m.cacheAccess.Unlock()
@@ -78,7 +81,7 @@ func (m *manager) ClusterRemoved(cluster string, restConfig *rest.Config) {
 	}
 }
 
-func (m *manager) GetCache(cluster string, restConfig *rest.Config) PerClusterCache {
+func (m *manager) GetCache(cluster string, restConfig *rest.Config) ClusterCache {
 	m.cacheAccess.RLock()
 	cw, exists := m.caches[cluster]
 	m.cacheAccess.RUnlock()

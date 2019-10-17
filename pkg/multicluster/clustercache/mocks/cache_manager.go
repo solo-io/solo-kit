@@ -12,7 +12,7 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-// MockPerClusterCache is a mock of PerClusterCache interface
+// MockPerClusterCache is a mock of ClusterCache interface
 type MockPerClusterCache struct {
 	ctrl     *gomock.Controller
 	recorder *MockPerClusterCacheMockRecorder
@@ -35,16 +35,16 @@ func (m *MockPerClusterCache) EXPECT() *MockPerClusterCacheMockRecorder {
 	return m.recorder
 }
 
-// IsPerCluster mocks base method
-func (m *MockPerClusterCache) IsPerCluster() {
+// IsClusterCache mocks base method
+func (m *MockPerClusterCache) IsClusterCache() {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "IsPerCluster")
+	m.ctrl.Call(m, "IsClusterCache")
 }
 
-// IsPerCluster indicates an expected call of IsPerCluster
+// IsClusterCache indicates an expected call of IsClusterCache
 func (mr *MockPerClusterCacheMockRecorder) IsPerCluster() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPerCluster", reflect.TypeOf((*MockPerClusterCache)(nil).IsPerCluster))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsClusterCache", reflect.TypeOf((*MockPerClusterCache)(nil).IsClusterCache))
 }
 
 // MockCacheGetter is a mock of CacheGetter interface
@@ -71,10 +71,10 @@ func (m *MockCacheGetter) EXPECT() *MockCacheGetterMockRecorder {
 }
 
 // GetCache mocks base method
-func (m *MockCacheGetter) GetCache(cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func (m *MockCacheGetter) GetCache(cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCache", cluster, restConfig)
-	ret0, _ := ret[0].(clustercache.PerClusterCache)
+	ret0, _ := ret[0].(clustercache.ClusterCache)
 	return ret0
 }
 
@@ -132,10 +132,10 @@ func (mr *MockCacheManagerMockRecorder) ClusterRemoved(cluster, restConfig inter
 }
 
 // GetCache mocks base method
-func (m *MockCacheManager) GetCache(cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func (m *MockCacheManager) GetCache(cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCache", cluster, restConfig)
-	ret0, _ := ret[0].(clustercache.PerClusterCache)
+	ret0, _ := ret[0].(clustercache.ClusterCache)
 	return ret0
 }
 

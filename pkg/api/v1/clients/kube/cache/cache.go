@@ -50,7 +50,7 @@ type Cache interface {
 
 type KubeCoreCache interface {
 	Cache
-	clustercache.PerClusterCache
+	clustercache.ClusterCache
 
 	// Deprecated: Use NamespacedPodLister instead
 	PodLister() kubelisters.PodLister
@@ -82,7 +82,7 @@ type kubeCoreCaches struct {
 
 var _ KubeCoreCache = &kubeCoreCaches{}
 
-func NewFromConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func NewCoreCacheForConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil
@@ -94,10 +94,10 @@ func NewFromConfig(ctx context.Context, cluster string, restConfig *rest.Config)
 	return c
 }
 
-var _ clustercache.FromConfig = NewFromConfig
+var _ clustercache.NewClusterCacheForConfig = NewCoreCacheForConfig
 
-func NewFromConfigWithOptions(resyncDuration time.Duration, namesapcesToWatch []string) clustercache.FromConfig {
-	return func(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func NewFromConfigWithOptions(resyncDuration time.Duration, namesapcesToWatch []string) clustercache.NewClusterCacheForConfig {
+	return func(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 		kubeClient, err := kubernetes.NewForConfig(restConfig)
 		if err != nil {
 			return nil
@@ -316,7 +316,7 @@ func (k *kubeCoreCaches) Unsubscribe(c <-chan struct{}) {
 	}
 }
 
-func (k *kubeCoreCaches) IsPerCluster() {}
+func (k *kubeCoreCaches) IsClusterCache() {}
 
 func (k *kubeCoreCaches) updatedOccured() {
 	k.cacheUpdatedWatchersMutex.Lock()

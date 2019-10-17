@@ -19,7 +19,7 @@ var _ = Describe("Cache Manager", func() {
 
 	Context("cache manager for kube shared cache", func() {
 		BeforeEach(func() {
-			manager, err = NewCacheManager(context.Background(), kube.FromConfig)
+			manager, err = NewCacheManager(context.Background(), kube.NewKubeSharedCacheForConfig)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

@@ -14,7 +14,7 @@ import (
 )
 
 type KubeCustomResourceDefinitionCache interface {
-	clustercache.PerClusterCache
+	clustercache.ClusterCache
 	CustomResourceDefinitionLister() apiextslisters.CustomResourceDefinitionLister
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
@@ -53,7 +53,7 @@ func NewKubeCustomResourceDefinitionCache(ctx context.Context, apiExtsClient api
 	return k, nil
 }
 
-func NewFromConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func NewCrdCacheForConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 	apiextsClient, err := apiexts.NewForConfig(restConfig)
 	if err != nil {
 		return nil
@@ -65,7 +65,7 @@ func NewFromConfig(ctx context.Context, cluster string, restConfig *rest.Config)
 	return c
 }
 
-var _ clustercache.FromConfig = NewFromConfig
+var _ clustercache.NewClusterCacheForConfig = NewCrdCacheForConfig
 
 func (k *kubeCustomResourceDefinitionCache) CustomResourceDefinitionLister() apiextslisters.CustomResourceDefinitionLister {
 	return k.customResourceDefinitionLister
@@ -101,4 +101,4 @@ func (k *kubeCustomResourceDefinitionCache) updatedOccured() {
 	}
 }
 
-func (k *kubeCustomResourceDefinitionCache) IsPerCluster() {}
+func (k *kubeCustomResourceDefinitionCache) IsClusterCache() {}

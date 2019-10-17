@@ -60,7 +60,7 @@ func init() {
 }
 
 type SharedCache interface {
-	clustercache.PerClusterCache
+	clustercache.ClusterCache
 
 	// Registers the client with the shared cache
 	Register(rc *ResourceClient) error
@@ -87,9 +87,9 @@ func NewKubeCache(ctx context.Context) SharedCache {
 	}
 }
 
-var _ clustercache.FromConfig = FromConfig
+var _ clustercache.NewClusterCacheForConfig = NewKubeSharedCacheForConfig
 
-func FromConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.PerClusterCache {
+func NewKubeSharedCacheForConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 	return NewKubeCache(ctx)
 }
 
@@ -215,7 +215,7 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 	return nil
 }
 
-func (f *ResourceClientSharedInformerFactory) IsPerCluster() {}
+func (f *ResourceClientSharedInformerFactory) IsClusterCache() {}
 
 var cacheSyncTimeout = func() time.Duration {
 	timeout := time.Minute
