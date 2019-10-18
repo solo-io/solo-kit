@@ -349,7 +349,6 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 				if protoFilePath == "" {
 					protoFilePath = f.ProtoFilePath
 				}
-				existing.ProtoFilePath = protoFilePath
 
 				// we need to "sort" as we go through to ensure idempotency, take the one with the lesser proto name
 				if f.FileDescriptorProto.GetName() < existing.GetName() {
@@ -357,9 +356,10 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 					// them all and parsed afterwards
 					*existing = DescriptorWithPath{
 						FileDescriptorProto: f.FileDescriptorProto,
-						ProtoFilePath:       protoFilePath,
 					}
 				}
+
+				existing.ProtoFilePath = protoFilePath
 				return
 			}
 		}
