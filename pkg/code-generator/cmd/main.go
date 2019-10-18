@@ -337,32 +337,6 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 	addDescriptor := func(f DescriptorWithPath) {
 		mutex.Lock()
 		defer mutex.Unlock()
-		// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
-		// with different import paths
-		for _, existing := range descriptors {
-			existingCopy := proto.Clone(existing.FileDescriptorProto).(*descriptor.FileDescriptorProto)
-			existingCopy.Name = f.Name
-			if proto.Equal(existingCopy, f.FileDescriptorProto) {
-				// if this proto file first came in as an import, but later as a solo-kit project proto,
-				// ensure the original proto gets updated with the correct proto file path
-				protoFilePath := existing.ProtoFilePath
-				if protoFilePath == "" {
-					protoFilePath = f.ProtoFilePath
-				}
-
-				// we need to "sort" as we go through to ensure idempotency, take the one with the lesser proto name
-				if f.FileDescriptorProto.GetName() < existing.GetName() {
-					// we sort while paging because there would be almost a trillion descriptors parsed if we collected
-					// them all and parsed afterwards
-					*existing = DescriptorWithPath{
-						FileDescriptorProto: f.FileDescriptorProto,
-					}
-				}
-
-				existing.ProtoFilePath = protoFilePath
-				return
-			}
-		}
 		descriptors = append(descriptors, &f)
 	}
 	var g errgroup.Group
@@ -401,7 +375,31 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 	sort.SliceStable(descriptors, func(i, j int) bool {
 		return descriptors[i].GetName() < descriptors[j].GetName()
 	})
+	// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
+	// with different import paths
+	var uniqueDescriptors []*DescriptorWithPath
+	for _, desc := range descriptors {
+		if isUnique(desc, uniqueDescriptors) {
+			uniqueDescriptors = append(uniqueDescriptors, desc)
+		}
+	}
 	return descriptors, nil
+}
+
+func isUnique(desc *DescriptorWithPath, descriptors []*DescriptorWithPath) bool {
+	for _, existing := range descriptors {
+		existingCopy := proto.Clone(existing.FileDescriptorProto).(*descriptor.FileDescriptorProto)
+		existingCopy.Name = desc.Name
+		if proto.Equal(existingCopy, desc.FileDescriptorProto) {
+			// if this proto file first came in as an import, but later as a solo-kit project proto,
+			// ensure the original proto gets updated with the correct proto file path
+			if existing.ProtoFilePath == "" {
+				existing.ProtoFilePath = desc.ProtoFilePath
+			}
+			return false
+		}
+	}
+	return true
 }
 
 var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
