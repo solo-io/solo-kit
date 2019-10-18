@@ -20,8 +20,11 @@ type configmapResourceClientGetter struct {
 
 var _ multicluster.ClientGetter = &configmapResourceClientGetter{}
 
-func NewConfigmapResourceClientGetter(cacheGetter clustercache.CacheGetter) *configmapResourceClientGetter {
-	return &configmapResourceClientGetter{cacheGetter: cacheGetter}
+func NewConfigmapResourceClientGetter(cacheGetter clustercache.CacheGetter, resourceType resources.Resource) *configmapResourceClientGetter {
+	return &configmapResourceClientGetter{
+		cacheGetter:  cacheGetter,
+		resourceType: resourceType,
+	}
 }
 
 func (g *configmapResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
@@ -34,5 +37,5 @@ func (g *configmapResourceClientGetter) GetClient(cluster string, restConfig *re
 	if !ok {
 		return nil, errors.Errorf("expected KubeCoreCache, got %T", kubeCache)
 	}
-	return configmap.NewResourceClientWithConverter(kube, g.resourceType, typedCache, g.converter)
+	return configmap.NewResourceClient(kube, g.resourceType, typedCache, true)
 }
