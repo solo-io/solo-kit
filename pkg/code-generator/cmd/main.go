@@ -380,11 +380,11 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 	// with different import paths
 	var uniqueDescriptors []*DescriptorWithPath
 	for _, desc := range descriptors {
-		unique, existingDesc := isUnique(desc, uniqueDescriptors)
+		unique, matchingDesc := isUnique(desc, uniqueDescriptors)
 		// if this proto file first came in as an import, but later as a solo-kit project proto,
 		// ensure the original proto gets updated with the correct proto file path
-		if !unique && existingDesc.ProtoFilePath == "" {
-			existingDesc.ProtoFilePath = desc.ProtoFilePath
+		if !unique && matchingDesc.ProtoFilePath == "" {
+			matchingDesc.ProtoFilePath = desc.ProtoFilePath
 		}
 		if unique {
 			uniqueDescriptors = append(uniqueDescriptors, desc)
