@@ -337,20 +337,6 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 	addDescriptor := func(f DescriptorWithPath) {
 		mutex.Lock()
 		defer mutex.Unlock()
-		// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
-		// with different import paths
-		for _, existing := range descriptors {
-			existingCopy := proto.Clone(existing.FileDescriptorProto).(*descriptor.FileDescriptorProto)
-			existingCopy.Name = f.Name
-			if proto.Equal(existingCopy, f.FileDescriptorProto) {
-				// if this proto file first came in as an import, but later as a solo-kit project proto,
-				// ensure the original proto gets updated with the correct proto file path
-				if existing.ProtoFilePath == "" {
-					existing.ProtoFilePath = f.ProtoFilePath
-				}
-				return
-			}
-		}
 		descriptors = append(descriptors, &f)
 	}
 	var g errgroup.Group
@@ -389,7 +375,29 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 	sort.SliceStable(descriptors, func(i, j int) bool {
 		return descriptors[i].GetName() < descriptors[j].GetName()
 	})
-	return descriptors, nil
+
+	// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
+	// with different import paths
+	var uniqueDescriptors []*DescriptorWithPath
+	for _, desc := range descriptors {
+		isUnique := true
+		for _, existing := range uniqueDescriptors {
+			existingCopy := proto.Clone(existing.FileDescriptorProto).(*descriptor.FileDescriptorProto)
+			existingCopy.Name = desc.Name
+			if proto.Equal(existingCopy, desc.FileDescriptorProto) {
+				// if this proto file first came in as an import, but later as a solo-kit project proto,
+				// ensure the original proto gets updated with the correct proto file path
+				if existing.ProtoFilePath == "" {
+					existing.ProtoFilePath = desc.ProtoFilePath
+				}
+				isUnique = false
+			}
+		}
+		if isUnique {
+			uniqueDescriptors = append(uniqueDescriptors, desc)
+		}
+	}
+	return uniqueDescriptors, nil
 }
 
 var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)

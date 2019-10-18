@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix race condition in generating descriptors.
+    issueLink: https://github.com/solo-io/solo-kit/issues/303
