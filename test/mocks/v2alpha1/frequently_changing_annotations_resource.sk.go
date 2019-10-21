@@ -128,6 +128,11 @@ func (o *FrequentlyChangingAnnotationsResource) DeepCopyObject() runtime.Object 
 	return resources.Clone(o).(*FrequentlyChangingAnnotationsResource)
 }
 
+func (o *FrequentlyChangingAnnotationsResource) DeepCopyInto(out *FrequentlyChangingAnnotationsResource) {
+	clone := resources.Clone(o).(*FrequentlyChangingAnnotationsResource)
+	*out = *clone
+}
+
 var (
 	FrequentlyChangingAnnotationsResourceCrd = crd.NewCrd(
 		"fcars",

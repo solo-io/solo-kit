@@ -127,6 +127,11 @@ func (o *FakeResource) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*FakeResource)
 }
 
+func (o *FakeResource) DeepCopyInto(out *FakeResource) {
+	clone := resources.Clone(o).(*FakeResource)
+	*out = *clone
+}
+
 var (
 	FakeResourceCrd = crd.NewCrd(
 		"fakes",

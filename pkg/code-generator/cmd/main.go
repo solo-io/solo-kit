@@ -156,7 +156,7 @@ func Generate(opts GenerateOptions) error {
 	}
 
 	for _, project := range projectMap {
-		code, err := codegen.GenerateFiles(project, true, opts.SkipGeneratedTests)
+		code, err := codegen.GenerateFiles(project, true, opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
 		if err != nil {
 			return err
 		}
