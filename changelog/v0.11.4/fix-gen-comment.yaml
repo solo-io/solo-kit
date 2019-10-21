@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix generated go-generate command
+    issueLink: https://github.com/solo-io/solo-kit/issues/305
