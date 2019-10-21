@@ -11,7 +11,7 @@ import (
 	kubernetes "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/configmap"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/customresourcedefinition"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/deployment"
-	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
+	kubenamespace "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/pod"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -51,8 +51,8 @@ var _ = Describe("ClientGetter", func() {
 
 		Describe("namespace client getter", func() {
 			It("works", func() {
-				testClientGetter(namespace.NewNamespaceResourceClientGetter(cacheGetter))
-				testClientGetterWithWrongCache(namespace.NewNamespaceResourceClientGetter(awfulCacheGetter))
+				testClientGetter(kubenamespace.NewNamespaceResourceClientGetter(cacheGetter))
+				testClientGetterWithWrongCache(kubenamespace.NewNamespaceResourceClientGetter(awfulCacheGetter))
 			})
 		})
 

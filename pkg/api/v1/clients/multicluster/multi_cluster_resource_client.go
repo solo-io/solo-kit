@@ -112,9 +112,9 @@ func (rc *multiClusterResourceClient) ClusterAdded(cluster string, restConfig *r
 	}
 	rc.clientAccess.Lock()
 	defer rc.clientAccess.Unlock()
-	rc.clients[cluster] = client
+	rc.clients[cluster] = wrapper.NewClusterClient(client, cluster)
 	if rc.watchAggregator != nil {
-		rc.watchAggregator.AddWatch(client)
+		rc.watchAggregator.AddWatch(wrapper.NewClusterClient(client, cluster))
 	}
 }
 
