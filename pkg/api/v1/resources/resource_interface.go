@@ -243,10 +243,6 @@ func (list ResourceList) AsInputResourceList() InputResourceList {
 	return inputs
 }
 
-func boolptr(b bool) *bool {
-	return &b
-}
-
 func MetadataCompare(metai, metaj core.Metadata) int {
 	if metai.Cluster != metaj.Cluster {
 		if metai.Cluster < metaj.Cluster {
