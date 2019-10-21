@@ -33,6 +33,8 @@ func (p *Service) GetMetadata() core.Metadata {
 
 func (p *Service) SetMetadata(meta core.Metadata) {
 	p.KubeService.ObjectMeta = kubeutils.ToKubeMeta(meta)
+	// copy so we own everything
+	meta = kubeutils.FromKubeMeta(p.KubeService.ObjectMeta)
 	p.cachedMeta = &meta
 }
 
