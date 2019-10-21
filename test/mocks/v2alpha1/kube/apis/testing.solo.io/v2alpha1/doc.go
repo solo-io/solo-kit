@@ -2,9 +2,9 @@
 
 // +k8s:deepcopy-gen=package,register
 
-/* go:generate command for Kubernetes code-generator currently disabled, run the following manually:
+/* go:generate command for Kubernetes code-generator currently disabled, run the following manually (or uncomment and remove the minus):
 
-//go:generate $GOPATH/src/k8s.io/code-generator/generate-groups.sh all "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client" "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis" testing.solo.io:v2alpha1
+- //go:generate $GOPATH/src/k8s.io/code-generator/generate-groups.sh all "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client" "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis" testing.solo.io:v2alpha1
 
 */
 
