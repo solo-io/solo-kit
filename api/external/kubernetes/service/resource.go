@@ -9,25 +9,37 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 )
 
-type Service kubev1.Service
+type Service struct {
+	KubeService kubev1.Service
+	cachedMeta  *core.Metadata
+}
 
 var _ resources.Resource = new(Service)
 
 func (p *Service) Clone() *Service {
-	vp := kubev1.Service(*p)
+	vp := kubev1.Service(p.KubeService)
 	copy := vp.DeepCopy()
-	newP := Service(*copy)
+	newP := Service{KubeService: *copy}
 	return &newP
 }
 
 func (p *Service) GetMetadata() core.Metadata {
-	return kubeutils.FromKubeMeta(p.ObjectMeta)
+	if p.cachedMeta == nil {
+		meta := kubeutils.FromKubeMeta(p.KubeService.ObjectMeta)
+		p.cachedMeta = &meta
+	}
+	return *p.cachedMeta
 }
 
 func (p *Service) SetMetadata(meta core.Metadata) {
-	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
+	p.KubeService.ObjectMeta = kubeutils.ToKubeMeta(meta)
+	p.cachedMeta = &meta
 }
 
 func (p *Service) Equal(that interface{}) bool {
-	return reflect.DeepEqual(p, that)
+	p2, ok := that.(*Service)
+	if !ok {
+		return false
+	}
+	return reflect.DeepEqual(p.KubeService, p2.KubeService)
 }
