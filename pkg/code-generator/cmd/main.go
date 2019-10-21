@@ -375,7 +375,6 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 	return parser.FilterDuplicateDescriptors(descriptors), nil
 }
 
-
 var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
 
 func detectImportsForFile(file string) ([]string, error) {
