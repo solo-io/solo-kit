@@ -217,3 +217,8 @@ func detectGoPackageForProject(projectFile string) (string, error) {
 	}
 	return goPkg, nil
 }
+
+type DescriptorWithPath struct {
+	*descriptor.FileDescriptorProto
+	ProtoFilePath string
+}

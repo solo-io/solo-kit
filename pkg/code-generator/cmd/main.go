@@ -60,12 +60,6 @@ type GenerateOptions struct {
 	SkipGeneratedTests bool
 }
 
-type DescriptorWithPath struct {
-	*descriptor.FileDescriptorProto
-
-	ProtoFilePath string
-}
-
 func Generate(opts GenerateOptions) error {
 	relativeRoot := opts.RelativeRoot
 	compileProtos := opts.CompileProtos
@@ -290,7 +284,7 @@ func collectProjectsFromRoot(root string, skipDirs []string) ([]*model.ProjectCo
 	return projects, nil
 }
 
-func addDescriptorsForFile(addDescriptor func(f DescriptorWithPath), root, protoFile string, customImports, customGogoArgs []string, wantCompile func(string) bool) error {
+func addDescriptorsForFile(addDescriptor func(f model.DescriptorWithPath), root, protoFile string, customImports, customGogoArgs []string, wantCompile func(string) bool) error {
 	log.Printf("processing proto file input %v", protoFile)
 	imports, err := importsForProtoFile(root, protoFile, customImports)
 	if err != nil {
@@ -321,7 +315,7 @@ func addDescriptorsForFile(addDescriptor func(f DescriptorWithPath), root, proto
 	}
 
 	for _, f := range desc.File {
-		descriptorWithPath := DescriptorWithPath{FileDescriptorProto: f}
+		descriptorWithPath := model.DescriptorWithPath{FileDescriptorProto: f}
 		if strings.HasSuffix(protoFile, f.GetName()) {
 			descriptorWithPath.ProtoFilePath = protoFile
 		}
@@ -331,10 +325,10 @@ func addDescriptorsForFile(addDescriptor func(f DescriptorWithPath), root, proto
 	return nil
 }
 
-func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skipDirs []string, wantCompile func(string) bool) ([]*DescriptorWithPath, error) {
-	var descriptors []*DescriptorWithPath
+func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skipDirs []string, wantCompile func(string) bool) ([]*model.DescriptorWithPath, error) {
+	var descriptors []*model.DescriptorWithPath
 	var mutex sync.Mutex
-	addDescriptor := func(f DescriptorWithPath) {
+	addDescriptor := func(f model.DescriptorWithPath) {
 		mutex.Lock()
 		defer mutex.Unlock()
 		descriptors = append(descriptors, &f)
@@ -378,32 +372,9 @@ func collectDescriptorsFromRoot(root string, customImports, customGogoArgs, skip
 
 	// don't add the same proto twice, this avoids the issue where a dependency is imported multiple times
 	// with different import paths
-	var uniqueDescriptors []*DescriptorWithPath
-	for _, desc := range descriptors {
-		unique, matchingDesc := isUnique(desc, uniqueDescriptors)
-		// if this proto file first came in as an import, but later as a solo-kit project proto,
-		// ensure the original proto gets updated with the correct proto file path
-		if !unique && matchingDesc.ProtoFilePath == "" {
-			matchingDesc.ProtoFilePath = desc.ProtoFilePath
-		}
-		if unique {
-			uniqueDescriptors = append(uniqueDescriptors, desc)
-		}
-	}
-	return uniqueDescriptors, nil
+	return parser.FilterDuplicateDescriptors(descriptors), nil
 }
 
-// If it finds a matching proto, also returns the matching proto's file descriptor
-func isUnique(desc *DescriptorWithPath, descriptors []*DescriptorWithPath) (bool, *DescriptorWithPath) {
-	for _, existing := range descriptors {
-		existingCopy := proto.Clone(existing.FileDescriptorProto).(*descriptor.FileDescriptorProto)
-		existingCopy.Name = desc.Name
-		if proto.Equal(existingCopy, desc.FileDescriptorProto) {
-			return false, existing
-		}
-	}
-	return true, nil
-}
 
 var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
 

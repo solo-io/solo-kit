@@ -150,3 +150,31 @@ func getCommentValue(comments []string, key string) (string, bool) {
 	}
 	return "", false
 }
+
+func FilterDuplicateDescriptors(descriptors []*model.DescriptorWithPath) []*model.DescriptorWithPath {
+	var uniqueDescriptors []*model.DescriptorWithPath
+	for _, desc := range descriptors {
+		unique, matchingDesc := isUnique(desc, uniqueDescriptors)
+		// if this proto file first came in as an import, but later as a solo-kit project proto,
+		// ensure the original proto gets updated with the correct proto file path
+		if !unique && matchingDesc.ProtoFilePath == "" {
+			matchingDesc.ProtoFilePath = desc.ProtoFilePath
+		}
+		if unique {
+			uniqueDescriptors = append(uniqueDescriptors, desc)
+		}
+	}
+	return uniqueDescriptors
+}
+
+// If it finds a matching proto, also returns the matching proto's file descriptor
+func isUnique(desc *model.DescriptorWithPath, descriptors []*model.DescriptorWithPath) (bool, *model.DescriptorWithPath) {
+	for _, existing := range descriptors {
+		existingCopy := proto.Clone(existing.FileDescriptorProto).(*descriptor.FileDescriptorProto)
+		existingCopy.Name = desc.Name
+		if proto.Equal(existingCopy, desc.FileDescriptorProto) {
+			return false, existing
+		}
+	}
+	return true, nil
+}
