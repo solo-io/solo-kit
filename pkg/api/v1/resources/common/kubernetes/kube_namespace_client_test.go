@@ -18,17 +18,7 @@ import (
 )
 
 var _ = Describe("KubeNamespaceClient", func() {
-	var (
-		namespace string
-	)
-	for _, test := range []typed.ResourceClientTester{
-		&typed.ConsulRcTester{},
-		&typed.FileRcTester{},
-		&typed.MemoryRcTester{},
-		&typed.VaultRcTester{},
-		&typed.KubeSecretRcTester{},
-		&typed.KubeConfigMapRcTester{},
-	} {
+	for _, test := range []typed.ResourceClientTester{} {
 		Context("resource client backed by "+test.Description(), func() {
 			var (
 				client              KubeNamespaceClient
@@ -37,27 +27,28 @@ var _ = Describe("KubeNamespaceClient", func() {
 			)
 
 			BeforeEach(func() {
-				namespace = helpers.RandString(6)
-				factory := test.Setup(namespace)
+				factory := test.Setup("")
 				client, err = NewKubeNamespaceClient(factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				test.Teardown(namespace)
+				client.Delete(name1, clients.DeleteOpts{})
+				client.Delete(name2, clients.DeleteOpts{})
+				client.Delete(name3, clients.DeleteOpts{})
 			})
 			It("CRUDs KubeNamespaces "+test.Description(), func() {
-				KubeNamespaceClientTest(namespace, client, name1, name2, name3)
+				KubeNamespaceClientTest(client, name1, name2, name3)
 			})
 		})
 	}
 })
 
-func KubeNamespaceClientTest(namespace string, client KubeNamespaceClient, name1, name2, name3 string) {
+func KubeNamespaceClientTest(client KubeNamespaceClient, name1, name2, name3 string) {
 	err := client.Register()
 	Expect(err).NotTo(HaveOccurred())
 
 	name := name1
-	input := NewKubeNamespace(namespace, name)
+	input := NewKubeNamespace("", name)
 
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -68,7 +59,6 @@ func KubeNamespaceClientTest(namespace string, client KubeNamespaceClient, name1
 
 	Expect(r1).To(BeAssignableToTypeOf(&KubeNamespace{}))
 	Expect(r1.GetMetadata().Name).To(Equal(name))
-	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
 	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
 	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 
@@ -84,48 +74,44 @@ func KubeNamespaceClientTest(namespace string, client KubeNamespaceClient, name1
 		OverwriteExisting: true,
 	})
 	Expect(err).NotTo(HaveOccurred())
-	read, err := client.Read(namespace, name, clients.ReadOpts{})
+	read, err := client.Read(name, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(read).To(Equal(r1))
-	_, err = client.Read("doesntexist", name, clients.ReadOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsNotExist(err)).To(BeTrue())
 
 	name = name2
 	input = &KubeNamespace{}
 
 	input.SetMetadata(core.Metadata{
-		Name:      name,
-		Namespace: namespace,
+		Name: name,
 	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
-	list, err := client.List(namespace, clients.ListOpts{})
+	list, err := client.List(clients.ListOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(list).To(ContainElement(r1))
 	Expect(list).To(ContainElement(r2))
-	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{})
+	err = client.Delete("adsfw", clients.DeleteOpts{})
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsNotExist(err)).To(BeTrue())
-	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{
+	err = client.Delete("adsfw", clients.DeleteOpts{
 		IgnoreNotExist: true,
 	})
 	Expect(err).NotTo(HaveOccurred())
-	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
+	err = client.Delete(r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
 	Eventually(func() KubeNamespaceList {
-		list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(ContainElement(r1))
 	Eventually(func() KubeNamespaceList {
-		list, err = client.List(namespace, clients.ListOpts{})
+		list, err = client.List(clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
-	w, errs, err := client.Watch(namespace, clients.WatchOpts{
+	w, errs, err := client.Watch(clients.WatchOpts{
 		RefreshRate: time.Hour,
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -146,8 +132,7 @@ func KubeNamespaceClientTest(namespace string, client KubeNamespaceClient, name1
 		input = &KubeNamespace{}
 		Expect(err).NotTo(HaveOccurred())
 		input.SetMetadata(core.Metadata{
-			Name:      name,
-			Namespace: namespace,
+			Name: name,
 		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})

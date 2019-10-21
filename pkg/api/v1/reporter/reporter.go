@@ -115,7 +115,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 			meta.ResourceVersion = res.GetMetadata().ResourceVersion
 		})
 
-		logger.Infof("wrote report %v : %v", resourceToWrite.GetMetadata().Ref(), status)
+		logger.Debugf("wrote report %v : %v", resourceToWrite.GetMetadata().Ref(), status)
 	}
 	return merr.ErrorOrNil()
 }

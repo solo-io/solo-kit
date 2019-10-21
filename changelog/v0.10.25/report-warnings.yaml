@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add helper methods for V2 Reporter
+    issueLink: https://github.com/solo-io/solo-kit/issues/288

@@ -1,0 +1,4 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: Update namespace and CRD clients to be cluster-scoped.
+    issueLink: https://github.com/solo-io/solo-kit/issues/292
