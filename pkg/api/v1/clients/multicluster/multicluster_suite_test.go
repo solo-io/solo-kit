@@ -81,14 +81,12 @@ var (
 		Expect(err).NotTo(HaveOccurred())
 		err = apiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
-		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", os.Getenv("ALT_CLUSTER_KUBECONFIG"))
 		Expect(err).NotTo(HaveOccurred())
 		remoteApiextsClientset, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		err = remoteApiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
-		Expect(err).NotTo(HaveOccurred())
 
 		// Delete namespaces
 		kubehelpers.WaitForNamespaceTeardownWithClient(namespace, localClient)

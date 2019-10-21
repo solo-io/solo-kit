@@ -49,11 +49,11 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		resourceName = "name"
 	)
 
-	getAnotherMockResource := func(cluster, namespace, name, basicField string) *v1.AnotherMockResource {
+	getAnotherMockResource := func(cluster, ns, name, basicField string) *v1.AnotherMockResource {
 		return &v1.AnotherMockResource{
 			Metadata: core.Metadata{
 				Name:      name,
-				Namespace: namespace,
+				Namespace: ns,
 				Cluster:   cluster,
 			},
 			BasicField: basicField,
