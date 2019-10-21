@@ -62,7 +62,7 @@ var _ = Describe("Base", func() {
 		Expect(listret[0]).NotTo(BeIdenticalTo(listret2[0]))
 	})
 
-	FContext("Benchmarks", func() {
+	Context("Benchmarks", func() {
 		Measure("it should do something hard efficiently", func(b Benchmarker) {
 			const numobjs = 10000
 
