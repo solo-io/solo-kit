@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
+	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
 	skapi "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -22,6 +23,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"github.com/solo-io/solo-kit/pkg/multicluster/secretconverter"
 	skpkg "github.com/solo-io/solo-kit/pkg/multicluster/v1"
+	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/testutils"
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +39,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 	}
 
 	var (
+		namespace       string
 		subject         v1.AnotherMockResourceClient
 		watchAggregator wrapper.WatchAggregator
 		localRestConfig *rest.Config
@@ -89,11 +92,29 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 
 		subject = v1.NewAnotherMockResourceClientWithBase(mcrc)
 		EventuallyClusterAvailable(subject, multicluster2.LocalCluster)
+
+		// Create namespaces
+		namespace = helpers.RandString(6)
+		err = kubeutils.CreateNamespacesInParallel(localKubeClient, namespace)
+		Expect(err).NotTo(HaveOccurred())
+		err = kubeutils.CreateNamespacesInParallel(remoteKubeClient(), namespace)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
+		// Delete remote cluster kube config secret
 		err := localKubeClient.CoreV1().Secrets(namespace).Delete(cfgSecret.GetName(), &metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
+
+		remoteClient := remoteKubeClient()
+
+		// Delete namespaces
+		err = kubeutils.DeleteNamespacesInParallelBlocking(localKubeClient, namespace)
+		Expect(err).NotTo(HaveOccurred())
+		err = kubeutils.DeleteNamespacesInParallelBlocking(remoteClient, namespace)
+		Expect(err).NotTo(HaveOccurred())
+		kubehelpers.WaitForNamespaceTeardownWithClient(namespace, localKubeClient)
+		kubehelpers.WaitForNamespaceTeardownWithClient(namespace, remoteClient)
 		cancel()
 	})
 

@@ -13,7 +13,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/solo-io/go-utils/testutils/clusterlock"
-	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	// Needed to run tests in GKE
@@ -26,9 +25,8 @@ func TestMulticluster(t *testing.T) {
 }
 
 var (
-	localLock, remoteLock     *clusterlock.TestClusterLocker
-	localClient, remoteClient kubernetes.Interface
-	namespace                 string
+	localLock, remoteLock *clusterlock.TestClusterLocker
+	err                   error
 
 	_ = SynchronizedBeforeSuite(func() []byte {
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
@@ -36,30 +34,20 @@ var (
 		}
 
 		// TODO joekelley build out more robust / less redundant multicluster setup and teardown
-
-		localClient = helpers.MustKubeClient()
-		remoteClient = remoteKubeClient()
-		var err error
+		// https://github.com/solo-io/go-utils/issues/325
 
 		// Acquire locks
 		idPrefix := GinkgoRandomSeed()
-		localLock, err = clusterlock.NewKubeClusterLocker(localClient, clusterlock.Options{
+		localLock, err = clusterlock.NewKubeClusterLocker(helpers.MustKubeClient(), clusterlock.Options{
 			IdPrefix: string(idPrefix),
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(localLock.AcquireLock()).NotTo(HaveOccurred())
-		remoteLock, err = clusterlock.NewKubeClusterLocker(remoteClient, clusterlock.Options{
+		remoteLock, err = clusterlock.NewKubeClusterLocker(remoteKubeClient(), clusterlock.Options{
 			IdPrefix: string(idPrefix),
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(remoteLock.AcquireLock()).NotTo(HaveOccurred())
-
-		// Create namespaces
-		namespace = helpers.RandString(6)
-		err = kubeutils.CreateNamespacesInParallel(localClient, namespace)
-		Expect(err).NotTo(HaveOccurred())
-		err = kubeutils.CreateNamespacesInParallel(remoteClient, namespace)
-		Expect(err).NotTo(HaveOccurred())
 
 		return nil
 	}, func([]byte) {})
@@ -68,15 +56,10 @@ var (
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
 			return
 		}
-		// Delete namespaces
-		err := kubeutils.DeleteNamespacesInParallelBlocking(localClient, namespace)
-		Expect(err).NotTo(HaveOccurred())
-		err = kubeutils.DeleteNamespacesInParallelBlocking(remoteClient, namespace)
-		Expect(err).NotTo(HaveOccurred())
-		cfg, err := kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
 
 		// Delete CRDs
+		cfg, err := kubeutils.GetConfig("", "")
+		Expect(err).NotTo(HaveOccurred())
 		apiextsClientset, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		err = apiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
@@ -87,10 +70,6 @@ var (
 		Expect(err).NotTo(HaveOccurred())
 		err = remoteApiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
-
-		// Delete namespaces
-		kubehelpers.WaitForNamespaceTeardownWithClient(namespace, localClient)
-		kubehelpers.WaitForNamespaceTeardownWithClient(namespace, remoteClient)
 
 		// Release locks
 		Expect(localLock.ReleaseLock()).NotTo(HaveOccurred())
