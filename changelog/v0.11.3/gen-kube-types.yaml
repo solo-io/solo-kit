@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: support generating native kube types for resources
+    issueLink: https://github.com/solo-io/solo-kit/issues/289

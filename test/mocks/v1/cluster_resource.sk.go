@@ -139,6 +139,11 @@ func (o *ClusterResource) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*ClusterResource)
 }
 
+func (o *ClusterResource) DeepCopyInto(out *ClusterResource) {
+	clone := resources.Clone(o).(*ClusterResource)
+	*out = *clone
+}
+
 var (
 	ClusterResourceCrd = crd.NewCrd(
 		"clusterresources",

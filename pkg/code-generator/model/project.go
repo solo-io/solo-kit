@@ -38,6 +38,9 @@ type ProjectConfig struct {
 	// set by load if not specified
 	GoPackage string `json:"go_package"`
 
+	// Generate Kube clientset & types
+	GenKubeTypes bool `json:"gen_kube_types"`
+
 	// set by load
 	ProjectFile   string
 	ProjectProtos []string
@@ -216,4 +219,9 @@ func detectGoPackageForProject(projectFile string) (string, error) {
 		return "", errors.Errorf("no go_package statement found in root dir of project %v", projectFile)
 	}
 	return goPkg, nil
+}
+
+type DescriptorWithPath struct {
+	*descriptor.FileDescriptorProto
+	ProtoFilePath string
 }
