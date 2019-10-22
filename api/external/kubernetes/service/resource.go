@@ -10,31 +10,31 @@ import (
 )
 
 type Service struct {
-	KubeService kubev1.Service
-	cachedMeta  *core.Metadata
+	kubev1.Service
+	cachedMeta *core.Metadata
 }
 
 var _ resources.Resource = new(Service)
 
 func (p *Service) Clone() *Service {
-	vp := kubev1.Service(p.KubeService)
+	vp := kubev1.Service(p.Service)
 	copy := vp.DeepCopy()
-	newP := Service{KubeService: *copy}
+	newP := Service{Service: *copy}
 	return &newP
 }
 
 func (p *Service) GetMetadata() core.Metadata {
 	if p.cachedMeta == nil {
-		meta := kubeutils.FromKubeMeta(p.KubeService.ObjectMeta)
+		meta := kubeutils.FromKubeMeta(p.ObjectMeta)
 		p.cachedMeta = &meta
 	}
 	return *p.cachedMeta
 }
 
 func (p *Service) SetMetadata(meta core.Metadata) {
-	p.KubeService.ObjectMeta = kubeutils.ToKubeMeta(meta)
+	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 	// copy so we own everything
-	meta = kubeutils.FromKubeMeta(p.KubeService.ObjectMeta)
+	meta = kubeutils.FromKubeMeta(p.ObjectMeta)
 	p.cachedMeta = &meta
 }
 
@@ -43,5 +43,5 @@ func (p *Service) Equal(that interface{}) bool {
 	if !ok {
 		return false
 	}
-	return reflect.DeepEqual(p.KubeService, p2.KubeService)
+	return reflect.DeepEqual(p.Service, p2.Service)
 }
