@@ -13,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-const delim = " "
-
 type Resource interface {
 	GetMetadata() core.Metadata
 	SetMetadata(meta core.Metadata)
