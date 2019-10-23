@@ -16,6 +16,10 @@ type Service struct {
 
 var _ resources.Resource = new(Service)
 
+func (p *Service) GetKubeService() kubev1.Service {
+	return p.Service
+}
+
 func (p *Service) Clone() *Service {
 	vp := kubev1.Service(p.Service)
 	copy := vp.DeepCopy()
