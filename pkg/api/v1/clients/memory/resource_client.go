@@ -63,9 +63,9 @@ func (c *inMemoryResourceCache) Set(key string, resource resources.Resource) {
 }
 
 func (c *inMemoryResourceCache) List(prefix string) resources.ResourceList {
-	ress := make(resources.ResourceList, 0, len(c.store))
 	c.lock.RLock()
 	defer c.lock.RUnlock()
+	ress := make(resources.ResourceList, 0, len(c.store))
 	for key, resource := range c.store {
 		if !strings.HasPrefix(key, prefix) {
 			continue
