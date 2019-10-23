@@ -41,7 +41,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 	var (
 		namespace       string
 		subject         v1.AnotherMockResourceClient
-		watchAggregator wrapper.WatchAggregator
+		watchAggregator multicluster.MultiClusterAggregatedWatch
 		localRestConfig *rest.Config
 		localKubeClient kubernetes.Interface
 		ctx             context.Context
@@ -75,8 +75,9 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 			0,
 			factory.NewResourceClientParams{ResourceType: &v1.AnotherMockResource{}},
 		)
-		watchAggregator = wrapper.NewWatchAggregator()
-		mcrc := multicluster.NewMultiClusterResourceClient(&v1.AnotherMockResource{}, clientGetter, watchAggregator)
+		watchAggregator = multicluster.NewMultiClusterAggregatedWatch(wrapper.NewWatchAggregator())
+		clientSet := multicluster.NewClusterClientCache(clientGetter, watchAggregator)
+		mcrc := multicluster.NewMultiClusterResourceClient(&v1.AnotherMockResource{}, clientSet)
 
 		configWatcher := multicluster2.NewKubeConfigWatcher()
 		localRestConfig, err = kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
@@ -86,7 +87,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		localCache, err := cache.NewKubeCoreCache(ctx, localKubeClient)
 		Expect(err).NotTo(HaveOccurred())
 
-		restConfigHandler := multicluster2.NewRestConfigHandler(configWatcher, cacheManager, mcrc)
+		restConfigHandler := multicluster2.NewRestConfigHandler(configWatcher, cacheManager, clientSet)
 		_, err = restConfigHandler.Run(ctx, localRestConfig, localKubeClient, localCache)
 		Expect(err).NotTo(HaveOccurred())
 

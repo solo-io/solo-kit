@@ -9,7 +9,6 @@ import (
 	mock_clients "github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
 	mock_subfactory "github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/mocks"
-	mock_watch "github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
@@ -22,7 +21,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		mockClientGetter    *mock_subfactory.MockClientGetter
 		mockResourceClient1 *mock_clients.MockResourceClient
 		mockResourceClient2 *mock_clients.MockResourceClient
-		mockWatch           *mock_watch.MockWatchAggregator
+		clientSet           multicluster.ClusterClientCache
 		resType             resources.Resource
 		subject             multicluster.MultiClusterResourceClient
 		cluster1, cluster2  = "c-one", "c-two"
@@ -37,8 +36,8 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		mockClientGetter = mock_subfactory.NewMockClientGetter(mockCtrl)
 		mockResourceClient1 = mock_clients.NewMockResourceClient(mockCtrl)
 		mockResourceClient2 = mock_clients.NewMockResourceClient(mockCtrl)
-		mockWatch = mock_watch.NewMockWatchAggregator(mockCtrl)
-		subject = multicluster.NewMultiClusterResourceClient(resType, mockClientGetter, mockWatch)
+		clientSet = multicluster.NewClusterClientCache(mockClientGetter)
+		subject = multicluster.NewMultiClusterResourceClient(resType, clientSet)
 	})
 
 	AfterEach(func() {
@@ -75,13 +74,11 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		BeforeEach(func() {
 			mockClientGetter.EXPECT().GetClient(cluster1, config1).Return(mockResourceClient1, nil)
 			mockResourceClient1.EXPECT().Register().Return(nil)
-			mockWatch.EXPECT().AddWatch(gomock.Any())
-			subject.ClusterAdded(cluster1, config1)
+			clientSet.ClusterAdded(cluster1, config1)
 
 			mockClientGetter.EXPECT().GetClient(cluster2, config2).Return(mockResourceClient2, nil)
 			mockResourceClient2.EXPECT().Register().Return(nil)
-			mockWatch.EXPECT().AddWatch(gomock.Any())
-			subject.ClusterAdded(cluster2, config2)
+			clientSet.ClusterAdded(cluster2, config2)
 		})
 
 		Describe("Read", func() {
@@ -241,7 +238,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 
 				mockResourceClient1.
 					EXPECT().
-					Watch(resource1.Metadata.Namespace, clients.WatchOpts{Cluster: cluster1}.WithDefaults()).
+					Watch(resource1.Metadata.Namespace, clients.WatchOpts{Cluster: cluster1}).
 					Return(ch1, errChan1, nil)
 
 				actual, errs, err := subject.Watch(resource1.Metadata.Namespace, clients.WatchOpts{Cluster: cluster1})
@@ -251,7 +248,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 
 				mockResourceClient2.
 					EXPECT().
-					Watch(resource2.Metadata.Namespace, clients.WatchOpts{Cluster: cluster2}.WithDefaults()).
+					Watch(resource2.Metadata.Namespace, clients.WatchOpts{Cluster: cluster2}).
 					Return(ch2, errChan2, nil)
 
 				actual, errs, err = subject.Watch(resource2.Metadata.Namespace, clients.WatchOpts{Cluster: cluster2})
@@ -261,7 +258,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 
 				mockResourceClient2.
 					EXPECT().
-					Watch("invalid", clients.WatchOpts{Cluster: cluster2}.WithDefaults()).
+					Watch("invalid", clients.WatchOpts{Cluster: cluster2}).
 					Return(nil, nil, testErr)
 
 				_, _, err = subject.Watch("invalid", clients.WatchOpts{Cluster: cluster2})
@@ -276,31 +273,4 @@ var _ = Describe("MultiClusterResourceClient", func() {
 			})
 		})
 	})
-
-	Describe("ClusterAdded and ClusterRemoved", func() {
-		Context("with a watch aggregator", func() {
-			It("works", func() {
-				// ClusterAdded
-				mockClientGetter.EXPECT().GetClient(cluster1, &rest.Config{}).Return(mockResourceClient1, nil)
-				mockResourceClient1.EXPECT().Register().Return(nil)
-				mockWatch.EXPECT().AddWatch(gomock.Any())
-				subject.ClusterAdded(cluster1, &rest.Config{})
-
-				// Use the added cluster client to verify it is there
-				mockResourceClient1.EXPECT().Delete(namespace, "foo", clients.DeleteOpts{Cluster: cluster1}).Return(nil)
-				err := subject.Delete(namespace, "foo", clients.DeleteOpts{Cluster: cluster1})
-				Expect(err).NotTo(HaveOccurred())
-
-				// ClusterRemoved
-				mockWatch.EXPECT().RemoveWatch(gomock.Any())
-				subject.ClusterRemoved(cluster1, &rest.Config{})
-
-				// Attempt to use the removed cluster to verify it is gone
-				err = subject.Delete(namespace, "bar", clients.DeleteOpts{Cluster: cluster1})
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(multicluster.NoClientForClusterError(subject.Kind(), cluster1).Error()))
-			})
-		})
-	})
-
 })

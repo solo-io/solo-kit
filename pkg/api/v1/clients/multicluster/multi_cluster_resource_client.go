@@ -1,14 +1,9 @@
 package multicluster
 
 import (
-	"sync"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
-	"k8s.io/client-go/rest"
 )
 
 var (
@@ -19,30 +14,19 @@ var (
 
 type MultiClusterResourceClient interface {
 	clients.ResourceClient
-	handler.ClusterHandler
 }
 
 type multiClusterResourceClient struct {
-	resourceType    resources.Resource
-	clientGetter    ClientGetter
-	watchAggregator wrapper.WatchAggregator
-	clients         map[string]clients.ResourceClient
-	clientAccess    sync.RWMutex
+	resourceType resources.Resource
+	clientSet    ClusterClientCache
 }
 
 var _ MultiClusterResourceClient = &multiClusterResourceClient{}
 
-func NewMultiClusterResourceClient(
-	resourceType resources.Resource,
-	clientGetter ClientGetter,
-	watchAggregator wrapper.WatchAggregator,
-) *multiClusterResourceClient {
+func NewMultiClusterResourceClient(resourceType resources.Resource, clientSet ClusterClientCache) *multiClusterResourceClient {
 	return &multiClusterResourceClient{
-		resourceType:    resourceType,
-		clientGetter:    clientGetter,
-		watchAggregator: watchAggregator,
-		clients:         make(map[string]clients.ResourceClient),
-		clientAccess:    sync.RWMutex{},
+		resourceType: resourceType,
+		clientSet:    clientSet,
 	}
 }
 
@@ -102,37 +86,8 @@ func (rc *multiClusterResourceClient) Watch(namespace string, opts clients.Watch
 	return client.Watch(namespace, opts)
 }
 
-func (rc *multiClusterResourceClient) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := rc.clientGetter.GetClient(cluster, restConfig)
-	if err != nil {
-		return
-	}
-	if err := client.Register(); err != nil {
-		return
-	}
-	rc.clientAccess.Lock()
-	defer rc.clientAccess.Unlock()
-	rc.clients[cluster] = wrapper.NewClusterClient(client, cluster)
-	if rc.watchAggregator != nil {
-		rc.watchAggregator.AddWatch(wrapper.NewClusterClient(client, cluster))
-	}
-}
-
-func (rc *multiClusterResourceClient) ClusterRemoved(cluster string, restConfig *rest.Config) {
-	rc.clientAccess.Lock()
-	defer rc.clientAccess.Unlock()
-	if client, ok := rc.clients[cluster]; ok {
-		delete(rc.clients, cluster)
-		if rc.watchAggregator != nil {
-			rc.watchAggregator.RemoveWatch(client)
-		}
-	}
-}
-
 func (rc *multiClusterResourceClient) clientFor(cluster string) (clients.ResourceClient, error) {
-	rc.clientAccess.RLock()
-	defer rc.clientAccess.RUnlock()
-	if client, ok := rc.clients[cluster]; ok {
+	if client, ok := rc.clientSet.ClientForCluster(cluster); ok {
 		return client, nil
 	}
 	return nil, NoClientForClusterError(rc.Kind(), cluster)
