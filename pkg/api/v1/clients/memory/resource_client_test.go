@@ -63,7 +63,7 @@ var _ = Describe("Base", func() {
 	})
 
 	Context("Benchmarks", func() {
-		Measure("it should do something hard efficiently", func(b Benchmarker) {
+		Measure("it should perform list efficiently", func(b Benchmarker) {
 			const numobjs = 10000
 
 			for i := 0; i < numobjs; i++ {
