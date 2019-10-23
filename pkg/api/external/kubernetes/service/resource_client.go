@@ -44,7 +44,7 @@ func FromKubeService(service *kubev1.Service) *skkube.Service {
 	serviceCopy := service.DeepCopy()
 	kubeService := kubeservice.NewService(*serviceCopy)
 	resource := &skkube.Service{
-		Service: kubeService,
+		Service: *kubeService,
 	}
 
 	return resource
