@@ -42,7 +42,7 @@ func NewServiceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skku
 func FromKubeService(service *kubev1.Service) *skkube.Service {
 
 	serviceCopy := service.DeepCopy()
-	kubeService := kubeservice.Service{Service: *serviceCopy}
+	kubeService := kubeservice.NewService(*serviceCopy)
 	resource := &skkube.Service{
 		Service: kubeService,
 	}

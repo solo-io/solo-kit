@@ -16,6 +16,13 @@ type Service struct {
 
 var _ resources.Resource = new(Service)
 
+func NewService(kubeSvc kubev1.Service) *Service {
+	meta := kubeutils.FromKubeMeta(kubeSvc.ObjectMeta)
+	var s Service
+	s.cachedMeta = &meta
+	s.Service = kubeSvc
+	return &s
+}
 func (p *Service) GetKubeService() kubev1.Service {
 	return p.Service
 }
