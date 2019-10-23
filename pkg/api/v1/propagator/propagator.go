@@ -14,6 +14,15 @@ import (
 
 type ResourcesByType map[string]resources.ResourceList
 
+func Key(resource resources.Resource) string {
+	const delim = " "
+	if cluster := resource.GetMetadata().Cluster; cluster != "" {
+		return fmt.Sprintf("%v%v%v%v%v%v%v", resources.Kind(resource), delim, resource.GetMetadata().Cluster, delim, resource.GetMetadata().Namespace, delim, resource.GetMetadata().Name)
+	}
+	return fmt.Sprintf("%v%v%v%v%v", resources.Kind(resource), delim, resource.GetMetadata().Namespace, delim,
+		resource.GetMetadata().Name)
+}
+
 type Propagator struct {
 	forController     string
 	children, parents resources.InputResourceList
@@ -67,7 +76,7 @@ func (p *Propagator) PropagateStatuses(opts clients.WatchOpts) error {
 					continue
 				}
 				for _, child := range children {
-					uniqueChildren[resources.Key(child)] = child.(resources.InputResource)
+					uniqueChildren[Key(child)] = child.(resources.InputResource)
 				}
 				lastChildren = uniqueChildren.List()
 				if err := p.syncStatuses(lastParents, lastChildren, opts); err != nil {
@@ -78,7 +87,7 @@ func (p *Propagator) PropagateStatuses(opts clients.WatchOpts) error {
 					continue
 				}
 				for _, parent := range parents {
-					uniqueParents[resources.Key(parent)] = parent.(resources.InputResource)
+					uniqueParents[Key(parent)] = parent.(resources.InputResource)
 				}
 				lastParents = uniqueParents.List()
 				if err := p.syncStatuses(lastParents, lastChildren, opts); err != nil {
@@ -173,7 +182,7 @@ func (p *Propagator) syncStatuses(parents, children resources.ResourceList, opts
 		if err != nil {
 			// ignore rv errors, we should read a new one
 			if !errors.IsResourceVersion(err) {
-				return errors.Wrapf(err, "updating status on parent resource %v", resources.Key(parent))
+				return errors.Wrapf(err, "updating status on parent resource %v", Key(parent))
 			}
 			contextutils.LoggerFrom(opts.Ctx).Debugf("received an invalid resource version err on write: %v", err)
 		}
@@ -189,7 +198,7 @@ func makeChildStatusMap(children resources.ResourceList) (map[string]*core.Statu
 			return nil, errors.Errorf("internal error: %v.%v is not an input resource", childRes.GetMetadata().Namespace, childRes.GetMetadata().Name)
 		}
 		stat := child.GetStatus()
-		statuses[resources.Key(child)] = &stat
+		statuses[Key(child)] = &stat
 	}
 	return statuses, nil
 }
