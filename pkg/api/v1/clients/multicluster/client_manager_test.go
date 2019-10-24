@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/errors"
 	mocks2 "github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
+	mock_factory "github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/mocks"
 	"k8s.io/client-go/rest"
 )
@@ -16,7 +17,7 @@ var _ = Describe("ClusterClientGetter", func() {
 	var (
 		subject            *clusterClientManager
 		mockCtrl           *gomock.Controller
-		factory            *mocks.MockClusterClientFactory
+		factory            *mock_factory.MockClusterClientFactory
 		handler            *mocks.MockClientForClusterHandler
 		client1, client2   *mocks2.MockResourceClient
 		cluster1, cluster2 = "one", "two"
@@ -26,7 +27,7 @@ var _ = Describe("ClusterClientGetter", func() {
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
-		factory = mocks.NewMockClusterClientFactory(mockCtrl)
+		factory = mock_factory.NewMockClusterClientFactory(mockCtrl)
 		handler = mocks.NewMockClientForClusterHandler(mockCtrl)
 		client1 = mocks2.NewMockResourceClient(mockCtrl)
 		client2 = mocks2.NewMockResourceClient(mockCtrl)

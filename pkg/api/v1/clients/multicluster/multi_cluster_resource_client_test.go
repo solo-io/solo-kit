@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	mock_clients "github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
-	mock_subfactory "github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/mocks"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
@@ -19,7 +19,7 @@ import (
 var _ = Describe("MultiClusterResourceClient", func() {
 	var (
 		mockCtrl            *gomock.Controller
-		mockClientFactory   *mock_subfactory.MockClusterClientFactory
+		mockClientFactory   *mocks.MockClusterClientFactory
 		mockResourceClient1 *mock_clients.MockResourceClient
 		mockResourceClient2 *mock_clients.MockResourceClient
 		clientSet           *clusterClientManager
@@ -34,7 +34,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 	BeforeEach(func() {
 		resType = &v2alpha1.MockResource{}
 		mockCtrl = gomock.NewController(GinkgoT())
-		mockClientFactory = mock_subfactory.NewMockClusterClientFactory(mockCtrl)
+		mockClientFactory = mocks.NewMockClusterClientFactory(mockCtrl)
 		mockResourceClient1 = mock_clients.NewMockResourceClient(mockCtrl)
 		mockResourceClient2 = mock_clients.NewMockResourceClient(mockCtrl)
 		clientSet = NewClusterClientManager(context.Background(), mockClientFactory)
