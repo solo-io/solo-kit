@@ -28,7 +28,7 @@ type ClusterClientManager interface {
 
 type clusterClientManager struct {
 	ctx            context.Context
-	clientGetter   ClientGetter
+	ClientFactory  ClusterClientFactory
 	clientHandlers []ClientForClusterHandler
 	clients        map[string]clients.ResourceClient
 	clientAccess   sync.RWMutex
@@ -37,9 +37,9 @@ type clusterClientManager struct {
 var _ ClusterClientManager = &clusterClientManager{}
 var _ handler.ClusterHandler = &clusterClientManager{}
 
-func NewClusterClientManager(ctx context.Context, clientGetter ClientGetter, handlers ...ClientForClusterHandler) *clusterClientManager {
+func NewClusterClientManager(ctx context.Context, ClientFactory ClusterClientFactory, handlers ...ClientForClusterHandler) *clusterClientManager {
 	return &clusterClientManager{
-		clientGetter:   clientGetter,
+		ClientFactory:  ClientFactory,
 		clientHandlers: handlers,
 		clients:        make(map[string]clients.ResourceClient),
 		clientAccess:   sync.RWMutex{},
@@ -47,7 +47,7 @@ func NewClusterClientManager(ctx context.Context, clientGetter ClientGetter, han
 }
 
 func (c *clusterClientManager) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := c.clientGetter.GetClient(cluster, restConfig)
+	client, err := c.ClientFactory.GetClient(cluster, restConfig)
 	if err != nil {
 		contextutils.LoggerFrom(c.ctx).Error("failed to get client for cluster",
 			zap.String("cluster", cluster),

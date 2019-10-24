@@ -1,4 +1,4 @@
-package deployment
+package pod
 
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -10,25 +10,26 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type deploymentResourceClientGetter struct {
+type podResourceClientFactory struct {
 	cacheGetter clustercache.CacheGetter
+	test        clustercache.ClusterCache
 }
 
-var _ multicluster.ClientGetter = &deploymentResourceClientGetter{}
+var _ multicluster.ClusterClientFactory = &podResourceClientFactory{}
 
-func NewDeploymentResourceClientGetter(cacheGetter clustercache.CacheGetter) *deploymentResourceClientGetter {
-	return &deploymentResourceClientGetter{cacheGetter: cacheGetter}
+func NewPodResourceClientFactory(cacheGetter clustercache.CacheGetter) *podResourceClientFactory {
+	return &podResourceClientFactory{cacheGetter: cacheGetter}
 }
 
-func (g *deploymentResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *podResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
 	}
 	kubeCache := g.cacheGetter.GetCache(cluster, restConfig)
-	typedCache, ok := kubeCache.(cache.KubeDeploymentCache)
+	typedCache, ok := kubeCache.(cache.KubeCoreCache)
 	if !ok {
-		return nil, errors.Errorf("expected KubeDeploymentCache, got %T", kubeCache)
+		return nil, errors.Errorf("expected KubeCoreCache, got %T", kubeCache)
 	}
 	return newResourceClient(kube, typedCache), nil
 }

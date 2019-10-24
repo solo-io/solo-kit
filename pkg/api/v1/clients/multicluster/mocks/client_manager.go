@@ -9,54 +9,53 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	rest "k8s.io/client-go/rest"
 )
 
-// MockClusterClientHandler is a mock of ClusterClientHandler interface
-type MockClusterClientHandler struct {
+// MockClientForClusterHandler is a mock of ClientForClusterHandler interface
+type MockClientForClusterHandler struct {
 	ctrl     *gomock.Controller
-	recorder *MockClusterClientHandlerMockRecorder
+	recorder *MockClientForClusterHandlerMockRecorder
 }
 
-// MockClusterClientHandlerMockRecorder is the mock recorder for MockClusterClientHandler
-type MockClusterClientHandlerMockRecorder struct {
-	mock *MockClusterClientHandler
+// MockClientForClusterHandlerMockRecorder is the mock recorder for MockClientForClusterHandler
+type MockClientForClusterHandlerMockRecorder struct {
+	mock *MockClientForClusterHandler
 }
 
-// NewMockClusterClientHandler creates a new mock instance
-func NewMockClusterClientHandler(ctrl *gomock.Controller) *MockClusterClientHandler {
-	mock := &MockClusterClientHandler{ctrl: ctrl}
-	mock.recorder = &MockClusterClientHandlerMockRecorder{mock}
+// NewMockClientForClusterHandler creates a new mock instance
+func NewMockClientForClusterHandler(ctrl *gomock.Controller) *MockClientForClusterHandler {
+	mock := &MockClientForClusterHandler{ctrl: ctrl}
+	mock.recorder = &MockClientForClusterHandlerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockClusterClientHandler) EXPECT() *MockClusterClientHandlerMockRecorder {
+func (m *MockClientForClusterHandler) EXPECT() *MockClientForClusterHandlerMockRecorder {
 	return m.recorder
 }
 
 // HandleNewClusterClient mocks base method
-func (m *MockClusterClientHandler) HandleNewClusterClient(cluster string, client clients.ResourceClient) {
+func (m *MockClientForClusterHandler) HandleNewClusterClient(cluster string, client clients.ResourceClient) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "HandleNewClusterClient", cluster, client)
 }
 
 // HandleNewClusterClient indicates an expected call of HandleNewClusterClient
-func (mr *MockClusterClientHandlerMockRecorder) HandleNewClusterClient(cluster, client interface{}) *gomock.Call {
+func (mr *MockClientForClusterHandlerMockRecorder) HandleNewClusterClient(cluster, client interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleNewClusterClient", reflect.TypeOf((*MockClusterClientHandler)(nil).HandleNewClusterClient), cluster, client)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleNewClusterClient", reflect.TypeOf((*MockClientForClusterHandler)(nil).HandleNewClusterClient), cluster, client)
 }
 
 // HandleRemovedClusterClient mocks base method
-func (m *MockClusterClientHandler) HandleRemovedClusterClient(cluster string, client clients.ResourceClient) {
+func (m *MockClientForClusterHandler) HandleRemovedClusterClient(cluster string, client clients.ResourceClient) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "HandleRemovedClusterClient", cluster, client)
 }
 
 // HandleRemovedClusterClient indicates an expected call of HandleRemovedClusterClient
-func (mr *MockClusterClientHandlerMockRecorder) HandleRemovedClusterClient(cluster, client interface{}) *gomock.Call {
+func (mr *MockClientForClusterHandlerMockRecorder) HandleRemovedClusterClient(cluster, client interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleRemovedClusterClient", reflect.TypeOf((*MockClusterClientHandler)(nil).HandleRemovedClusterClient), cluster, client)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleRemovedClusterClient", reflect.TypeOf((*MockClientForClusterHandler)(nil).HandleRemovedClusterClient), cluster, client)
 }
 
 // MockClusterClientManager is a mock of ClusterClientManager interface
@@ -80,30 +79,6 @@ func NewMockClusterClientManager(ctrl *gomock.Controller) *MockClusterClientMana
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockClusterClientManager) EXPECT() *MockClusterClientManagerMockRecorder {
 	return m.recorder
-}
-
-// ClusterAdded mocks base method
-func (m *MockClusterClientManager) ClusterAdded(cluster string, restConfig *rest.Config) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ClusterAdded", cluster, restConfig)
-}
-
-// ClusterAdded indicates an expected call of ClusterAdded
-func (mr *MockClusterClientManagerMockRecorder) ClusterAdded(cluster, restConfig interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterAdded", reflect.TypeOf((*MockClusterClientManager)(nil).ClusterAdded), cluster, restConfig)
-}
-
-// ClusterRemoved mocks base method
-func (m *MockClusterClientManager) ClusterRemoved(cluster string, restConfig *rest.Config) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ClusterRemoved", cluster, restConfig)
-}
-
-// ClusterRemoved indicates an expected call of ClusterRemoved
-func (mr *MockClusterClientManagerMockRecorder) ClusterRemoved(cluster, restConfig interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterRemoved", reflect.TypeOf((*MockClusterClientManager)(nil).ClusterRemoved), cluster, restConfig)
 }
 
 // ClientForCluster mocks base method

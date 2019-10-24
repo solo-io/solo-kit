@@ -20,7 +20,7 @@ import (
 var _ = Describe("MultiClusterResourceClient", func() {
 	var (
 		mockCtrl            *gomock.Controller
-		mockClientGetter    *mock_subfactory.MockClientGetter
+		mockClientFactory   *mock_subfactory.MockClientFactory
 		mockResourceClient1 *mock_clients.MockResourceClient
 		mockResourceClient2 *mock_clients.MockResourceClient
 		clientSet           multicluster.ClusterClientManager
@@ -35,10 +35,10 @@ var _ = Describe("MultiClusterResourceClient", func() {
 	BeforeEach(func() {
 		resType = &v2alpha1.MockResource{}
 		mockCtrl = gomock.NewController(GinkgoT())
-		mockClientGetter = mock_subfactory.NewMockClientGetter(mockCtrl)
+		mockClientFactory = mock_subfactory.NewMockClientFactory(mockCtrl)
 		mockResourceClient1 = mock_clients.NewMockResourceClient(mockCtrl)
 		mockResourceClient2 = mock_clients.NewMockResourceClient(mockCtrl)
-		clientSet = multicluster.NewClusterClientManager(context.Background(), mockClientGetter)
+		clientSet = multicluster.NewClusterClientManager(context.Background(), mockClientFactory)
 		subject = multicluster.NewMultiClusterResourceClient(resType, clientSet)
 	})
 
@@ -74,11 +74,11 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		)
 
 		BeforeEach(func() {
-			mockClientGetter.EXPECT().GetClient(cluster1, config1).Return(mockResourceClient1, nil)
+			mockClientFactory.EXPECT().GetClient(cluster1, config1).Return(mockResourceClient1, nil)
 			mockResourceClient1.EXPECT().Register().Return(nil)
 			clientSet.ClusterAdded(cluster1, config1)
 
-			mockClientGetter.EXPECT().GetClient(cluster2, config2).Return(mockResourceClient2, nil)
+			mockClientFactory.EXPECT().GetClient(cluster2, config2).Return(mockResourceClient2, nil)
 			mockResourceClient2.EXPECT().Register().Return(nil)
 			clientSet.ClusterAdded(cluster2, config2)
 		})

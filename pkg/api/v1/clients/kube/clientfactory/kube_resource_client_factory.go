@@ -1,4 +1,4 @@
-package clientgetter
+package ClientFactory
 
 import (
 	"time"
@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type kubeResourceClientGetter struct {
+type kubeResourceClientFactory struct {
 	cacheGetter        clustercache.CacheGetter
 	crd                crd.Crd
 	skipCrdCreation    bool
@@ -22,17 +22,17 @@ type kubeResourceClientGetter struct {
 	params             factory.NewResourceClientParams
 }
 
-var _ multicluster.ClientGetter = &kubeResourceClientGetter{}
+var _ multicluster.ClusterClientFactory = &kubeResourceClientFactory{}
 
-func NewKubeResourceClientGetter(
+func NewKubeResourceClientFactory(
 	cacheGetter clustercache.CacheGetter,
 	crd crd.Crd,
 	skipCrdCreation bool,
 	namespaceWhitelist []string,
 	resyncPeriod time.Duration,
-	params factory.NewResourceClientParams) *kubeResourceClientGetter {
+	params factory.NewResourceClientParams) *kubeResourceClientFactory {
 
-	return &kubeResourceClientGetter{
+	return &kubeResourceClientFactory{
 		cacheGetter:        cacheGetter,
 		crd:                crd,
 		skipCrdCreation:    skipCrdCreation,
@@ -42,7 +42,7 @@ func NewKubeResourceClientGetter(
 	}
 }
 
-func (g *kubeResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *kubeResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kubeCache := g.cacheGetter.GetCache(cluster, restConfig)
 	typedCache, ok := kubeCache.(kube.SharedCache)
 	if !ok {

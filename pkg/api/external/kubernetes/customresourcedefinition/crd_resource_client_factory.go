@@ -9,17 +9,17 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type crdResourceClientGetter struct {
+type crdResourceClientFactory struct {
 	cacheGetter clustercache.CacheGetter
 }
 
-var _ multicluster.ClientGetter = &crdResourceClientGetter{}
+var _ multicluster.ClusterClientFactory = &crdResourceClientFactory{}
 
-func NewCrdResourceClientGetter(cacheGetter clustercache.CacheGetter) *crdResourceClientGetter {
-	return &crdResourceClientGetter{cacheGetter: cacheGetter}
+func NewCrdResourceClientFactory(cacheGetter clustercache.CacheGetter) *crdResourceClientFactory {
+	return &crdResourceClientFactory{cacheGetter: cacheGetter}
 }
 
-func (g *crdResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *crdResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := apiexts.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err

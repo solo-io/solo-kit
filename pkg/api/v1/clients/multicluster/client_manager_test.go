@@ -17,7 +17,7 @@ var _ = Describe("ClusterClientManager", func() {
 	var (
 		subject            multicluster.ClusterClientManager
 		mockCtrl           *gomock.Controller
-		getter             *mocks.MockClientGetter
+		getter             *mocks.MockClientFactory
 		handler            *mocks.MockClusterClientHandler
 		client1, client2   *mocks2.MockResourceClient
 		cluster1, cluster2 = "one", "two"
@@ -27,7 +27,7 @@ var _ = Describe("ClusterClientManager", func() {
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
-		getter = mocks.NewMockClientGetter(mockCtrl)
+		getter = mocks.NewMockClientFactory(mockCtrl)
 		handler = mocks.NewMockClusterClientHandler(mockCtrl)
 		client1 = mocks2.NewMockResourceClient(mockCtrl)
 		client2 = mocks2.NewMockResourceClient(mockCtrl)
