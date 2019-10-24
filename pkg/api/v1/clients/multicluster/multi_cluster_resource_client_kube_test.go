@@ -41,7 +41,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 	var (
 		namespace       string
 		subject         v1.AnotherMockResourceClient
-		watchAggregator multicluster.MultiClusterAggregatedWatch
+		watchAggregator wrapper.WatchAggregator
 		localRestConfig *rest.Config
 		localKubeClient kubernetes.Interface
 		ctx             context.Context
@@ -75,8 +75,9 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 			0,
 			factory.NewResourceClientParams{ResourceType: &v1.AnotherMockResource{}},
 		)
-		watchAggregator = multicluster.NewMultiClusterAggregatedWatch(wrapper.NewWatchAggregator())
-		clientSet := multicluster.NewClusterClientCache(clientGetter, watchAggregator)
+		watchAggregator = wrapper.NewWatchAggregator()
+		watchHandler := multicluster.NewAggregatedWatchClusterClientHandler(watchAggregator)
+		clientSet := multicluster.NewClusterClientManager(clientGetter, watchHandler)
 		mcrc := multicluster.NewMultiClusterResourceClient(&v1.AnotherMockResource{}, clientSet)
 
 		configWatcher := multicluster2.NewKubeConfigWatcher()

@@ -8,25 +8,29 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Allows objects to register callbacks with a ClusterClientManager.
 type ClusterClientHandler interface {
 	HandleNewClusterClient(cluster string, client clients.ResourceClient)
 	HandleRemovedClusterClient(cluster string, client clients.ResourceClient)
 }
 
-type ClusterClientCache interface {
+// Stores clients for clusters as they are discovered by a config watcher.
+// Implementation in this package allows registration of ClusterClientHandlers.
+type ClusterClientManager interface {
 	handler.ClusterHandler
-	ClientForCluster(cluster string) (clients.ResourceClient, bool)
+	// Returns a client for the given cluster if one exists.
+	ClientForCluster(cluster string) (client clients.ResourceClient, found bool)
 }
 
-type clusterCache struct {
+type clusterManager struct {
 	clientGetter   ClientGetter
 	clientHandlers []ClusterClientHandler
 	clients        map[string]clients.ResourceClient
 	clientAccess   sync.RWMutex
 }
 
-func NewClusterClientCache(clientGetter ClientGetter, handlers ...ClusterClientHandler) ClusterClientCache {
-	return &clusterCache{
+func NewClusterClientManager(clientGetter ClientGetter, handlers ...ClusterClientHandler) ClusterClientManager {
+	return &clusterManager{
 		clientGetter:   clientGetter,
 		clientHandlers: handlers,
 		clients:        make(map[string]clients.ResourceClient),
@@ -34,7 +38,7 @@ func NewClusterClientCache(clientGetter ClientGetter, handlers ...ClusterClientH
 	}
 }
 
-func (c *clusterCache) ClusterAdded(cluster string, restConfig *rest.Config) {
+func (c *clusterManager) ClusterAdded(cluster string, restConfig *rest.Config) {
 	client, err := c.clientGetter.GetClient(cluster, restConfig)
 	if err != nil {
 		return
@@ -53,7 +57,7 @@ func (c *clusterCache) ClusterAdded(cluster string, restConfig *rest.Config) {
 	}
 }
 
-func (c *clusterCache) ClusterRemoved(cluster string, restConfig *rest.Config) {
+func (c *clusterManager) ClusterRemoved(cluster string, restConfig *rest.Config) {
 	client, ok := c.ClientForCluster(cluster)
 	if !ok {
 		return
@@ -68,9 +72,9 @@ func (c *clusterCache) ClusterRemoved(cluster string, restConfig *rest.Config) {
 	}
 }
 
-func (c *clusterCache) ClientForCluster(cluster string) (clients.ResourceClient, bool) {
+func (c *clusterManager) ClientForCluster(cluster string) (client clients.ResourceClient, found bool) {
 	c.clientAccess.RLock()
-	client, ok := c.clients[cluster]
+	client, found = c.clients[cluster]
 	c.clientAccess.RUnlock()
-	return client, ok
+	return client, found
 }

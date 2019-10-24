@@ -21,9 +21,9 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		mockClientGetter    *mock_subfactory.MockClientGetter
 		mockResourceClient1 *mock_clients.MockResourceClient
 		mockResourceClient2 *mock_clients.MockResourceClient
-		clientSet           multicluster.ClusterClientCache
+		clientSet           multicluster.ClusterClientManager
 		resType             resources.Resource
-		subject             multicluster.MultiClusterResourceClient
+		subject             clients.ResourceClient
 		cluster1, cluster2  = "c-one", "c-two"
 		config1, config2    = &rest.Config{}, &rest.Config{}
 		namespace           = "test-ns"
@@ -36,7 +36,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		mockClientGetter = mock_subfactory.NewMockClientGetter(mockCtrl)
 		mockResourceClient1 = mock_clients.NewMockResourceClient(mockCtrl)
 		mockResourceClient2 = mock_clients.NewMockResourceClient(mockCtrl)
-		clientSet = multicluster.NewClusterClientCache(mockClientGetter)
+		clientSet = multicluster.NewClusterClientManager(mockClientGetter)
 		subject = multicluster.NewMultiClusterResourceClient(resType, clientSet)
 	})
 

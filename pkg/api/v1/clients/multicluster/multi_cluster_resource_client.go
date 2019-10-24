@@ -12,18 +12,14 @@ var (
 	}
 )
 
-type MultiClusterResourceClient interface {
-	clients.ResourceClient
-}
-
 type multiClusterResourceClient struct {
 	resourceType resources.Resource
-	clientSet    ClusterClientCache
+	clientSet    ClusterClientManager
 }
 
-var _ MultiClusterResourceClient = &multiClusterResourceClient{}
+var _ clients.ResourceClient = &multiClusterResourceClient{}
 
-func NewMultiClusterResourceClient(resourceType resources.Resource, clientSet ClusterClientCache) *multiClusterResourceClient {
+func NewMultiClusterResourceClient(resourceType resources.Resource, clientSet ClusterClientManager) *multiClusterResourceClient {
 	return &multiClusterResourceClient{
 		resourceType: resourceType,
 		clientSet:    clientSet,
