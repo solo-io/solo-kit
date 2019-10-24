@@ -324,7 +324,11 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 				ext := ".sk.md"
 				prefix := ""
 				if docsOptions.Output == options.Hugo {
-					ext = ".sk"
+					// hugo puts files in some/dir/myproto.sk/index.html
+					// this means that site.com/myproto.sk/ will work but site.com/myproto.sk will not work
+					// this is not obvious because common practice is to serve hugo with nginix's `try_files $uri $uri/` directive
+					// when we host docs with a versioned scope facilitated by Gloo and Envoy we need to be more specific to get the right behavior
+					ext = ".sk/"
 					prefix = "../"
 					declaredName = strings.ToLower(declaredName)
 				}
