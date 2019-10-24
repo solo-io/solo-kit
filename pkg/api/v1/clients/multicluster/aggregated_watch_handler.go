@@ -5,21 +5,21 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 )
 
-type aggregatedWatchClusterClientHandler struct {
+type clusterWatchAggregator struct {
 	aggregator wrapper.WatchAggregator
 }
 
-var _ ClusterClientHandler = &aggregatedWatchClusterClientHandler{}
+var _ ClientForClusterHandler = &clusterWatchAggregator{}
 
-// Provides a ClusterClientHandler to sync an aggregated watch with clients available on a cluster.
-func NewAggregatedWatchClusterClientHandler(aggregator wrapper.WatchAggregator) ClusterClientHandler {
-	return &aggregatedWatchClusterClientHandler{aggregator: aggregator}
+// Provides a ClientForClusterHandler to sync an aggregated watch with clients available on a cluster.
+func NewAggregatedWatchClusterClientHandler(aggregator wrapper.WatchAggregator) *clusterWatchAggregator {
+	return &clusterWatchAggregator{aggregator: aggregator}
 }
 
-func (h *aggregatedWatchClusterClientHandler) HandleNewClusterClient(cluster string, client clients.ResourceClient) {
+func (h *clusterWatchAggregator) HandleNewClusterClient(cluster string, client clients.ResourceClient) {
 	h.aggregator.AddWatch(client)
 }
 
-func (h *aggregatedWatchClusterClientHandler) HandleRemovedClusterClient(cluster string, client clients.ResourceClient) {
+func (h *clusterWatchAggregator) HandleRemovedClusterClient(cluster string, client clients.ResourceClient) {
 	h.aggregator.RemoveWatch(client)
 }

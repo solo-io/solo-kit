@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("Aggregated Watch Cluster Client Handler", func() {
 	var (
-		subject   multicluster.ClusterClientHandler
+		subject   multicluster.ClientForClusterHandler
 		mockCtrl  *gomock.Controller
 		mockWatch *mocks.MockWatchAggregator
 		client    *mocks2.MockResourceClient

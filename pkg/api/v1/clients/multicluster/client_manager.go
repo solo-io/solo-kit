@@ -14,7 +14,7 @@ import (
 //go:generate mockgen -destination=./mocks/client_manager.go -source client_manager.go -package mocks
 
 // Allows objects to register callbacks with a ClusterClientManager.
-type ClusterClientHandler interface {
+type ClientForClusterHandler interface {
 	HandleNewClusterClient(cluster string, client clients.ResourceClient)
 	HandleRemovedClusterClient(cluster string, client clients.ResourceClient)
 }
@@ -22,21 +22,23 @@ type ClusterClientHandler interface {
 // Stores clients for clusters as they are discovered by a config watcher.
 // Implementation in this package allows registration of ClusterClientHandlers.
 type ClusterClientManager interface {
-	handler.ClusterHandler
 	// Returns a client for the given cluster if one exists.
 	ClientForCluster(cluster string) (client clients.ResourceClient, found bool)
 }
 
-type clusterManager struct {
+type clusterClientManager struct {
 	ctx            context.Context
 	clientGetter   ClientGetter
-	clientHandlers []ClusterClientHandler
+	clientHandlers []ClientForClusterHandler
 	clients        map[string]clients.ResourceClient
 	clientAccess   sync.RWMutex
 }
 
-func NewClusterClientManager(ctx context.Context, clientGetter ClientGetter, handlers ...ClusterClientHandler) ClusterClientManager {
-	return &clusterManager{
+var _ ClusterClientManager = &clusterClientManager{}
+var _ handler.ClusterHandler = &clusterClientManager{}
+
+func NewClusterClientManager(ctx context.Context, clientGetter ClientGetter, handlers ...ClientForClusterHandler) *clusterClientManager {
+	return &clusterClientManager{
 		clientGetter:   clientGetter,
 		clientHandlers: handlers,
 		clients:        make(map[string]clients.ResourceClient),
@@ -44,7 +46,7 @@ func NewClusterClientManager(ctx context.Context, clientGetter ClientGetter, han
 	}
 }
 
-func (c *clusterManager) ClusterAdded(cluster string, restConfig *rest.Config) {
+func (c *clusterClientManager) ClusterAdded(cluster string, restConfig *rest.Config) {
 	client, err := c.clientGetter.GetClient(cluster, restConfig)
 	if err != nil {
 		contextutils.LoggerFrom(c.ctx).Error("failed to get client for cluster",
@@ -69,7 +71,7 @@ func (c *clusterManager) ClusterAdded(cluster string, restConfig *rest.Config) {
 	}
 }
 
-func (c *clusterManager) ClusterRemoved(cluster string, restConfig *rest.Config) {
+func (c *clusterClientManager) ClusterRemoved(cluster string, restConfig *rest.Config) {
 	client, ok := c.ClientForCluster(cluster)
 	if !ok {
 		return
@@ -84,7 +86,7 @@ func (c *clusterManager) ClusterRemoved(cluster string, restConfig *rest.Config)
 	}
 }
 
-func (c *clusterManager) ClientForCluster(cluster string) (client clients.ResourceClient, found bool) {
+func (c *clusterClientManager) ClientForCluster(cluster string) (client clients.ResourceClient, found bool) {
 	c.clientAccess.RLock()
 	client, found = c.clients[cluster]
 	c.clientAccess.RUnlock()
