@@ -1,4 +1,4 @@
-package multicluster_test
+package multicluster
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	mock_clients "github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
 	mock_subfactory "github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -20,10 +19,10 @@ import (
 var _ = Describe("MultiClusterResourceClient", func() {
 	var (
 		mockCtrl            *gomock.Controller
-		mockClientFactory   *mock_subfactory.MockClientFactory
+		mockClientFactory   *mock_subfactory.MockClusterClientFactory
 		mockResourceClient1 *mock_clients.MockResourceClient
 		mockResourceClient2 *mock_clients.MockResourceClient
-		clientSet           multicluster.ClusterClientManager
+		clientSet           *clusterClientManager
 		resType             resources.Resource
 		subject             clients.ResourceClient
 		cluster1, cluster2  = "c-one", "c-two"
@@ -35,11 +34,11 @@ var _ = Describe("MultiClusterResourceClient", func() {
 	BeforeEach(func() {
 		resType = &v2alpha1.MockResource{}
 		mockCtrl = gomock.NewController(GinkgoT())
-		mockClientFactory = mock_subfactory.NewMockClientFactory(mockCtrl)
+		mockClientFactory = mock_subfactory.NewMockClusterClientFactory(mockCtrl)
 		mockResourceClient1 = mock_clients.NewMockResourceClient(mockCtrl)
 		mockResourceClient2 = mock_clients.NewMockResourceClient(mockCtrl)
-		clientSet = multicluster.NewClusterClientManager(context.Background(), mockClientFactory)
-		subject = multicluster.NewMultiClusterResourceClient(resType, clientSet)
+		clientSet = NewClusterClientManager(context.Background(), mockClientFactory)
+		subject = NewMultiClusterResourceClient(resType, clientSet)
 	})
 
 	AfterEach(func() {
@@ -116,7 +115,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 			It("errors when a client cannot be found for the given cluster", func() {
 				_, err := subject.Read("any", "any", clients.ReadOpts{Cluster: "fake-cluster"})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(multicluster.NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
+				Expect(err.Error()).To(Equal(NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
 			})
 		})
 
@@ -153,7 +152,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 			It("errors when a client cannot be found for the given cluster", func() {
 				_, err := subject.Write(fakeResource, clients.WriteOpts{})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(multicluster.NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
+				Expect(err.Error()).To(Equal(NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
 			})
 		})
 
@@ -188,7 +187,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 			It("errors when a client cannot be found for the given cluster", func() {
 				err := subject.Delete("any", "any", clients.DeleteOpts{Cluster: "fake-cluster"})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(multicluster.NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
+				Expect(err.Error()).To(Equal(NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
 			})
 		})
 
@@ -225,7 +224,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 			It("errors when a client cannot be found for the given cluster", func() {
 				_, err := subject.List("any", clients.ListOpts{Cluster: "fake-cluster"})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(multicluster.NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
+				Expect(err.Error()).To(Equal(NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
 			})
 		})
 
@@ -271,7 +270,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 			It("errors when a client cannot be found for the given cluster", func() {
 				_, _, err := subject.Watch("any", clients.WatchOpts{Cluster: "fake-cluster"})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(multicluster.NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
+				Expect(err.Error()).To(Equal(NoClientForClusterError(subject.Kind(), "fake-cluster").Error()))
 			})
 		})
 	})

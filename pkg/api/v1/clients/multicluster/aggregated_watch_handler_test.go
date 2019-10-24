@@ -1,16 +1,15 @@
-package multicluster_test
+package multicluster
 
 import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	mocks2 "github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper/mocks"
 )
 
 var _ = Describe("Aggregated Watch Cluster Client Handler", func() {
 	var (
-		subject   multicluster.ClientForClusterHandler
+		subject   ClientForClusterHandler
 		mockCtrl  *gomock.Controller
 		mockWatch *mocks.MockWatchAggregator
 		client    *mocks2.MockResourceClient
@@ -21,7 +20,7 @@ var _ = Describe("Aggregated Watch Cluster Client Handler", func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockWatch = mocks.NewMockWatchAggregator(mockCtrl)
 		client = mocks2.NewMockResourceClient(mockCtrl)
-		subject = multicluster.NewAggregatedWatchClusterClientHandler(mockWatch)
+		subject = NewAggregatedWatchClusterClientHandler(mockWatch)
 	})
 
 	AfterEach(func() {

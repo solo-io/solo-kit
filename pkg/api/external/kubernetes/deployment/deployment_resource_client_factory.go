@@ -3,7 +3,7 @@ package deployment
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/kubernetes"
@@ -14,7 +14,7 @@ type deploymentResourceClientFactory struct {
 	cacheGetter clustercache.CacheGetter
 }
 
-var _ multicluster.ClusterClientFactory = &deploymentResourceClientFactory{}
+var _ factory.ClusterClientFactory = &deploymentResourceClientFactory{}
 
 func NewDeploymentResourceClientFactory(cacheGetter clustercache.CacheGetter) *deploymentResourceClientFactory {
 	return &deploymentResourceClientFactory{cacheGetter: cacheGetter}

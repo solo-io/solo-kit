@@ -2,7 +2,7 @@ package customresourcedefinition
 
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -13,7 +13,7 @@ type crdResourceClientFactory struct {
 	cacheGetter clustercache.CacheGetter
 }
 
-var _ multicluster.ClusterClientFactory = &crdResourceClientFactory{}
+var _ factory.ClusterClientFactory = &crdResourceClientFactory{}
 
 func NewCrdResourceClientFactory(cacheGetter clustercache.CacheGetter) *crdResourceClientFactory {
 	return &crdResourceClientFactory{cacheGetter: cacheGetter}

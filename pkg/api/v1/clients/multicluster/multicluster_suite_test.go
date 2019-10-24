@@ -1,4 +1,4 @@
-package multicluster_test
+package multicluster
 
 import (
 	"os"

@@ -1,4 +1,4 @@
-package multicluster_test
+package multicluster
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/ClientFactory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	sk_multicluster "github.com/solo-io/solo-kit/pkg/multicluster"
@@ -76,9 +75,9 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 			factory.NewResourceClientParams{ResourceType: &v1.AnotherMockResource{}},
 		)
 		watchAggregator = wrapper.NewWatchAggregator()
-		watchHandler := multicluster.NewAggregatedWatchClusterClientHandler(watchAggregator)
-		clientSet := multicluster.NewClusterClientManager(context.Background(), ClientFactory, watchHandler)
-		mcrc := multicluster.NewMultiClusterResourceClient(&v1.AnotherMockResource{}, clientSet)
+		watchHandler := NewAggregatedWatchClusterClientHandler(watchAggregator)
+		clientSet := NewClusterClientManager(context.Background(), ClientFactory, watchHandler)
+		mcrc := NewMultiClusterResourceClient(&v1.AnotherMockResource{}, clientSet)
 
 		configWatcher := sk_multicluster.NewKubeConfigWatcher()
 		localRestConfig, err = kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
@@ -94,7 +93,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		anotherMockResourceClient = v1.NewAnotherMockResourceClientWithBase(mcrc)
-		EventuallyClusterAvailable(anotherMockResourceClient, sk_multicluster.LocalCluster)
+		eventuallyClusterAvailable(anotherMockResourceClient, sk_multicluster.LocalCluster)
 
 		// Create namespaces
 		namespace = helpers.RandString(6)
@@ -126,13 +125,13 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		localResource := getAnotherMockResource(sk_multicluster.LocalCluster, namespace, resourceName, "foo")
 		localWritten, err := anotherMockResourceClient.Write(localResource, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		ExpectEqualAnotherMockResources(localWritten, localResource)
+		expectEqualAnotherMockResources(localWritten, localResource)
 
 		// list local resources
 		localList, err := anotherMockResourceClient.List(namespace, clients.ListOpts{Ctx: ctx, Cluster: sk_multicluster.LocalCluster})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(localList).To(HaveLen(1))
-		ExpectEqualAnotherMockResources(localResource, localList[0])
+		expectEqualAnotherMockResources(localResource, localList[0])
 
 		// register another cluster
 		anotherKubeConfig, err := kubeutils.GetKubeConfig("", os.Getenv("ALT_CLUSTER_KUBECONFIG"))
@@ -148,32 +147,32 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = localKubeClient.CoreV1().Secrets(namespace).Create(cfgSecret)
 		Expect(err).NotTo(HaveOccurred())
-		EventuallyClusterAvailable(anotherMockResourceClient, remoteCluster)
+		eventuallyClusterAvailable(anotherMockResourceClient, remoteCluster)
 
 		// write a resource to the other cluster
 		remoteResource := getAnotherMockResource(remoteCluster, namespace, resourceName, "bar")
 		remoteWritten, err := anotherMockResourceClient.Write(remoteResource, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		ExpectEqualAnotherMockResources(remoteWritten, remoteResource)
+		expectEqualAnotherMockResources(remoteWritten, remoteResource)
 
 		// list local and remote resources, verify they are distinct
 		localList, err = anotherMockResourceClient.List(namespace, clients.ListOpts{Ctx: ctx, Cluster: sk_multicluster.LocalCluster})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(localList).To(HaveLen(1))
-		ExpectEqualAnotherMockResources(localResource, localList[0])
+		expectEqualAnotherMockResources(localResource, localList[0])
 		remoteList, err := anotherMockResourceClient.List(namespace, clients.ListOpts{Ctx: ctx, Cluster: remoteCluster})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(remoteList).To(HaveLen(1))
-		ExpectEqualAnotherMockResources(remoteResource, remoteList[0])
+		expectEqualAnotherMockResources(remoteResource, remoteList[0])
 		Expect(remoteList).NotTo(Equal(localList))
 
 		// read
 		localRead, err := anotherMockResourceClient.Read(namespace, resourceName, clients.ReadOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		ExpectEqualAnotherMockResources(localResource, localRead)
+		expectEqualAnotherMockResources(localResource, localRead)
 		remoteRead, err := anotherMockResourceClient.Read(namespace, resourceName, clients.ReadOpts{Ctx: ctx, Cluster: remoteCluster})
 		Expect(err).NotTo(HaveOccurred())
-		ExpectEqualAnotherMockResources(remoteResource, remoteRead)
+		expectEqualAnotherMockResources(remoteResource, remoteRead)
 
 		// local watch
 		w, errs, err := anotherMockResourceClient.Watch(namespace, clients.WatchOpts{
@@ -189,7 +188,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 			Fail("expected message in local watch channel")
 		case list := <-w:
 			Expect(list).To(HaveLen(1))
-			ExpectEqualAnotherMockResources(list[0], localResource)
+			expectEqualAnotherMockResources(list[0], localResource)
 		}
 
 		// remote watch
@@ -207,7 +206,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 			Fail("expected a message in channel")
 		case list := <-w:
 			Expect(list).To(HaveLen(1))
-			ExpectEqualAnotherMockResources(list[0], remoteResource)
+			expectEqualAnotherMockResources(list[0], remoteResource)
 		}
 
 		// aggregated watch
@@ -224,7 +223,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 	})
 })
 
-func ExpectEqualAnotherMockResources(a, b *v1.AnotherMockResource) {
+func expectEqualAnotherMockResources(a, b *v1.AnotherMockResource) {
 	Expect(a.Metadata.Cluster).To(Equal(b.Metadata.Cluster))
 	Expect(a.Metadata.Namespace).To(Equal(b.Metadata.Namespace))
 	Expect(a.Metadata.Name).To(Equal(b.Metadata.Name))
@@ -232,7 +231,7 @@ func ExpectEqualAnotherMockResources(a, b *v1.AnotherMockResource) {
 }
 
 // Wait for client to become available
-func EventuallyClusterAvailable(client v1.AnotherMockResourceClient, cluster string) {
+func eventuallyClusterAvailable(client v1.AnotherMockResourceClient, cluster string) {
 	Eventually(func() error {
 		_, err := client.List("", clients.ListOpts{Cluster: cluster})
 		return err

@@ -1,4 +1,4 @@
-package multicluster_test
+package multicluster
 
 import (
 	"context"
@@ -8,17 +8,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/errors"
 	mocks2 "github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/mocks"
 	"k8s.io/client-go/rest"
 )
 
-var _ = Describe("ClusterClientManager", func() {
+var _ = Describe("ClusterClientGetter", func() {
 	var (
-		subject            multicluster.ClusterClientManager
+		subject            *clusterClientManager
 		mockCtrl           *gomock.Controller
-		getter             *mocks.MockClientFactory
-		handler            *mocks.MockClusterClientHandler
+		factory            *mocks.MockClusterClientFactory
+		handler            *mocks.MockClientForClusterHandler
 		client1, client2   *mocks2.MockResourceClient
 		cluster1, cluster2 = "one", "two"
 		cfg1, cfg2         = &rest.Config{Host: "foo"}, &rest.Config{Host: "foo"}
@@ -27,15 +26,15 @@ var _ = Describe("ClusterClientManager", func() {
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
-		getter = mocks.NewMockClientFactory(mockCtrl)
-		handler = mocks.NewMockClusterClientHandler(mockCtrl)
+		factory = mocks.NewMockClusterClientFactory(mockCtrl)
+		handler = mocks.NewMockClientForClusterHandler(mockCtrl)
 		client1 = mocks2.NewMockResourceClient(mockCtrl)
 		client2 = mocks2.NewMockResourceClient(mockCtrl)
-		subject = multicluster.NewClusterClientManager(context.Background(), getter, handler)
+		subject = NewClusterClientManager(context.Background(), factory, handler)
 	})
 
 	expectClusterAdded := func(client *mocks2.MockResourceClient, cluster string, cfg *rest.Config) {
-		getter.EXPECT().GetClient(cluster, cfg).Return(client, nil)
+		factory.EXPECT().GetClient(cluster, cfg).Return(client, nil)
 		client.EXPECT().Register().Return(nil)
 		handler.EXPECT().HandleNewClusterClient(cluster, client)
 		subject.ClusterAdded(cluster, cfg)
@@ -50,7 +49,7 @@ var _ = Describe("ClusterClientManager", func() {
 		})
 
 		It("does nothing when a client cannot be created", func() {
-			getter.EXPECT().GetClient(cluster1, cfg1).Return(nil, testErr)
+			factory.EXPECT().GetClient(cluster1, cfg1).Return(nil, testErr)
 			subject.ClusterAdded(cluster1, cfg1)
 			newClient, found := subject.ClientForCluster(cluster1)
 			Expect(found).To(BeFalse())
@@ -58,7 +57,7 @@ var _ = Describe("ClusterClientManager", func() {
 		})
 
 		It("does nothing when a client cannot be registered", func() {
-			getter.EXPECT().GetClient(cluster1, cfg1).Return(client1, nil)
+			factory.EXPECT().GetClient(cluster1, cfg1).Return(client1, nil)
 			client1.EXPECT().Register().Return(testErr)
 			client1.EXPECT().Kind() // Called in error log
 			subject.ClusterAdded(cluster1, cfg1)

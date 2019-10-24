@@ -3,7 +3,7 @@ package pod
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/kubernetes"
@@ -15,7 +15,7 @@ type podResourceClientFactory struct {
 	test        clustercache.ClusterCache
 }
 
-var _ multicluster.ClusterClientFactory = &podResourceClientFactory{}
+var _ factory.ClusterClientFactory = &podResourceClientFactory{}
 
 func NewPodResourceClientFactory(cacheGetter clustercache.CacheGetter) *podResourceClientFactory {
 	return &podResourceClientFactory{cacheGetter: cacheGetter}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
@@ -13,7 +14,7 @@ import (
 
 //go:generate mockgen -destination=./mocks/client_manager.go -source client_manager.go -package mocks
 
-// Allows objects to register callbacks with a ClusterClientManager.
+// Allows objects to register callbacks with a ClusterClientGetter.
 type ClientForClusterHandler interface {
 	HandleNewClusterClient(cluster string, client clients.ResourceClient)
 	HandleRemovedClusterClient(cluster string, client clients.ResourceClient)
@@ -21,24 +22,25 @@ type ClientForClusterHandler interface {
 
 // Stores clients for clusters as they are discovered by a config watcher.
 // Implementation in this package allows registration of ClusterClientHandlers.
-type ClusterClientManager interface {
+type ClusterClientGetter interface {
 	// Returns a client for the given cluster if one exists.
 	ClientForCluster(cluster string) (client clients.ResourceClient, found bool)
 }
 
 type clusterClientManager struct {
 	ctx            context.Context
-	ClientFactory  ClusterClientFactory
+	ClientFactory  factory.ClusterClientFactory
 	clientHandlers []ClientForClusterHandler
 	clients        map[string]clients.ResourceClient
 	clientAccess   sync.RWMutex
 }
 
-var _ ClusterClientManager = &clusterClientManager{}
+var _ ClusterClientGetter = &clusterClientManager{}
 var _ handler.ClusterHandler = &clusterClientManager{}
 
-func NewClusterClientManager(ctx context.Context, ClientFactory ClusterClientFactory, handlers ...ClientForClusterHandler) *clusterClientManager {
+func NewClusterClientManager(ctx context.Context, ClientFactory factory.ClusterClientFactory, handlers ...ClientForClusterHandler) *clusterClientManager {
 	return &clusterClientManager{
+		ctx:            ctx,
 		ClientFactory:  ClientFactory,
 		clientHandlers: handlers,
 		clients:        make(map[string]clients.ResourceClient),

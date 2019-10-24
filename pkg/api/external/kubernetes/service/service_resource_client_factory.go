@@ -3,7 +3,7 @@ package service
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/kubernetes"
@@ -14,7 +14,7 @@ type serviceResourceClientFactory struct {
 	cacheGetter clustercache.CacheGetter
 }
 
-var _ multicluster.ClusterClientFactory = &serviceResourceClientFactory{}
+var _ factory.ClusterClientFactory = &serviceResourceClientFactory{}
 
 func NewServiceResourceClientFactory(cacheGetter clustercache.CacheGetter) *serviceResourceClientFactory {
 	return &serviceResourceClientFactory{cacheGetter: cacheGetter}

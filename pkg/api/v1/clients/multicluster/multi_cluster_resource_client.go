@@ -14,15 +14,15 @@ var (
 
 type multiClusterResourceClient struct {
 	resourceType resources.Resource
-	clientSet    ClusterClientManager
+	clientGetter ClusterClientGetter
 }
 
 var _ clients.ResourceClient = &multiClusterResourceClient{}
 
-func NewMultiClusterResourceClient(resourceType resources.Resource, clientSet ClusterClientManager) *multiClusterResourceClient {
+func NewMultiClusterResourceClient(resourceType resources.Resource, clientSet ClusterClientGetter) *multiClusterResourceClient {
 	return &multiClusterResourceClient{
 		resourceType: resourceType,
-		clientSet:    clientSet,
+		clientGetter: clientSet,
 	}
 }
 
@@ -83,7 +83,7 @@ func (rc *multiClusterResourceClient) Watch(namespace string, opts clients.Watch
 }
 
 func (rc *multiClusterResourceClient) clientFor(cluster string) (clients.ResourceClient, error) {
-	if client, ok := rc.clientSet.ClientForCluster(cluster); ok {
+	if client, ok := rc.clientGetter.ClientForCluster(cluster); ok {
 		return client, nil
 	}
 	return nil, NoClientForClusterError(rc.Kind(), cluster)

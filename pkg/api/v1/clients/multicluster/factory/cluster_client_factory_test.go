@@ -1,4 +1,4 @@
-package multicluster_test
+package factory_test
 
 import (
 	"context"
@@ -14,11 +14,11 @@ import (
 	kubenamespace "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/pod"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	client_factory "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/ClientFactory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
+	kubefactory "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/clientfactory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"github.com/solo-io/solo-kit/test/testutils"
@@ -110,25 +110,25 @@ var _ = Describe("ClusterClientFactory", func() {
 			cacheGetter, err = clustercache.NewCacheManager(context.Background(), kube.NewKubeSharedCacheForConfig)
 			Expect(err).NotTo(HaveOccurred())
 			testClientFactory(
-				ClientFactory.NewKubeResourceClientFactory(
+				kubefactory.NewKubeResourceClientFactory(
 					cacheGetter,
 					v1.MockResourceCrd,
 					false,
 					nil,
 					0,
-					factory.NewResourceClientParams{
+					client_factory.NewResourceClientParams{
 						ResourceType: &v1.MockResource{},
 					},
 				),
 			)
 			testClientFactoryWithWrongCache(
-				ClientFactory.NewKubeResourceClientFactory(
+				kubefactory.NewKubeResourceClientFactory(
 					awfulCacheGetter,
 					v1.MockResourceCrd,
 					true,
 					nil,
 					0,
-					factory.NewResourceClientParams{
+					client_factory.NewResourceClientParams{
 						ResourceType: &v1.MockResource{},
 					},
 				),
@@ -137,18 +137,18 @@ var _ = Describe("ClusterClientFactory", func() {
 	})
 })
 
-func testClientFactory(getter multicluster.ClusterClientFactory) {
+func testClientFactory(f factory.ClusterClientFactory) {
 	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
 	Expect(err).NotTo(HaveOccurred())
-	client, err := getter.GetClient("", cfg)
+	client, err := f.GetClient("", cfg)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(client).NotTo(BeNil())
 }
 
-func testClientFactoryWithWrongCache(getter multicluster.ClusterClientFactory) {
+func testClientFactoryWithWrongCache(f factory.ClusterClientFactory) {
 	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
 	Expect(err).NotTo(HaveOccurred())
-	client, err := getter.GetClient("", cfg)
+	client, err := f.GetClient("", cfg)
 	Expect(err).To(HaveOccurred())
 	Expect(client).To(BeNil())
 }
