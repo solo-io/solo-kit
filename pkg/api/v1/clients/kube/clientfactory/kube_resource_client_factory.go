@@ -1,4 +1,4 @@
-package ClientFactory
+package clientfactory
 
 import (
 	"time"
@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
-	factory2 "github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
+	multicluster_factory "github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/rest"
@@ -22,7 +22,7 @@ type kubeResourceClientFactory struct {
 	params             factory.NewResourceClientParams
 }
 
-var _ factory2.ClusterClientFactory = &kubeResourceClientFactory{}
+var _ multicluster_factory.ClusterClientFactory = &kubeResourceClientFactory{}
 
 func NewKubeResourceClientFactory(
 	cacheGetter clustercache.CacheGetter,

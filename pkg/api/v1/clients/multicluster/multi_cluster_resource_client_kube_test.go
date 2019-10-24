@@ -14,8 +14,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/ClientFactory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/clientfactory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	sk_multicluster "github.com/solo-io/solo-kit/pkg/multicluster"
@@ -66,7 +66,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		cacheManager, err := clustercache.NewCacheManager(ctx, kube.NewKubeSharedCacheForConfig)
 		Expect(err).NotTo(HaveOccurred())
-		ClientFactory := ClientFactory.NewKubeResourceClientFactory(
+		clientFactory := clientfactory.NewKubeResourceClientFactory(
 			cacheManager,
 			v1.AnotherMockResourceCrd,
 			false,
@@ -76,7 +76,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		)
 		watchAggregator = wrapper.NewWatchAggregator()
 		watchHandler := NewAggregatedWatchClusterClientHandler(watchAggregator)
-		clientSet := NewClusterClientManager(context.Background(), ClientFactory, watchHandler)
+		clientSet := NewClusterClientManager(context.Background(), clientFactory, watchHandler)
 		mcrc := NewMultiClusterResourceClient(&v1.AnotherMockResource{}, clientSet)
 
 		configWatcher := sk_multicluster.NewKubeConfigWatcher()
