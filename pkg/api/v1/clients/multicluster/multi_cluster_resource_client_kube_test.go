@@ -77,7 +77,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		)
 		watchAggregator = wrapper.NewWatchAggregator()
 		watchHandler := multicluster.NewAggregatedWatchClusterClientHandler(watchAggregator)
-		clientSet := multicluster.NewClusterClientManager(clientGetter, watchHandler)
+		clientSet := multicluster.NewClusterClientManager(context.Background(), clientGetter, watchHandler)
 		mcrc := multicluster.NewMultiClusterResourceClient(&v1.AnotherMockResource{}, clientSet)
 
 		configWatcher := multicluster2.NewKubeConfigWatcher()

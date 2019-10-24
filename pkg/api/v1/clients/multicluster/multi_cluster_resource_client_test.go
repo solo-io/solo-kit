@@ -1,6 +1,8 @@
 package multicluster_test
 
 import (
+	"context"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,7 +38,7 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		mockClientGetter = mock_subfactory.NewMockClientGetter(mockCtrl)
 		mockResourceClient1 = mock_clients.NewMockResourceClient(mockCtrl)
 		mockResourceClient2 = mock_clients.NewMockResourceClient(mockCtrl)
-		clientSet = multicluster.NewClusterClientManager(mockClientGetter)
+		clientSet = multicluster.NewClusterClientManager(context.Background(), mockClientGetter)
 		subject = multicluster.NewMultiClusterResourceClient(resType, clientSet)
 	})
 

@@ -11,6 +11,7 @@ type aggregatedWatchClusterClientHandler struct {
 
 var _ ClusterClientHandler = &aggregatedWatchClusterClientHandler{}
 
+// Provides a ClusterClientHandler to sync an aggregated watch with clients available on a cluster.
 func NewAggregatedWatchClusterClientHandler(aggregator wrapper.WatchAggregator) ClusterClientHandler {
 	return &aggregatedWatchClusterClientHandler{aggregator: aggregator}
 }
