@@ -1,7 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Generate converters for multi-version resources.
-    issueLink: https://github.com/solo-io/solo-kit/issues/215
-  - type: BREAKING_CHANGE
-    description: Redefine solo-kit project concept to better support multi-version resources.
-    issueLink: https://github.com/solo-io/solo-kit/issues/215
