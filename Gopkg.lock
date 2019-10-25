@@ -614,7 +614,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:dc0972707c2d7362020673111dbf1db20315636b7012c0946e8195cb10034328"
+  digest = "1:86044e2d92c2ead1a96a4c8030e4357ed9bba2f65fe04e5fd687b8d13dcde563"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
@@ -629,11 +629,12 @@
     "testutils",
     "testutils/clusterlock",
     "testutils/kube",
+    "threadsafe",
     "versionutils/kubeapi",
   ]
   pruneopts = "UT"
-  revision = "075c4b07de59a9b7b20475b7eab02dcdc6a62d64"
-  version = "v0.10.0"
+  revision = "c94685d96e67457ff488e7aba68e9965b40c3fa9"
+  version = "v0.10.21"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"

@@ -1,4 +1,4 @@
-package multicluster_test
+package multicluster
 
 import (
 	"os"
@@ -6,8 +6,17 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/test/testutils"
+	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/test/helpers"
+
+	// Needed to run tests in GKE
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 func TestMulticluster(t *testing.T) {
@@ -16,19 +25,30 @@ func TestMulticluster(t *testing.T) {
 }
 
 var (
-	lock *clusterlock.TestClusterLocker
+	localLock, remoteLock *clusterlock.TestClusterLocker
+	err                   error
 
 	_ = SynchronizedBeforeSuite(func() []byte {
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
 			return nil
 		}
-		kubeClient := helpers.MustKubeClient()
-		var err error
-		lock, err = clusterlock.NewKubeClusterLocker(kubeClient, clusterlock.Options{
-			IdPrefix: string(GinkgoRandomSeed()),
+
+		// TODO joekelley build out more robust / less redundant multicluster setup and teardown
+		// https://github.com/solo-io/go-utils/issues/325
+
+		// Acquire locks
+		idPrefix := GinkgoRandomSeed()
+		localLock, err = clusterlock.NewKubeClusterLocker(helpers.MustKubeClient(), clusterlock.Options{
+			IdPrefix: string(idPrefix),
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(lock.AcquireLock()).NotTo(HaveOccurred())
+		Expect(localLock.AcquireLock()).NotTo(HaveOccurred())
+		remoteLock, err = clusterlock.NewKubeClusterLocker(remoteKubeClient(), clusterlock.Options{
+			IdPrefix: string(idPrefix),
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(remoteLock.AcquireLock()).NotTo(HaveOccurred())
+
 		return nil
 	}, func([]byte) {})
 
@@ -36,6 +56,32 @@ var (
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
 			return
 		}
-		Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
+
+		// Delete CRDs
+		cfg, err := kubeutils.GetConfig("", "")
+		Expect(err).NotTo(HaveOccurred())
+		apiextsClientset, err := apiexts.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		err = apiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
+		testutils.ErrorNotOccuredOrNotFound(err)
+		cfg, err = kubeutils.GetConfig("", os.Getenv("ALT_CLUSTER_KUBECONFIG"))
+		Expect(err).NotTo(HaveOccurred())
+		remoteApiextsClientset, err := apiexts.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		err = remoteApiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
+		testutils.ErrorNotOccuredOrNotFound(err)
+
+		// Release locks
+		Expect(localLock.ReleaseLock()).NotTo(HaveOccurred())
+		Expect(remoteLock.ReleaseLock()).NotTo(HaveOccurred())
 	})
 )
+
+// TODO joekelley update util to take an env var arg kube config
+func remoteKubeClient() kubernetes.Interface {
+	cfg, err := kubeutils.GetConfig("", os.Getenv("ALT_CLUSTER_KUBECONFIG"))
+	Expect(err).NotTo(HaveOccurred())
+	client, err := kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	return client
+}

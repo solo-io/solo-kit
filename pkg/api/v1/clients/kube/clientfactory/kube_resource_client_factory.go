@@ -1,4 +1,4 @@
-package clientgetter
+package clientfactory
 
 import (
 	"time"
@@ -7,13 +7,13 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
+	multicluster_factory "github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/rest"
 )
 
-type kubeResourceClientGetter struct {
+type kubeResourceClientFactory struct {
 	cacheGetter        clustercache.CacheGetter
 	crd                crd.Crd
 	skipCrdCreation    bool
@@ -22,17 +22,17 @@ type kubeResourceClientGetter struct {
 	params             factory.NewResourceClientParams
 }
 
-var _ multicluster.ClientGetter = &kubeResourceClientGetter{}
+var _ multicluster_factory.ClusterClientFactory = &kubeResourceClientFactory{}
 
-func NewKubeResourceClientGetter(
+func NewKubeResourceClientFactory(
 	cacheGetter clustercache.CacheGetter,
 	crd crd.Crd,
 	skipCrdCreation bool,
 	namespaceWhitelist []string,
 	resyncPeriod time.Duration,
-	params factory.NewResourceClientParams) *kubeResourceClientGetter {
+	params factory.NewResourceClientParams) *kubeResourceClientFactory {
 
-	return &kubeResourceClientGetter{
+	return &kubeResourceClientFactory{
 		cacheGetter:        cacheGetter,
 		crd:                crd,
 		skipCrdCreation:    skipCrdCreation,
@@ -42,7 +42,7 @@ func NewKubeResourceClientGetter(
 	}
 }
 
-func (g *kubeResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *kubeResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kubeCache := g.cacheGetter.GetCache(cluster, restConfig)
 	typedCache, ok := kubeCache.(kube.SharedCache)
 	if !ok {

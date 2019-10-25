@@ -3,24 +3,24 @@ package deployment
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-type deploymentResourceClientGetter struct {
+type deploymentResourceClientFactory struct {
 	cacheGetter clustercache.CacheGetter
 }
 
-var _ multicluster.ClientGetter = &deploymentResourceClientGetter{}
+var _ factory.ClusterClientFactory = &deploymentResourceClientFactory{}
 
-func NewDeploymentResourceClientGetter(cacheGetter clustercache.CacheGetter) *deploymentResourceClientGetter {
-	return &deploymentResourceClientGetter{cacheGetter: cacheGetter}
+func NewDeploymentResourceClientFactory(cacheGetter clustercache.CacheGetter) *deploymentResourceClientFactory {
+	return &deploymentResourceClientFactory{cacheGetter: cacheGetter}
 }
 
-func (g *deploymentResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *deploymentResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err

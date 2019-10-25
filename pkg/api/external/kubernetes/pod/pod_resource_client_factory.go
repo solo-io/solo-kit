@@ -1,26 +1,27 @@
-package service
+package pod
 
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-type serviceResourceClientGetter struct {
+type podResourceClientFactory struct {
 	cacheGetter clustercache.CacheGetter
+	test        clustercache.ClusterCache
 }
 
-var _ multicluster.ClientGetter = &serviceResourceClientGetter{}
+var _ factory.ClusterClientFactory = &podResourceClientFactory{}
 
-func NewServiceResourceClientGetter(cacheGetter clustercache.CacheGetter) *serviceResourceClientGetter {
-	return &serviceResourceClientGetter{cacheGetter: cacheGetter}
+func NewPodResourceClientFactory(cacheGetter clustercache.CacheGetter) *podResourceClientFactory {
+	return &podResourceClientFactory{cacheGetter: cacheGetter}
 }
 
-func (g *serviceResourceClientGetter) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *podResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
