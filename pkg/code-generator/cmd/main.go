@@ -472,6 +472,7 @@ var defaultGogoArgs = []string{
 	"Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
 	"Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types",
 	"Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types",
+	"Mgoogle/protobuf/empty.proto=github.com/gogo/protobuf/types",
 	"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types",
 	"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types",
 	"Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types",

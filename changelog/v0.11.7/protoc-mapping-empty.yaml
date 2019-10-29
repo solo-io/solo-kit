@@ -1,0 +1,3 @@
+changelog:
+- type: NON_USER_FACING
+  description: Add a mapping for `google/protobuf/empty.proto` to the `protoc` arguments.
