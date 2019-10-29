@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add clusterName to metadata on kube objects.
+    issueLink: https://github.com/solo-io/solo-kit/issues/312
