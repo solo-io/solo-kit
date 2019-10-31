@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
@@ -57,19 +58,21 @@ func (c *clusterClientManager) ClusterAdded(cluster string, restConfig *rest.Con
 		return
 	}
 
-	if err := client.Register(); err != nil {
+	clusterClient := wrapper.NewClusterClient(client, cluster)
+
+	if err := clusterClient.Register(); err != nil {
 		contextutils.LoggerFrom(c.ctx).Errorw("failed to register client for cluster",
 			zap.String("cluster", cluster),
-			zap.String("kind", client.Kind()))
+			zap.String("kind", clusterClient.Kind()))
 		return
 	}
 
 	c.clientAccess.Lock()
-	c.clients[cluster] = client
+	c.clients[cluster] = clusterClient
 	c.clientAccess.Unlock()
 
 	for _, h := range c.clientHandlers {
-		h.HandleNewClusterClient(cluster, client)
+		h.HandleNewClusterClient(cluster, clusterClient)
 	}
 }
 

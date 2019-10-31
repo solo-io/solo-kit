@@ -5,6 +5,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -30,5 +31,5 @@ func (g *namespaceResourceClientFactory) GetClient(cluster string, restConfig *r
 	if !ok {
 		return nil, errors.Errorf("expected KubeCoreCache, got %T", kubeCache)
 	}
-	return newResourceClient(kube, typedCache), nil
+	return wrapper.NewClusterResourceClient(newResourceClient(kube, typedCache), cluster), nil
 }
