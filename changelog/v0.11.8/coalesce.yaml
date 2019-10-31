@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: coalesce kube udpates to 1 a second window. this reduces object conversion
