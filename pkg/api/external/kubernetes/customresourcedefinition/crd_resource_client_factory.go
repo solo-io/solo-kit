@@ -3,6 +3,7 @@ package customresourcedefinition
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -29,5 +30,5 @@ func (g *crdResourceClientFactory) GetClient(cluster string, restConfig *rest.Co
 	if !ok {
 		return nil, errors.Errorf("expected KubeCustomResourceDefinitionCache, got %T", kubeCache)
 	}
-	return newResourceClient(kube, typedCache), nil
+	return wrapper.NewClusterResourceClient(newResourceClient(kube, typedCache), cluster), nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
@@ -37,5 +38,9 @@ func (g *configmapResourceClientFactory) GetClient(cluster string, restConfig *r
 	if !ok {
 		return nil, errors.Errorf("expected KubeCoreCache, got %T", kubeCache)
 	}
-	return configmap.NewResourceClient(kube, g.resourceType, typedCache, true)
+	client, err := configmap.NewResourceClient(kube, g.resourceType, typedCache, true)
+	if err != nil {
+		return nil, err
+	}
+	return wrapper.NewClusterResourceClient(client, cluster), nil
 }
