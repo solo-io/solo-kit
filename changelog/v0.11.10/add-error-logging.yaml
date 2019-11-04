@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Log errors when we fail to create clients.
+    issueLink: https://github.com/solo-io/solo-kit/issues/316
