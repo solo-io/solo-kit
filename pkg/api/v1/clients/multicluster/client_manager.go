@@ -52,6 +52,7 @@ func (c *clusterClientManager) ClusterAdded(cluster string, restConfig *rest.Con
 	client, err := c.clientFactory.GetClient(cluster, restConfig)
 	if err != nil {
 		contextutils.LoggerFrom(c.ctx).Error("failed to get client for cluster",
+			zap.Error(err),
 			zap.String("cluster", cluster),
 			zap.Any("restConfig", restConfig))
 		return
@@ -59,6 +60,7 @@ func (c *clusterClientManager) ClusterAdded(cluster string, restConfig *rest.Con
 
 	if err := client.Register(); err != nil {
 		contextutils.LoggerFrom(c.ctx).Errorw("failed to register client for cluster",
+			zap.Error(err),
 			zap.String("cluster", cluster),
 			zap.String("kind", client.Kind()))
 		return
