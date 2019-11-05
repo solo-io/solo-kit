@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Turn a very verbose Info level log to Debug, and add a metric to expose it instead.
+    issueLink: https://github.com/solo-io/solo-kit/issues/319
