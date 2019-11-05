@@ -243,13 +243,13 @@ func (cache *snapshotCache) respond(request Request, value chan Response, resour
 	if len(request.ResourceNames) != 0 && cache.ads {
 		if err := Superset(nameSet(request.ResourceNames), resources); err != nil {
 			if cache.log != nil {
-				cache.log.Infof("ADS mode: not responding to request: %v", err)
+				cache.log.Debugf("ADS mode: not responding to request: %v", err)
 			}
 			return
 		}
 	}
 	if cache.log != nil {
-		cache.log.Infof("respond %s with %v resources; version %q with version %q",
+		cache.log.Debugf("respond %s with %v resources; version %q with version %q",
 			request.TypeUrl, len(request.ResourceNames), request.VersionInfo, version)
 	}
 
