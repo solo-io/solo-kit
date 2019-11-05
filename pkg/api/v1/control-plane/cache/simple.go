@@ -249,8 +249,8 @@ func (cache *snapshotCache) respond(request Request, value chan Response, resour
 		}
 	}
 	if cache.log != nil {
-		cache.log.Debugf("respond %s with %v resources; version %q with version %q",
-			request.TypeUrl, len(request.ResourceNames), request.VersionInfo, version)
+		cache.log.Debugf("respond %s; resources: %v. version %q with version %q",
+			request.TypeUrl, request.ResourceNames, request.VersionInfo, version)
 	}
 
 	value <- createResponse(request, resources, version)
