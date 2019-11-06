@@ -41,6 +41,12 @@
       "plural_name": "customresourcedefinition",
       "short_name": "crd",
       "cluster_scoped": true
+    },
+    {
+      "package": "github.com/solo-io/solo-kit/api/external/kubernetes/job",
+      "type": "Job",
+      "plural_name": "jobs",
+      "short_name": "j"
     }
   ]
 }
