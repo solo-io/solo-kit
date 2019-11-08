@@ -606,7 +606,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:dc0972707c2d7362020673111dbf1db20315636b7012c0946e8195cb10034328"
+  digest = "1:86044e2d92c2ead1a96a4c8030e4357ed9bba2f65fe04e5fd687b8d13dcde563"
   name = "github.com/solo-io/go-utils"
   packages = [
     "clicore/constants",
@@ -621,11 +621,12 @@
     "testutils",
     "testutils/clusterlock",
     "testutils/kube",
+    "threadsafe",
     "versionutils/kubeapi",
   ]
   pruneopts = "UT"
-  revision = "075c4b07de59a9b7b20475b7eab02dcdc6a62d64"
-  version = "v0.10.0"
+  revision = "c94685d96e67457ff488e7aba68e9965b40c3fa9"
+  version = "v0.10.21"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -982,8 +983,7 @@
   revision = "7f0e3c78365f6feb94a923557976d4a305de441b"
 
 [[projects]]
-  branch = "master"
-  digest = "1:a76b4d3f21998bf273d501aa43c7904efe9dc6f5d1e214e7d8d8dbe21b5b0909"
+  digest = "1:9fea3529b893ec9961f43e80880cff67ddde3216499e1390b8aae3ae2b36ea39"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -1030,7 +1030,8 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "0cd393178e09f379032a493f73993dc600e1959d"
+  revision = "86fb29eff6288413d76bd8506874fddd9fccdff0"
+  version = "kubernetes-1.13.4"
 
 [[projects]]
   digest = "1:fc2406e4cef882f2372bfe728ee1f020fca2089acbce44347f1f5071582119f9"
@@ -1338,6 +1339,7 @@
     "google.golang.org/grpc/status",
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1",
+    "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",

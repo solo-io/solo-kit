@@ -31,7 +31,7 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  version = "0.10.0"
+  version = "0.10.21"
 
 [[constraint]]
   version = ">=0.9.0"
@@ -40,6 +40,10 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
 [[constraint]]
   version = ">=0.22.1"
   name = "go.opencensus.io"
+
+[[constraint]]
+  version = "kubernetes-1.13.4"
+  name = "k8s.io/apimachinery"
 
 # xerrors doesn't have a version. this is needed to work with go 1.13
 [[override]]

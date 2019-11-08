@@ -42,9 +42,9 @@ func NewServiceClient(kube kubernetes.Interface, cache cache.KubeCoreCache) skku
 func FromKubeService(service *kubev1.Service) *skkube.Service {
 
 	serviceCopy := service.DeepCopy()
-	kubeService := kubeservice.Service(*serviceCopy)
+	kubeService := kubeservice.NewService(*serviceCopy)
 	resource := &skkube.Service{
-		Service: kubeService,
+		Service: *kubeService,
 	}
 
 	return resource
@@ -56,7 +56,7 @@ func ToKubeService(resource resources.Resource) (*kubev1.Service, error) {
 		return nil, errors.Errorf("internal error: invalid resource %v passed to service-only client", resources.Kind(resource))
 	}
 
-	service := kubev1.Service(serviceResource.Service)
+	service := kubev1.Service(serviceResource.Service.Service)
 
 	return &service, nil
 }
@@ -157,9 +157,7 @@ func (rc *serviceResourceClient) List(namespace string, opts clients.ListOpts) (
 		resourceList = append(resourceList, resource)
 	}
 
-	sort.SliceStable(resourceList, func(i, j int) bool {
-		return resourceList[i].GetMetadata().Name < resourceList[j].GetMetadata().Name
-	})
+	sort.Stable(resourceList)
 
 	return resourceList, nil
 }

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/utils"
+
 	htmltemplate "html/template"
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
@@ -31,18 +33,19 @@ var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{
 var magicCommentRegex = regexp.MustCompile("@solo-kit:.*")
 
 var Funcs = template.FuncMap{
-	"join":        strings.Join,
-	"lowercase":   strings.ToLower,
-	"lower_camel": strcase.ToLowerCamel,
-	"upper_camel": strcase.ToCamel,
-	"snake":       strcase.ToSnake,
-	"p":           gendoc.PFilter,
-	"para":        gendoc.ParaFilter,
-	"nobr":        gendoc.NoBrFilter,
-	"fieldType":   fieldType,
-	"yamlType":    yamlType,
-	"noescape":    noEscape,
-	"printfptr":   printPointer,
+	"resourceBelongsToProject": utils.IsProjectResource,
+	"join":                     strings.Join,
+	"lowercase":                strings.ToLower,
+	"lower_camel":              strcase.ToLowerCamel,
+	"upper_camel":              strcase.ToCamel,
+	"snake":                    strcase.ToSnake,
+	"p":                        gendoc.PFilter,
+	"para":                     gendoc.ParaFilter,
+	"nobr":                     gendoc.NoBrFilter,
+	"fieldType":                fieldType,
+	"yamlType":                 yamlType,
+	"noescape":                 noEscape,
+	"printfptr":                printPointer,
 	"remove_magic_comments": func(in string) string {
 		lines := strings.Split(in, "\n")
 		var linesWithoutMagicComments []string
@@ -81,6 +84,9 @@ var Funcs = template.FuncMap{
 			}
 		}
 		return result
+	},
+	"backtick": func() string {
+		return "`"
 	},
 }
 

@@ -6,12 +6,15 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
+	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	apiextslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1"
+	"k8s.io/client-go/rest"
 )
 
 type KubeCustomResourceDefinitionCache interface {
+	clustercache.ClusterCache
 	CustomResourceDefinitionLister() apiextslisters.CustomResourceDefinitionLister
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
@@ -50,6 +53,20 @@ func NewKubeCustomResourceDefinitionCache(ctx context.Context, apiExtsClient api
 	return k, nil
 }
 
+func NewCrdCacheForConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
+	apiextsClient, err := apiexts.NewForConfig(restConfig)
+	if err != nil {
+		return nil
+	}
+	c, err := NewKubeCustomResourceDefinitionCache(ctx, apiextsClient)
+	if err != nil {
+		return nil
+	}
+	return c
+}
+
+var _ clustercache.NewClusterCacheForConfig = NewCrdCacheForConfig
+
 func (k *kubeCustomResourceDefinitionCache) CustomResourceDefinitionLister() apiextslisters.CustomResourceDefinitionLister {
 	return k.customResourceDefinitionLister
 }
@@ -83,3 +100,5 @@ func (k *kubeCustomResourceDefinitionCache) updatedOccured() {
 		}
 	}
 }
+
+func (k *kubeCustomResourceDefinitionCache) IsClusterCache() {}

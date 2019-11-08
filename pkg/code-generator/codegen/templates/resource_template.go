@@ -212,6 +212,10 @@ func (o *{{ .Name }}) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*{{ .Name }})
 }
 
+func (o *{{ .Name }}) DeepCopyInto(out *{{ .Name }}) {
+	clone := resources.Clone(o).(*{{ .Name }})
+	*out = *clone
+}
 
 var (
 	{{ .Name }}Crd = crd.NewCrd(

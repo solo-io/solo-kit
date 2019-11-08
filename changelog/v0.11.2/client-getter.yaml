@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Implement ClientGetters to be consumed by the multi cluster client.
+    issueLink: https://github.com/solo-io/solo-kit/issues/295
+    resolvesIssue: false

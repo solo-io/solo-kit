@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/multicluster/handler"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -15,20 +16,15 @@ import (
 
 type RestConfigs map[string]*rest.Config
 
-type ClusterHandler interface {
-	ClusterAdded(cluster string, restConfig *rest.Config)
-	ClusterRemoved(cluster string, restConfig *rest.Config)
-}
-
 type RestConfigHandler struct {
 	kcWatcher     KubeConfigWatcher
-	handlers      []ClusterHandler
+	handlers      []handler.ClusterHandler
 	cache         RestConfigs
 	cacheAccess   sync.Mutex
 	handlerAccess sync.Mutex
 }
 
-func NewRestConfigHandler(kcWatcher KubeConfigWatcher, handlers ...ClusterHandler) *RestConfigHandler {
+func NewRestConfigHandler(kcWatcher KubeConfigWatcher, handlers ...handler.ClusterHandler) *RestConfigHandler {
 	return &RestConfigHandler{kcWatcher: kcWatcher, handlers: handlers}
 }
 

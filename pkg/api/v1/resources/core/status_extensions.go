@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"sort"
+
+	"github.com/gogo/protobuf/proto"
 )
 
 // collapse a status into a status with no children
@@ -28,6 +30,10 @@ func (s Status) Flatten() Status {
 		}
 	})
 	return out
+}
+func (s Status) DeepCopyInto(out *Status) {
+	clone := proto.Clone(&s).(*Status)
+	*out = *clone
 }
 
 func orderedMapIterator(m map[string]*Status, onKey func(key string, value *Status)) {
