@@ -193,6 +193,20 @@
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
 
 [[projects]]
+  digest = "1:1d1cbf539d9ac35eb3148129f96be5537f1a1330cadcc7e3a83b4e72a59672a3"
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/flags",
+    "cmp/internal/function",
+    "cmp/internal/value",
+  ]
+  pruneopts = "UT"
+  revision = "2d0692c2e9617365a95b295612ac0d4415ba4627"
+  version = "v0.3.1"
+
+[[projects]]
   branch = "master"
   digest = "1:3ee90c0d94da31b442dde97c99635aaafec68d0b8a3c12ee2075c6bdabeec6bb"
   name = "github.com/google/gofuzz"
@@ -625,8 +639,8 @@
     "versionutils/kubeapi",
   ]
   pruneopts = "UT"
-  revision = "c94685d96e67457ff488e7aba68e9965b40c3fa9"
-  version = "v0.10.21"
+  revision = "01471632103fbbd9302f9d876d8c81db331081ee"
+  version = "v0.11.0"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -983,7 +997,7 @@
   revision = "7f0e3c78365f6feb94a923557976d4a305de441b"
 
 [[projects]]
-  digest = "1:9fea3529b893ec9961f43e80880cff67ddde3216499e1390b8aae3ae2b36ea39"
+  digest = "1:0949074e297c886262c6750d3577affc4655d831605d318037e9cc68a676d6bd"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -1030,8 +1044,8 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "86fb29eff6288413d76bd8506874fddd9fccdff0"
-  version = "kubernetes-1.13.4"
+  revision = "a2eda9f80ab8a454a81bdde16d62a1afe5f931c0"
+  version = "kubernetes-1.16.2"
 
 [[projects]]
   digest = "1:fc2406e4cef882f2372bfe728ee1f020fca2089acbce44347f1f5071582119f9"
@@ -1362,6 +1376,7 @@
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/listers/apps/v1",
+    "k8s.io/client-go/listers/batch/v1",
     "k8s.io/client-go/listers/core/v1",
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
