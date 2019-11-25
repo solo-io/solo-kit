@@ -73,7 +73,7 @@
   version = "v3.2.0"
 
 [[projects]]
-  digest = "1:f99d9057fc981a25862df5bda9c2a27053a04590b6d0ed9fb36192184be24b74"
+  digest = "1:bf1740b96a611a8373659ad57d6b308e8a38f17aabd6e5f4103a4bbcdee5e204"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -85,11 +85,12 @@
     "envoy/api/v2/route",
     "envoy/service/discovery/v2",
     "envoy/type",
-    "pkg/util",
+    "envoy/type/matcher",
+    "pkg/conversion",
   ]
   pruneopts = "UT"
-  revision = "094d054b10176dd84506e4f0f65e7f65d8499241"
-  version = "v0.8.0"
+  revision = "52b167a709f111e6298136064bbaae43419ab22f"
+  version = "v0.9.0"
 
 [[projects]]
   digest = "1:dfe5159383dfcd370555c35374ac99022906f987b55cc65a830fb9ced970b4b1"
@@ -121,17 +122,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
-  version = "v1.0.0"
-
-[[projects]]
-  digest = "1:d661a50b937259fd2a6324af7ee4cb62fa506bd9b82cd2fd96e23122af7c006f"
-  name = "github.com/gogo/googleapis"
-  packages = [
-    "google/api",
-    "google/rpc",
-  ]
-  pruneopts = "UT"
-  revision = "08a7655d27152912db7aaf4f983275eaf8d128ef"
   version = "v1.0.0"
 
 [[projects]]
@@ -167,7 +157,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:98d8bcc9b013ef48532bd746254dbd0bd2fb94d2c7dc5b4961f08c23908d214a"
+  digest = "1:021029438e3e03f4f40da0009c95b579b1a61d814eddf8b8c5b798d447b7dc42"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
@@ -177,12 +167,14 @@
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/struct",
     "ptypes/timestamp",
+    "ptypes/wrappers",
   ]
   pruneopts = "UT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
+  version = "v1.3.2"
 
 [[projects]]
   branch = "master"
@@ -1291,10 +1283,10 @@
     "github.com/envoyproxy/go-control-plane/envoy/api/v2",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/core",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
-    "github.com/envoyproxy/go-control-plane/pkg/util",
+    "github.com/envoyproxy/go-control-plane/pkg/conversion",
+    "github.com/envoyproxy/protoc-gen-validate/validate",
     "github.com/fgrosse/zaptest",
     "github.com/ghodss/yaml",
-    "github.com/gogo/googleapis/google/rpc",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/jsonpb",
     "github.com/gogo/protobuf/proto",
@@ -1303,6 +1295,8 @@
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes/any",
+    "github.com/golang/protobuf/ptypes/struct",
     "github.com/grpc-ecosystem/go-grpc-middleware",
     "github.com/grpc-ecosystem/go-grpc-middleware/auth",
     "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap",
@@ -1338,6 +1332,7 @@
     "go.uber.org/zap",
     "golang.org/x/sync/errgroup",
     "google.golang.org/genproto/googleapis/api/annotations",
+    "google.golang.org/genproto/googleapis/rpc/status",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/metadata",
