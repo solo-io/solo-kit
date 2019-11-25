@@ -188,6 +188,19 @@ func generateKubeFilesForProject(project *model.Project) (code_generator.Files, 
 			Content:  content,
 		})
 	}
+	for suffix, tmpl := range map[string]*template.Template{
+		"hack/update-codegen.sh": kube.GenerateScriptTemplate,
+		"hack/verify-codegen.sh": kube.VerifyGenerateTemplate,
+	} {
+		content, err := generateProjectFile(project, tmpl)
+		if err != nil {
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for project %v failed", tmpl.ParseName, project.ProjectConfig.Name)
+		}
+		v = append(v, code_generator.File{
+			Filename: filepath.Join("kube", suffix),
+			Content:  content,
+		})
+	}
 	return v, nil
 }
 

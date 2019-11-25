@@ -175,6 +175,9 @@ func Generate(opts GenerateOptions) error {
 			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
 				return err
 			}
+			if !strings.HasSuffix(file.Filename, ".go") {
+				continue
+			}
 			if out, err := exec.Command("gofmt", "-w", path).CombinedOutput(); err != nil {
 				return errors.Wrapf(err, "gofmt failed: %s", out)
 			}
