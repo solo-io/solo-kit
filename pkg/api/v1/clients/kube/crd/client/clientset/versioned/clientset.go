@@ -31,8 +31,6 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	ResourcesV1() resourcesv1.ResourcesV1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Resources() resourcesv1.ResourcesV1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -44,12 +42,6 @@ type Clientset struct {
 
 // ResourcesV1 retrieves the ResourcesV1Client
 func (c *Clientset) ResourcesV1() resourcesv1.ResourcesV1Interface {
-	return c.resourcesV1
-}
-
-// Deprecated: Resources retrieves the default version of ResourcesClient.
-// Please explicitly pick a version.
-func (c *Clientset) Resources() resourcesv1.ResourcesV1Interface {
 	return c.resourcesV1
 }
 
