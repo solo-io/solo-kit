@@ -57,6 +57,16 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
   name = "k8s.io/apiextensions-apiserver"
   version = "kubernetes-1.16.2"
 
+# Pin the code-generator to the same version as the k8s libraries we are directly using in our code
+[[constraint]]
+  name = "k8s.io/code-generator"
+  version = "kubernetes-1.16.2"
+
+# Pin gengo to the revision used by the above code-generator version
+[[override]]
+  name = "k8s.io/gengo"
+  revision = "26a664648505d962332bda642b27306bc10d1082"
+
 # xerrors doesn't have a version. this is needed to work with go 1.13
 [[override]]
   revision = "a985d3407aa71f30cf86696ee0a2f409709f22e1"
