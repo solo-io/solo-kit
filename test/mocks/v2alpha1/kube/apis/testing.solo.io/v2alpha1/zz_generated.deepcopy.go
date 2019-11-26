@@ -55,7 +55,7 @@ func (in *FrequentlyChangingAnnotationsResource) DeepCopyObject() runtime.Object
 func (in *FrequentlyChangingAnnotationsResourceList) DeepCopyInto(out *FrequentlyChangingAnnotationsResourceList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]FrequentlyChangingAnnotationsResource, len(*in))
@@ -116,7 +116,7 @@ func (in *MockResource) DeepCopyObject() runtime.Object {
 func (in *MockResourceList) DeepCopyInto(out *MockResourceList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]MockResource, len(*in))
