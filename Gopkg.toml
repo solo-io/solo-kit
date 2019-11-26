@@ -1,4 +1,4 @@
-# Get the scripts requires by the 'clientset' makefile target
+# Get the scripts required by the 'clientset' makefile target
 required = ["k8s.io/code-generator/cmd/client-gen"]
 
 [prune]

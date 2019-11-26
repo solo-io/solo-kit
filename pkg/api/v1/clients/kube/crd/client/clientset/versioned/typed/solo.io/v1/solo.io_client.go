@@ -21,8 +21,8 @@ package v1
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/client-go/rest"
+	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	rest "k8s.io/client-go/rest"
 )
 
 type ResourcesV1Interface interface {
@@ -68,8 +68,8 @@ func New(c rest.Interface, def crd.Crd) *ResourcesV1Client {
 	return &ResourcesV1Client{restClient: c, def: def}
 }
 
-func setConfigDefaults(config *rest.Config, def crd.Crd) error {
-	gv := def.GroupVersion()
+func setConfigDefaults(config *rest.Config) error {
+	gv := v1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
 	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}

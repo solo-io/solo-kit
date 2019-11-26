@@ -21,10 +21,10 @@ package fake
 import (
 	soloiov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/testing"
+	labels "k8s.io/apimachinery/pkg/labels"
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	testing "k8s.io/client-go/testing"
 )
 
 // FakeResources implements ResourceInterface
