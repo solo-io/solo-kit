@@ -5,11 +5,10 @@
 package mocks
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	clustercache "github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	rest "k8s.io/client-go/rest"
+	reflect "reflect"
 )
 
 // MockClusterCache is a mock of ClusterCache interface

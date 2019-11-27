@@ -36,11 +36,9 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	-I=. \
 	./*.proto
 
+
 .PHONY: install-codegen-deps
 install-codegen-deps:
-	go get -v -u golang.org/x/tools/cmd/goimports
-	go get -v -u github.com/gogo/protobuf/proto
-	go get -v -u github.com/gogo/protobuf/jsonpb
 	go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
 	go get -v -u github.com/gogo/protobuf/gogoproto
 	go get -v -u golang.org/x/tools/cmd/goimports
@@ -79,8 +77,12 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 # Generated Code
 #----------------------------------------------------------------------------------
 
+.PHONY: vendor
+vendor:
+	go mod vendor
+
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: vendor $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:

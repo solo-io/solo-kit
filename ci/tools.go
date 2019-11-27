@@ -16,5 +16,6 @@ limitations under the License.
 package tools
 
 import (
+	_ "github.com/gogo/protobuf/gogoproto"
 	_ "k8s.io/code-generator"
 )

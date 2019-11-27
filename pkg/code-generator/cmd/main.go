@@ -401,8 +401,10 @@ func detectImportsForFile(file string) ([]string, error) {
 }
 
 var commonImports = []string{
-	gopathSrc(),
-	filepath.Join(gopathSrc(), "github.com", "solo-io", "solo-kit", "api", "external"),
+	".",
+	"./api",
+	os.Getenv("HOME"),
+	// filepath.Join(".", "github.com", "solo-io", "solo-kit", "api", "external"),
 }
 
 func importsForProtoFile(absoluteRoot, protoFile string, customImports []string) ([]string, error) {
@@ -521,7 +523,7 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 func importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
 	var results []model.CustomResourceConfig
 	for _, imp := range imports {
-		imp = filepath.Join(gopathSrc(), imp)
+		imp = filepath.Join("../../..", imp)
 		if !strings.HasSuffix(imp, model.ProjectConfigFilename) {
 			imp = filepath.Join(imp, model.ProjectConfigFilename)
 		}

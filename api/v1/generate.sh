@@ -2,7 +2,7 @@
 
 set -ex
 
-ROOT=${GOPATH}/src
+ROOT=../../..
 SOLO_KIT=${ROOT}/github.com/solo-io/solo-kit
 IN=${SOLO_KIT}/api/v1/
 EXTERNAL=${SOLO_KIT}/api/external/
@@ -14,7 +14,7 @@ IMPORTS="\
     -I=${ROOT}
     "
 
-GOGO_FLAG="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${GOPATH}/src/"
+GOGO_FLAG="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${ROOT}"
 INPUT_PROTOS="${IN}/*.proto"
 
 mkdir -p ${OUT}
