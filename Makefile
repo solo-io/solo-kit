@@ -37,13 +37,13 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	./*.proto
 
 
-.PHONY: install-codegen-deps
-install-codegen-deps:
-	go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
-	go get -v -u github.com/gogo/protobuf/gogoproto
-	go get -v -u golang.org/x/tools/cmd/goimports
-	go get -v -u github.com/golang/mock/gomock
-	go install github.com/golang/mock/mockgen
+.PHONY: update-deps
+update-deps:
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/gogoproto
+	GO111MODULE=off go get -v -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
+	GO111MODULE=off go install github.com/golang/mock/mockgen
 
 	# clone solo's fork of code-generator, required for tests & kube type gen
 #	mkdir -p $(GOPATH)/src/k8s.io && \
@@ -86,6 +86,7 @@ generated-code: vendor $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
+	chmod +x vendor/k8s.io/code-generator/generate-groups.sh
 	mkdir -p ${OUTPUT_DIR}
 	go generate -x ./...
 	gofmt -w $(SUBDIRS)

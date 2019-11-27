@@ -4,14 +4,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-PACKAGE_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+PACKAGE_ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
 ROOT_PKG=github.com/solo-io/solo-kit
 CLIENT_PKG=${ROOT_PKG}/test/mocks/v2alpha1/kube/client
 APIS_PKG=${ROOT_PKG}/test/mocks/v2alpha1/kube/apis
 
 # Below code is copied from https://github.com/weaveworks/flagger/blob/master/hack/update-codegen.sh
 # Grab code-generator version from go.sum.
-CODEGEN_VERSION=$(grep 'k8s.io/code-generator' ../../../go.sum | awk '{print $2}' | head -1)
+CODEGEN_VERSION=$(grep 'k8s.io/code-generator' ${PACKAGE_ROOT}/go.sum | awk '{print $2}' | head -1)
 CODEGEN_PKG=$(echo `go env GOPATH`"/pkg/mod/k8s.io/code-generator@${CODEGEN_VERSION}")
 
 if [[ ! -d ${CODEGEN_PKG} ]]; then
