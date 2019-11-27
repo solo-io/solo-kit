@@ -82,7 +82,7 @@ API_IMPORTS:=\
 	-I=$(API_ROOT_DIR)/api/v1/ \
 	-I=$(API_ROOT_DIR)/api/external/
 
-GOGO_FLAG:="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:pkg/$(API_ROOT_DIR)"
+GOGO_FLAG:="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:pkg/api"
 INPUT_PROTOS=$(wildcard $(API_ROOT_DIR)/api/v1/*.proto)
 
 .PHONY: solo-kit-protos
