@@ -523,7 +523,7 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 func importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
 	var results []model.CustomResourceConfig
 	for _, imp := range imports {
-		imp = filepath.Join("../../..", imp)
+		imp = filepath.Join("api", imp)
 		if !strings.HasSuffix(imp, model.ProjectConfigFilename) {
 			imp = filepath.Join(imp, model.ProjectConfigFilename)
 		}
