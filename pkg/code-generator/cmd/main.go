@@ -60,6 +60,10 @@ type GenerateOptions struct {
 	SkipGeneratedTests bool
 }
 
+const (
+	StripFilePrefix = "github.com/solo-io"
+)
+
 func Generate(opts GenerateOptions) error {
 	relativeRoot := opts.RelativeRoot
 	compileProtos := opts.CompileProtos
@@ -123,6 +127,17 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 
+	const currentPackage = "github.com/solo-io/solo-kit"
+
+	cp := exec.Cmd{
+		Path:         "cp",
+		Args:         []string{"-r", fmt.Sprintf("%s", filepath.Join("/tmp", currentPackage)), "."},
+		Dir:          "",
+	}
+	if _, err := cp.CombinedOutput(); err != nil {
+		return err
+	}
+
 	log.Printf("collected descriptors: %v", func() []string {
 		var names []string
 		for _, desc := range descriptors {
@@ -165,7 +180,11 @@ func Generate(opts GenerateOptions) error {
 			return err
 		}
 
-		outDir := filepath.Join(gopathSrc(), project.ProjectConfig.GoPackage)
+		split := strings.SplitAfterN(project.ProjectConfig.GoPackage, "/", filepathValidLength)
+		if len(split) < filepathValidLength {
+			return errors.Errorf("projectConfig.GoPackage is not valid, %s", project.ProjectConfig.GoPackage)
+		}
+		outDir := split[filepathValidLength-1]
 
 		for _, file := range code {
 			path := filepath.Join(outDir, file.Filename)
@@ -495,7 +514,7 @@ func writeDescriptors(protoFile, toFile string, imports, gogoArgs []string, comp
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc())
+			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+"/tmp")
 	}
 
 	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",
@@ -520,16 +539,37 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 	return &desc, nil
 }
 
+const (
+	filepathValidLength = 4
+	filepathWithVendorLength = filepathValidLength + 1
+)
+
 func importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
 	var results []model.CustomResourceConfig
 	for _, imp := range imports {
-		imp = filepath.Join("api", imp)
+		imp = filepath.Join("vendor", imp)
 		if !strings.HasSuffix(imp, model.ProjectConfigFilename) {
 			imp = filepath.Join(imp, model.ProjectConfigFilename)
 		}
 		byt, err := ioutil.ReadFile(imp)
 		if err != nil {
-			return nil, err
+			if !os.IsNotExist(err) {
+				return nil, err
+			}
+			/*
+				used to split file name up if check in vendor fails.
+				for example: vendor/github.com/solo-io/solo-kit/api/external/kubernetes/solo-kit.json
+				will become: [vendor/, github.com/, solo-io/, solo-kit/, api/external/kubernetes/solo-kit.json]
+				and the final member is the local path
+			 */
+			split := strings.SplitAfterN(imp, "/", filepathWithVendorLength)
+			if len(split) < filepathWithVendorLength {
+				return nil, errors.Errorf("filepath is not valid, %s", imp)
+			}
+			byt, err = ioutil.ReadFile(split[filepathWithVendorLength-1])
+			if err != nil {
+				return nil, err
+			}
 		}
 		var projectConfig model.ProjectConfig
 		err = json.Unmarshal(byt, &projectConfig)

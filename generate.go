@@ -6,7 +6,6 @@ import (
 )
 
 //go:generate go run generate.go
-//go:generate ./api/github.com/solo-io/solo-kit/api/v1/generate.sh
 
 func main() {
 
