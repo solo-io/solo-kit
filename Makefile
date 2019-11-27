@@ -54,7 +54,7 @@ install-codegen-deps:
 		cd $(GOPATH)/src/k8s.io/code-generator && \
 		(git remote add solo https://github.com/solo-io/k8s-code-generator  || echo "already have remote solo") && \
 		git fetch solo && \
-		git checkout fixed-for-solo-kit && \
+		git checkout fixed-for-solo-kit-1-16-2 && \
 		git pull
 
 
