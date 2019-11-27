@@ -21,14 +21,14 @@ init:
 # Protobufs
 #----------------------------------------------------------------------------------
 
-PROTOS := $(shell find api/v1 -name "*.proto")
+PROTOS := $(shell find api/$(PACKAGE_PATH)/api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
 
 .PHONY: proto
 proto: $(GENERATED_PROTO_FILES)
 
 $(GENERATED_PROTO_FILES): $(PROTOS)
-	cd api/v1/ && \
+	cd api/$(PACKAGE_PATH)/api/v1 && \
 	protoc \
 	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:$(GOPATH)/src/ \
 	-I=$(GOPATH)/src/github.com/gogo/protobuf/ \
@@ -77,12 +77,24 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 # Generated Code
 #----------------------------------------------------------------------------------
 
+API_ROOT_DIR:=$(ROOTDIR)/api/$(PACKAGE_PATH)
+API_IMPORTS:=\
+	-I=$(API_ROOT_DIR)/api/v1/ \
+	-I=$(API_ROOT_DIR)/api/external/
+
+GOGO_FLAG:="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:$(API_ROOT_DIR)"
+INPUT_PROTOS=$(wildcard $(API_ROOT_DIR)/api/v1/*.proto)
+
+.PHONY: solo-kit-protos
+solo-kit-protos:
+	protoc $(API_IMPORTS) $(GOGO_FLAG) $(INPUT_PROTOS)
+
 .PHONY: vendor
 vendor:
 	go mod vendor
 
 .PHONY: generated-code
-generated-code: vendor $(OUTPUT_DIR)/.generated-code
+generated-code: vendor solo-kit-protos $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
