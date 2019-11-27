@@ -20,13 +20,12 @@ APIS_PKG=${ROOT_PKG}/kube/apis
 
 # Below code is copied from https://github.com/weaveworks/flagger/blob/master/hack/update-codegen.sh
 # Grab code-generator version from go.sum.
-CODEGEN_VERSION=$(grep 'k8s.io/code-generator' go.sum | awk '{print $2}' | head -1)
-CODEGEN_PKG=$(echo ` + "go env GOPATH" + `"/pkg/mod/k8s.io/code-generator@${CODEGEN_VERSION}")
+CODEGEN_PKG=vendor/k8s.io/code-generator
 
-if [[ ! -d ${CODEGEN_PKG} ]]; then
-    echo "${CODEGEN_PKG} is missing. Run 'go mod download'."
-    exit 1
-fi
+#if [[ ! -d ${CODEGEN_PKG} ]]; then
+#    echo "${CODEGEN_PKG} is missing. Run 'go mod vendor'."
+#    exit 1
+#fi
 
 
 echo ">> Using ${CODEGEN_PKG}"

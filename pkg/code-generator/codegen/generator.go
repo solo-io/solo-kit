@@ -75,8 +75,11 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 		}
 		files = append(files, fs...)
 	}
-	for i := range files {
-		files[i].Content = fileHeader + files[i].Content
+	for i, v := range files {
+		if strings.HasSuffix(v.Filename, ".go") {
+			files[i].Content = fileHeader + files[i].Content
+		}
+
 	}
 	if skipGeneratedTests {
 		var filesWithoutTests code_generator.Files
