@@ -144,7 +144,7 @@ func generateFilesForResourceGroup(rg *model.ResourceGroup) (code_generator.File
 	} {
 		content, err := generateResourceGroupFile(rg, tmpl)
 		if err != nil {
-			return nil, errors.Wrapf(err, "internal error: processing %template '%v' for resource group %v failed", tmpl.ParseName, rg.Name)
+			return nil, errors.Wrapf(err, "internal error: processing template '%v' for resource group %v failed", tmpl.ParseName, rg.Name)
 		}
 		v = append(v, code_generator.File{
 			Filename: strcase.ToSnake(rg.GoName) + suffix,

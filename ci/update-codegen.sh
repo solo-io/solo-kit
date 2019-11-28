@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 set -o errexit
@@ -6,9 +5,9 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-ROOT_PKG=github.com/solo-io/solo-kit/test/mocks/v2alpha1
-CLIENT_PKG=${ROOT_PKG}/kube/client
-APIS_PKG=${ROOT_PKG}/kube/apis
+ROOT_PKG=solo-kit/pkg/api/v1/clients
+CLIENT_PKG=${ROOT_PKG}/kube/crd/client
+APIS_PKG=${ROOT_PKG}/kube/crd
 
 # Below code is copied from https://github.com/weaveworks/flagger/blob/master/hack/update-codegen.sh
 # Grab code-generator version from go.sum.
@@ -42,7 +41,7 @@ chmod +x ${CODEGEN_PKG}/generate-groups.sh
 ${CODEGEN_PKG}/generate-groups.sh all \
     ${CLIENT_PKG} \
     ${APIS_PKG} \
-    testing.solo.io:v2alpha1 \
+    solo.io:v1 \
     --output-base "${TEMP_DIR}"
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
