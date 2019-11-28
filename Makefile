@@ -40,8 +40,10 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 
 .PHONY: update-deps
 update-deps:
-	GO111MODULE=off go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/proto
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/jsonpb
 	GO111MODULE=off go get -v -u github.com/gogo/protobuf/gogoproto
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
 	GO111MODULE=off go get -v -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
@@ -65,7 +67,7 @@ $(OUTPUT_DIR):
 	mkdir -p $@
 
 .PHONY: clientset
-clientset: $(OUTPUT_DIR) $(OUTPUT_DIR)/.clientset
+clientset: vendor $(OUTPUT_DIR) $(OUTPUT_DIR)/.clientset
 
 $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 	$(ROOTDIR)/vendor/k8s.io/code-generator/generate-groups.sh all \
@@ -94,13 +96,13 @@ solo-kit-protos:
 .PHONY: vendor
 vendor:
 	go mod vendor
+	chmod +x vendor/k8s.io/code-generator/generate-groups.sh
 
 .PHONY: generated-code
 generated-code: vendor solo-kit-protos $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
-	chmod +x vendor/k8s.io/code-generator/generate-groups.sh
 	mkdir -p ${OUTPUT_DIR}
 	go generate -x ./...
 	gofmt -w $(SUBDIRS)

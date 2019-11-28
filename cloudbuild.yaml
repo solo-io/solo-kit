@@ -17,14 +17,14 @@ steps:
   waitFor: ['-']
 
 # Installs go executables required by codegen tests
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.0'
   args: ['update-deps']
   waitFor: ['untar-mod-cache']
   volumes: *vol
   id: 'update-deps'
 
 # check code gen for kubernetes custom resources, should be no diff
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.0'
   entrypoint: 'bash'
   args: ['ci/check-code-gen.sh']
   env:
