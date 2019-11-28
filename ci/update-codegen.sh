@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 
 set -o errexit
@@ -5,13 +6,14 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-ROOT_PKG=solo-kit/pkg/api/v1/clients
-CLIENT_PKG=${ROOT_PKG}/kube/crd/client
-APIS_PKG=${ROOT_PKG}/kube/crd
+PACKAGE_NAME=github.com/solo-io/solo-kit
+ROOT_PKG=${PACKAGE_NAME}/pkg/api/v1/clients/kube
+CLIENT_PKG=${ROOT_PKG}/crd/client
+APIS_PKG=${ROOT_PKG}/crd
 
 # Below code is copied from https://github.com/weaveworks/flagger/blob/master/hack/update-codegen.sh
 # Grab code-generator version from go.sum.
-CODEGEN_PKG=vendor/k8s.io/code-generator
+CODEGEN_PKG=${GOPATH}/src/k8s.io/code-generator
 
 #if [[ ! -d ${CODEGEN_PKG} ]]; then
 #    echo "${CODEGEN_PKG} is missing. Run 'go mod vendor'."
@@ -44,5 +46,5 @@ ${CODEGEN_PKG}/generate-groups.sh all \
     solo.io:v1 \
     --output-base "${TEMP_DIR}"
 # Copy everything back.
-cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
+cp -r "${TEMP_DIR}/${PACKAGE_NAME}/" "${SCRIPT_ROOT}/"
 

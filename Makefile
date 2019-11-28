@@ -49,14 +49,14 @@ update-deps:
 	GO111MODULE=off go install github.com/golang/mock/mockgen
 
 	# clone solo's fork of code-generator, required for tests & kube type gen
-#	mkdir -p $(GOPATH)/src/k8s.io && \
-#		cd $(GOPATH)/src/k8s.io && \
-#		(git clone https://github.com/kubernetes/code-generator || echo "already found code-generator") && \
-#		cd $(GOPATH)/src/k8s.io/code-generator && \
-#		(git remote add solo https://github.com/solo-io/k8s-code-generator  || echo "already have remote solo") && \
-#		git fetch solo && \
-#		git checkout fixed-for-solo-kit && \
-#		git pull
+	mkdir -p $(GOPATH)/src/k8s.io && \
+		cd $(GOPATH)/src/k8s.io && \
+		(git clone https://github.com/kubernetes/code-generator || echo "already found code-generator") && \
+		cd $(GOPATH)/src/k8s.io/code-generator && \
+		(git remote add solo https://github.com/solo-io/k8s-code-generator  || echo "already have remote solo") && \
+		git fetch solo && \
+		git checkout fixed-for-solo-kit-1-16-2 && \
+		git pull
 
 
 #----------------------------------------------------------------------------------
@@ -67,10 +67,11 @@ $(OUTPUT_DIR):
 	mkdir -p $@
 
 .PHONY: clientset
-clientset: vendor $(OUTPUT_DIR) $(OUTPUT_DIR)/.clientset
+clientset: $(OUTPUT_DIR) $(OUTPUT_DIR)/.clientset
 
 $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
-	$(ROOTDIR)/vendor/k8s.io/code-generator/generate-groups.sh all \
+
+	$(GOPATH)/src/k8s.io/code-generator/generate-groups.sh all \
 		$(PACKAGE_PATH)/pkg/api/v1/clients/kube/crd/client \
 		$(PACKAGE_PATH)/pkg/api/v1/clients/kube/crd \
 		"solo.io:v1"
