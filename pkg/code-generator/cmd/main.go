@@ -58,11 +58,15 @@ type GenerateOptions struct {
 	SkipGenMocks bool
 	// skip generated tests
 	SkipGeneratedTests bool
-}
+	/*
+		Represents the go package which this package would have been in the GOPATH
+		This allows it to be able to maintain compatility with the old solo-kit
 
-const (
-	StripFilePrefix = "github.com/solo-io"
-)
+		default: current github.com/solo-io/<current-folder>
+		for example: github.com/solo-io/solo-it
+ 	*/
+	PackageName string
+}
 
 func Generate(opts GenerateOptions) error {
 	relativeRoot := opts.RelativeRoot
@@ -72,6 +76,15 @@ func Generate(opts GenerateOptions) error {
 	customGogoArgs := opts.CustomGogoOutArgs
 	skipDirs := opts.SkipDirs
 	skipDirs = append(skipDirs, "vendor/")
+
+	if opts.PackageName == "" {
+		pwd, err  := filepath.Abs(".")
+		if err != nil {
+			return err
+		}
+		split := strings.Split(pwd, "/")
+		opts.PackageName = fmt.Sprintf("github.com/solo-io/%s", split[len(split)-1])
+	}
 
 	var customCompilePrefixes []string
 	for _, relativePath := range opts.CustomCompileProtos {
@@ -127,15 +140,10 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 
-	const currentPackage = "github.com/solo-io/solo-kit"
-
-	cp := exec.Cmd{
-		Path:         "cp",
-		Args:         []string{"-r", fmt.Sprintf("%s", filepath.Join("/tmp", currentPackage)), "."},
-		Dir:          "",
-	}
-	if _, err := cp.CombinedOutput(); err != nil {
-		return err
+	path := fmt.Sprintf("cp -r %s .", filepath.Join("/tmp", opts.PackageName, "*"))
+	cp := exec.Command("sh", "-c", path)
+	if byt, err := cp.CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "%s",byt)
 	}
 
 	log.Printf("collected descriptors: %v", func() []string {
@@ -419,15 +427,29 @@ func detectImportsForFile(file string) ([]string, error) {
 	return protoImports, nil
 }
 
-var commonImports = []string{
+func getCommonImports() ([]string, error) {
+	var result []string
+	for _, v := range commonImportStrings {
+		if abs, err := filepath.Abs(v); err != nil {
+			return nil, err
+		} else {
+			result = append(result, abs)
+		}
+	}
+	return result, nil
+}
+
+var commonImportStrings = []string{
 	".",
 	"./api",
-	os.Getenv("HOME"),
-	// filepath.Join(".", "github.com", "solo-io", "solo-kit", "api", "external"),
 }
 
 func importsForProtoFile(absoluteRoot, protoFile string, customImports []string) ([]string, error) {
 	importStatements, err := detectImportsForFile(protoFile)
+	if err != nil {
+		return nil, err
+	}
+	commonImports, err := getCommonImports()
 	if err != nil {
 		return nil, err
 	}
