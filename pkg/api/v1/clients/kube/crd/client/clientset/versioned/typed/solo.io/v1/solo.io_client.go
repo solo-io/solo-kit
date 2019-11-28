@@ -21,7 +21,7 @@ package v1
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
-	"k8s.io/client-go/rest"
+	rest "k8s.io/client-go/rest"
 )
 
 type ResourcesV1Interface interface {
