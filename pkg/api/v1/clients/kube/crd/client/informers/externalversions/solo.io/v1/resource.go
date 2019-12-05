@@ -24,8 +24,8 @@ import (
 	versioned "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	internalinterfaces "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/informers/externalversions/internalinterfaces"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/listers/solo.io/v1"
-	solo_io_v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	soloiov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
@@ -57,20 +57,20 @@ func NewResourceInformer(client versioned.Interface, namespace string, resyncPer
 func NewFilteredResourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.ResourcesV1().Resources(namespace).List(options)
 			},
-			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.ResourcesV1().Resources(namespace).Watch(options)
 			},
 		},
-		&solo_io_v1.Resource{},
+		&soloiov1.Resource{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *resourceInformer) defaultInformer(client versioned.Interface, resyncPer
 }
 
 func (f *resourceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&solo_io_v1.Resource{}, f.defaultInformer)
+	return f.factory.InformerFor(&soloiov1.Resource{}, f.defaultInformer)
 }
 
 func (f *resourceInformer) Lister() v1.ResourceLister {
