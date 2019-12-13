@@ -56,20 +56,6 @@ func (r *{{ .Name }}) Clone() resources.Resource {
 	return &{{ .Name }}{ {{ .Name }}: *r.{{ .Name }}.Clone() }
 }
 
-func (r *{{ .Name }}) Hash() uint64 {
-	clone := r.{{ .Name }}.Clone()
-
-	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
-		meta.ResourceVersion = ""
-
-		{{- if $.SkipHashingAnnotations }}
-		meta.Annotations = nil
-		{{- end }}
-	})
-
-	return hashutils.HashAll(clone)
-}
-
 {{- else }}
 
 func (r *{{ .Name }}) SetMetadata(meta core.Metadata) {
@@ -82,27 +68,6 @@ func (r *{{ .Name }}) SetStatus(status core.Status) {
 	r.Status = status
 }
 {{- end }}
-
-func (r *{{ .Name }}) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	metaCopy.Generation = 0
-	// investigate zeroing out owner refs as well
-	{{- if $.SkipHashingAnnotations }}
-	metaCopy.Annotations = nil
-	{{- end }}
-	return hashutils.HashAll(
-		metaCopy,
-{{- range .Fields }}
-	{{- if not ( or (eq .Name "metadata") (eq .Name "status") .IsOneof .SkipHashing ) }}
-		r.{{ upper_camel .Name }},
-	{{- end }}
-{{- end}}
-{{- range .Oneofs }}
-		r.{{ upper_camel .Name }},
-{{- end}}
-	)
-}
 
 {{- end }}
 

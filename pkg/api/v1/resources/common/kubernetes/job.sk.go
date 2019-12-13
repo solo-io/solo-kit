@@ -7,7 +7,6 @@ import (
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_job "github.com/solo-io/solo-kit/api/external/kubernetes/job"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -38,16 +37,6 @@ type Job struct {
 
 func (r *Job) Clone() resources.Resource {
 	return &Job{Job: *r.Job.Clone()}
-}
-
-func (r *Job) Hash() uint64 {
-	clone := r.Job.Clone()
-
-	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
-		meta.ResourceVersion = ""
-	})
-
-	return hashutils.HashAll(clone)
 }
 
 func (r *Job) GroupVersionKind() schema.GroupVersionKind {

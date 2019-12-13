@@ -7,7 +7,6 @@ import (
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_customresourcedefinition "github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -38,16 +37,6 @@ type CustomResourceDefinition struct {
 
 func (r *CustomResourceDefinition) Clone() resources.Resource {
 	return &CustomResourceDefinition{CustomResourceDefinition: *r.CustomResourceDefinition.Clone()}
-}
-
-func (r *CustomResourceDefinition) Hash() uint64 {
-	clone := r.CustomResourceDefinition.Clone()
-
-	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
-		meta.ResourceVersion = ""
-	})
-
-	return hashutils.HashAll(clone)
 }
 
 func (r *CustomResourceDefinition) GroupVersionKind() schema.GroupVersionKind {

@@ -490,7 +490,9 @@ func writeDescriptors(protoFile, toFile string, imports, gogoArgs []string, comp
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc())
+			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
+			"--hash_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
+		)
 	}
 
 	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",

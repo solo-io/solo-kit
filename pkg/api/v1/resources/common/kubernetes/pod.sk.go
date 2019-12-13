@@ -7,7 +7,6 @@ import (
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_pod "github.com/solo-io/solo-kit/api/external/kubernetes/pod"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -38,16 +37,6 @@ type Pod struct {
 
 func (r *Pod) Clone() resources.Resource {
 	return &Pod{Pod: *r.Pod.Clone()}
-}
-
-func (r *Pod) Hash() uint64 {
-	clone := r.Pod.Clone()
-
-	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
-		meta.ResourceVersion = ""
-	})
-
-	return hashutils.HashAll(clone)
 }
 
 func (r *Pod) GroupVersionKind() schema.GroupVersionKind {

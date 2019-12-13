@@ -7,7 +7,6 @@ import (
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_service "github.com/solo-io/solo-kit/api/external/kubernetes/service"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -38,16 +37,6 @@ type Service struct {
 
 func (r *Service) Clone() resources.Resource {
 	return &Service{Service: *r.Service.Clone()}
-}
-
-func (r *Service) Hash() uint64 {
-	clone := r.Service.Clone()
-
-	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
-		meta.ResourceVersion = ""
-	})
-
-	return hashutils.HashAll(clone)
 }
 
 func (r *Service) GroupVersionKind() schema.GroupVersionKind {
