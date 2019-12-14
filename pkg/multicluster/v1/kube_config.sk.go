@@ -7,6 +7,7 @@ import (
 
 	github_com_solo_io_solo_kit_api_multicluster_v1 "github.com/solo-io/solo-kit/api/multicluster/v1"
 
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -37,6 +38,14 @@ type KubeConfig struct {
 
 func (r *KubeConfig) Clone() resources.Resource {
 	return &KubeConfig{KubeConfig: *r.KubeConfig.Clone()}
+}
+
+func (r *KubeConfig) Hash() uint64 {
+	clone := r.KubeConfig.Clone()
+	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
+		meta.ResourceVersion = ""
+	})
+	return hashutils.HashAll(clone)
 }
 
 func (r *KubeConfig) GroupVersionKind() schema.GroupVersionKind {

@@ -7,6 +7,7 @@ import (
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_namespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -37,6 +38,14 @@ type KubeNamespace struct {
 
 func (r *KubeNamespace) Clone() resources.Resource {
 	return &KubeNamespace{KubeNamespace: *r.KubeNamespace.Clone()}
+}
+
+func (r *KubeNamespace) Hash() uint64 {
+	clone := r.KubeNamespace.Clone()
+	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
+		meta.ResourceVersion = ""
+	})
+	return hashutils.HashAll(clone)
 }
 
 func (r *KubeNamespace) GroupVersionKind() schema.GroupVersionKind {

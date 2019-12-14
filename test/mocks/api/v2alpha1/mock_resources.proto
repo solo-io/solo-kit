@@ -8,6 +8,10 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+
+import "ext/ext.proto";
+option (ext.hash_all) = true;
+
 /*
 The best mock resource you ever done seen
 */
@@ -15,7 +19,7 @@ message MockResource {
     option (core.solo.io.resource).short_name = "mk";
     option (core.solo.io.resource).plural_name = "mocks";
 
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (ext.skip_hashing) = true];
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
 
     oneof we_stuck_it_in_a_oneof {

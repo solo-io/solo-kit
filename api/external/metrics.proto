@@ -16,6 +16,10 @@ syntax = "proto2";
 package io.prometheus.client;
 option java_package = "io.prometheus.client";
 
+
+import "ext/ext.proto";
+option (ext.hash_all) = true;
+
 message LabelPair {
   optional string name  = 1;
   optional string value = 2;

@@ -18,6 +18,9 @@ import "envoy/type/percent.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
+import "ext/ext.proto";
+option (ext.hash_all) = true;
+
 // [#protodoc-title: Common types]
 
 // Envoy supports :ref:`upstream priority routing

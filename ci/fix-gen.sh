@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 ROOT_DIR="${SCRIPT_ROOT}"
@@ -10,9 +10,9 @@ ROOT_DIR="${SCRIPT_ROOT}"
 
 for file in $(find ${ROOT_DIR} -type f | grep "pb.hash.go")
 do
-    sed -e "s|interface{}(m.GetStatus())|interface{}(&m.Status)|g" $file > $file.new
+    sed -e "s|interface{}(m.GetStatus())|interface{}(\&m.Status)|g" $file > $file.new
     mv -- "$file.new" "$file"
 
-    sed -e "s|interface{}(m.GetMetadata())|interface{}(&m.Metadata)|g" $file > $file.new
+    sed -e "s|interface{}(m.GetMetadata())|interface{}(\&m.Metadata)|g" $file > $file.new
     mv -- "$file.new" "$file"
 done
