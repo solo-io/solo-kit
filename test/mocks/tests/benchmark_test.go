@@ -16,12 +16,12 @@ var _ = FDescribe("SnapshotBenchmark", func() {
 	BeforeEach(func() {
 		for i := 0; i < 10000; i++ {
 			allResources = append(allResources, &v1.MockResource{
-				Status:        core.Status{
-					State:                0,
-					Reason:               "",
-					ReportedBy:           "",
+				Status: core.Status{
+					State:      0,
+					Reason:     "",
+					ReportedBy: "",
 				},
-				Metadata:      core.Metadata{
+				Metadata: core.Metadata{
 					Name:                 "",
 					Namespace:            "",
 					Cluster:              "",

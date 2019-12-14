@@ -5,7 +5,6 @@ package core
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash"
@@ -19,7 +18,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/golang/protobuf/ptypes"
-	"github.com/mitchellh/hashstructure"
 )
 
 // ensure the imports are used
