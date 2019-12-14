@@ -484,6 +484,7 @@ func writeDescriptors(protoFile, toFile string, imports, gogoArgs []string, comp
 	for i := range imports {
 		imports[i] = "-I" + imports[i]
 	}
+	imports = append(imports, "-I=vendor/github.com/solo-io/protoc-gen-ext")
 	cmd.Args = append(cmd.Args, imports...)
 
 	gogoArgs = append(defaultGogoArgs, gogoArgs...)
@@ -491,7 +492,7 @@ func writeDescriptors(protoFile, toFile string, imports, gogoArgs []string, comp
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
 			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
-			"--hash_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
+			"--ext_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
 		)
 	}
 
