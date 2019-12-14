@@ -39,10 +39,10 @@ func ToKubeMetaMaintainNamespace(meta core.Metadata) metav1.ObjectMeta {
 	}
 }
 
-func copyKubernetesOwnerReferences(references []metav1.OwnerReference) []*core.Metadata_OwnerReference {
-	result := make([]*core.Metadata_OwnerReference, 0, len(references))
+func copyKubernetesOwnerReferences(references []metav1.OwnerReference) []core.Metadata_OwnerReference {
+	result := make([]core.Metadata_OwnerReference, 0, len(references))
 	for _, ref := range references {
-		skRef := &core.Metadata_OwnerReference{
+		skRef := core.Metadata_OwnerReference{
 			ApiVersion: ref.APIVersion,
 			Kind:       ref.Kind,
 			Name:       ref.Name,
@@ -63,7 +63,7 @@ func copyKubernetesOwnerReferences(references []metav1.OwnerReference) []*core.M
 	return result
 }
 
-func copySoloKitOwnerReferences(skReferences []*core.Metadata_OwnerReference) []metav1.OwnerReference {
+func copySoloKitOwnerReferences(skReferences []core.Metadata_OwnerReference) []metav1.OwnerReference {
 	result := make([]metav1.OwnerReference, 0, len(skReferences))
 	for _, skRef := range skReferences {
 		ref := metav1.OwnerReference{

@@ -5,6 +5,9 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
+import "ext/ext.proto";
+option (ext.hash_all) = true;
+
 import "google/protobuf/wrappers.proto";
 
 /**
@@ -26,24 +29,24 @@ message Metadata {
     // Cluster indicates the cluster this resource belongs to
     // Cluster is only applicable in certain contexts, e.g. Kubernetes
     // An empty string here refers to the local cluster
-    string cluster = 7;
+    string cluster = 7 [(ext.skip_hashing) = true];
 
     // An opaque value that represents the internal version of this object that can
     // be used by clients to determine when objects have changed.
-    string resource_version = 4 [(gogoproto.moretags) = "testdiff:\"ignore\""];
+    string resource_version = 4 [(gogoproto.moretags) = "testdiff:\"ignore\"", (ext.skip_hashing) = true];
 
     // Map of string keys and values that can be used to organize and categorize
     // (scope and select) objects. Some resources contain `selectors` which
     // can be linked with other resources by their labels
-    map<string, string> labels = 5;
+    map<string, string> labels = 5 [(ext.skip_hashing) = true];
 
     // Annotations is an unstructured key value map stored with a resource that may be
     // set by external tools to store and retrieve arbitrary metadata.
-    map<string, string> annotations = 6;
+    map<string, string> annotations = 6 [(ext.skip_hashing) = true];
 
     // A sequence number representing a specific generation of the desired state.
     // Currently only populated for resources backed by Kubernetes
-    int64 generation = 8;
+    int64 generation = 8 [(ext.skip_hashing) = true];
 
     // proto message representing kubernertes owner reference
     // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#ownerreference-v1-meta
@@ -58,5 +61,5 @@ message Metadata {
 
     //List of objects depended by this object.
     // Currently only populated for resources backed by Kubernetes
-    repeated OwnerReference owner_references = 9 [(gogoproto.nullable) = false];
+    repeated OwnerReference owner_references = 9 [(gogoproto.nullable) = false, (ext.skip_hashing) = true];
 }
