@@ -8,7 +8,10 @@ var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_s
 	`package {{ .Project.ProjectConfig.Version }}
 
 import (
+	"encoding/binary"
 	"fmt"
+	"hash"
+	"hash/fnv"
 
 	{{ .Imports }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -30,30 +33,35 @@ func (s {{ .GoName }}Snapshot) Clone() {{ .GoName }}Snapshot {
 	}
 }
 
-func (s {{ .GoName }}Snapshot) Hash() uint64 {
-	return hashutils.HashAll(
+func (s {{ .GoName }}Snapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 {{- range .Resources}}
-		s.hash{{ upper_camel .PluralName }}(),
+	if _, err := s.hash{{ upper_camel .PluralName }}(hasher); err != nil {
+		return 0, err
+	}
 {{- end}}
-	)
+	return hasher.Sum64(), nil
 }
 
 {{- $ResourceGroup := . }}
 {{- range .Resources }}
 
-func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}() uint64 {
-	return hashutils.HashAll(s.{{ upper_camel .PluralName }}.AsInterfaces()...)
+func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.{{ upper_camel .PluralName }}.AsInterfaces()...)
 }
 {{- end}}
 
 func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-
+	hasher := fnv.New64()
 {{- range .Resources}}
-	fields = append(fields, zap.Uint64("{{ lower_camel .PluralName }}", s.hash{{ upper_camel .PluralName }}() ))
+	{{ upper_camel .PluralName }}Hash, _ := s.hash{{ upper_camel .PluralName }}(hasher)
+	fields = append(fields, zap.Uint64("{{ lower_camel .PluralName }}", {{ upper_camel .PluralName }}Hash ))
 {{- end}}
-
-	return append(fields, zap.Uint64("snapshotHash",  s.Hash()))
+	snapshotHash, _ := s.Hash(hasher)
+	return append(fields, zap.Uint64("snapshotHash",  snapshotHash))
 }
 
 type {{ .GoName }}SnapshotStringer struct {
@@ -77,8 +85,9 @@ func (ss {{ .GoName }}SnapshotStringer) String() string {
 }
 
 func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
+	snapshotHash, _ := s.Hash(nil)
 	return {{ .GoName }}SnapshotStringer{
-		Version: s.Hash(),
+		Version: snapshotHash,
 {{- range .Resources}}
 {{- if .ClusterScoped }}
 		{{ upper_camel .PluralName }}: s.{{ upper_camel .PluralName }}.Names(),

@@ -3,6 +3,7 @@
 package kubernetes
 
 import (
+	"hash"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_job "github.com/solo-io/solo-kit/api/external/kubernetes/job"
@@ -40,12 +41,12 @@ func (r *Job) Clone() resources.Resource {
 	return &Job{Job: *r.Job.Clone()}
 }
 
-func (r *Job) Hash() uint64 {
+func (r *Job) Hash(hasher hash.Hash64) (uint64, error) {
 	clone := r.Job.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-	return hashutils.HashAll(clone)
+	return hashutils.HashAll(clone), nil
 }
 
 func (r *Job) GroupVersionKind() schema.GroupVersionKind {

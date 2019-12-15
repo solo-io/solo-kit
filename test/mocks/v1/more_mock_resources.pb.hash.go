@@ -47,7 +47,7 @@ func (m *AnotherMockResource) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetMetadata()).(interface {
+	if h, ok := interface{}(&m.Metadata).(interface {
 		Hash(hasher hash.Hash64) (uint64, error)
 	}); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -80,7 +80,7 @@ func (m *ClusterResource) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetMetadata()).(interface {
+	if h, ok := interface{}(&m.Metadata).(interface {
 		Hash(hasher hash.Hash64) (uint64, error)
 	}); ok {
 		if _, err = h.Hash(hasher); err != nil {

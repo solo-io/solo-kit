@@ -4,6 +4,8 @@ package v2alpha1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
 
 	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
 
@@ -23,27 +25,36 @@ func (s TestingSnapshot) Clone() TestingSnapshot {
 	}
 }
 
-func (s TestingSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashMocks(),
-		s.hashFakes(),
-	)
+func (s TestingSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashMocks(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashFakes(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s TestingSnapshot) hashMocks() uint64 {
-	return hashutils.HashAll(s.Mocks.AsInterfaces()...)
+func (s TestingSnapshot) hashMocks(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Mocks.AsInterfaces()...)
 }
 
-func (s TestingSnapshot) hashFakes() uint64 {
-	return hashutils.HashAll(s.Fakes.AsInterfaces()...)
+func (s TestingSnapshot) hashFakes(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Fakes.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("mocks", s.hashMocks()))
-	fields = append(fields, zap.Uint64("fakes", s.hashFakes()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	MocksHash, _ := s.hashMocks(hasher)
+	fields = append(fields, zap.Uint64("mocks", MocksHash))
+	FakesHash, _ := s.hashFakes(hasher)
+	fields = append(fields, zap.Uint64("fakes", FakesHash))
+	snapshotHash, _ := s.Hash(hasher)
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type TestingSnapshotStringer struct {
@@ -69,8 +80,9 @@ func (ss TestingSnapshotStringer) String() string {
 }
 
 func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
+	snapshotHash, _ := s.Hash(nil)
 	return TestingSnapshotStringer{
-		Version: s.Hash(),
+		Version: snapshotHash,
 		Mocks:   s.Mocks.NamespacesDotNames(),
 		Fakes:   s.Fakes.NamespacesDotNames(),
 	}

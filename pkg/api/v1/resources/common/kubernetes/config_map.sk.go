@@ -3,6 +3,7 @@
 package kubernetes
 
 import (
+	"hash"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_configmap "github.com/solo-io/solo-kit/api/external/kubernetes/configmap"
@@ -40,12 +41,12 @@ func (r *ConfigMap) Clone() resources.Resource {
 	return &ConfigMap{ConfigMap: *r.ConfigMap.Clone()}
 }
 
-func (r *ConfigMap) Hash() uint64 {
+func (r *ConfigMap) Hash(hasher hash.Hash64) (uint64, error) {
 	clone := r.ConfigMap.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-	return hashutils.HashAll(clone)
+	return hashutils.HashAll(clone), nil
 }
 
 func (r *ConfigMap) GroupVersionKind() schema.GroupVersionKind {

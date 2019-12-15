@@ -7,6 +7,7 @@ import (
 var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
 
 import (
+	"hash"
 	"sort"
 
 {{- if $.IsCustom }}
@@ -56,7 +57,7 @@ func (r *{{ .Name }}) Clone() resources.Resource {
 	return &{{ .Name }}{ {{ .Name }}: *r.{{ .Name }}.Clone() }
 }
 
-func (r *{{ .Name }}) Hash() uint64 {
+func (r *{{ .Name }}) Hash(hasher hash.Hash64) (uint64, error) {
 	clone := r.{{ .Name }}.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
@@ -64,7 +65,7 @@ func (r *{{ .Name }}) Hash() uint64 {
 		meta.Annotations = nil
 		{{- end }}
 	})
-	return hashutils.HashAll(clone)
+	return hashutils.HashAll(clone), nil
 }
 
 {{- else }}

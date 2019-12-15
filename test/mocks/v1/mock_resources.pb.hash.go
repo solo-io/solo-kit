@@ -47,7 +47,7 @@ func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetMetadata()).(interface {
+	if h, ok := interface{}(&m.Metadata).(interface {
 		Hash(hasher hash.Hash64) (uint64, error)
 	}); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -64,10 +64,6 @@ func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if _, err = hasher.Write([]byte(m.GetData())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetSomeDumbField())); err != nil {
 		return 0, err
 	}
 
@@ -106,7 +102,7 @@ func (m *FakeResource) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetMetadata()).(interface {
+	if h, ok := interface{}(&m.Metadata).(interface {
 		Hash(hasher hash.Hash64) (uint64, error)
 	}); ok {
 		if _, err = h.Hash(hasher); err != nil {

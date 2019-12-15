@@ -13,9 +13,10 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
-var _ = FDescribe("hashing", func() {
+var _ = Describe("hashing", func() {
 	var allResources v1.MockResourceList
 	BeforeEach(func() {
+		allResources = nil
 		for i := 0; i < 10000; i++ {
 			titleInt := strconv.Itoa(i)
 			allResources = append(allResources, &v1.MockResource{
@@ -59,7 +60,7 @@ var _ = FDescribe("hashing", func() {
 
 		}, 10)
 	})
-	FContext("accuracy", func() {
+	Context("accuracy", func() {
 		It("Exhaustive", func() {
 			present := make(map[uint64]struct{}, len(allResources))
 			for _, v := range allResources {

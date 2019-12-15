@@ -10,7 +10,9 @@ import (
 	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	"go.opencensus.io/stats"
+	"go.uber.org/zap"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
@@ -51,7 +53,10 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 		timer := time.NewTicker(time.Second * 1)
 		var previousHash uint64
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
+			currentHash, err := currentSnapshot.Hash(nil)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+			}
 			if previousHash == currentHash {
 				return
 			}

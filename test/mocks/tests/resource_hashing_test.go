@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
+	"github.com/solo-io/solo-kit/test/mocks/v2alpha1"
 )
 
 var _ = Describe("Resource Hashing", func() {
@@ -14,19 +15,28 @@ var _ = Describe("Resource Hashing", func() {
 		originalSnap := snapWithFields(hashSensitiveField, hashInsensitiveField)
 		snapWithInsensitiveChanged := snapWithFields(hashSensitiveField, hashInsensitiveField+" changed")
 		snapWithSensitiveChanged := snapWithFields(hashSensitiveField+" changed", hashInsensitiveField)
-		Expect(originalSnap.Hash()).To(Equal(snapWithInsensitiveChanged.Hash()))
-		Expect(originalSnap.Hash()).NotTo(Equal(snapWithSensitiveChanged.Hash()))
+		originalSnapHash, err := originalSnap.Hash(nil)
+		Expect(err).NotTo(HaveOccurred())
+		snapWithInsensitiveChangedHash, err := snapWithInsensitiveChanged.Hash(nil)
+		Expect(err).NotTo(HaveOccurred())
+		snapWithSensitiveChangedHash, err := snapWithSensitiveChanged.Hash(nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(originalSnapHash).To(Equal(snapWithInsensitiveChangedHash))
+		Expect(originalSnapHash).NotTo(Equal(snapWithSensitiveChangedHash))
 	})
 	Context("skip_hashing_annotations=true", func() {
 		It("ignores the resource meta annotations in the hash", func() {
-			// res1 := v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b")
-			// res2 := v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b")
+			res1 := v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b")
+			res2 := v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b")
 
+			res1Hash, _ := res1.Hash(nil)
+			res2Hash, _ := res2.Hash(nil)
 			// sanity check
-			// Expect(res1.Hash(nil)).To(Equal(res2.Hash(nil)))
-			//
-			// res1.Metadata.Annotations = map[string]string{"ignore": "me"}
-			// Expect(res1.Hash(nil)).To(Equal(res2.Hash(nil)))
+			Expect(res1Hash).To(Equal(res2Hash))
+
+			res1.Metadata.Annotations = map[string]string{"ignore": "me"}
+			res2Hash, _ = res2.Hash(nil)
+			Expect(res1Hash).To(Equal(res2Hash))
 		})
 	})
 })

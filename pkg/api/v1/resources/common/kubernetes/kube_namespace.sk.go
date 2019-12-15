@@ -3,6 +3,7 @@
 package kubernetes
 
 import (
+	"hash"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_namespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
@@ -40,12 +41,12 @@ func (r *KubeNamespace) Clone() resources.Resource {
 	return &KubeNamespace{KubeNamespace: *r.KubeNamespace.Clone()}
 }
 
-func (r *KubeNamespace) Hash() uint64 {
+func (r *KubeNamespace) Hash(hasher hash.Hash64) (uint64, error) {
 	clone := r.KubeNamespace.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-	return hashutils.HashAll(clone)
+	return hashutils.HashAll(clone), nil
 }
 
 func (r *KubeNamespace) GroupVersionKind() schema.GroupVersionKind {

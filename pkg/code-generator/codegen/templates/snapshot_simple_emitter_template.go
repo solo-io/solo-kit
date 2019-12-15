@@ -14,11 +14,13 @@ import (
 
 	{{ .Imports }}
 	"go.opencensus.io/stats"
+	"go.uber.org/zap"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/go-utils/errutils"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 
@@ -58,7 +60,10 @@ func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) 
 		timer := time.NewTicker(time.Second * 1)
 		var previousHash uint64
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
+			currentHash, err := currentSnapshot.Hash(nil)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+			}
 			if previousHash == currentHash {
 				return
 			}

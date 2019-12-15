@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"hash"
 	"sort"
 
 	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
@@ -40,12 +41,12 @@ func (r *MockCustomType) Clone() resources.Resource {
 	return &MockCustomType{MockCustomType: *r.MockCustomType.Clone()}
 }
 
-func (r *MockCustomType) Hash() uint64 {
+func (r *MockCustomType) Hash(hasher hash.Hash64) (uint64, error) {
 	clone := r.MockCustomType.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-	return hashutils.HashAll(clone)
+	return hashutils.HashAll(clone), nil
 }
 
 func (r *MockCustomType) GroupVersionKind() schema.GroupVersionKind {

@@ -52,7 +52,7 @@ message MockResource {
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
 
     string data = 1 [json_name="data.json", (gogoproto.jsontag) = "data.json"];
-    string some_dumb_field = 100 [(core.solo.io.skip_hashing) = true];
+    string some_dumb_field = 100 [(ext.skip_hashing) = true];
 
     oneof test_oneof_fields {
         string oneof_one = 3;

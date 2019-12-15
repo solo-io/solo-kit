@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -e
 
 ROOT=${GOPATH}/src
 SOLO_KIT=${ROOT}/github.com/solo-io/solo-kit
@@ -25,3 +25,5 @@ protoc ${IMPORTS} \
     ${GOGO_FLAG} \
     ${HASH_FLAG} \
     ${INPUT_PROTOS}
+
+goimports -w pkg

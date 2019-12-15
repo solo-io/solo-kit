@@ -3,6 +3,7 @@
 package kubernetes
 
 import (
+	"hash"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_customresourcedefinition "github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition"
@@ -40,12 +41,12 @@ func (r *CustomResourceDefinition) Clone() resources.Resource {
 	return &CustomResourceDefinition{CustomResourceDefinition: *r.CustomResourceDefinition.Clone()}
 }
 
-func (r *CustomResourceDefinition) Hash() uint64 {
+func (r *CustomResourceDefinition) Hash(hasher hash.Hash64) (uint64, error) {
 	clone := r.CustomResourceDefinition.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-	return hashutils.HashAll(clone)
+	return hashutils.HashAll(clone), nil
 }
 
 func (r *CustomResourceDefinition) GroupVersionKind() schema.GroupVersionKind {
