@@ -16,7 +16,7 @@ steps:
     waitFor: ['-']
 
   # donwload massive container in parallel
-  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
     entrypoint: 'bash'
     args: ['-c', 'ls']
     waitFor: ['-']
@@ -34,7 +34,7 @@ steps:
 
 
   # Installs go executables required by codegen tests
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
     args: ['install-codegen-deps']
     waitFor: ['dep']
     dir: './gopath/src/github.com/solo-io/solo-kit'
@@ -43,7 +43,7 @@ steps:
       - 'GOPATH=/workspace/gopath'
 
   # check code gen for kubernetes custom resources, should be no diff
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
     entrypoint: 'bash'
     args: ['ci/check-code-gen.sh']
     env:
@@ -77,7 +77,7 @@ steps:
   # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
   # sets up redis, consul, kubectl, go with required environment variables
   # need to use the provided entrypoint
-  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
     dir: './gopath/src/github.com/solo-io/solo-kit'
     env:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
@@ -93,16 +93,16 @@ steps:
     args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=10']
     id: 'test'
 
-  - name: 'gcr.io/cloud-builders/go'
-    args: ['build', '-o', 'solo-kit-gen', 'github.com/solo-io/solo-kit/cmd/cli']
+  - name: 'golang:1.13'
+    args: ['go', 'build', '-o', 'solo-kit-gen', 'github.com/solo-io/solo-kit/cmd/cli']
     env:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
       - 'GOPATH=/workspace/gopath'
     id: 'build-cli'
     waitFor: ['test']
 
-  - name: 'gcr.io/cloud-builders/go'
-    args: ['build', '-o', 'solo-kit-cli', 'github.com/solo-io/solo-kit/cmd/solo-kit-gen']
+  - name: 'golang:1.13'
+    args: ['go', 'build', '-o', 'solo-kit-cli', 'github.com/solo-io/solo-kit/cmd/solo-kit-gen']
     env:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
       - 'GOPATH=/workspace/gopath'
@@ -113,3 +113,5 @@ timeout: 1500s
 tags: ['solo-kit']
 options:
   machineType: 'N1_HIGHCPU_32'
+  env:
+  - "GO111MODULE=on"
