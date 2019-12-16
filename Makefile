@@ -8,6 +8,8 @@ OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 VERSION ?= $(shell git describe --tags)
 
+GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
+
 #----------------------------------------------------------------------------------
 # Repo init
 #----------------------------------------------------------------------------------
@@ -38,14 +40,14 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 
 .PHONY: install-codegen-deps
 install-codegen-deps:
-	go get -v -u golang.org/x/tools/cmd/goimports
-	go get -v -u github.com/gogo/protobuf/proto
-	go get -v -u github.com/gogo/protobuf/jsonpb
-	go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
-	go get -v -u github.com/gogo/protobuf/gogoproto
-	go get -v -u golang.org/x/tools/cmd/goimports
-	go get -v -u github.com/golang/mock/gomock
-	go install github.com/golang/mock/mockgen
+	GO111MODULE=off go get -v -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/proto
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/jsonpb
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
+	GO111MODULE=off go get -v -u github.com/gogo/protobuf/gogoproto
+	GO111MODULE=off go get -v -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
+	GO111MODULE=off go install github.com/golang/mock/mockgen
 
 	# clone solo's fork of code-generator, required for tests & kube type gen
 	mkdir -p $(GOPATH)/src/k8s.io && \
@@ -85,7 +87,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-envoy-protos
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
 	mkdir -p ${OUTPUT_DIR}
-	go generate -x ./...
+	$(GO_BUILD_FLAGS) go generate -x ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	touch $@
@@ -93,7 +95,7 @@ $(OUTPUT_DIR)/.generated-code:
 .PHONY: verify-envoy-protos
 verify-envoy-protos:
 	@echo Verifying validity of generated envoy files...
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
+	$(GO_BUILD_FLAGS) CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
 
 #----------------------------------------------------------------------------------
 # {gogo,golang}/protobuf dependencies
@@ -119,12 +121,12 @@ install-gen-tools: install-gogo-proto
 #----------------------------------------------------------------------------------
 
 solo-kit-gen:
-	go build -o $@ cmd/solo-kit-gen/*.go
+	$(GO_BUILD_FLAGS) go build -o $@ cmd/solo-kit-gen/*.go
 
 #----------------------------------------------------------------------------------
 # solo-kit-cli
 #----------------------------------------------------------------------------------
 
 solo-kit-cli:
-	go build -o $@ cmd/cli/*.go
+	$(GO_BUILD_FLAGS) go build -o $@ cmd/cli/*.go
 
