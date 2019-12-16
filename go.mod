@@ -59,7 +59,7 @@ require (
 	github.com/radovskyb/watcher v1.0.2
 	github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da // indirect
 	github.com/schollz/progressbar/v2 v2.12.1 // indirect
-	github.com/solo-io/go-utils v0.11.1-0.20191215161631-d586a8862d08
+	github.com/solo-io/go-utils v0.11.1
 	github.com/solo-io/protoc-gen-ext v0.0.0-00010101000000-000000000000
 	github.com/technosophos/moniker v0.0.0-20180509230615-a5dbd03a2245 // indirect
 	github.com/ugorji/go v1.1.5-pre // indirect
@@ -91,7 +91,6 @@ replace (
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
 
-	github.com/solo-io/go-utils => /Users/eitanya/src/go-utils
 	// github.com/hashicorp/consul => github.com/hashicorp/consul@v1.2.1/api
 	github.com/solo-io/protoc-gen-ext => /Users/eitanya/src/solo-io/protoc-gen-ext
 
