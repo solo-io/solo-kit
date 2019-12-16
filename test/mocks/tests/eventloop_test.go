@@ -11,7 +11,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
-var _ = Describe("Eventloop", func() {
+var _ = FDescribe("Eventloop", func() {
 
 	Context("ready flag works", func() {
 		It("should signal ready after first sync", func() {
