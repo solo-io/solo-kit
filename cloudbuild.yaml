@@ -15,6 +15,14 @@ steps:
     id: 'download-untar-go-cache'
     waitFor: ['-']
 
+  - name: gcr.io/cloud-builders/gsutil
+    entrypoint: 'bash'
+    args: ['-c', 'mkdir -p ./gopath/pkg && cd ./gopath/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
+    volumes: &vol
+    - name: 'gopath'
+      path: '/workspace/gopath/pkg/mod'
+    id: 'untar-mod-cache'
+    waitFor: ['-']
   # donwload massive container in parallel
   - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
     entrypoint: 'bash'
@@ -39,6 +47,7 @@ steps:
     waitFor: ['dep']
     dir: './gopath/src/github.com/solo-io/solo-kit'
     id: 'install-codegen-deps'
+    volumes: *vol
     env:
       - 'GOPATH=/workspace/gopath'
 
@@ -52,6 +61,7 @@ steps:
       - 'TAGGED_VERSION=$TAG_NAME'
     dir: './gopath/src/github.com/solo-io/solo-kit'
     waitFor: ['install-codegen-deps']
+    volumes: *vol
     id: 'check-code-and-docs-gen'
 
     # start setting up kubeconfigs
@@ -91,6 +101,7 @@ steps:
       - 'GOPATH=/workspace/gopath'
       - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
     args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=10']
+    volumes: *vol
     id: 'test'
 
   - name: 'golang:1.13'
@@ -99,6 +110,7 @@ steps:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
       - 'GOPATH=/workspace/gopath'
     id: 'build-cli'
+    volumes: *vol
     waitFor: ['test']
 
   - name: 'golang:1.13'
@@ -107,6 +119,7 @@ steps:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
       - 'GOPATH=/workspace/gopath'
     id: 'build-codegen'
+    volumes: *vol
     waitFor: ['test']
 
 timeout: 1500s
