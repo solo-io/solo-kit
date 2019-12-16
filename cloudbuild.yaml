@@ -90,7 +90,7 @@ steps:
       - 'CLOUD_BUILD=1'
       - 'GOPATH=/workspace/gopath'
       - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
-    args: ['-r', '-v', '-race', '-p', '-tags', 'solokit']
+    args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=10']
     id: 'test'
 
   - name: 'gcr.io/cloud-builders/go'
