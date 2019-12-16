@@ -1,47 +1,36 @@
 steps:
-  - name: 'gcr.io/$PROJECT_ID/dep'
-    args: ['ensure']
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-    id: 'dep'
+- name: gcr.io/cloud-builders/gsutil
+  entrypoint: 'bash'
+  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
+  env:
+  volumes: &vol
+  - name: 'gopath'
+    path: '/go/pkg'
+  - name: 'ssh'
+    path: /root/.ssh
+  id: 'untar-mod-cache'
 
-  - name: 'gcr.io/$PROJECT_ID/go-make'
-    entrypoint: 'bash'
-    args: ['-c', 'tar -zvcf solo-kit-dep.tar.gz ./gopath/pkg/dep']
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GOPATH=/workspace/gopath'
-    id: 'create-dep-cache'
+- name: 'golang:1.13'
+  args: ['go', 'mod', 'download']
+  volumes: *vol
+  id: 'download'
 
-    # run all of the tests to fill the cache
-  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GOPATH=/workspace/gopath'
-      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
-    dir: './gopath/src/github.com/solo-io/solo-kit'
-    args: ['build', '-r', 'cli/pkg', 'pkg', 'test/e2e']
-    waitFor: ['dep']
-    id: 'test'
+- name: 'golang:1.13'
+  args: ['go', 'mod', 'tidy']
+  volumes: *vol
+  id: 'tidy'
 
-  - name: 'gcr.io/$PROJECT_ID/go-make'
-    entrypoint: 'bash'
-    args: ['-c', 'tar -zvcf solo-kit-gocache.tar.gz $(go env GOCACHE)']
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GOPATH=/workspace/gopath'
-    id: 'create-go-cache'
+- name: 'golang:1.13'
+  entrypoint: 'bash'
+  volumes: *vol
+  args: ['-c', ' cd /go/pkg && tar -zvcf solo-kit-mod.tar.gz mod']
+  id: 'tar-cache'
 
-  - name: gcr.io/cloud-builders/gsutil
-    args: ['cp', 'solo-kit-dep.tar.gz', 'gs://solo-public-cache/solo-kit/solo-kit-dep.tar.gz']
-    waitFor: ['create-dep-cache']
+- name: gcr.io/cloud-builders/gsutil
+  args: ['cp', '/go/pkg/solo-kit-mod.tar.gz', 'gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz']
+  volumes: *vol
+  id: 'upload-cache'
 
-  - name: gcr.io/cloud-builders/gsutil
-    args: ['cp', 'solo-kit-gocache.tar.gz', 'gs://solo-public-cache/solo-kit/solo-kit-gocache.tar.gz']
-    waitFor: ['create-go-cache']
-
-timeout: 1500s
-tags: ['solo-kit-cache']
 options:
-  machineType: 'N1_HIGHCPU_32'
+    env:
+    - "GO111MODULE=on"
