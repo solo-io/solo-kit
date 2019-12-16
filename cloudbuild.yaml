@@ -104,23 +104,23 @@ steps:
     volumes: *vol
     id: 'test'
 
-  - name: 'golang:1.13'
-    args: ['go', 'build', '-o', 'solo-kit-gen', 'github.com/solo-io/solo-kit/cmd/cli']
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GOPATH=/workspace/gopath'
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
+    args: ['solo-kit-cli']
+    waitFor: ['test']
+    dir: './gopath/src/github.com/solo-io/solo-kit'
     id: 'build-cli'
     volumes: *vol
-    waitFor: ['test']
-
-  - name: 'golang:1.13'
-    args: ['go', 'build', '-o', 'solo-kit-cli', 'github.com/solo-io/solo-kit/cmd/solo-kit-gen']
     env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GOPATH=/workspace/gopath'
+    - 'GOPATH=/workspace/gopath'
+
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
+    args: ['solo-kit-gen']
+    waitFor: ['test']
+    dir: './gopath/src/github.com/solo-io/solo-kit'
     id: 'build-codegen'
     volumes: *vol
-    waitFor: ['test']
+    env:
+    - 'GOPATH=/workspace/gopath'
 
 timeout: 1500s
 tags: ['solo-kit']
