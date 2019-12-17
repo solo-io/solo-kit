@@ -12,4 +12,3 @@ func TestFile(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "File Suite")
 }
-
