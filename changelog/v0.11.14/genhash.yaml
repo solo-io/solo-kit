@@ -1,7 +1,4 @@
 changelog:
 - type: NEW_FEATURE
-  description: Update to go.mod.
-  issueLink: https://github.com/solo-io/solo-kit/issues/326
-- type: NEW_FEATURE
   description: Replace hashstructure with custom generated hash functions.
   issueLink: https://github.com/solo-io/gloo/issues/1711
