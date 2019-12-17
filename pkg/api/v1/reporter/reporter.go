@@ -98,11 +98,11 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 				})
 				desiredHasher, ok2 := interface{}(resourceToWrite).(interface {
 					Hash(hasher hash.Hash64) (uint64, error)
-				})				// both are hashable
+				}) // both are hashable
 				if ok1 && ok2 {
 					hash1, _ := originalHasher.Hash(nil)
 					hash2, _ := desiredHasher.Hash(nil)
-					if hash1==hash2 {
+					if hash1 == hash2 {
 						// same hash, something not important was done, try again:
 						updatedRes.(resources.InputResource).SetStatus(status)
 						res, writeErr = client.Write(updatedRes, clients.WriteOpts{
