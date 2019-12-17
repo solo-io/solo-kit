@@ -70,23 +70,9 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 		// default transition policy: only perform an update if the Hash has changed
 		if transition == nil {
 			transition = func(original, desired resources.Resource) (b bool, e error) {
-				// originalHasher, ok1 := interface{}(original).(interface {
-				// 	Hash(hasher hash.Hash64) (uint64, error)
-				// })
-				// desiredHasher, ok2 := interface{}(desired).(interface {
-				// 	Hash(hasher hash.Hash64) (uint64, error)
-				// })
-				//
-				// // both are hashable
-				// if ok1 && ok2 {
-				// 	hash1, _ := originalHasher.Hash(nil)
-				// 	hash2, _ := desiredHasher.Hash(nil)
-				// 	return hash1 != hash2, nil
-				// }
-
 				equal, ok := hashutils.HashableEqual(original, desired)
 				if ok {
-					return equal, nil
+					return !equal, nil
 				}
 
 				// default behavior: perform the update if one if the objects are not hashable
