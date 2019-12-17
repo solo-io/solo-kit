@@ -19,12 +19,12 @@ var _ = Describe("Reporter", func() {
 		reporter                               rep.Reporter
 		mockResourceClient, fakeResourceClient clients.ResourceClient
 	)
-	BeforeEach(func() {
+	JustBeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", mockResourceClient, fakeResourceClient)
 	})
-	AfterEach(func() {
+	JustAfterEach(func() {
 	})
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
