@@ -13,19 +13,3 @@ func TestFile(t *testing.T) {
 	RunSpecs(t, "File Suite")
 }
 
-// var (
-// 	tmpDir string
-// )
-//
-// var _ = SynchronizedBeforeSuite(func() []byte {
-// 	dbRunner = db.NewRunner()
-// 	err := dbRunner.Start()
-// 	Ω(err).ShouldNot(HaveOccurred())
-// 	return []byte(dbRunner.URL)
-// }, func(data []byte) {})
-//
-// var _ = SynchronizedAfterSuite(func() {
-// 	dbClient.Cleanup()
-// }, func() {
-// 	dbRunner.Stop()
-// })
