@@ -10,7 +10,6 @@ import (
 	"hash"
 	"hash/fnv"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/mitchellh/hashstructure"
 )
 

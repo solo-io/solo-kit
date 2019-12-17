@@ -9,9 +9,6 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
-
-	"github.com/golang/protobuf/ptypes"
-	"github.com/mitchellh/hashstructure"
 )
 
 // ensure the imports are used

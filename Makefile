@@ -89,7 +89,7 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: vendor $(OUTPUT_DIR)/.generated-code verify-envoy-protos
+generated-code: $(OUTPUT_DIR)/.generated-code verify-envoy-protos
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
@@ -97,6 +97,7 @@ $(OUTPUT_DIR)/.generated-code:
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
+	ci/fix-gen.sh
 	touch $@
 
 .PHONY: verify-envoy-protos
