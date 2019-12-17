@@ -60,7 +60,7 @@ require (
 	github.com/radovskyb/watcher v1.0.2
 	github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da // indirect
 	github.com/schollz/progressbar/v2 v2.12.1 // indirect
-	github.com/solo-io/go-utils v0.11.2-0.20191217144252-e45273db756a
+	github.com/solo-io/go-utils v0.11.2
 	github.com/solo-io/protoc-gen-ext v0.0.1
 	github.com/technosophos/moniker v0.0.0-20180509230615-a5dbd03a2245 // indirect
 	github.com/ugorji/go v1.1.5-pre // indirect
