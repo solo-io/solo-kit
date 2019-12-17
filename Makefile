@@ -39,14 +39,15 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	./*.proto
 
 .PHONY: install-codegen-deps
-install-codegen-deps:
-	GO111MODULE=off go get -v -u golang.org/x/tools/cmd/goimports
-	GO111MODULE=off go get -v -u github.com/gogo/protobuf/proto
-	GO111MODULE=off go get -v -u github.com/gogo/protobuf/jsonpb
-	GO111MODULE=off go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
-	GO111MODULE=off go get -v -u github.com/gogo/protobuf/gogoproto
-	GO111MODULE=off go get -v -u golang.org/x/tools/cmd/goimports
-	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
+install-codegen-deps: vendor
+	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
+	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -u github.com/gogo/protobuf/proto
+	GO111MODULE=off go get -u github.com/gogo/protobuf/jsonpb
+	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
+	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
+	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
 
 	# clone solo's fork of code-generator, required for tests & kube type gen
@@ -62,6 +63,7 @@ install-codegen-deps:
 
 .PHONY: vendor
 vendor:
+	rm -rf vendor
 	go mod vendor
 
 
@@ -91,7 +93,6 @@ generated-code: vendor $(OUTPUT_DIR)/.generated-code verify-envoy-protos
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
-	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
 	mkdir -p ${OUTPUT_DIR}
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
