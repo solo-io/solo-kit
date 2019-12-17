@@ -62,7 +62,7 @@ func (m *Node) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetMetadata()).(interface {
+	if h, ok := interface{}(&m.Metadata).(interface {
 		Hash(hasher hash.Hash64) (uint64, error)
 	}); ok {
 		if _, err = h.Hash(hasher); err != nil {
