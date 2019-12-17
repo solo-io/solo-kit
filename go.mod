@@ -12,10 +12,11 @@ require (
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
-	github.com/envoyproxy/go-control-plane v0.8.0
+	github.com/envoyproxy/go-control-plane v0.9.1
+	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/ghodss/yaml v1.0.0
-	github.com/gogo/googleapis v1.1.0
+	github.com/gogo/googleapis v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
@@ -29,6 +30,8 @@ require (
 	github.com/iancoleman/strcase v0.0.0-20180605031248-90d371a664d6
 	github.com/ilackarms/protoc-gen-doc v1.0.0
 	github.com/ilackarms/protokit v0.0.0-20181231193355-ee2393f3bbf0
+	github.com/lyft/protoc-gen-star v0.4.14 // indirect
+	github.com/lyft/protoc-gen-validate v0.1.0 // indirect
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/pierrec/lz4 v0.0.0-20190701081048-057d66e894a4 // indirect
@@ -54,6 +57,7 @@ require (
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/square/go-jose.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v2 v2.2.4
+	istio.io/gogo-genproto v0.0.0-20190124151557-6d926a6e6feb // indirect
 	k8s.io/api v0.0.0-20191121015604-11707872ac1c
 	k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
 	k8s.io/apimachinery v0.0.0-20191121015412-41065c7a8c2a
