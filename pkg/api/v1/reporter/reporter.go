@@ -2,10 +2,10 @@ package reporter
 
 import (
 	"context"
-	"hash"
 
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -93,24 +93,14 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 				Ctx: ctx,
 			})
 			if readErr == nil {
-				originalHasher, ok1 := interface{}(updatedRes).(interface {
-					Hash(hasher hash.Hash64) (uint64, error)
-				})
-				desiredHasher, ok2 := interface{}(resourceToWrite).(interface {
-					Hash(hasher hash.Hash64) (uint64, error)
-				}) // both are hashable
-				if ok1 && ok2 {
-					hash1, _ := originalHasher.Hash(nil)
-					hash2, _ := desiredHasher.Hash(nil)
-					if hash1 == hash2 {
-						// same hash, something not important was done, try again:
-						updatedRes.(resources.InputResource).SetStatus(status)
-						res, writeErr = client.Write(updatedRes, clients.WriteOpts{
-							Ctx:               ctx,
-							OverwriteExisting: true,
-						})
-					}
-
+				equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
+				if equal {
+					// same hash, s	omething not important was done, try again:
+					updatedRes.(resources.InputResource).SetStatus(status)
+					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
+						Ctx:               ctx,
+						OverwriteExisting: true,
+					})
 				}
 			} else {
 				logger.Warnw("error reading client to compare conflict when writing status", "error", readErr)

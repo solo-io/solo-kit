@@ -14,6 +14,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.60.287 // indirect
 	github.com/apple/foundationdb/bindings/go v0.0.0-20191214003451-5d1974539aa9 // indirect
 	github.com/aws/aws-sdk-go v1.26.2 // indirect
+	github.com/bxcodec/faker v2.0.1+incompatible // indirect
 	github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1 // indirect
 	github.com/cockroachdb/cockroach-go v0.0.0-20190925194419-606b3d062051 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20191128021309-1d7a30a10f73 // indirect
@@ -59,7 +60,7 @@ require (
 	github.com/radovskyb/watcher v1.0.2
 	github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da // indirect
 	github.com/schollz/progressbar/v2 v2.12.1 // indirect
-	github.com/solo-io/go-utils v0.11.1
+	github.com/solo-io/go-utils v0.11.2-0.20191217144252-e45273db756a
 	github.com/solo-io/protoc-gen-ext v0.0.1
 	github.com/technosophos/moniker v0.0.0-20180509230615-a5dbd03a2245 // indirect
 	github.com/ugorji/go v1.1.5-pre // indirect
