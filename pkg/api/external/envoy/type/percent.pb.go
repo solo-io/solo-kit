@@ -6,12 +6,11 @@ package _type
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/ext"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

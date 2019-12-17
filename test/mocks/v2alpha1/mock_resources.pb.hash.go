@@ -4,19 +4,11 @@
 package v2alpha1
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash"
 	"hash/fnv"
-	"net"
-	"net/mail"
-	"net/url"
-	"regexp"
-	"strings"
-	"time"
-	"unicode/utf8"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/mitchellh/hashstructure"
@@ -24,17 +16,8 @@ import (
 
 // ensure the imports are used
 var (
-	_ = bytes.MinRead
 	_ = errors.New("")
 	_ = fmt.Print
-	_ = utf8.UTFMax
-	_ = (*regexp.Regexp)(nil)
-	_ = (*strings.Reader)(nil)
-	_ = net.IPv4len
-	_ = time.Duration(0)
-	_ = (*url.URL)(nil)
-	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
 )
 
 // Hash function
@@ -47,7 +30,7 @@ func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(&m.Metadata).(interface {
+	if h, ok := interface{}(m.GetMetadata()).(interface {
 		Hash(hasher hash.Hash64) (uint64, error)
 	}); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -105,7 +88,7 @@ func (m *FrequentlyChangingAnnotationsResource) Hash(hasher hash.Hash64) (uint64
 	}
 	var err error
 
-	if h, ok := interface{}(&m.Metadata).(interface {
+	if h, ok := interface{}(m.GetMetadata()).(interface {
 		Hash(hasher hash.Hash64) (uint64, error)
 	}); ok {
 		if _, err = h.Hash(hasher); err != nil {

@@ -60,6 +60,11 @@ install-codegen-deps:
 		git pull
 
 
+.PHONY: vendor
+vendor:
+	go mod vendor
+
+
 #----------------------------------------------------------------------------------
 # Kubernetes Clientsets
 #----------------------------------------------------------------------------------
@@ -82,10 +87,11 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-envoy-protos
+generated-code: vendor $(OUTPUT_DIR)/.generated-code verify-envoy-protos
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
+	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
 	mkdir -p ${OUTPUT_DIR}
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
