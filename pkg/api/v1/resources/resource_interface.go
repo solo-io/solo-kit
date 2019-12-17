@@ -2,6 +2,7 @@ package resources
 
 import (
 	"fmt"
+	"hash"
 	"reflect"
 	"sort"
 
@@ -404,7 +405,7 @@ func (list InputResourceList) AsResourceList() ResourceList {
 
 type HashableResource interface {
 	Resource
-	Hash() uint64
+	Hash(hasher hash.Hash) (uint64, error)
 }
 
 type CloneableResource interface {
