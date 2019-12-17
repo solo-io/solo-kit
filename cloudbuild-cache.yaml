@@ -6,7 +6,14 @@ steps:
   volumes: &vol
   - name: 'gopath'
     path: '/go/pkg'
+  - name: 'ssh'
+    path: /root/.ssh
   id: 'untar-mod-cache'
+
+- name: 'golang:1.13'
+  args: ['go', 'mod', 'download']
+  volumes: *vol
+  id: 'download'
 
 - name: 'golang:1.13'
   args: ['go', 'mod', 'tidy']
@@ -23,3 +30,7 @@ steps:
   args: ['cp', '/go/pkg/solo-kit-mod.tar.gz', 'gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz']
   volumes: *vol
   id: 'upload-cache'
+
+options:
+    env:
+    - "GO111MODULE=on"

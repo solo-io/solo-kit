@@ -8,9 +8,14 @@ if [ ! -f .gitignore ]; then
   echo "_output" > .gitignore
 fi
 
+
 git init
 git config user.email "you@example.com"
+<<<<<<< HEAD
 git config user.name "Your Name"
+=======
+git config --global user.name "Your Name"
+>>>>>>> b57fc7cc72cbb81a45fe0ad8807c5ef4491713e3
 git add .
 git commit -m "set up dummy repo for diffing" -q
 

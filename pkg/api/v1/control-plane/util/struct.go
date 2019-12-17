@@ -19,9 +19,12 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 )
 
 // MessageToStruct encodes a protobuf Message into a Struct. Hilariously, it
@@ -57,4 +60,20 @@ func StructToMessage(pbst *types.Struct, out proto.Message) error {
 	}
 
 	return jsonpb.Unmarshal(buf, out)
+}
+
+func GogoToProto(ggst *types.Struct, intermediary proto.Message) (*_struct.Struct, error) {
+	if err := StructToMessage(ggst, intermediary); err != nil {
+		return nil, err
+	}
+
+	return conversion.MessageToStruct(intermediary)
+}
+
+func ProtoToGogo(pbst *_struct.Struct, intermediary proto.Message) (*types.Struct, error) {
+	if err := conversion.StructToMessage(pbst, intermediary); err != nil {
+		return nil, err
+	}
+
+	return MessageToStruct(intermediary)
 }
