@@ -1,4 +1,4 @@
-# Get the scripts requires by the 'clientset' makefile target
+# Get the scripts required by the 'clientset' makefile target
 required = ["k8s.io/code-generator/cmd/client-gen"]
 
 [prune]
@@ -22,7 +22,7 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
   name = "github.com/gogo/protobuf"
 
 [[override]]
-  version = "1.2.0"
+  version = "1.3.2"
   name = "github.com/golang/protobuf"
 
 [[constraint]]
@@ -31,10 +31,10 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  version = "0.10.21"
+  version = "0.11.0"
 
 [[constraint]]
-  version = ">=0.8.0"
+  version = ">=0.9.0"
   name = "github.com/envoyproxy/go-control-plane"
 
 [[constraint]]
@@ -42,8 +42,30 @@ required = ["k8s.io/code-generator/cmd/client-gen"]
   name = "go.opencensus.io"
 
 [[constraint]]
-  version = "kubernetes-1.13.4"
+  name = "k8s.io/api"
+  version = "kubernetes-1.16.2"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.16.2"
+
+[[constraint]]
   name = "k8s.io/apimachinery"
+  version = "kubernetes-1.16.2"
+
+[[constraint]]
+  name = "k8s.io/apiextensions-apiserver"
+  version = "kubernetes-1.16.2"
+
+# Pin the code-generator to the same version as the k8s libraries we are directly using in our code
+[[constraint]]
+  name = "k8s.io/code-generator"
+  version = "kubernetes-1.16.2"
+
+# Pin gengo to the revision used by the above code-generator version
+[[override]]
+  name = "k8s.io/gengo"
+  revision = "26a664648505d962332bda642b27306bc10d1082"
 
 # xerrors doesn't have a version. this is needed to work with go 1.13
 [[override]]

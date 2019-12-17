@@ -18,11 +18,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
 func TestNewStatusInfo(t *testing.T) {
-	node := &core.Node{Id: "test"}
+	node := &envoy_api_v2_core.Node{Id: "test"}
 	info := newStatusInfo(node)
 
 	if got := info.GetNode(); !reflect.DeepEqual(got, node) {

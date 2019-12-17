@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add support for jobs.
+    issueLink: https://github.com/solo-io/solo-kit/issues/314
