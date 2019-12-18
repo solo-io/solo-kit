@@ -18,9 +18,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func TestMulticlustersoloio(t *testing.T) {
+func TestMulticlusterSoloIo(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Multiclustersoloio Suite")
+	RunSpecs(t, "MulticlusterSoloIo Suite")
 }
 
 var (

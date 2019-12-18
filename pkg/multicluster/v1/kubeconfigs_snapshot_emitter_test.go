@@ -21,6 +21,9 @@ import (
 
 	// Needed to run tests in GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var _ = Describe("V1Emitter", func() {
@@ -37,7 +40,7 @@ var _ = Describe("V1Emitter", func() {
 		kubeConfigClient KubeConfigClient
 	)
 
-	JustBeforeEach(func() {
+	BeforeEach(func() {
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
@@ -52,7 +55,7 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)
 	})
-	JustAfterEach(func() {
+	AfterEach(func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -95,7 +98,6 @@ var _ = Describe("V1Emitter", func() {
 					nsList1, _ := kubeConfigClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := kubeConfigClient.List(namespace2, clients.ListOpts{})
 					combined := append(nsList1, nsList2...)
-					// fmt.Println(combined)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
