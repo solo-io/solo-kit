@@ -3,7 +3,9 @@
 package v1
 
 import (
+	"encoding/binary"
 	"hash"
+	"hash/fnv"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_multicluster_v1 "github.com/solo-io/solo-kit/api/multicluster/v1"
@@ -42,11 +44,18 @@ func (r *KubeConfig) Clone() resources.Resource {
 }
 
 func (r *KubeConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.KubeConfig.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-	return hashutils.HashAll(clone), nil
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
 func (r *KubeConfig) GroupVersionKind() schema.GroupVersionKind {

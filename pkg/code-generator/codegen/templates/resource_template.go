@@ -7,7 +7,9 @@ import (
 var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
 
 import (
+	"encoding/binary"
 	"hash"
+	"hash/fnv"
 	"sort"
 
 {{- if $.IsCustom }}
@@ -58,6 +60,9 @@ func (r *{{ .Name }}) Clone() resources.Resource {
 }
 
 func (r *{{ .Name }}) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.{{ .Name }}.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
@@ -65,7 +70,11 @@ func (r *{{ .Name }}) Hash(hasher hash.Hash64) (uint64, error) {
 		meta.Annotations = nil
 		{{- end }}
 	})
-	return hashutils.HashAll(clone), nil
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
 {{- else }}

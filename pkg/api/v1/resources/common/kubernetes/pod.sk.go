@@ -3,7 +3,9 @@
 package kubernetes
 
 import (
+	"encoding/binary"
 	"hash"
+	"hash/fnv"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_pod "github.com/solo-io/solo-kit/api/external/kubernetes/pod"
@@ -42,11 +44,18 @@ func (r *Pod) Clone() resources.Resource {
 }
 
 func (r *Pod) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.Pod.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-	return hashutils.HashAll(clone), nil
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
 func (r *Pod) GroupVersionKind() schema.GroupVersionKind {
