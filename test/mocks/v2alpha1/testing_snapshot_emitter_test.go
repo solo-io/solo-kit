@@ -36,14 +36,15 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		return
 	}
 	var (
-		namespace1         string
-		namespace2         string
-		name1, name2       = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
-		cfg                *rest.Config
-		kube               kubernetes.Interface
-		emitter            TestingEmitter
-		mockResourceClient MockResourceClient
-		fakeResourceClient testing_solo_io.FakeResourceClient
+		namespace1                                  string
+		namespace2                                  string
+		name1, name2                                = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
+		cfg                                         *rest.Config
+		kube                                        kubernetes.Interface
+		emitter                                     TestingEmitter
+		mockResourceClient                          MockResourceClient
+		frequentlyChangingAnnotationsResourceClient FrequentlyChangingAnnotationsResourceClient
+		fakeResourceClient                          testing_solo_io.FakeResourceClient
 	)
 
 	BeforeEach(func() {
@@ -63,6 +64,13 @@ var _ = Describe("V2Alpha1Emitter", func() {
 
 		mockResourceClient, err = NewMockResourceClient(mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
+		// FrequentlyChangingAnnotationsResource Constructor
+		frequentlyChangingAnnotationsResourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+
+		frequentlyChangingAnnotationsResourceClient, err = NewFrequentlyChangingAnnotationsResourceClient(frequentlyChangingAnnotationsResourceClientFactory)
+		Expect(err).NotTo(HaveOccurred())
 		// FakeResource Constructor
 		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
@@ -70,7 +78,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 
 		fakeResourceClient, err = testing_solo_io.NewFakeResourceClient(fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient)
+		emitter = NewTestingEmitter(mockResourceClient, frequentlyChangingAnnotationsResourceClient, fakeResourceClient)
 	})
 	AfterEach(func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
@@ -145,6 +153,63 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
+
+		/*
+			FrequentlyChangingAnnotationsResource
+		*/
+
+		assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectFcars {
+						if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectFcars {
+						if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, nil)
+		frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}, nil)
+
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
+
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFcars(nil, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
 
 		/*
 			FakeResource
@@ -272,6 +337,63 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
+
+		/*
+			FrequentlyChangingAnnotationsResource
+		*/
+
+		assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectFcars {
+						if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectFcars {
+						if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, nil)
+		frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}, nil)
+
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
+
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotFcars(nil, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
 
 		/*
 			FakeResource

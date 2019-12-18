@@ -484,13 +484,16 @@ func writeDescriptors(protoFile, toFile string, imports, gogoArgs []string, comp
 	for i := range imports {
 		imports[i] = "-I" + imports[i]
 	}
+	imports = append(imports, "-I=vendor/github.com/solo-io/protoc-gen-ext")
 	cmd.Args = append(cmd.Args, imports...)
 
 	gogoArgs = append(defaultGogoArgs, gogoArgs...)
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc())
+			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
+			"--ext_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
+		)
 	}
 
 	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",

@@ -18,9 +18,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func TestKubernetessoloio(t *testing.T) {
+func TestKubernetesSoloIo(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Kubernetessoloio Suite")
+	RunSpecs(t, "KubernetesSoloIo Suite")
 }
 
 var (

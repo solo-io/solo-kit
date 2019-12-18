@@ -33,16 +33,24 @@ var _ = Describe("TestingEventLoop", func() {
 		mockResourceClient, err := NewMockResourceClient(mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
+		frequentlyChangingAnnotationsResourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		frequentlyChangingAnnotationsResourceClient, err := NewFrequentlyChangingAnnotationsResourceClient(frequentlyChangingAnnotationsResourceClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
 		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		fakeResourceClient, err := testing_solo_io.NewFakeResourceClient(fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient)
+		emitter = NewTestingEmitter(mockResourceClient, frequentlyChangingAnnotationsResourceClient, fakeResourceClient)
 	})
 	It("runs sync function on a new snapshot", func() {
 		_, err = emitter.MockResource().Write(NewMockResource(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = emitter.FrequentlyChangingAnnotationsResource().Write(NewFrequentlyChangingAnnotationsResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.FakeResource().Write(testing_solo_io.NewFakeResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())

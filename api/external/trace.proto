@@ -19,6 +19,10 @@ package opencensus.proto.trace;
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
 option java_multiple_files = true;
 option java_package = "io.opencensus.proto.trace";
 option java_outer_classname = "TraceProto";

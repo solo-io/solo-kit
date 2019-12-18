@@ -24,7 +24,3 @@ message Resource {
     // if set to true, changes in annotations will not cause a new snapshot to be emitted
     bool skip_hashing_annotations = 5;
 }
-
-extend google.protobuf.FieldOptions {
-    bool skip_hashing = 10000;
-}

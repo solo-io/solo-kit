@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -e
 
 ROOT=${GOPATH}/src
 SOLO_KIT=${ROOT}/github.com/solo-io/solo-kit
@@ -12,12 +12,18 @@ IMPORTS="\
     -I=${IN} \
     -I=${EXTERNAL} \
     -I=${ROOT}
+    -I=vendor/github.com/solo-io/protoc-gen-ext
     "
 
 GOGO_FLAG="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${GOPATH}/src/"
-INPUT_PROTOS="${IN}/*.proto"
+HASH_FLAG="--ext_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${GOPATH}/src/"
+
+INPUT_PROTOS="${IN}*.proto"
 
 mkdir -p ${OUT}
 protoc ${IMPORTS} \
     ${GOGO_FLAG} \
+    ${HASH_FLAG} \
     ${INPUT_PROTOS}
+
+goimports -w pkg

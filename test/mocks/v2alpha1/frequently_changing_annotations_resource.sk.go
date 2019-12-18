@@ -6,7 +6,6 @@ import (
 	"log"
 	"sort"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -26,18 +25,6 @@ func NewFrequentlyChangingAnnotationsResource(namespace, name string) *Frequentl
 
 func (r *FrequentlyChangingAnnotationsResource) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
-}
-
-func (r *FrequentlyChangingAnnotationsResource) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	metaCopy.Generation = 0
-	// investigate zeroing out owner refs as well
-	metaCopy.Annotations = nil
-	return hashutils.HashAll(
-		metaCopy,
-		r.Blah,
-	)
 }
 
 func (r *FrequentlyChangingAnnotationsResource) GroupVersionKind() schema.GroupVersionKind {

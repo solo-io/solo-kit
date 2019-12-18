@@ -6,7 +6,6 @@ import (
 	"log"
 	"sort"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -30,18 +29,6 @@ func (r *MockResource) SetMetadata(meta core.Metadata) {
 
 func (r *MockResource) SetStatus(status core.Status) {
 	r.Status = status
-}
-
-func (r *MockResource) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	metaCopy.Generation = 0
-	// investigate zeroing out owner refs as well
-	return hashutils.HashAll(
-		metaCopy,
-		r.Data,
-		r.TestOneofFields,
-	)
 }
 
 func (r *MockResource) GroupVersionKind() schema.GroupVersionKind {
