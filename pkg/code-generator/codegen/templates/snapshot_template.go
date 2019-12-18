@@ -16,6 +16,7 @@ import (
 
 	{{ .Imports }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -68,11 +69,14 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 {{- range .Resources}}
 	{{ upper_camel .PluralName }}Hash, err := s.hash{{ upper_camel .PluralName }}(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("{{ lower_camel .PluralName }}", {{ upper_camel .PluralName }}Hash ))
 {{- end}}
-	snapshotHash, _ := s.Hash(hasher)
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return append(fields, zap.Uint64("snapshotHash",  snapshotHash))
 }
 
@@ -99,7 +103,7 @@ func (ss {{ .GoName }}SnapshotStringer) String() string {
 func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
 	snapshotHash, err := s.Hash(nil)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return {{ .GoName }}SnapshotStringer{
 		Version: snapshotHash,

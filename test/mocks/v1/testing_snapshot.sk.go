@@ -10,6 +10,7 @@ import (
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -88,35 +89,38 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	hasher := fnv.New64()
 	MocksHash, err := s.hashMocks(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("mocks", MocksHash))
 	FakesHash, err := s.hashFakes(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("fakes", FakesHash))
 	AnothermockresourcesHash, err := s.hashAnothermockresources(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("anothermockresources", AnothermockresourcesHash))
 	ClusterresourcesHash, err := s.hashClusterresources(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("clusterresources", ClusterresourcesHash))
 	MctsHash, err := s.hashMcts(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("mcts", MctsHash))
 	PodsHash, err := s.hashPods(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("pods", PodsHash))
-	snapshotHash, _ := s.Hash(hasher)
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
@@ -169,7 +173,7 @@ func (ss TestingSnapshotStringer) String() string {
 func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 	snapshotHash, err := s.Hash(nil)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return TestingSnapshotStringer{
 		Version:              snapshotHash,

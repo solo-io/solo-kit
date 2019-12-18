@@ -10,6 +10,7 @@ import (
 
 	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -65,20 +66,23 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	hasher := fnv.New64()
 	MocksHash, err := s.hashMocks(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("mocks", MocksHash))
 	FcarsHash, err := s.hashFcars(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("fcars", FcarsHash))
 	FakesHash, err := s.hashFakes(hasher)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("fakes", FakesHash))
-	snapshotHash, _ := s.Hash(hasher)
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
@@ -113,7 +117,7 @@ func (ss TestingSnapshotStringer) String() string {
 func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 	snapshotHash, err := s.Hash(nil)
 	if err != nil {
-		log.Println(err)
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return TestingSnapshotStringer{
 		Version: snapshotHash,
