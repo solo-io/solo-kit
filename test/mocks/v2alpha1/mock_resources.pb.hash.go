@@ -11,6 +11,7 @@ import (
 	"hash/fnv"
 
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
@@ -29,14 +30,12 @@ func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(&m.Metadata).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(&m.Metadata).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+		if val, err := hashstructure.Hash(&m.Metadata, nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -87,14 +86,12 @@ func (m *FrequentlyChangingAnnotationsResource) Hash(hasher hash.Hash64) (uint64
 	}
 	var err error
 
-	if h, ok := interface{}(&m.Metadata).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(&m.Metadata).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+		if val, err := hashstructure.Hash(&m.Metadata, nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {

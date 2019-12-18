@@ -38,8 +38,8 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	-I=. \
 	./*.proto
 
-.PHONY: install-codegen-deps
-install-codegen-deps: vendor
+.PHONY: update-deps
+update-deps: vendor
 	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/gogo/protobuf/proto
@@ -97,7 +97,6 @@ $(OUTPUT_DIR)/.generated-code:
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
-	ci/fix-gen.sh
 	touch $@
 
 .PHONY: verify-envoy-protos

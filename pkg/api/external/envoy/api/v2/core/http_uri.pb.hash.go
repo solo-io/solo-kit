@@ -11,6 +11,7 @@ import (
 	"hash/fnv"
 
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
@@ -33,9 +34,7 @@ func (m *HttpUri) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetTimeout()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}

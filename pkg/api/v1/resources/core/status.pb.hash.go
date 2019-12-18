@@ -11,6 +11,7 @@ import (
 	"hash/fnv"
 
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
@@ -48,9 +49,7 @@ func (m *Status) Hash(hasher hash.Hash64) (uint64, error) {
 		for k, v := range m.GetSubresourceStatuses() {
 			innerHash.Reset()
 
-			if h, ok := interface{}(v).(interface {
-				Hash(innerHash hash.Hash64) (uint64, error)
-			}); ok {
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
@@ -77,9 +76,7 @@ func (m *Status) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetDetails()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetDetails()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}

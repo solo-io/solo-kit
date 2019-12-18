@@ -11,6 +11,7 @@ import (
 	"hash/fnv"
 
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
@@ -62,9 +63,7 @@ func (m *Node) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(&m.Metadata).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -78,9 +77,7 @@ func (m *Node) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetLocality()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetLocality()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -117,9 +114,7 @@ func (m *Metadata) Hash(hasher hash.Hash64) (uint64, error) {
 		for k, v := range m.GetFilterMetadata() {
 			innerHash.Reset()
 
-			if h, ok := interface{}(v).(interface {
-				Hash(innerHash hash.Hash64) (uint64, error)
-			}); ok {
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
@@ -181,9 +176,7 @@ func (m *RuntimeFeatureFlag) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetDefaultValue()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetDefaultValue()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -235,9 +228,7 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetHeader()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetHeader()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -251,9 +242,7 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetAppend()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetAppend()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -282,9 +271,7 @@ func (m *HeaderMap) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetHeaders() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -348,9 +335,7 @@ func (m *RemoteDataSource) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetHttpUri()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetHttpUri()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -385,9 +370,7 @@ func (m *AsyncDataSource) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *AsyncDataSource_Local:
 
-		if h, ok := interface{}(m.GetLocal()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetLocal()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -403,9 +386,7 @@ func (m *AsyncDataSource) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *AsyncDataSource_Remote:
 
-		if h, ok := interface{}(m.GetRemote()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRemote()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -442,9 +423,7 @@ func (m *TransportSocket) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *TransportSocket_Config:
 
-		if h, ok := interface{}(m.GetConfig()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetConfig()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -460,9 +439,7 @@ func (m *TransportSocket) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *TransportSocket_TypedConfig:
 
-		if h, ok := interface{}(m.GetTypedConfig()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetTypedConfig()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -540,9 +517,7 @@ func (m *RuntimeFractionalPercent) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetDefaultValue()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetDefaultValue()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}

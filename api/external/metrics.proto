@@ -17,8 +17,8 @@ package io.prometheus.client;
 option java_package = "io.prometheus.client";
 
 
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 message LabelPair {
   optional string name  = 1;
