@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"log"
 
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
@@ -38,7 +39,10 @@ func (s KubeconfigsSnapshot) hashKubeconfigs(hasher hash.Hash64) (uint64, error)
 func (s KubeconfigsSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	KubeconfigsHash, _ := s.hashKubeconfigs(hasher)
+	KubeconfigsHash, err := s.hashKubeconfigs(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("kubeconfigs", KubeconfigsHash))
 	snapshotHash, _ := s.Hash(hasher)
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
@@ -61,7 +65,10 @@ func (ss KubeconfigsSnapshotStringer) String() string {
 }
 
 func (s KubeconfigsSnapshot) Stringer() KubeconfigsSnapshotStringer {
-	snapshotHash, _ := s.Hash(nil)
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(err)
+	}
 	return KubeconfigsSnapshotStringer{
 		Version:     snapshotHash,
 		Kubeconfigs: s.Kubeconfigs.NamespacesDotNames(),

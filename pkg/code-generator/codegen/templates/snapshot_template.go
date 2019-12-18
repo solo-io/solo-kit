@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"log"
 
 	{{ .Imports }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -65,7 +66,10 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
 {{- range .Resources}}
-	{{ upper_camel .PluralName }}Hash, _ := s.hash{{ upper_camel .PluralName }}(hasher)
+	{{ upper_camel .PluralName }}Hash, err := s.hash{{ upper_camel .PluralName }}(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("{{ lower_camel .PluralName }}", {{ upper_camel .PluralName }}Hash ))
 {{- end}}
 	snapshotHash, _ := s.Hash(hasher)
@@ -93,7 +97,10 @@ func (ss {{ .GoName }}SnapshotStringer) String() string {
 }
 
 func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
-	snapshotHash, _ := s.Hash(nil)
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(err)
+	}
 	return {{ .GoName }}SnapshotStringer{
 		Version: snapshotHash,
 {{- range .Resources}}

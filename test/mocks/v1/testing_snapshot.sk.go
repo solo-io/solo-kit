@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"log"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
@@ -85,17 +86,35 @@ func (s TestingSnapshot) hashPods(hasher hash.Hash64) (uint64, error) {
 func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	MocksHash, _ := s.hashMocks(hasher)
+	MocksHash, err := s.hashMocks(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("mocks", MocksHash))
-	FakesHash, _ := s.hashFakes(hasher)
+	FakesHash, err := s.hashFakes(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("fakes", FakesHash))
-	AnothermockresourcesHash, _ := s.hashAnothermockresources(hasher)
+	AnothermockresourcesHash, err := s.hashAnothermockresources(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("anothermockresources", AnothermockresourcesHash))
-	ClusterresourcesHash, _ := s.hashClusterresources(hasher)
+	ClusterresourcesHash, err := s.hashClusterresources(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("clusterresources", ClusterresourcesHash))
-	MctsHash, _ := s.hashMcts(hasher)
+	MctsHash, err := s.hashMcts(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("mcts", MctsHash))
-	PodsHash, _ := s.hashPods(hasher)
+	PodsHash, err := s.hashPods(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("pods", PodsHash))
 	snapshotHash, _ := s.Hash(hasher)
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
@@ -148,7 +167,10 @@ func (ss TestingSnapshotStringer) String() string {
 }
 
 func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
-	snapshotHash, _ := s.Hash(nil)
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(err)
+	}
 	return TestingSnapshotStringer{
 		Version:              snapshotHash,
 		Mocks:                s.Mocks.NamespacesDotNames(),

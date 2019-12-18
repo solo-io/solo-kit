@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"log"
 
 	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
 
@@ -62,11 +63,20 @@ func (s TestingSnapshot) hashFakes(hasher hash.Hash64) (uint64, error) {
 func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	MocksHash, _ := s.hashMocks(hasher)
+	MocksHash, err := s.hashMocks(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("mocks", MocksHash))
-	FcarsHash, _ := s.hashFcars(hasher)
+	FcarsHash, err := s.hashFcars(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("fcars", FcarsHash))
-	FakesHash, _ := s.hashFakes(hasher)
+	FakesHash, err := s.hashFakes(hasher)
+	if err != nil {
+		log.Println(err)
+	}
 	fields = append(fields, zap.Uint64("fakes", FakesHash))
 	snapshotHash, _ := s.Hash(hasher)
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
@@ -101,7 +111,10 @@ func (ss TestingSnapshotStringer) String() string {
 }
 
 func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
-	snapshotHash, _ := s.Hash(nil)
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(err)
+	}
 	return TestingSnapshotStringer{
 		Version: snapshotHash,
 		Mocks:   s.Mocks.NamespacesDotNames(),
