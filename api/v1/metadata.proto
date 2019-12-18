@@ -42,7 +42,7 @@ message Metadata {
 
     // Annotations is an unstructured key value map stored with a resource that may be
     // set by external tools to store and retrieve arbitrary metadata.
-    map<string, string> annotations = 6 [(extproto.skip_hashing) = true];
+    map<string, string> annotations = 6;
 
     // A sequence number representing a specific generation of the desired state.
     // Currently only populated for resources backed by Kubernetes
@@ -61,5 +61,5 @@ message Metadata {
 
     //List of objects depended by this object.
     // Currently only populated for resources backed by Kubernetes
-    repeated OwnerReference owner_references = 9 [(extproto.skip_hashing) = true];
+    repeated OwnerReference owner_references = 9;
 }

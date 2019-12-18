@@ -49,7 +49,15 @@ func (s {{ .GoName }}Snapshot) Hash(hasher hash.Hash64) (uint64, error) {
 {{- range .Resources }}
 
 func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}(hasher hash.Hash64) (uint64, error) {
+	{{- if .SkipHashingAnnotations }}
+	clonedList := s.{{ upper_camel .PluralName }}.Clone()
+	for _, v := range clonedList {
+		v.Metadata.Annotations = nil
+	}
+	return hashutils.HashAllSafe(hasher, clonedList.AsInterfaces()...)
+	{{- else }}
 	return hashutils.HashAllSafe(hasher, s.{{ upper_camel .PluralName }}.AsInterfaces()...)
+	{{- end }}
 }
 {{- end}}
 

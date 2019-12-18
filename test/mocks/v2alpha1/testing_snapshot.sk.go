@@ -15,12 +15,14 @@ import (
 
 type TestingSnapshot struct {
 	Mocks MockResourceList
+	Fcars FrequentlyChangingAnnotationsResourceList
 	Fakes testing_solo_io.FakeResourceList
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
 	return TestingSnapshot{
 		Mocks: s.Mocks.Clone(),
+		Fcars: s.Fcars.Clone(),
 		Fakes: s.Fakes.Clone(),
 	}
 }
@@ -30,6 +32,9 @@ func (s TestingSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	if _, err := s.hashMocks(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashFcars(hasher); err != nil {
 		return 0, err
 	}
 	if _, err := s.hashFakes(hasher); err != nil {
@@ -42,6 +47,14 @@ func (s TestingSnapshot) hashMocks(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.Mocks.AsInterfaces()...)
 }
 
+func (s TestingSnapshot) hashFcars(hasher hash.Hash64) (uint64, error) {
+	clonedList := s.Fcars.Clone()
+	for _, v := range clonedList {
+		v.Metadata.Annotations = nil
+	}
+	return hashutils.HashAllSafe(hasher, clonedList.AsInterfaces()...)
+}
+
 func (s TestingSnapshot) hashFakes(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.Fakes.AsInterfaces()...)
 }
@@ -51,6 +64,8 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	hasher := fnv.New64()
 	MocksHash, _ := s.hashMocks(hasher)
 	fields = append(fields, zap.Uint64("mocks", MocksHash))
+	FcarsHash, _ := s.hashFcars(hasher)
+	fields = append(fields, zap.Uint64("fcars", FcarsHash))
 	FakesHash, _ := s.hashFakes(hasher)
 	fields = append(fields, zap.Uint64("fakes", FakesHash))
 	snapshotHash, _ := s.Hash(hasher)
@@ -60,6 +75,7 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 type TestingSnapshotStringer struct {
 	Version uint64
 	Mocks   []string
+	Fcars   []string
 	Fakes   []string
 }
 
@@ -68,6 +84,11 @@ func (ss TestingSnapshotStringer) String() string {
 
 	s += fmt.Sprintf("  Mocks %v\n", len(ss.Mocks))
 	for _, name := range ss.Mocks {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Fcars %v\n", len(ss.Fcars))
+	for _, name := range ss.Fcars {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
@@ -84,6 +105,7 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 	return TestingSnapshotStringer{
 		Version: snapshotHash,
 		Mocks:   s.Mocks.NamespacesDotNames(),
+		Fcars:   s.Fcars.NamespacesDotNames(),
 		Fakes:   s.Fakes.NamespacesDotNames(),
 	}
 }

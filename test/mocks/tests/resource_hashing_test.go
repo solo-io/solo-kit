@@ -24,19 +24,28 @@ var _ = Describe("Resource Hashing", func() {
 		Expect(originalSnapHash).To(Equal(snapWithInsensitiveChangedHash))
 		Expect(originalSnapHash).NotTo(Equal(snapWithSensitiveChangedHash))
 	})
+	// This is now implemented on the snapshot level, rather than the resource, so in order to test this
+	// the whole snapshot must be hashed
 	Context("skip_hashing_annotations=true", func() {
 		It("ignores the resource meta annotations in the hash", func() {
-			res1 := v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b")
-			res2 := v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b")
+			snap1 := &v2alpha1.TestingSnapshot{Fcars: []*v2alpha1.FrequentlyChangingAnnotationsResource{
+				v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b"),
+			}}
+			snap2 := &v2alpha1.TestingSnapshot{Fcars: []*v2alpha1.FrequentlyChangingAnnotationsResource{
+				v2alpha1.NewFrequentlyChangingAnnotationsResource("a", "b"),
+			}}
 
-			res1Hash, _ := res1.Hash(nil)
-			res2Hash, _ := res2.Hash(nil)
+			snap1Hash, _ := snap1.Hash(nil)
+			snap2Hash, _ := snap2.Hash(nil)
 			// sanity check
-			Expect(res1Hash).To(Equal(res2Hash))
+			Expect(snap1Hash).To(Equal(snap2Hash))
 
-			res1.Metadata.Annotations = map[string]string{"ignore": "me"}
-			res2Hash, _ = res2.Hash(nil)
-			Expect(res1Hash).To(Equal(res2Hash))
+			annotations := map[string]string{"ignore": "me"}
+			snap2.Fcars[0].Metadata.Annotations = annotations
+			snap2Hash, _ = snap2.Hash(nil)
+			Expect(snap1Hash).To(Equal(snap2Hash))
+			// check that metadata of original was not changed
+			Expect(snap2.Fcars[0].Metadata.Annotations).To(Equal(annotations))
 		})
 	})
 })

@@ -92,6 +92,8 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 					switch typed := res.(type) {
 					case *MockResource:
 						currentSnapshot.Mocks = append(currentSnapshot.Mocks, typed)
+					case *FrequentlyChangingAnnotationsResource:
+						currentSnapshot.Fcars = append(currentSnapshot.Fcars, typed)
 					case *testing_solo_io.FakeResource:
 						currentSnapshot.Fakes = append(currentSnapshot.Fakes, typed)
 					default:
