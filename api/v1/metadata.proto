@@ -61,5 +61,5 @@ message Metadata {
 
     //List of objects depended by this object.
     // Currently only populated for resources backed by Kubernetes
-    repeated OwnerReference owner_references = 9 [(gogoproto.nullable) = false, (extproto.skip_hashing) = true];
+    repeated OwnerReference owner_references = 9 [(extproto.skip_hashing) = true];
 }
