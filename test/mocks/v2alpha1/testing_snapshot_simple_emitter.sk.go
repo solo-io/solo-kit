@@ -55,7 +55,7 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 		sync := func() {
 			currentHash, err := currentSnapshot.Hash(nil)
 			if err != nil {
-				contextutils.LoggerFrom(ctx).Fatalw("error while hashing, this should never happen", zap.Error(err))
+				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
 			if previousHash == currentHash {
 				return
