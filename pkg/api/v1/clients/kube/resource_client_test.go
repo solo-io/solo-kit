@@ -570,7 +570,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				go Expect(util.CreateMockResource(clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
 
 				skippedInitialRead := false
-				after := time.After(200 * time.Millisecond)
+				after := time.After(2 * time.Second)
 			LOOP:
 				for {
 					select {
