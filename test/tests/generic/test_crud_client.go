@@ -181,7 +181,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	}
 
 	list = nil
-	after := time.After(time.Millisecond * 250)
+	after := time.After(time.Second * 2)
 Loop:
 	for {
 		select {
