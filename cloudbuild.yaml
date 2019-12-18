@@ -43,10 +43,10 @@ steps:
 
   # Installs go executables required by codegen tests
   - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
-    args: ['install-codegen-deps']
+    args: ['update-deps']
     waitFor: ['dep']
     dir: './gopath/src/github.com/solo-io/solo-kit'
-    id: 'install-codegen-deps'
+    id: 'update-deps'
     volumes: *vol
     env:
       - 'GOPATH=/workspace/gopath'
@@ -60,7 +60,7 @@ steps:
       - 'GOPATH=/workspace/gopath'
       - 'TAGGED_VERSION=$TAG_NAME'
     dir: './gopath/src/github.com/solo-io/solo-kit'
-    waitFor: ['install-codegen-deps']
+    waitFor: ['update-deps']
     volumes: *vol
     id: 'check-code-and-docs-gen'
 
