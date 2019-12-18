@@ -13,7 +13,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
-var _ = FDescribe("hashing", func() {
+var _ = Describe("hashing", func() {
 	var allResources v1.MockResourceList
 	BeforeEach(func() {
 		allResources = nil

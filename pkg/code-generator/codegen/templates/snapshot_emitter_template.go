@@ -17,6 +17,7 @@ var ResourceGroupEmitterTemplate = template.Must(template.New("resource_group_em
 {{- $clients := (join_str_slice $clients ", ") }}
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -256,13 +257,13 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		timer := time.NewTicker(time.Second * 1)
 		previousHash, err := currentSnapshot.Hash(nil)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+			contextutils.LoggerFrom(ctx).Fatalw("error while hashing, this should never happen", zap.Error(err))
 		}
 		sync := func() {
 			currentHash, err := currentSnapshot.Hash(nil)
 			// this should never happen, so panic if it does
 			if err != nil {
-				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+				contextutils.LoggerFrom(ctx).Fatalw("error while hashing, this should never happen", zap.Error(err))
 			}
 			if previousHash == currentHash {
 				return

@@ -29,7 +29,7 @@ message Metadata {
     // Cluster indicates the cluster this resource belongs to
     // Cluster is only applicable in certain contexts, e.g. Kubernetes
     // An empty string here refers to the local cluster
-    string cluster = 7 [(extproto.skip_hashing) = true];
+    string cluster = 7;
 
     // An opaque value that represents the internal version of this object that can
     // be used by clients to determine when objects have changed.
@@ -38,7 +38,7 @@ message Metadata {
     // Map of string keys and values that can be used to organize and categorize
     // (scope and select) objects. Some resources contain `selectors` which
     // can be linked with other resources by their labels
-    map<string, string> labels = 5 [(extproto.skip_hashing) = true];
+    map<string, string> labels = 5;
 
     // Annotations is an unstructured key value map stored with a resource that may be
     // set by external tools to store and retrieve arbitrary metadata.

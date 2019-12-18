@@ -229,7 +229,6 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 
 	hasStatus := hasField(msg, "status", statusTypeName)
 
-	// fields := collectFields(msg)
 	oneofs := collectOneofs(msg)
 
 	return &model.Resource{
