@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Revert GVK filter on list implementation. The kubernetes apiserver simply overwrites the apiversion on reseources
+      to match that which was requested, so the filter is a no-op.
