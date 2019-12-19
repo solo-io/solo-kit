@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,6 +24,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
+	"github.com/solo-io/solo-kit/pkg/utils/fileutils"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -78,7 +78,7 @@ type Runner struct {
 	RelativeRoot     string
 	DescriptorOutDir string
 	BaseDir          string
-	AbsoluteRoot     string
+	CommonImports    []string
 }
 
 func Generate(opts GenerateOptions) error {
@@ -89,13 +89,9 @@ func Generate(opts GenerateOptions) error {
 		workingRootRelative = "."
 	}
 
-	cmd := exec.Command("go", "env", "GOMOD")
-	modBytes, err := cmd.Output()
-	if err != nil {
-		return err
-	}
+	modBytes, err := fileutils.GetModPackageFile()
 	modFileString := strings.TrimSpace(string(modBytes))
-	modPackageName, err := getModPackageName(modFileString)
+	modPackageName, err := fileutils.GetModPackageName(modFileString)
 	if err != nil {
 		return err
 	}
@@ -110,6 +106,10 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 	defer os.Remove(descriptorOutDir)
+	commonImports, err := getCommonImports()
+	if err != nil {
+		return err
+	}
 
 	// copy over our protos to right path
 	r := Runner{
@@ -117,6 +117,7 @@ func Generate(opts GenerateOptions) error {
 		Opts:             opts,
 		BaseDir:          modPathString,
 		DescriptorOutDir: descriptorOutDir,
+		CommonImports:    commonImports,
 	}
 
 	// copy out generated code
@@ -500,12 +501,13 @@ func (r *Runner) detectImportsForFile(file string) ([]string, error) {
 
 func getCommonImports() ([]string, error) {
 	var result []string
+	modPackageFile, err := fileutils.GetModPackageFile()
+	if err != nil {
+		return nil, err
+	}
+	modPackageDir := filepath.Dir(modPackageFile)
 	for _, v := range commonImportStrings {
-		if abs, err := filepath.Abs(v); err != nil {
-			return nil, err
-		} else {
-			result = append(result, abs)
-		}
+		result = append(result, filepath.Join(modPackageDir, v))
 	}
 	return result, nil
 }
@@ -520,11 +522,7 @@ func (r *Runner) importsForProtoFile(absoluteRoot, protoFile string, customImpor
 	if err != nil {
 		return nil, err
 	}
-	commonImports, err := getCommonImports()
-	if err != nil {
-		return nil, err
-	}
-	importsForProto := append([]string{}, commonImports...)
+	importsForProto := append([]string{}, r.CommonImports...)
 	for _, importedProto := range importStatements {
 		importPath, err := r.findImportRelativeToRoot(absoluteRoot, importedProto, customImports, importsForProto)
 		if err != nil {
@@ -681,27 +679,4 @@ func (r *Runner) importCustomResources(imports []string) ([]model.CustomResource
 	}
 
 	return results, nil
-}
-
-func getModPackageName(module string) (string, error) {
-	f, err := os.Open(module)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	scanner.Split(bufio.ScanLines)
-
-	if !scanner.Scan() {
-		return "", fmt.Errorf("invalid module file")
-	}
-	line := scanner.Text()
-	parts := strings.Split(line, " ")
-
-	modPath := parts[len(parts)-1]
-	if modPath == "/dev/null" || modPath == "" {
-		return "", errors.New("solo-kit must be run from within go.mod repo")
-	}
-
-	return parts[len(parts)-1], nil
 }

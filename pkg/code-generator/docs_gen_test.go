@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
+	"github.com/solo-io/solo-kit/pkg/utils/fileutils"
 	"gopkg.in/yaml.v2"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -73,11 +74,13 @@ var _ = Describe("DocsGen", func() {
 				ApiDir:  hugoApiDir,
 			},
 		}
+
+		modPackageFile, err := fileutils.GetModPackageFile()
+		Expect(err).NotTo(HaveOccurred())
+
 		// Run code gen
 		opts := cmd.GenerateOptions{
-			CustomImports: []string{
-				filepath.Join(tempDir, "..", ".."),
-			},
+			CustomImports: []string{filepath.Dir(modPackageFile)},
 			RelativeRoot:  tempDir,
 			SkipGenMocks:  true,
 			CompileProtos: true,
