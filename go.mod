@@ -78,6 +78,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
 	k8s.io/apimachinery v0.0.0-20191121015412-41065c7a8c2a
 	k8s.io/client-go v8.0.0+incompatible
+	k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
 	sigs.k8s.io/yaml v1.1.0
 )
 
