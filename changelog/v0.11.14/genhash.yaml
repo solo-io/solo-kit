@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  description: Replace hashstructure with custom generated hash functions.
+  issueLink: https://github.com/solo-io/gloo/issues/1711
+  resolvesIssue: false

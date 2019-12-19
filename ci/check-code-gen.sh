@@ -11,7 +11,11 @@ fi
 
 git init
 git config user.email "you@example.com"
+<<<<<<< HEAD
 git config user.name "Your Name"
+=======
+git config --global user.name "Your Name"
+>>>>>>> 20b36ddfc8ad6a0ec448b704b926d8b37783e09c
 git add .
 git commit -m "set up dummy repo for diffing" -q
 

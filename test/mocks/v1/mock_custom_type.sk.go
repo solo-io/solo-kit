@@ -3,6 +3,9 @@
 package v1
 
 import (
+	"encoding/binary"
+	"hash"
+	"hash/fnv"
 	"sort"
 
 	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
@@ -40,14 +43,19 @@ func (r *MockCustomType) Clone() resources.Resource {
 	return &MockCustomType{MockCustomType: *r.MockCustomType.Clone()}
 }
 
-func (r *MockCustomType) Hash() uint64 {
+func (r *MockCustomType) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.MockCustomType.Clone()
-
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-
-	return hashutils.HashAll(clone)
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
 func (r *MockCustomType) GroupVersionKind() schema.GroupVersionKind {

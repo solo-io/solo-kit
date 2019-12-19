@@ -5,8 +5,8 @@ import (
 
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/go-utils/hashutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -93,8 +93,9 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 				Ctx: ctx,
 			})
 			if readErr == nil {
-				if hashutils.HashAll(updatedRes) == hashutils.HashAll(resourceToWrite) {
-					// same hash, something not important was done, try again:
+				equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
+				if equal {
+					// same hash, s	omething not important was done, try again:
 					updatedRes.(resources.InputResource).SetStatus(status)
 					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
 						Ctx:               ctx,

@@ -11,11 +11,13 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.uber.org/zap"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	skstats "github.com/solo-io/solo-kit/pkg/stats"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 )
 
@@ -81,29 +83,35 @@ type TestingEmitter interface {
 	TestingSnapshotEmitter
 	Register() error
 	MockResource() MockResourceClient
+	FrequentlyChangingAnnotationsResource() FrequentlyChangingAnnotationsResourceClient
 	FakeResource() testing_solo_io.FakeResourceClient
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient) TestingEmitter {
-	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, make(chan struct{}))
+func NewTestingEmitter(mockResourceClient MockResourceClient, frequentlyChangingAnnotationsResourceClient FrequentlyChangingAnnotationsResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient) TestingEmitter {
+	return NewTestingEmitterWithEmit(mockResourceClient, frequentlyChangingAnnotationsResourceClient, fakeResourceClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, frequentlyChangingAnnotationsResourceClient FrequentlyChangingAnnotationsResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
-		mockResource: mockResourceClient,
-		fakeResource: fakeResourceClient,
-		forceEmit:    emit,
+		mockResource:                          mockResourceClient,
+		frequentlyChangingAnnotationsResource: frequentlyChangingAnnotationsResourceClient,
+		fakeResource:                          fakeResourceClient,
+		forceEmit:                             emit,
 	}
 }
 
 type testingEmitter struct {
-	forceEmit    <-chan struct{}
-	mockResource MockResourceClient
-	fakeResource testing_solo_io.FakeResourceClient
+	forceEmit                             <-chan struct{}
+	mockResource                          MockResourceClient
+	frequentlyChangingAnnotationsResource FrequentlyChangingAnnotationsResourceClient
+	fakeResource                          testing_solo_io.FakeResourceClient
 }
 
 func (c *testingEmitter) Register() error {
 	if err := c.mockResource.Register(); err != nil {
+		return err
+	}
+	if err := c.frequentlyChangingAnnotationsResource.Register(); err != nil {
 		return err
 	}
 	if err := c.fakeResource.Register(); err != nil {
@@ -114,6 +122,10 @@ func (c *testingEmitter) Register() error {
 
 func (c *testingEmitter) MockResource() MockResourceClient {
 	return c.mockResource
+}
+
+func (c *testingEmitter) FrequentlyChangingAnnotationsResource() FrequentlyChangingAnnotationsResourceClient {
+	return c.frequentlyChangingAnnotationsResource
 }
 
 func (c *testingEmitter) FakeResource() testing_solo_io.FakeResourceClient {
@@ -144,6 +156,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	mockResourceChan := make(chan mockResourceListWithNamespace)
 
 	var initialMockResourceList MockResourceList
+	/* Create channel for FrequentlyChangingAnnotationsResource */
+	type frequentlyChangingAnnotationsResourceListWithNamespace struct {
+		list      FrequentlyChangingAnnotationsResourceList
+		namespace string
+	}
+	frequentlyChangingAnnotationsResourceChan := make(chan frequentlyChangingAnnotationsResourceListWithNamespace)
+
+	var initialFrequentlyChangingAnnotationsResourceList FrequentlyChangingAnnotationsResourceList
 	/* Create channel for FakeResource */
 	type fakeResourceListWithNamespace struct {
 		list      testing_solo_io.FakeResourceList
@@ -173,6 +193,24 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		go func(namespace string) {
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
+		}(namespace)
+		/* Setup namespaced watch for FrequentlyChangingAnnotationsResource */
+		{
+			fcars, err := c.frequentlyChangingAnnotationsResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial FrequentlyChangingAnnotationsResource list")
+			}
+			initialFrequentlyChangingAnnotationsResourceList = append(initialFrequentlyChangingAnnotationsResourceList, fcars...)
+		}
+		frequentlyChangingAnnotationsResourceNamespacesChan, frequentlyChangingAnnotationsResourceErrs, err := c.frequentlyChangingAnnotationsResource.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting FrequentlyChangingAnnotationsResource watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, frequentlyChangingAnnotationsResourceErrs, namespace+"-fcars")
 		}(namespace)
 		/* Setup namespaced watch for FakeResource */
 		{
@@ -205,6 +243,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						return
 					case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
 					}
+				case frequentlyChangingAnnotationsResourceList := <-frequentlyChangingAnnotationsResourceNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case frequentlyChangingAnnotationsResourceChan <- frequentlyChangingAnnotationsResourceListWithNamespace{list: frequentlyChangingAnnotationsResourceList, namespace: namespace}:
+					}
 				case fakeResourceList := <-fakeResourceNamespacesChan:
 					select {
 					case <-ctx.Done():
@@ -217,6 +261,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 	/* Initialize snapshot for Mocks */
 	currentSnapshot.Mocks = initialMockResourceList.Sort()
+	/* Initialize snapshot for Fcars */
+	currentSnapshot.Fcars = initialFrequentlyChangingAnnotationsResourceList.Sort()
 	/* Initialize snapshot for Fakes */
 	currentSnapshot.Fakes = initialFakeResourceList.Sort()
 
@@ -227,9 +273,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		snapshots <- &initialSnapshot
 
 		timer := time.NewTicker(time.Second * 1)
-		previousHash := currentSnapshot.Hash()
+		previousHash, err := currentSnapshot.Hash(nil)
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
+		}
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
+			currentHash, err := currentSnapshot.Hash(nil)
+			// this should never happen, so panic if it does
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
+			}
 			if previousHash == currentHash {
 				return
 			}
@@ -244,6 +297,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}
 		}
 		mocksByNamespace := make(map[string]MockResourceList)
+		fcarsByNamespace := make(map[string]FrequentlyChangingAnnotationsResourceList)
 		fakesByNamespace := make(map[string]testing_solo_io.FakeResourceList)
 
 		for {
@@ -279,6 +333,25 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					mockResourceList = append(mockResourceList, mocks...)
 				}
 				currentSnapshot.Mocks = mockResourceList.Sort()
+			case frequentlyChangingAnnotationsResourceNamespacedList := <-frequentlyChangingAnnotationsResourceChan:
+				record()
+
+				namespace := frequentlyChangingAnnotationsResourceNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"frequently_changing_annotations_resource",
+					mTestingResourcesIn,
+				)
+
+				// merge lists by namespace
+				fcarsByNamespace[namespace] = frequentlyChangingAnnotationsResourceNamespacedList.list
+				var frequentlyChangingAnnotationsResourceList FrequentlyChangingAnnotationsResourceList
+				for _, fcars := range fcarsByNamespace {
+					frequentlyChangingAnnotationsResourceList = append(frequentlyChangingAnnotationsResourceList, fcars...)
+				}
+				currentSnapshot.Fcars = frequentlyChangingAnnotationsResourceList.Sort()
 			case fakeResourceNamespacedList := <-fakeResourceChan:
 				record()
 

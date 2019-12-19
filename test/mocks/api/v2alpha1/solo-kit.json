@@ -11,6 +11,10 @@
         "version": "v2alpha1"
       },
       {
+        "name": "FrequentlyChangingAnnotationsResource",
+        "package": "testing.solo.io"
+      },
+      {
         "name": "FakeResource",
         "package": "testing.solo.io",
         "version": "v1"

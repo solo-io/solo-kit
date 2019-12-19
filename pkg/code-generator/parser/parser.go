@@ -9,7 +9,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protokit"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
@@ -96,22 +95,6 @@ func parseRequest(projectConfig *model.ProjectConfig, allProjectConfigs []*model
 
 func goName(n string) string {
 	return strcase.ToCamel(strings.Split(n, ".")[0])
-}
-
-func collectFields(msg *protokit.Descriptor) []*model.Field {
-	var fields []*model.Field
-	for _, f := range msg.GetField() {
-		skipHashing := proto.GetBoolExtension(f.Options, core.E_SkipHashing, false)
-		fields = append(fields, &model.Field{
-			Name:        f.GetName(),
-			TypeName:    f.GetTypeName(),
-			IsOneof:     f.OneofIndex != nil,
-			SkipHashing: skipHashing,
-			Original:    f,
-		})
-	}
-	log.Printf("%v", fields)
-	return fields
 }
 
 func collectOneofs(msg *protokit.Descriptor) []*model.Oneof {

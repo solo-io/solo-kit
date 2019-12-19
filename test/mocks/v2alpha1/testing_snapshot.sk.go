@@ -4,51 +4,92 @@ package v2alpha1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
+	"log"
 
 	testing_solo_io "github.com/solo-io/solo-kit/test/mocks/v1"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
 
 type TestingSnapshot struct {
 	Mocks MockResourceList
+	Fcars FrequentlyChangingAnnotationsResourceList
 	Fakes testing_solo_io.FakeResourceList
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
 	return TestingSnapshot{
 		Mocks: s.Mocks.Clone(),
+		Fcars: s.Fcars.Clone(),
 		Fakes: s.Fakes.Clone(),
 	}
 }
 
-func (s TestingSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashMocks(),
-		s.hashFakes(),
-	)
+func (s TestingSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashMocks(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashFcars(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashFakes(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s TestingSnapshot) hashMocks() uint64 {
-	return hashutils.HashAll(s.Mocks.AsInterfaces()...)
+func (s TestingSnapshot) hashMocks(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Mocks.AsInterfaces()...)
 }
 
-func (s TestingSnapshot) hashFakes() uint64 {
-	return hashutils.HashAll(s.Fakes.AsInterfaces()...)
+func (s TestingSnapshot) hashFcars(hasher hash.Hash64) (uint64, error) {
+	clonedList := s.Fcars.Clone()
+	for _, v := range clonedList {
+		v.Metadata.Annotations = nil
+	}
+	return hashutils.HashAllSafe(hasher, clonedList.AsInterfaces()...)
+}
+
+func (s TestingSnapshot) hashFakes(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Fakes.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("mocks", s.hashMocks()))
-	fields = append(fields, zap.Uint64("fakes", s.hashFakes()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	MocksHash, err := s.hashMocks(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("mocks", MocksHash))
+	FcarsHash, err := s.hashFcars(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("fcars", FcarsHash))
+	FakesHash, err := s.hashFakes(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("fakes", FakesHash))
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type TestingSnapshotStringer struct {
 	Version uint64
 	Mocks   []string
+	Fcars   []string
 	Fakes   []string
 }
 
@@ -57,6 +98,11 @@ func (ss TestingSnapshotStringer) String() string {
 
 	s += fmt.Sprintf("  Mocks %v\n", len(ss.Mocks))
 	for _, name := range ss.Mocks {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Fcars %v\n", len(ss.Fcars))
+	for _, name := range ss.Fcars {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
@@ -69,9 +115,14 @@ func (ss TestingSnapshotStringer) String() string {
 }
 
 func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return TestingSnapshotStringer{
-		Version: s.Hash(),
+		Version: snapshotHash,
 		Mocks:   s.Mocks.NamespacesDotNames(),
+		Fcars:   s.Fcars.NamespacesDotNames(),
 		Fakes:   s.Fakes.NamespacesDotNames(),
 	}
 }

@@ -8,10 +8,15 @@ var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_s
 	`package {{ .Project.ProjectConfig.Version }}
 
 import (
+	"encoding/binary"
 	"fmt"
+	"hash"
+	"hash/fnv"
+	"log"
 
 	{{ .Imports }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -30,30 +35,49 @@ func (s {{ .GoName }}Snapshot) Clone() {{ .GoName }}Snapshot {
 	}
 }
 
-func (s {{ .GoName }}Snapshot) Hash() uint64 {
-	return hashutils.HashAll(
+func (s {{ .GoName }}Snapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 {{- range .Resources}}
-		s.hash{{ upper_camel .PluralName }}(),
+	if _, err := s.hash{{ upper_camel .PluralName }}(hasher); err != nil {
+		return 0, err
+	}
 {{- end}}
-	)
+	return hasher.Sum64(), nil
 }
 
 {{- $ResourceGroup := . }}
 {{- range .Resources }}
 
-func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}() uint64 {
-	return hashutils.HashAll(s.{{ upper_camel .PluralName }}.AsInterfaces()...)
+func (s {{ $ResourceGroup.GoName }}Snapshot) hash{{ upper_camel .PluralName }}(hasher hash.Hash64) (uint64, error) {
+	{{- if .SkipHashingAnnotations }}
+	clonedList := s.{{ upper_camel .PluralName }}.Clone()
+	for _, v := range clonedList {
+		v.Metadata.Annotations = nil
+	}
+	return hashutils.HashAllSafe(hasher, clonedList.AsInterfaces()...)
+	{{- else }}
+	return hashutils.HashAllSafe(hasher, s.{{ upper_camel .PluralName }}.AsInterfaces()...)
+	{{- end }}
 }
 {{- end}}
 
 func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-
+	hasher := fnv.New64()
 {{- range .Resources}}
-	fields = append(fields, zap.Uint64("{{ lower_camel .PluralName }}", s.hash{{ upper_camel .PluralName }}() ))
+	{{ upper_camel .PluralName }}Hash, err := s.hash{{ upper_camel .PluralName }}(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("{{ lower_camel .PluralName }}", {{ upper_camel .PluralName }}Hash ))
 {{- end}}
-
-	return append(fields, zap.Uint64("snapshotHash",  s.Hash()))
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	return append(fields, zap.Uint64("snapshotHash",  snapshotHash))
 }
 
 type {{ .GoName }}SnapshotStringer struct {
@@ -77,8 +101,12 @@ func (ss {{ .GoName }}SnapshotStringer) String() string {
 }
 
 func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return {{ .GoName }}SnapshotStringer{
-		Version: s.Hash(),
+		Version: snapshotHash,
 {{- range .Resources}}
 {{- if .ClusterScoped }}
 		{{ upper_camel .PluralName }}: s.{{ upper_camel .PluralName }}.Names(),

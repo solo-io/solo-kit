@@ -7,6 +7,9 @@ import (
 var ResourceTemplate = template.Must(template.New("resource").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
 
 import (
+	"encoding/binary"
+	"hash"
+	"hash/fnv"
 	"sort"
 
 {{- if $.IsCustom }}
@@ -56,18 +59,22 @@ func (r *{{ .Name }}) Clone() resources.Resource {
 	return &{{ .Name }}{ {{ .Name }}: *r.{{ .Name }}.Clone() }
 }
 
-func (r *{{ .Name }}) Hash() uint64 {
+func (r *{{ .Name }}) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.{{ .Name }}.Clone()
-
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
-
 		{{- if $.SkipHashingAnnotations }}
 		meta.Annotations = nil
 		{{- end }}
 	})
-
-	return hashutils.HashAll(clone)
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
 {{- else }}
@@ -82,27 +89,6 @@ func (r *{{ .Name }}) SetStatus(status core.Status) {
 	r.Status = status
 }
 {{- end }}
-
-func (r *{{ .Name }}) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	metaCopy.Generation = 0
-	// investigate zeroing out owner refs as well
-	{{- if $.SkipHashingAnnotations }}
-	metaCopy.Annotations = nil
-	{{- end }}
-	return hashutils.HashAll(
-		metaCopy,
-{{- range .Fields }}
-	{{- if not ( or (eq .Name "metadata") (eq .Name "status") .IsOneof .SkipHashing ) }}
-		r.{{ upper_camel .Name }},
-	{{- end }}
-{{- end}}
-{{- range .Oneofs }}
-		r.{{ upper_camel .Name }},
-{{- end}}
-	)
-}
 
 {{- end }}
 

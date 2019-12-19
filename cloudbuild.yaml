@@ -1,66 +1,35 @@
 steps:
-  # Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
-  # These two steps should populate the cache
   - name: gcr.io/cloud-builders/gsutil
     entrypoint: 'bash'
-    args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/solo-kit/solo-kit-dep.tar.gz | tar -xzf -']
-    id: 'download-untar-dep-cache'
-    waitFor: ['-']
-
-  # Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
-  # These two steps should populate the cache
-  - name: gcr.io/cloud-builders/gsutil
-    entrypoint: 'bash'
-    args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/solo-kit/solo-kit-gocache.tar.gz | tar -xzf -']
-    id: 'download-untar-go-cache'
-    waitFor: ['-']
-
-  - name: gcr.io/cloud-builders/gsutil
-    entrypoint: 'bash'
-    args: ['-c', 'mkdir -p ./gopath/pkg && cd ./gopath/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
+    args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
+    env:
     volumes: &vol
     - name: 'gopath'
-      path: '/workspace/gopath/pkg/mod'
+      path: '/go/pkg'
     id: 'untar-mod-cache'
-    waitFor: ['-']
   # donwload massive container in parallel
-  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
+  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.2.1'
     entrypoint: 'bash'
     args: ['-c', 'ls']
     waitFor: ['-']
 
-  # Run dep to set up the project so it can be built and tested
-  # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
-  # All steps after this must set GOPATH
-  - name: 'gcr.io/$PROJECT_ID/dep:0.1.5'
-    args: ['ensure']
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GIT_SSH_CONFIG=FALSE'
-    id: 'dep'
-    waitFor: ['download-untar-dep-cache']
-
 
   # Installs go executables required by codegen tests
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
-    args: ['install-codegen-deps']
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
+    args: ['update-deps']
     waitFor: ['dep']
-    dir: './gopath/src/github.com/solo-io/solo-kit'
-    id: 'install-codegen-deps'
+    id: 'update-deps'
     volumes: *vol
     env:
-      - 'GOPATH=/workspace/gopath'
 
   # check code gen for kubernetes custom resources, should be no diff
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
     entrypoint: 'bash'
     args: ['ci/check-code-gen.sh']
     env:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GOPATH=/workspace/gopath'
       - 'TAGGED_VERSION=$TAG_NAME'
-    dir: './gopath/src/github.com/solo-io/solo-kit'
-    waitFor: ['install-codegen-deps']
+    waitFor: ['update-deps']
     volumes: *vol
     id: 'check-code-and-docs-gen'
 
@@ -87,8 +56,7 @@ steps:
   # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
   # sets up redis, consul, kubectl, go with required environment variables
   # need to use the provided entrypoint
-  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
-    dir: './gopath/src/github.com/solo-io/solo-kit'
+  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.2.1'
     env:
       - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
       - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
@@ -98,29 +66,24 @@ steps:
       - 'RUN_VAULT_TESTS=1'
       - 'SKIP_MOCK_GEN=1'
       - 'CLOUD_BUILD=1'
-      - 'GOPATH=/workspace/gopath'
       - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
     args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=10']
     volumes: *vol
     id: 'test'
 
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
     args: ['solo-kit-cli']
     waitFor: ['test']
-    dir: './gopath/src/github.com/solo-io/solo-kit'
     id: 'build-cli'
     volumes: *vol
     env:
-    - 'GOPATH=/workspace/gopath'
 
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
+  - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
     args: ['solo-kit-gen']
     waitFor: ['test']
-    dir: './gopath/src/github.com/solo-io/solo-kit'
     id: 'build-codegen'
     volumes: *vol
     env:
-    - 'GOPATH=/workspace/gopath'
 
 timeout: 1500s
 tags: ['solo-kit']

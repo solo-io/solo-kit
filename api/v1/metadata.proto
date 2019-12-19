@@ -5,6 +5,9 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
 import "google/protobuf/wrappers.proto";
 
 /**
@@ -30,7 +33,7 @@ message Metadata {
 
     // An opaque value that represents the internal version of this object that can
     // be used by clients to determine when objects have changed.
-    string resource_version = 4 [(gogoproto.moretags) = "testdiff:\"ignore\""];
+    string resource_version = 4 [(gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
 
     // Map of string keys and values that can be used to organize and categorize
     // (scope and select) objects. Some resources contain `selectors` which
@@ -43,7 +46,7 @@ message Metadata {
 
     // A sequence number representing a specific generation of the desired state.
     // Currently only populated for resources backed by Kubernetes
-    int64 generation = 8;
+    int64 generation = 8 [(extproto.skip_hashing) = true];
 
     // proto message representing kubernertes owner reference
     // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#ownerreference-v1-meta

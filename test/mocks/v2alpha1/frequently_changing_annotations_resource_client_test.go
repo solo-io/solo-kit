@@ -72,7 +72,6 @@ func FrequentlyChangingAnnotationsResourceClientTest(namespace string, client Fr
 	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
 	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
 	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
-	Expect(r1.Blah).To(Equal(input.Blah))
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,

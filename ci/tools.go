@@ -13,10 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+<<<<<<< HEAD
 package tools
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	_ "k8s.io/code-generator"
+=======
+// This package imports things required by build scripts, to force `go mod` to see them as dependencies
+package tools
+
+import (
+	_ "github.com/solo-io/protoc-gen-ext"
+>>>>>>> 20b36ddfc8ad6a0ec448b704b926d8b37783e09c
 )
