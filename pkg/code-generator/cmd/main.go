@@ -64,7 +64,7 @@ type GenerateOptions struct {
 
 		default: current github.com/solo-io/<current-folder>
 		for example: github.com/solo-io/solo-it
- 	*/
+	*/
 	PackageName string
 }
 
@@ -78,7 +78,7 @@ func Generate(opts GenerateOptions) error {
 	skipDirs = append(skipDirs, "vendor/")
 
 	if opts.PackageName == "" {
-		pwd, err  := filepath.Abs(".")
+		pwd, err := filepath.Abs(".")
 		if err != nil {
 			return err
 		}
@@ -143,7 +143,7 @@ func Generate(opts GenerateOptions) error {
 	path := fmt.Sprintf("cp -r %s .", filepath.Join("/tmp", opts.PackageName, "*"))
 	cp := exec.Command("sh", "-c", path)
 	if byt, err := cp.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "%s",byt)
+		return errors.Wrapf(err, "%s", byt)
 	}
 
 	log.Printf("collected descriptors: %v", func() []string {
@@ -537,13 +537,9 @@ func writeDescriptors(protoFile, toFile string, imports, gogoArgs []string, comp
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-<<<<<<< HEAD
-			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+"/tmp")
-=======
-			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
-			"--ext_out="+strings.Join(gogoArgs, ",")+":"+gopathSrc(),
+			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+"/tmp",
+			"--ext_out="+strings.Join(gogoArgs, ",")+":"+"/tmp",
 		)
->>>>>>> 20b36ddfc8ad6a0ec448b704b926d8b37783e09c
 	}
 
 	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",
@@ -569,7 +565,7 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 }
 
 const (
-	filepathValidLength = 4
+	filepathValidLength      = 4
 	filepathWithVendorLength = filepathValidLength + 1
 )
 
@@ -590,7 +586,7 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 				for example: vendor/github.com/solo-io/solo-kit/api/external/kubernetes/solo-kit.json
 				will become: [vendor/, github.com/, solo-io/, solo-kit/, api/external/kubernetes/solo-kit.json]
 				and the final member is the local path
-			 */
+			*/
 			split := strings.SplitAfterN(imp, "/", filepathWithVendorLength)
 			if len(split) < filepathWithVendorLength {
 				return nil, errors.Errorf("filepath is not valid, %s", imp)

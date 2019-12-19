@@ -25,20 +25,12 @@ go_package Comments a
 */
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
-
-<<<<<<< HEAD
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
-=======
-
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
->>>>>>> 20b36ddfc8ad6a0ec448b704b926d8b37783e09c
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/status.proto";
+import "solo-kit/api/v1/solo-kit.proto";
 
 
 /*

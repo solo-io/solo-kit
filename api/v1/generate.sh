@@ -2,11 +2,10 @@
 
 set -e
 
-ROOT=${GOPATH}/src
-SOLO_KIT=${ROOT}/github.com/solo-io/solo-kit
+ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
+SOLO_KIT=${ROOT}/solo-kit
 IN=${SOLO_KIT}/api/v1/
 EXTERNAL=${SOLO_KIT}/api/external/
-OUT=${SOLO_KIT}/pkg/api/external/istio/encryption/v1/
 
 IMPORTS="\
     -I=${IN} \
@@ -20,10 +19,12 @@ HASH_FLAG="--ext_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/type
 
 INPUT_PROTOS="${IN}*.proto"
 
-mkdir -p ${OUT}
 protoc ${IMPORTS} \
     ${GOGO_FLAG} \
     ${HASH_FLAG} \
     ${INPUT_PROTOS}
+
+cp -r  ${SOLO_KIT}/github.com/solo-io/solo-kit/ ${ROOT}
+rm -rf ${SOLO_KIT}/github.com
 
 goimports -w pkg

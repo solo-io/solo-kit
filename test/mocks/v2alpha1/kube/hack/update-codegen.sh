@@ -6,8 +6,7 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-PACKAGE_NAME=github.com/solo-io/solo-kit
-ROOT_PKG=${PACKAGE_NAME}/test/mocks/v2alpha1
+ROOT_PKG=github.com/solo-io/solo-kit/test/mocks/v2alpha1
 CLIENT_PKG=${ROOT_PKG}/kube/client
 APIS_PKG=${ROOT_PKG}/kube/apis
 
@@ -43,8 +42,8 @@ chmod +x ${CODEGEN_PKG}/generate-groups.sh
 ${CODEGEN_PKG}/generate-groups.sh all \
     ${CLIENT_PKG} \
     ${APIS_PKG} \
-    testing.solo.io:v2alpha1 \
+    appmesh:v1beta1 \
     --output-base "${TEMP_DIR}"
 # Copy everything back.
-cp -r "${TEMP_DIR}/${PACKAGE_NAME}/" "${SCRIPT_ROOT}/"
+cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 )
+
 // TODO(marco): replace hardcoded types
 var GenerateScriptTemplate = template.Must(template.New("kube_generate").Funcs(templates.Funcs).Parse(`
 #!/usr/bin/env bash
