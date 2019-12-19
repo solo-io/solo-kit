@@ -18,6 +18,6 @@ package tools
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate"
 	_ "github.com/gogo/protobuf/gogoproto"
-	_ "k8s.io/code-generator"
 	_ "github.com/solo-io/protoc-gen-ext"
+	_ "k8s.io/code-generator"
 )

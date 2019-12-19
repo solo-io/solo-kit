@@ -123,7 +123,7 @@ func Generate(opts GenerateOptions) error {
 	// copy over our protos to right path
 	r := Runner{
 		RelativeRoot:     workingRootRelative,
-		Opts: opts,
+		Opts:             opts,
 		BaseOutDir:       absoluteVendor,
 		DescriptorOutDir: absoluteVendor,
 		CommonImports: []string{
@@ -135,7 +135,6 @@ func Generate(opts GenerateOptions) error {
 
 	return r.Run()
 }
-
 
 func (r *Runner) Run() error {
 	workingRootAbsolute, err := filepath.Abs(r.RelativeRoot)
