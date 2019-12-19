@@ -75,12 +75,10 @@ type GenerateOptions struct {
 
 type Runner struct {
 	Opts             GenerateOptions
-	CommonImports    []string
 	RelativeRoot     string
 	DescriptorOutDir string
-	BaseOutDir       string
+	BaseDir          string
 	AbsoluteRoot     string
-	ProjectRoot      string
 }
 
 func Generate(opts GenerateOptions) error {
@@ -101,18 +99,11 @@ func Generate(opts GenerateOptions) error {
 	if err != nil {
 		return err
 	}
-	// modPathString := filepath.Dir(modFileString)
+	modPathString := filepath.Dir(modFileString)
 
 	if opts.PackageName == "" {
 		opts.PackageName = modPackageName
 	}
-
-	absoluteVendor, err := filepath.Abs("vendor")
-	if err != nil {
-		return err
-	}
-
-	// projectRoot := filepath.Join(absoluteVendor, modPackageName, workingRootRelative)
 
 	descriptorOutDir, err := ioutil.TempDir("", "")
 	if err != nil {
@@ -124,13 +115,8 @@ func Generate(opts GenerateOptions) error {
 	r := Runner{
 		RelativeRoot:     workingRootRelative,
 		Opts:             opts,
-		BaseOutDir:       absoluteVendor,
+		BaseDir:          modPathString,
 		DescriptorOutDir: descriptorOutDir,
-		CommonImports: []string{
-			absoluteVendor,
-		},
-		AbsoluteRoot: absoluteVendor,
-		// ProjectRoot:  projectRoot,
 	}
 
 	// copy out generated code
@@ -138,12 +124,6 @@ func Generate(opts GenerateOptions) error {
 	if err != nil {
 		return err
 	}
-
-	// path := fmt.Sprintf("cp -r %s %s", filepath.Join(descriptorOutDir, r.Opts.PackageName, "*"), filepath.Join(modPathString, ".."))
-	// cp := exec.Command("sh", "-c", path)
-	// if byt, err := cp.CombinedOutput(); err != nil {
-	// 	return errors.Wrapf(err, "%s", byt)
-	// }
 
 	if err := filepath.Walk(filepath.Join(descriptorOutDir, r.Opts.PackageName), func(pbgoFile string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -253,7 +233,7 @@ func (r *Runner) Run() error {
 
 	var protoDescriptors []*descriptor.FileDescriptorProto
 	for _, projectConfig := range projectConfigs {
-		importedResources, err := importCustomResources(projectConfig.Imports)
+		importedResources, err := r.importCustomResources(projectConfig.Imports)
 		if err != nil {
 			return err
 		}
@@ -621,7 +601,6 @@ func (r *Runner) writeDescriptors(protoFile, toFile string, imports, gogoArgs []
 	for i := range imports {
 		imports[i] = "-I" + imports[i]
 	}
-	imports = append(imports, "-I=vendor/github.com/solo-io/protoc-gen-ext")
 	cmd.Args = append(cmd.Args, imports...)
 
 	gogoArgs = append(defaultGogoArgs, gogoArgs...)
@@ -660,7 +639,7 @@ const (
 	filepathWithVendorLength = filepathValidLength + 1
 )
 
-func importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
+func (r *Runner) importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
 	var results []model.CustomResourceConfig
 	for _, imp := range imports {
 		imp = filepath.Join("vendor", imp)

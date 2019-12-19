@@ -76,9 +76,6 @@ var _ = Describe("DocsGen", func() {
 		// Run code gen
 		opts := cmd.GenerateOptions{
 			CustomImports: []string{
-				filepath.Join(tempDir, "..", "vendor/github.com/solo-io/protoc-gen-ext"),
-				filepath.Join(tempDir, "..", "vendor/github.com/gogo/protobuf"),
-				filepath.Join(tempDir, "..", "api/external"),
 				filepath.Join(tempDir, "..", ".."),
 			},
 			RelativeRoot:  tempDir,

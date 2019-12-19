@@ -7,9 +7,9 @@ import (
 	bytes "bytes"
 	fmt "fmt"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	_ "gogoproto"
 	math "math"
 )
 
