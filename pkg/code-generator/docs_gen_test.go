@@ -79,7 +79,7 @@ var _ = Describe("DocsGen", func() {
 				filepath.Join(tempDir, "..", "vendor/github.com/solo-io/protoc-gen-ext"),
 				filepath.Join(tempDir, "..", "vendor/github.com/gogo/protobuf"),
 				filepath.Join(tempDir, "..", "api/external"),
-				filepath.Join(tempDir, ".."),
+				filepath.Join(tempDir, "..", ".."),
 			},
 			RelativeRoot:  tempDir,
 			SkipGenMocks:  true,
