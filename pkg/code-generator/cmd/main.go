@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -90,50 +91,99 @@ func Generate(opts GenerateOptions) error {
 		workingRootRelative = "."
 	}
 
-	if opts.PackageName == "" {
-		pwd, err := filepath.Abs(".")
-		if err != nil {
-			return err
-		}
-		split := strings.Split(pwd, "/")
-		opts.PackageName = fmt.Sprintf("github.com/solo-io/%s", split[len(split)-1])
-	}
-
 	cmd := exec.Command("go", "env", "GOMOD")
 	modBytes, err := cmd.Output()
 	if err != nil {
 		return err
 	}
-	modPath, err := getModPath(strings.TrimSpace(string(modBytes)))
+	modFileString := strings.TrimSpace(string(modBytes))
+	modPackageName, err := getModPackageName(modFileString)
 	if err != nil {
 		return err
 	}
-	directory, _ := filepath.Split(modPath)
+	// modPathString := filepath.Dir(modFileString)
+
+	if opts.PackageName == "" {
+		opts.PackageName = modPackageName
+	}
+
+	absoluteVendor, err := filepath.Abs("vendor")
 	if err != nil {
 		return err
 	}
 
-	absoluteVendor, err := filepath.Abs(filepath.Join(directory, "vendor"))
+	// projectRoot := filepath.Join(absoluteVendor, modPackageName, workingRootRelative)
+
+	descriptorOutDir, err := ioutil.TempDir("", "")
 	if err != nil {
 		return err
 	}
-
-	projectRoot := filepath.Join(absoluteVendor, modPath, workingRootRelative)
+	defer os.Remove(descriptorOutDir)
 
 	// copy over our protos to right path
 	r := Runner{
 		RelativeRoot:     workingRootRelative,
 		Opts:             opts,
 		BaseOutDir:       absoluteVendor,
-		DescriptorOutDir: absoluteVendor,
+		DescriptorOutDir: descriptorOutDir,
 		CommonImports: []string{
 			absoluteVendor,
 		},
 		AbsoluteRoot: absoluteVendor,
-		ProjectRoot:  projectRoot,
+		// ProjectRoot:  projectRoot,
 	}
 
-	return r.Run()
+	// copy out generated code
+	err = r.Run()
+	if err != nil {
+		return err
+	}
+
+	// path := fmt.Sprintf("cp -r %s %s", filepath.Join(descriptorOutDir, r.Opts.PackageName, "*"), filepath.Join(modPathString, ".."))
+	// cp := exec.Command("sh", "-c", path)
+	// if byt, err := cp.CombinedOutput(); err != nil {
+	// 	return errors.Wrapf(err, "%s", byt)
+	// }
+
+	if err := filepath.Walk(filepath.Join(descriptorOutDir, r.Opts.PackageName), func(pbgoFile string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if !(strings.HasSuffix(pbgoFile, ".pb.go") || strings.HasSuffix(pbgoFile, ".pb.hash.go")) {
+			return nil
+		}
+
+		dest := strings.TrimPrefix(pbgoFile, filepath.Join(descriptorOutDir, r.Opts.PackageName))
+		dest = strings.TrimPrefix(dest, "/")
+		// dest = filepath.Join(relativeRoot, dest)
+		dir, _ := filepath.Split(dest)
+		os.MkdirAll(dir, 0755)
+
+		// copy
+		srcFile, err := os.Open(pbgoFile)
+		if err != nil {
+			return err
+		}
+		defer srcFile.Close()
+
+		dstFile, err := os.Create(dest)
+		if err != nil {
+			return err
+		}
+		defer dstFile.Close()
+
+		log.Printf("copying %v -> %v", pbgoFile, dest)
+		_, err = io.Copy(dstFile, srcFile)
+		return err
+
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *Runner) Run() error {
@@ -189,12 +239,6 @@ func (r *Runner) Run() error {
 		r.Opts.CustomGogoOutArgs, r.Opts.SkipDirs, compileProto)
 	if err != nil {
 		return err
-	}
-
-	path := fmt.Sprintf("cp -r %s .", filepath.Join("/tmp", r.Opts.PackageName, "*"))
-	cp := exec.Command("sh", "-c", path)
-	if byt, err := cp.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "%s", byt)
 	}
 
 	log.Printf("collected descriptors: %v", func() []string {
@@ -584,8 +628,8 @@ func (r *Runner) writeDescriptors(protoFile, toFile string, imports, gogoArgs []
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+"/tmp",
-			"--ext_out="+strings.Join(gogoArgs, ",")+":"+"/tmp",
+			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+r.DescriptorOutDir,
+			"--ext_out="+strings.Join(gogoArgs, ",")+":"+r.DescriptorOutDir,
 		)
 	}
 
@@ -660,7 +704,7 @@ func importCustomResources(imports []string) ([]model.CustomResourceConfig, erro
 	return results, nil
 }
 
-func getModPath(module string) (string, error) {
+func getModPackageName(module string) (string, error) {
 	f, err := os.Open(module)
 	if err != nil {
 		return "", err

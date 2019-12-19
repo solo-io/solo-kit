@@ -3,7 +3,6 @@
 #----------------------------------------------------------------------------------
 
 ROOTDIR := $(shell pwd)
-TEMPDIR?=/tmp
 PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
@@ -92,18 +91,13 @@ API_IMPORTS:=\
 GOGO_FLAG:="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:$(TEMPDIR)"
 INPUT_PROTOS=$(wildcard api/v1/*.proto)
 
-.PHONY: solo-kit-protos
-solo-kit-protos:
-	protoc $(API_IMPORTS) $(GOGO_FLAG) $(INPUT_PROTOS)
-	@cp -r $(TEMPDIR)/$(PACKAGE_PATH)/pkg/api/* pkg/api
-
 .PHONY: vendor
 vendor:
 	go mod vendor
 	chmod +x vendor/k8s.io/code-generator/generate-groups.sh
 
 .PHONY: generated-code
-generated-code: vendor solo-kit-protos $(OUTPUT_DIR)/.generated-code
+generated-code: vendor $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:

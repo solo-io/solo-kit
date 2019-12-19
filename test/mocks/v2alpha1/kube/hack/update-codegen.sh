@@ -42,8 +42,8 @@ chmod +x ${CODEGEN_PKG}/generate-groups.sh
 ${CODEGEN_PKG}/generate-groups.sh all \
     ${CLIENT_PKG} \
     ${APIS_PKG} \
-    appmesh:v1beta1 \
+    testing.solo.io:v2alpha1 \
     --output-base "${TEMP_DIR}"
 # Copy everything back.
-cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
+cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/.."
 
