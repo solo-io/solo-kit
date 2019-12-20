@@ -1,4 +1,4 @@
-package fileutils
+package modutils
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func GetModPackageName(module string) (string, error) {
+func GetCurrentModPackageName(module string) (string, error) {
 	f, err := os.Open(module)
 	if err != nil {
 		return "", err
@@ -32,7 +32,7 @@ func GetModPackageName(module string) (string, error) {
 	return parts[len(parts)-1], nil
 }
 
-func GetModPackageFile() (string, error) {
+func GetCurrentModPackageFile() (string, error) {
 	cmd := exec.Command("go", "env", "GOMOD")
 	modBytes, err := cmd.Output()
 	if err != nil {
@@ -40,3 +40,7 @@ func GetModPackageFile() (string, error) {
 	}
 	return string(modBytes), nil
 }
+
+// func GetModPackageDir(packageName string) (string, error) {
+//
+// }

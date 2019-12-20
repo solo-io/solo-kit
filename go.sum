@@ -1442,6 +1442,8 @@ github.com/solo-io/protoc-gen-ext v0.0.2 h1:CVyf687fYAFN6x43dz8S+VYyixhg7KM/0gsM
 github.com/solo-io/protoc-gen-ext v0.0.2/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
 github.com/solo-io/protoc-gen-ext v0.0.3 h1:FrTARCZUO0R1ikaD43KEj0QlooHOrXttgLFwZR7nNsU=
 github.com/solo-io/protoc-gen-ext v0.0.3/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
+github.com/solo-io/protoc-gen-ext v0.0.4 h1:OFuoFLf7ru6qqvG+jVksPT4TnVouBy/bTuIWdTeJbnk=
+github.com/solo-io/protoc-gen-ext v0.0.4/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
 github.com/sourcegraph/annotate v0.0.0-20160123013949-f4cad6c6324d/go.mod h1:UdhH50NIW0fCiwBSr0co2m7BnFLdv4fQTgdqdJTHFeE=
 github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e/go.mod h1:HuIsMU8RRBOtsCgI77wP899iHVBQpCmg4ErYMZB+2IA=

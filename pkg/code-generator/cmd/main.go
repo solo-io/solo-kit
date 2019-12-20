@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
-	"github.com/solo-io/solo-kit/pkg/utils/fileutils"
+	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -89,9 +89,9 @@ func Generate(opts GenerateOptions) error {
 		workingRootRelative = "."
 	}
 
-	modBytes, err := fileutils.GetModPackageFile()
+	modBytes, err := modutils.GetCurrentModPackageFile()
 	modFileString := strings.TrimSpace(string(modBytes))
-	modPackageName, err := fileutils.GetModPackageName(modFileString)
+	modPackageName, err := modutils.GetCurrentModPackageName(modFileString)
 	if err != nil {
 		return err
 	}
@@ -507,7 +507,7 @@ func (r *Runner) detectImportsForFile(file string) ([]string, error) {
 
 func getCommonImports() ([]string, error) {
 	var result []string
-	modPackageFile, err := fileutils.GetModPackageFile()
+	modPackageFile, err := modutils.GetCurrentModPackageFile()
 	if err != nil {
 		return nil, err
 	}
