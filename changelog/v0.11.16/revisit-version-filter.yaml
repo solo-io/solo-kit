@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Filter resources that fail to unmarshal into the expected type.
+    issueLink: https://github.com/solo-io/solo-kit/issues/216
