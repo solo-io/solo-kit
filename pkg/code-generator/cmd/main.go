@@ -278,15 +278,21 @@ func (r *Runner) Run() error {
 			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
 				return err
 			}
-			if !strings.HasSuffix(file.Filename, ".go") {
-				continue
-			}
-			if out, err := exec.Command("gofmt", "-w", path).CombinedOutput(); err != nil {
-				return errors.Wrapf(err, "gofmt failed: %s", out)
-			}
 
-			if out, err := exec.Command("goimports", "-w", path).CombinedOutput(); err != nil {
-				return errors.Wrapf(err, "goimports failed: %s", out)
+			switch {
+			case strings.HasSuffix(file.Filename, ".sh"):
+				if out, err := exec.Command("chmod", "+x", filepath.Join(workingRootAbsolute, path)).CombinedOutput(); err != nil {
+					return errors.Wrapf(err, "chmod failed: %s", out)
+				}
+
+			case strings.HasSuffix(file.Filename, ".go"):
+				if out, err := exec.Command("gofmt", "-w", path).CombinedOutput(); err != nil {
+					return errors.Wrapf(err, "gofmt failed: %s", out)
+				}
+
+				if out, err := exec.Command("goimports", "-w", path).CombinedOutput(); err != nil {
+					return errors.Wrapf(err, "goimports failed: %s", out)
+				}
 			}
 		}
 

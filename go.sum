@@ -285,9 +285,8 @@ github.com/emirpasic/gods v1.9.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3y
 github.com/envoyproxy/go-control-plane v0.8.0/go.mod h1:GSSbY9P1neVhdY7G4wu+IK1rk/dqhiCC/4ExuWJZVuk=
 github.com/envoyproxy/go-control-plane v0.9.1 h1:+8frETDtT11P1dMCWySse/d0jMPOKYYF7OZjl7cZLvQ=
 github.com/envoyproxy/go-control-plane v0.9.1/go.mod h1:G1fbsNGAFpC1aaERrShZQVdUV2ZuZuv6FCl2v9JNSxQ=
-github.com/envoyproxy/protoc-gen-validate v0.0.14/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
-github.com/envoyproxy/protoc-gen-validate v0.1.0 h1:EQciDnbrYxy13PgWoY8AqoxGiPrpgBZ1R8UNe3ddc+A=
-github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
+github.com/envoyproxy/protoc-gen-validate v0.2.0-java.0.20191218162112-6d6fa03f9dc6 h1:Q8uzwbTJCn1hzjaVYErhX03TCsFYMsgvSv2wriJiaVs=
+github.com/envoyproxy/protoc-gen-validate v0.2.0-java.0.20191218162112-6d6fa03f9dc6/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/evanphx/json-patch v4.2.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.5.0+incompatible h1:ouOWdg56aJriqS0huScTkVXPC5IcNrDCXZ6OoTAWu7M=
 github.com/evanphx/json-patch v4.5.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
@@ -1441,6 +1440,8 @@ github.com/solo-io/go-utils v0.11.2 h1:OvhJLktMdlJj/oqxwvLg3iv3p6QI+zTep0q2UVwGJ
 github.com/solo-io/go-utils v0.11.2/go.mod h1:D5lbi4EyIMq+T5gzjJacu0Ou4Z1brL7g2YYYYgYBJso=
 github.com/solo-io/protoc-gen-ext v0.0.2 h1:CVyf687fYAFN6x43dz8S+VYyixhg7KM/0gsMxAyXAyc=
 github.com/solo-io/protoc-gen-ext v0.0.2/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
+github.com/solo-io/protoc-gen-ext v0.0.3 h1:FrTARCZUO0R1ikaD43KEj0QlooHOrXttgLFwZR7nNsU=
+github.com/solo-io/protoc-gen-ext v0.0.3/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
 github.com/sourcegraph/annotate v0.0.0-20160123013949-f4cad6c6324d/go.mod h1:UdhH50NIW0fCiwBSr0co2m7BnFLdv4fQTgdqdJTHFeE=
 github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e/go.mod h1:HuIsMU8RRBOtsCgI77wP899iHVBQpCmg4ErYMZB+2IA=

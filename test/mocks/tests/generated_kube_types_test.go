@@ -1,6 +1,5 @@
 package tests_test
 
-
 import (
 	"context"
 
@@ -18,8 +17,6 @@ import (
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-//go:generate ../v2alpha1/kube/hack/update-codegen.sh
 
 var _ = Describe("Generated Kube Code", func() {
 	var (

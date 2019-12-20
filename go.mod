@@ -22,7 +22,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
-	github.com/envoyproxy/protoc-gen-validate v0.1.0
+	github.com/envoyproxy/protoc-gen-validate v0.2.0-java.0.20191218162112-6d6fa03f9dc6
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-ldap/ldap v3.0.3+incompatible // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da // indirect
 	github.com/schollz/progressbar/v2 v2.12.1 // indirect
 	github.com/solo-io/go-utils v0.11.2
-	github.com/solo-io/protoc-gen-ext v0.0.2
+	github.com/solo-io/protoc-gen-ext v0.0.3
 	github.com/technosophos/moniker v0.0.0-20180509230615-a5dbd03a2245 // indirect
 	github.com/ugorji/go v1.1.5-pre // indirect
 	github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1 // indirect
@@ -89,6 +89,7 @@ replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
+	github.com/envoyproxy/protoc-gen-validate => github.com/envoyproxy/protoc-gen-validate v0.2.0-java.0.20191218162112-6d6fa03f9dc6
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
