@@ -17,7 +17,7 @@ steps:
   # Installs go executables required by codegen tests
   - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
     args: ['update-deps']
-    waitFor: ['dep']
+    waitFor: ['untar-mod-cache']
     id: 'update-deps'
     volumes: *vol
     env:
