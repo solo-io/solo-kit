@@ -1,4 +1,4 @@
 changelog:
-- type: NEW_FEATURE
+- type: BREAKING_CHANGE
   description: Update to go.mod.
   issueLink: https://github.com/solo-io/solo-kit/issues/326
