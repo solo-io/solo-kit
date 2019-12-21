@@ -21,12 +21,8 @@ steps:
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
   args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
-  env:
-  volumes: &vol
-  - name: 'gopath'
-    path: '/go'
   id: 'untar-mod-cache'
-  dir: &dir '/worrkspace/solo-kit
+  dir: &dir '/workspace/solo-kit'
   waitFor:
   - 'prepare-workspace'
 # donwload massive container in parallel
@@ -43,16 +39,6 @@ steps:
   waitFor: ['untar-mod-cache']
   id: 'update-deps'
   dir: *dir
-  volumes: *vol
-
-# Installs go executables required by codegen tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
-  entrypoint: 'printenv'
-#  args: ['/go/bin']
-#  waitFor: ['untar-mod-cache']
-  id: 'print'
-  dir: *dir
-  volumes: *vol
 
 # check code gen for kubernetes custom resources, should be no diff
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
@@ -62,7 +48,6 @@ steps:
   - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
   - 'TAGGED_VERSION=$TAG_NAME'
 #  waitFor: ['update-deps']
-  volumes: *vol
   dir: *dir
   id: 'check-code-and-docs-gen'
 
@@ -103,7 +88,6 @@ steps:
   - 'CLOUD_BUILD=1'
   - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
   args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=10']
-  volumes: *vol
   dir: *dir
   id: 'test'
 
@@ -111,7 +95,6 @@ steps:
   args: ['solo-kit-cli']
   waitFor: ['test']
   id: 'build-cli'
-  volumes: *vol
   dir: *dir
   env:
 
@@ -119,7 +102,6 @@ steps:
   args: ['solo-kit-gen']
   waitFor: ['test']
   id: 'build-codegen'
-  volumes: *vol
   dir: *dir
   env:
 
@@ -127,3 +109,6 @@ timeout: 1500s
 tags: ['solo-kit']
 options:
   machineType: 'N1_HIGHCPU_32'
+  volumes:
+  - name: 'gopath'
+    path: '/go'

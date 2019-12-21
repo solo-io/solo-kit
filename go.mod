@@ -42,7 +42,7 @@ require (
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.2
 	github.com/solo-io/go-utils v0.11.2
-	github.com/solo-io/protoc-gen-ext v0.0.4
+	github.com/solo-io/protoc-gen-ext v0.0.5
 	go.opencensus.io v0.22.1
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0

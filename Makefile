@@ -27,25 +27,11 @@ init:
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
 
-.PHONY: proto
-proto: $(GENERATED_PROTO_FILES)
-
-$(GENERATED_PROTO_FILES): $(PROTOS)
-	cd api/v1 && \
-	protoc \
-	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:$(VENDOR)/src/ \
-	-I=$(VENDOR)/src/github.com/gogo/protobuf/ \
-	-I=$(VENDOR)/src/github.com/gogo/protobuf/protobuf/ \
-	-I=. \
-	./*.proto
-
 .PHONY: update-deps
-update-deps: vendor install-gen-tools
+update-deps: vendor
 	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
-#	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
-#	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
-#	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	GO111MODULE=off go get -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
 
