@@ -208,6 +208,13 @@ func (c *collector) findImportRelativeToRoot(absoluteRoot, importedProtoFile str
 		rootsToTry = append([]string{absoluteCustomImport}, rootsToTry...)
 	}
 
+	// Sort by length, so longer (more specific paths are attempted first)
+	sort.Slice(rootsToTry, func(i, j int) bool {
+		elementsJ := strings.Split(rootsToTry[j], string(os.PathSeparator))
+		elementsI := strings.Split(rootsToTry[i], string(os.PathSeparator))
+		return len(elementsI) > len(elementsJ)
+	})
+
 	var possibleImportPaths []string
 	for _, root := range rootsToTry {
 		if err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {

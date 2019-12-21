@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.1
-	github.com/envoyproxy/protoc-gen-validate v0.2.0-java.0.20191218162112-6d6fa03f9dc6
+	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -67,7 +67,6 @@ replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
-	github.com/envoyproxy/protoc-gen-validate => github.com/envoyproxy/protoc-gen-validate v0.2.0-java.0.20191218162112-6d6fa03f9dc6
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
