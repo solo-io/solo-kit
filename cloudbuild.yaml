@@ -8,7 +8,7 @@ steps:
   - "--repo-owner"
   - "solo-io"
   - "--repo-name"
-  - gloo
+  - solo-kit
   - "--repo-sha"
   - "$COMMIT_SHA"
   - "--repo-output-dir"
@@ -17,13 +17,14 @@ steps:
   - 'GIT_SSH_CONFIG=FALSE'
   id: 'prepare-workspace'
 
+
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
   args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
   env:
   volumes: &vol
   - name: 'gopath'
-    path: '/go/pkg'
+    path: '/go'
   id: 'untar-mod-cache'
   waitFor:
   - 'prepare-workspace'
@@ -40,7 +41,14 @@ steps:
   waitFor: ['untar-mod-cache']
   id: 'update-deps'
   volumes: *vol
-  env:
+
+# Installs go executables required by codegen tests
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+  entrypoint: 'printenv'
+#  args: ['/go/bin']
+#  waitFor: ['untar-mod-cache']
+  id: 'print'
+  volumes: *vol
 
 # check code gen for kubernetes custom resources, should be no diff
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
@@ -49,7 +57,7 @@ steps:
   env:
   - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
   - 'TAGGED_VERSION=$TAG_NAME'
-  waitFor: ['update-deps']
+#  waitFor: ['update-deps']
   volumes: *vol
   id: 'check-code-and-docs-gen'
 
@@ -109,5 +117,3 @@ timeout: 1500s
 tags: ['solo-kit']
 options:
   machineType: 'N1_HIGHCPU_32'
-  env:
-  - "GO111MODULE=on"

@@ -40,14 +40,12 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	./*.proto
 
 .PHONY: update-deps
-update-deps: vendor
+update-deps: vendor install-gen-tools
 	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
-	GO111MODULE=off go get -u github.com/gogo/protobuf/proto
-	GO111MODULE=off go get -u github.com/gogo/protobuf/jsonpb
-	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
-	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
-	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
+#	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
+#	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
+#	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
 
@@ -97,7 +95,7 @@ vendor:
 	chmod +x vendor/k8s.io/code-generator/generate-groups.sh
 
 .PHONY: generated-code
-generated-code: vendor $(OUTPUT_DIR)/.generated-code
+generated-code: $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
@@ -116,15 +114,15 @@ verify-envoy-protos:
 # {gogo,golang}/protobuf dependencies
 #----------------------------------------------------------------------------------
 
-GOGO_PROTO_VERSION=v$(shell grep -C 1 github.com/gogo/protobuf  Gopkg.toml|grep version |cut -d'"' -f 2)
-GOLANG_PROTO_VERSION=v$(shell grep -C 1 github.com/golang/protobuf  Gopkg.toml|grep version |cut -d'"' -f 2)
+GOGO_PROTO_VERSION=v1.3.1
+GOLANG_PROTO_VERSION=v1.3.2
 .PHONY: install-gen-tools
 install-gogo-proto:
-	mkdir -p  ${VENDOR}/src/github.com/gogo/
-	mkdir -p  ${VENDOR}/src/github.com/golang/
-	cd  ${VENDOR}/src/github.com/gogo/ && if [ -d protobuf ]; then cd protobuf && git fetch && git checkout $(GOGO_PROTO_VERSION); \
+	mkdir -p  ${GOPATH}/src/github.com/gogo/
+	mkdir -p  ${GOPATH}/src/github.com/golang/
+	cd  ${GOPATH}/src/github.com/gogo/ && if [ -d protobuf ]; then cd protobuf && git fetch && git checkout $(GOGO_PROTO_VERSION); \
 		else  git clone --branch $(GOGO_PROTO_VERSION) http://github.com/gogo/protobuf; fi
-	cd  ${VENDOR}/src/github.com/golang/ && if [ -d protobuf ]; then cd protobuf && git fetch && git checkout $(GOLANG_PROTO_VERSION); \
+	cd  ${GOPATH}/src/github.com/golang/ && if [ -d protobuf ]; then cd protobuf && git fetch && git checkout $(GOLANG_PROTO_VERSION); \
 		else  git clone --branch $(GOLANG_PROTO_VERSION) http://github.com/golang/protobuf; fi
 	go install github.com/gogo/protobuf/protoc-gen-gogo
 
