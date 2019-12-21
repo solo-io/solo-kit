@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
 
+	zglob "github.com/mattn/go-zglob"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/stringutils"
 )
@@ -23,9 +25,8 @@ type Manager interface {
 }
 
 type Options struct {
-	WorkingDirectory string
-	MatchPattern     string
-	IncludePackages  []string
+	MatchPatterns   []string
+	IncludePackages []string
 }
 
 type Module struct {
@@ -37,30 +38,56 @@ type Module struct {
 	VendorList    []string // files to vendor
 }
 
-func NewManager() *manager {
-	return &manager{}
+func PreRunProtoVendor(cwd string, vendorPackages []string) func() error {
+	return func() error {
+		mgr, err := NewManager(cwd)
+		if err != nil {
+			return err
+		}
+		opts := Options{
+			// TODO(make this second matcher work!)
+			MatchPatterns:   []string{defaultMatchPattern, "**/solo-kit.json"},
+			IncludePackages: vendorPackages,
+		}
+		modules, err := mgr.Gather(opts)
+		if err != nil {
+			return err
+		}
+		if err := mgr.Copy(modules); err != nil {
+			return err
+		}
+		return nil
+	}
 }
 
-type manager struct{}
-
-func (m *manager) Gather(opts Options) ([]*Module, error) {
-	if !filepath.IsAbs(opts.WorkingDirectory) {
-		absoluteDir, err := filepath.Abs(opts.WorkingDirectory)
+func NewManager(cwd string) (*manager, error) {
+	if !filepath.IsAbs(cwd) {
+		absoluteDir, err := filepath.Abs(cwd)
 		if err != nil {
 			return nil, err
 		}
-		opts.WorkingDirectory = absoluteDir
+		cwd = absoluteDir
 	}
-	if opts.MatchPattern == "" {
-		opts.MatchPattern = defaultMatchPattern
+	return &manager{
+		WorkingDirectory: cwd,
+	}, nil
+}
+
+type manager struct {
+	WorkingDirectory string
+}
+
+func (m *manager) Gather(opts Options) ([]*Module, error) {
+	if opts.MatchPatterns == nil {
+		opts.MatchPatterns = []string{defaultMatchPattern}
 	}
 	// Ensure go.mod file exists and we're running from the project root,
 	// and that ./vendor/modules.txt file exists.
-	if _, err := os.Stat(filepath.Join(opts.WorkingDirectory, "go.mod")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(m.WorkingDirectory, "go.mod")); os.IsNotExist(err) {
 		fmt.Println("Whoops, cannot find `go.mod` file")
 		return nil, err
 	}
-	modtxtPath := filepath.Join(opts.WorkingDirectory, "vendor", "modules.txt")
+	modtxtPath := filepath.Join(m.WorkingDirectory, "vendor", "modules.txt")
 	if _, err := os.Stat(modtxtPath); os.IsNotExist(err) {
 		fmt.Println("Whoops, cannot find vendor/modules.txt, first run `go mod vendor` and try again")
 		return nil, err
@@ -94,8 +121,17 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		// Handle "replace" in module file if any
 		if len(s) > 3 && s[3] == "=>" {
 			module.SourcePath = s[4]
-			module.SourceVersion = s[5]
-			module.Dir = pkgModPath(module.SourcePath, module.SourceVersion)
+			// non-local module with version
+			if len(s) >= 6 {
+				module.SourceVersion = s[5]
+				module.Dir = pkgModPath(module.SourcePath, module.SourceVersion)
+			} else {
+				moduleAbsolutePath, err := filepath.Abs(module.SourcePath)
+				if err != nil {
+					return nil, err
+				}
+				module.Dir = moduleAbsolutePath
+			}
 		} else {
 			module.Dir = pkgModPath(module.ImportPath, module.Version)
 		}
@@ -112,7 +148,7 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		}
 
 		// Build list of files to module path source to project vendor folder
-		vendorList, err := buildModVendorList([]string{"**/*.proto"}, module)
+		vendorList, err := buildModVendorList(opts.MatchPatterns, module)
 		if err != nil {
 			return nil, err
 		}
@@ -136,16 +172,16 @@ func (m *manager) Copy(modules []*Module) error {
 			}
 
 			localPath := filepath.Join(mod.ImportPath, vendorFile[len(mod.Dir):])
-			localFile := fmt.Sprintf("./vendor/%s", localPath)
+			localFile := filepath.Join(m.WorkingDirectory, "vendor", localPath)
 
-			// if *verboseFlag {
-			// 	fmt.Printf("vendoring %s\n", localPath)
-			// }
+			log.Printf("copying %v -> %v", vendorFile, localFile)
 
-			os.MkdirAll(filepath.Dir(localFile), os.ModePerm)
-			if _, err := copyFile(vendorFile, localFile); err != nil {
-				fmt.Printf("Error! %s - unable to copy file %s\n", err.Error(), vendorFile)
+			if err := os.MkdirAll(filepath.Dir(localFile), os.ModePerm); err != nil {
 				return err
+			}
+			if _, err := copyFile(vendorFile, localFile); err != nil {
+				return errors.Wrapf(err, fmt.Sprintf("Error! %s - unable to copy file %s\n",
+					err.Error(), vendorFile))
 			}
 		}
 	}
@@ -156,7 +192,7 @@ func buildModVendorList(copyPat []string, mod *Module) ([]string, error) {
 	var vendorList []string
 
 	for _, pat := range copyPat {
-		matches, err := filepath.Glob(filepath.Join(mod.Dir, pat))
+		matches, err := zglob.Glob(filepath.Join(mod.Dir, pat))
 		if err != nil {
 			return nil, errors.Wrapf(err, "Error! glob match failure")
 		}

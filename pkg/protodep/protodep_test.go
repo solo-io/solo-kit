@@ -19,14 +19,14 @@ var _ = Describe("protodep", func() {
 		modFileString := strings.TrimSpace(modBytes)
 		Expect(err).NotTo(HaveOccurred())
 		modPathString = filepath.Dir(modFileString)
-		mgr = NewManager()
+		mgr, err = NewManager(modPathString)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("vendor protos", func() {
 		It("can vendor protos", func() {
 			modules, err := mgr.Gather(Options{
-				WorkingDirectory: modPathString,
-				MatchPattern:     "",
+				MatchPatterns: nil,
 				IncludePackages: []string{
 					"github.com/solo-io/protoc-gen-ext",
 					"github.com/envoyproxy/protoc-gen-validate",
