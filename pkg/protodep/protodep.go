@@ -16,7 +16,12 @@ import (
 )
 
 const (
-	defaultMatchPattern = "**/*.proto"
+	ProtoMatchPattern   = "**/*.proto"
+	SoloKitMatchPattern = "**/solo-kit.json"
+)
+
+var (
+	DefaultMatchPatterns = []string{ProtoMatchPattern, SoloKitMatchPattern}
 )
 
 type Manager interface {
@@ -38,7 +43,7 @@ type Module struct {
 	VendorList    []string // files to vendor
 }
 
-func PreRunProtoVendor(cwd string, vendorPackages []string) func() error {
+func PreRunProtoVendor(cwd string, vendorPackages, matchPatterns []string) func() error {
 	return func() error {
 		mgr, err := NewManager(cwd)
 		if err != nil {
@@ -46,8 +51,11 @@ func PreRunProtoVendor(cwd string, vendorPackages []string) func() error {
 		}
 		opts := Options{
 			// TODO(make this second matcher work!)
-			MatchPatterns:   []string{defaultMatchPattern, "**/solo-kit.json"},
+			MatchPatterns:   matchPatterns,
 			IncludePackages: vendorPackages,
+		}
+		if opts.MatchPatterns == nil {
+			opts.MatchPatterns = DefaultMatchPatterns
 		}
 		modules, err := mgr.Gather(opts)
 		if err != nil {
@@ -79,7 +87,7 @@ type manager struct {
 
 func (m *manager) Gather(opts Options) ([]*Module, error) {
 	if opts.MatchPatterns == nil {
-		opts.MatchPatterns = []string{defaultMatchPattern}
+		opts.MatchPatterns = []string{ProtoMatchPattern}
 	}
 	// Ensure go.mod file exists and we're running from the project root,
 	// and that ./vendor/modules.txt file exists.
