@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -e
 
 ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
 SOLO_KIT=${ROOT}/solo-kit
