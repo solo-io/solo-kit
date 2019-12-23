@@ -9,7 +9,7 @@ steps:
   - "--repo-name"
   - solo-kit
   - "--repo-sha"
-  - "helm-3"
+  - "$COMMIT_SHA"
   - "--repo-output-dir"
   - "."
   env:
