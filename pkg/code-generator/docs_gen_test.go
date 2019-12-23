@@ -10,7 +10,7 @@ import (
 	"text/template"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
-	"github.com/solo-io/solo-kit/pkg/utils/fileutils"
+	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 	"gopkg.in/yaml.v2"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -75,7 +75,7 @@ var _ = Describe("DocsGen", func() {
 			},
 		}
 
-		modPackageFile, err := fileutils.GetModPackageFile()
+		modPackageFile, err := modutils.GetCurrentModPackageFile()
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run code gen

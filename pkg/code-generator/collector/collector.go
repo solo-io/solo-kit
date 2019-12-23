@@ -254,8 +254,8 @@ var defaultGogoArgs = []string{
 	"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types",
 	"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types",
 	"Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types",
-	"gogoproto/gogo.proto=github.com/gogo/protobuf/gogoproto",
 	"Menvoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
+	"gogoproto/gogo.proto=github.com/gogo/protobuf/gogoproto",
 }
 
 func (c *collector) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
