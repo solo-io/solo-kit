@@ -25,7 +25,7 @@ steps:
   waitFor:
   - 'prepare-workspace'
 # donwload massive container in parallel
-- name: 'gcr.io/$PROJECT_ID/go-mod-ginkgo:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   entrypoint: 'bash'
   dir: *dir
   args: ['-c', 'ls']
