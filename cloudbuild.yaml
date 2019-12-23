@@ -112,3 +112,5 @@ options:
   volumes:
   - name: 'gopath'
     path: '/go'
+  - name: 'workspace'
+    path: '/workspace/solo-kit'
