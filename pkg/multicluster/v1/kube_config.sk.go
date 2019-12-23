@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"hash"
 	"hash/fnv"
+	"log"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_multicluster_v1 "github.com/solo-io/solo-kit/api/multicluster/v1"
@@ -56,6 +57,14 @@ func (r *KubeConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
+}
+
+func (r *KubeConfig) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
 }
 
 func (r *KubeConfig) GroupVersionKind() schema.GroupVersionKind {

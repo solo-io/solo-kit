@@ -98,7 +98,7 @@ func (r *{{ .Name }}) MustHash() uint64 {
 	if err != nil {
 		log.Panicf("error while hashing: (%s) this should never happen", err)
 	}
-	return hasher.Sum64(), nil
+	return hashVal
 }
 
 func (r *{{ .Name }}) GroupVersionKind() schema.GroupVersionKind {
