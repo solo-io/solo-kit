@@ -1,5 +1,4 @@
 steps:
-
 # TODO: during this step, prepare-workspace to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
 # All steps after this must set GOPATH
@@ -10,9 +9,9 @@ steps:
   - "--repo-name"
   - solo-kit
   - "--repo-sha"
-  - "$COMMIT_SHA"
+  - "helm-3"
   - "--repo-output-dir"
-  - "/workspace"
+  - "."
   env:
   - 'GIT_SSH_CONFIG=FALSE'
   id: 'prepare-workspace'
@@ -112,5 +111,3 @@ options:
   volumes:
   - name: 'gopath'
     path: '/go'
-  - name: 'workspace'
-    path: '/workspace/solo-kit'
