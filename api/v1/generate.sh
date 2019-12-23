@@ -37,6 +37,5 @@ protoc ${IMPORTS} \
     ${INPUT_PROTOS}
 
 cp -r  ${TEMP_DIR}/github.com/solo-io/solo-kit ${ROOT}
-#rm -rf ${SOLO_KIT}/github.com
 
 goimports -w pkg
