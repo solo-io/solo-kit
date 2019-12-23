@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"hash"
 	"hash/fnv"
+	"log"
 	"sort"
 
 {{- if $.IsCustom }}
@@ -92,6 +93,13 @@ func (r *{{ .Name }}) SetStatus(status core.Status) {
 
 {{- end }}
 
+func (r *{{ .Name }}) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hasher.Sum64(), nil
+}
 
 func (r *{{ .Name }}) GroupVersionKind() schema.GroupVersionKind {
 	return {{ .Name }}GVK
