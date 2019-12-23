@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow solo-kit to work with go modules and vendored protos.
+    issueLink: https://github.com/solo-io/solo-kit/pull/127
