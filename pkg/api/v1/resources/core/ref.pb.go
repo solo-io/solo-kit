@@ -5,10 +5,11 @@ package core
 
 import (
 	fmt "fmt"
+	math "math"
+
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
