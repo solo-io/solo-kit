@@ -33,8 +33,9 @@ update-deps: vendor
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	GO111MODULE=off go get -u github.com/golang/mock/gomock
-	GO111MODULE=off go install github.com/onsi/ginkgo
 	GO111MODULE=off go install github.com/golang/mock/mockgen
+	GO111MODULE=off go get -u github.com/onsi/ginkgo
+	GO111MODULE=off go install github.com/onsi/ginkgo
 
 	# clone solo's fork of code-generator, required for tests & kube type gen
 	mkdir -p $(GOPATH)/src/k8s.io && \
