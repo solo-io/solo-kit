@@ -26,8 +26,6 @@ init:
 
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
-PROTOC_GEN_EXT_DIR := $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext)
-K8S_CODE_GEN_DIR := $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)
 
 .PHONY: vendor
 vendor:
@@ -36,8 +34,8 @@ vendor:
 
 .PHONY: update-deps
 update-deps: vendor
-	$(shell cd ${PROTOC_GEN_EXT_DIR}; make install)
-	chmod +x ${K8S_CODE_GEN_DIR}/generate-groups.sh
+	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
+	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	GO111MODULE=off go get -u github.com/golang/mock/gomock
