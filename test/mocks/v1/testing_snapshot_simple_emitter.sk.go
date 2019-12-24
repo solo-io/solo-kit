@@ -90,13 +90,13 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 				currentSnapshot = TestingSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
-					case *testing_solo_io.MockResource:
+					case *MockResource:
 						currentSnapshot.Mocks = append(currentSnapshot.Mocks, typed)
-					case *testing_solo_io.FakeResource:
+					case *FakeResource:
 						currentSnapshot.Fakes = append(currentSnapshot.Fakes, typed)
-					case *testing_solo_io.AnotherMockResource:
+					case *AnotherMockResource:
 						currentSnapshot.Anothermockresources = append(currentSnapshot.Anothermockresources, typed)
-					case *testing_solo_io.ClusterResource:
+					case *ClusterResource:
 						currentSnapshot.Clusterresources = append(currentSnapshot.Clusterresources, typed)
 					case *MockCustomType:
 						currentSnapshot.Mcts = append(currentSnapshot.Mcts, typed)

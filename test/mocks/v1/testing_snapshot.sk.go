@@ -16,10 +16,10 @@ import (
 )
 
 type TestingSnapshot struct {
-	Mocks                testing_solo_io.MockResourceList
-	Fakes                testing_solo_io.FakeResourceList
-	Anothermockresources testing_solo_io.AnotherMockResourceList
-	Clusterresources     testing_solo_io.ClusterResourceList
+	Mocks                MockResourceList
+	Fakes                FakeResourceList
+	Anothermockresources AnotherMockResourceList
+	Clusterresources     ClusterResourceList
 	Mcts                 MockCustomTypeList
 	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
 }

@@ -14,7 +14,7 @@ import (
 )
 
 type TestingSnapshot struct {
-	Mocks testing_solo_io.MockResourceList
+	Mocks MockResourceList
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {

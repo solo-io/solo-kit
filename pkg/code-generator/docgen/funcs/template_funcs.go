@@ -593,6 +593,9 @@ func (c *templateFunctions) forEachMessage(messagesToSkip map[string]bool) func(
 				continue
 			}
 
+			if msg.GetName() == "SInt32Rules" || msg.GetName() == "SInt64Rules" {
+				continue
+			}
 			renderedMsgString := &bytes.Buffer{}
 			if err := msgTmpl.Execute(renderedMsgString, msg); err != nil {
 				return "", err

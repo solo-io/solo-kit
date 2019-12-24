@@ -123,7 +123,7 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 			}
 
 			// Skip if the file contains a top-level resource that has to be skipped
-			if skipMap[protoFile.GetName()] {
+			if skipMap[protoFile.GetName()] || protoFile.GetName() == "validate/validate.proto" {
 				continue
 			}
 

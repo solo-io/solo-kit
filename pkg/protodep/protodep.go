@@ -41,7 +41,7 @@ var (
 	// matches all solo-kit protos, useful for any projects using solo-kit
 	SoloKitProtoMatcher = MatchOptions{
 		Package:  "github.com/solo-io/solo-kit",
-		Patterns: []string{"api/**/*.proto", SoloKitMatchPattern},
+		Patterns: []string{"api/**/*.proto", "api/" + SoloKitMatchPattern},
 	}
 
 	// matches gogo.proto, used for gogoproto code gen.
@@ -263,7 +263,10 @@ func (m *manager) Copy(modules []*Module) error {
 		if mod.currentPackage == true {
 			for _, vendorFile := range mod.VendorList {
 				localPath := strings.TrimPrefix(vendorFile, m.WorkingDirectory+"/")
-				return prepareForCopy(filepath.Join(mod.ImportPath, localPath), vendorFile, m.WorkingDirectory)
+				if err := prepareForCopy(filepath.Join(mod.ImportPath, localPath),
+					vendorFile, m.WorkingDirectory); err != nil {
+					return err
+				}
 			}
 		}
 		for _, vendorFile := range mod.VendorList {

@@ -80,14 +80,14 @@ type TestingSnapshotEmitter interface {
 type TestingEmitter interface {
 	TestingSnapshotEmitter
 	Register() error
-	MockResource() testing_solo_io.MockResourceClient
+	MockResource() MockResourceClient
 }
 
-func NewTestingEmitter(mockResourceClient testing_solo_io.MockResourceClient) TestingEmitter {
+func NewTestingEmitter(mockResourceClient MockResourceClient) TestingEmitter {
 	return NewTestingEmitterWithEmit(mockResourceClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient testing_solo_io.MockResourceClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
 		mockResource: mockResourceClient,
 		forceEmit:    emit,
@@ -96,7 +96,7 @@ func NewTestingEmitterWithEmit(mockResourceClient testing_solo_io.MockResourceCl
 
 type testingEmitter struct {
 	forceEmit    <-chan struct{}
-	mockResource testing_solo_io.MockResourceClient
+	mockResource MockResourceClient
 }
 
 func (c *testingEmitter) Register() error {
@@ -106,7 +106,7 @@ func (c *testingEmitter) Register() error {
 	return nil
 }
 
-func (c *testingEmitter) MockResource() testing_solo_io.MockResourceClient {
+func (c *testingEmitter) MockResource() MockResourceClient {
 	return c.mockResource
 }
 
@@ -128,12 +128,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	ctx := opts.Ctx
 	/* Create channel for MockResource */
 	type mockResourceListWithNamespace struct {
-		list      testing_solo_io.MockResourceList
+		list      MockResourceList
 		namespace string
 	}
 	mockResourceChan := make(chan mockResourceListWithNamespace)
 
-	var initialMockResourceList testing_solo_io.MockResourceList
+	var initialMockResourceList MockResourceList
 
 	currentSnapshot := TestingSnapshot{}
 
@@ -206,7 +206,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				stats.Record(ctx, mTestingSnapshotMissed.M(1))
 			}
 		}
-		mocksByNamespace := make(map[string]testing_solo_io.MockResourceList)
+		mocksByNamespace := make(map[string]MockResourceList)
 
 		for {
 			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }
@@ -236,7 +236,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				// merge lists by namespace
 				mocksByNamespace[namespace] = mockResourceNamespacedList.list
-				var mockResourceList testing_solo_io.MockResourceList
+				var mockResourceList MockResourceList
 				for _, mocks := range mocksByNamespace {
 					mockResourceList = append(mockResourceList, mocks...)
 				}
