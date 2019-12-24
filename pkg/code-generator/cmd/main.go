@@ -75,11 +75,15 @@ type GenerateOptions struct {
 }
 
 type Runner struct {
-	Opts             GenerateOptions
-	RelativeRoot     string
+	Opts GenerateOptions
+	// Relative root of solo-kit gen. Will be used as the root of all generation
+	RelativeRoot string
+	// Location to output all proto code gen, defaults to a temp dir
 	DescriptorOutDir string
-	BaseDir          string
-	CommonImports    []string
+	// root of the go mod package
+	BaseDir string
+	// common import directories in which solo-kit should look for protos in the current package
+	CommonImports []string
 }
 
 func Generate(opts GenerateOptions) error {

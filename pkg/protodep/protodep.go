@@ -14,7 +14,6 @@ import (
 
 	zglob "github.com/mattn/go-zglob"
 	"github.com/solo-io/go-utils/errors"
-	"github.com/solo-io/go-utils/stringutils"
 )
 
 const (
@@ -23,26 +22,39 @@ const (
 )
 
 var (
+	// offer sane defaults for proto vendoring
 	DefaultMatchPatterns = []string{ProtoMatchPattern, SoloKitMatchPattern}
 
+	// matches ext.proto for solo hash gen
 	ExtProtoMatcher = MatchOptions{
-		IncludePackages: []string{"github.com/solo-io/protoc-gen-ext"},
-		Patterns:        []string{"extproto/*.proto"},
+		Package:  "github.com/solo-io/protoc-gen-ext",
+		Patterns: []string{"extproto/*.proto"},
 	}
 
+	// matches validate.proto which is needed by envoy protos
 	ValidateProtoMatcher = MatchOptions{
-		IncludePackages: []string{"github.com/envoyproxy/protoc-gen-validate"},
-		Patterns:        []string{"validate/*.proto"},
+		Package:  "github.com/envoyproxy/protoc-gen-validate",
+		Patterns: []string{"validate/*.proto"},
 	}
 
+	// matches all solo-kit protos, useful for any projects using solo-kit
 	SoloKitProtoMatcher = MatchOptions{
-		IncludePackages: []string{"github.com/solo-io/solo-kit"},
-		Patterns:        []string{"api/**/*.proto"},
+		Package:  "github.com/solo-io/solo-kit",
+		Patterns: []string{"api/**/*.proto"},
 	}
 
+	// matches gogo.proto, used for gogoproto code gen.
 	GogoProtoMatcher = MatchOptions{
-		IncludePackages: []string{"github.com/gogo/protobuf"},
-		Patterns:        []string{"gogoproto/*.proto"},
+		Package:  "github.com/gogo/protobuf",
+		Patterns: []string{"gogoproto/*.proto"},
+	}
+
+	// default match options which should be used when creating a solo-kit project
+	DefaultMatchOptions = []MatchOptions{
+		ExtProtoMatcher,
+		ValidateProtoMatcher,
+		SoloKitProtoMatcher,
+		GogoProtoMatcher,
 	}
 )
 
@@ -51,11 +63,15 @@ type Manager interface {
 	Copy([]*Module) error
 }
 
+// struct which represents how to vendor protos.
+// Patters are a set of regexes which match protos for a given go package
+// see examples above
 type MatchOptions struct {
-	Patterns        []string
-	IncludePackages []string
+	Patterns []string
+	Package  string
 }
 
+// struct which represents a go module package in the module package list
 type Module struct {
 	ImportPath    string
 	SourcePath    string
@@ -65,6 +81,7 @@ type Module struct {
 	VendorList    []string // files to vendor
 }
 
+// Expose proto dep as a prerun func for solo-kit
 func PreRunProtoVendor(cwd string, matchOpts []MatchOptions) func() error {
 	return func() error {
 		mgr, err := NewManager(cwd)
@@ -100,6 +117,8 @@ type manager struct {
 	vendorMode       bool
 }
 
+// gather up all packages for a given go module
+// currently this function uses the cmd `go list -m all` to figure out the list of dep
 func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
 	// Ensure go.mod file exists and we're running from the project root,
 	if _, err := os.Stat(filepath.Join(m.WorkingDirectory, "go.mod")); os.IsNotExist(err) {
@@ -117,6 +136,7 @@ func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
 			modPackageReader.String())
 	}
 
+	// split list of pacakges from cmd by line
 	scanner := bufio.NewScanner(modPackageReader)
 	scanner.Split(bufio.ScanLines)
 
@@ -127,29 +147,35 @@ func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		// # character
-		// if line[0] != 35 {
-		// 	continue
-		// }
 		s := strings.Split(line, " ")
 
+		/*
+			the packages come in 3 varities
+			1. helm.sh/helm/v3 v3.0.0
+			2. k8s.io/api v0.0.0-20191121015604-11707872ac1c => k8s.io/api v0.0.0-20191004120104-195af9ec3521
+			3. k8s.io/api v0.0.0-20191121015604-11707872ac1c => /path/to/local
+
+			All three variants share the same first 2 members
+		*/
 		module := &Module{
-			ImportPath: s[1-1],
-			Version:    s[2-1],
+			ImportPath: s[0],
+			Version:    s[1],
 		}
-		if s[2-1] == "=>" {
+		if s[1] == "=>" {
 			// issue https://github.com/golang/go/issues/33848 added these,
 			// see comments. I think we can get away with ignoring them.
 			continue
 		}
 		// Handle "replace" in module file if any
-		if len(s) > 3-1 && s[3-1] == "=>" {
-			module.SourcePath = s[4-1]
+		if len(s) > 2 && s[2] == "=>" {
+			module.SourcePath = s[3]
 			// non-local module with version
-			if len(s) >= 6-1 {
-				module.SourceVersion = s[5-1]
+			if len(s) >= 5 {
+				// see case 2 above
+				module.SourceVersion = s[4]
 				module.Dir = pkgModPath(module.SourcePath, module.SourceVersion)
 			} else {
+				// see case 3 above
 				moduleAbsolutePath, err := filepath.Abs(module.SourcePath)
 				if err != nil {
 					return nil, err
@@ -160,11 +186,14 @@ func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
 			module.Dir = pkgModPath(module.ImportPath, module.Version)
 		}
 
+		// make sure module exists
 		if _, err := os.Stat(module.Dir); os.IsNotExist(err) {
-			fmt.Printf("Error! %q module path does not exist, check $GOPATH/pkg/mod\n", module.Dir)
+			fmt.Printf("Error! %q module path does not exist, check $GOPATH/pkg/mod. "+
+				"Try running go mod download\n", module.Dir)
 			return nil, err
 		}
 
+		// If no match options have been supplied, match on all packages using default match patterns
 		if matchOptions == nil {
 			// Build list of files to module path source to project vendor folder
 			vendorList, err := buildModVendorList(DefaultMatchPatterns, module)
@@ -180,8 +209,8 @@ func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
 
 		for _, matchOpt := range matchOptions {
 			// only check module if is in imports list, or imports list in empty
-			if len(matchOpt.IncludePackages) != 0 &&
-				!stringutils.ContainsString(module.ImportPath, matchOpt.IncludePackages) {
+			if len(matchOpt.Package) != 0 &&
+				!strings.Contains(module.ImportPath, matchOpt.Package) {
 				continue
 			}
 			// Build list of files to module path source to project vendor folder

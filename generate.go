@@ -22,6 +22,7 @@ func main() {
 				[]protodep.MatchOptions{
 					protodep.ExtProtoMatcher,
 					protodep.ValidateProtoMatcher,
+					protodep.GogoProtoMatcher,
 				},
 			),
 		},

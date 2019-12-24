@@ -11,7 +11,7 @@ var DocTemplate = template.Must(template.New("kube_doc").Funcs(templates.Funcs).
 
 /* go:generate command for Kubernetes code-generator currently disabled, run the following manually (or uncomment and remove the minus):
 	
-- //go:generate $GOPATH/src/k8s.io/code-generator/generate-groups.sh all "{{ .ProjectConfig.GoPackage }}/kube/client" "{{ .ProjectConfig.GoPackage }}/kube/apis" {{ .ProjectConfig.Name }}:{{ .ProjectConfig.Version }}
+- //go:generate sh ../../../hack/update-codegen.sh
 
 */
 
