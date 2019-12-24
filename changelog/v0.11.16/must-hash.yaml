@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: add must-hash function for usability.
+  issueLink: https://github.com/solo-io/solo-kit/issues/331

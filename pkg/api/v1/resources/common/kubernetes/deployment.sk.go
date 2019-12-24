@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"hash"
 	"hash/fnv"
+	"log"
 	"sort"
 
 	github_com_solo_io_solo_kit_api_external_kubernetes_deployment "github.com/solo-io/solo-kit/api/external/kubernetes/deployment"
@@ -56,6 +57,14 @@ func (r *Deployment) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
+}
+
+func (r *Deployment) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
 }
 
 func (r *Deployment) GroupVersionKind() schema.GroupVersionKind {

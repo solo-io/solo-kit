@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"hash"
 	"hash/fnv"
+	"log"
 	"sort"
 
 	github_com_solo_io_solo_kit_test_mocks_api_v1_customtype "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
@@ -56,6 +57,14 @@ func (r *MockCustomType) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
+}
+
+func (r *MockCustomType) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
 }
 
 func (r *MockCustomType) GroupVersionKind() schema.GroupVersionKind {

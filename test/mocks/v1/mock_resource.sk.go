@@ -31,6 +31,14 @@ func (r *MockResource) SetStatus(status core.Status) {
 	r.Status = status
 }
 
+func (r *MockResource) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
+}
+
 func (r *MockResource) GroupVersionKind() schema.GroupVersionKind {
 	return MockResourceGVK
 }
