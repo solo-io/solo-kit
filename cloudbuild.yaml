@@ -31,11 +31,18 @@ steps:
   args: ['-c', 'ls']
   waitFor: ['-']
 
+# Installs go executables required by codegen tests
+- name: 'golang:1.13.4'
+  args: ['go', 'mod', 'download']
+  waitFor: ['untar-mod-cache']
+  id: 'go-mod-download'
+  dir: *dir
+
 
 # Installs go executables required by codegen tests
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['update-deps']
-  waitFor: ['untar-mod-cache']
+#  waitFor: ['untar-mod-cache']
   id: 'update-deps'
   dir: *dir
 
