@@ -24,15 +24,35 @@ const (
 
 var (
 	DefaultMatchPatterns = []string{ProtoMatchPattern, SoloKitMatchPattern}
+
+	ExtProtoMatcher = MatchOptions{
+		IncludePackages: []string{"github.com/solo-io/protoc-gen-ext"},
+		Patterns:        []string{"extproto/*.proto"},
+	}
+
+	ValidateProtoMatcher = MatchOptions{
+		IncludePackages: []string{"github.com/envoyproxy/protoc-gen-validate"},
+		Patterns:        []string{"validate/*.proto"},
+	}
+
+	SoloKitProtoMatcher = MatchOptions{
+		IncludePackages: []string{"github.com/solo-io/solo-kit"},
+		Patterns:        []string{"api/**/*.proto"},
+	}
+
+	GogoProtoMatcher = MatchOptions{
+		IncludePackages: []string{"github.com/gogo/protobuf"},
+		Patterns:        []string{"gogoproto/*.proto"},
+	}
 )
 
 type Manager interface {
-	Gather(opts Options) ([]*Module, error)
+	Gather(opts MatchOptions) ([]*Module, error)
 	Copy([]*Module) error
 }
 
-type Options struct {
-	MatchPatterns   []string
+type MatchOptions struct {
+	Patterns        []string
 	IncludePackages []string
 }
 
@@ -45,21 +65,13 @@ type Module struct {
 	VendorList    []string // files to vendor
 }
 
-func PreRunProtoVendor(cwd string, vendorPackages, matchPatterns []string) func() error {
+func PreRunProtoVendor(cwd string, matchOpts []MatchOptions) func() error {
 	return func() error {
 		mgr, err := NewManager(cwd)
 		if err != nil {
 			return err
 		}
-		opts := Options{
-			// TODO(make this second matcher work!)
-			MatchPatterns:   matchPatterns,
-			IncludePackages: vendorPackages,
-		}
-		if opts.MatchPatterns == nil {
-			opts.MatchPatterns = DefaultMatchPatterns
-		}
-		modules, err := mgr.Gather(opts)
+		modules, err := mgr.Gather(matchOpts)
 		if err != nil {
 			return err
 		}
@@ -88,10 +100,7 @@ type manager struct {
 	vendorMode       bool
 }
 
-func (m *manager) Gather(opts Options) ([]*Module, error) {
-	if opts.MatchPatterns == nil {
-		opts.MatchPatterns = []string{ProtoMatchPattern}
-	}
+func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
 	// Ensure go.mod file exists and we're running from the project root,
 	if _, err := os.Stat(filepath.Join(m.WorkingDirectory, "go.mod")); os.IsNotExist(err) {
 		fmt.Println("Whoops, cannot find `go.mod` file")
@@ -156,20 +165,34 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 			return nil, err
 		}
 
-		// only check module if is in imports list, or imports list in empty
-		if len(opts.IncludePackages) != 0 &&
-			!stringutils.ContainsString(module.ImportPath, opts.IncludePackages) {
+		if matchOptions == nil {
+			// Build list of files to module path source to project vendor folder
+			vendorList, err := buildModVendorList(DefaultMatchPatterns, module)
+			if err != nil {
+				return nil, err
+			}
+			module.VendorList = vendorList
+			if len(vendorList) > 0 {
+				modules = append(modules, module)
+			}
 			continue
 		}
 
-		// Build list of files to module path source to project vendor folder
-		vendorList, err := buildModVendorList(opts.MatchPatterns, module)
-		if err != nil {
-			return nil, err
-		}
-		module.VendorList = vendorList
-		if len(vendorList) > 0 {
-			modules = append(modules, module)
+		for _, matchOpt := range matchOptions {
+			// only check module if is in imports list, or imports list in empty
+			if len(matchOpt.IncludePackages) != 0 &&
+				!stringutils.ContainsString(module.ImportPath, matchOpt.IncludePackages) {
+				continue
+			}
+			// Build list of files to module path source to project vendor folder
+			vendorList, err := buildModVendorList(matchOpt.Patterns, module)
+			if err != nil {
+				return nil, err
+			}
+			module.VendorList = vendorList
+			if len(vendorList) > 0 {
+				modules = append(modules, module)
+			}
 		}
 
 	}

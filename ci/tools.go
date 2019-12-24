@@ -18,7 +18,7 @@ package tools
 import (
 	// I had to remove this as the version of gogo.proto it has is out of date,
 	// and therefore breaking our protoc commands.
-	// _ "github.com/envoyproxy/protoc-gen-validate"
+	_ "github.com/envoyproxy/protoc-gen-validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	_ "github.com/solo-io/protoc-gen-ext"
 	_ "k8s.io/code-generator"

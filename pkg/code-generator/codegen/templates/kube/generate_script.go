@@ -20,7 +20,7 @@ CLIENT_PKG=${ROOT_PKG}/kube/client
 APIS_PKG=${ROOT_PKG}/kube/apis
 
 # Below code is copied from https://github.com/weaveworks/flagger/blob/master/hack/update-codegen.sh
-CODEGEN_PKG=$(go list -f '{{ .Dir }}' -m k8s.io/code-generator)
+CODEGEN_PKG=$(go list -f {{` + `"'{{ .Dir }}'"` + `}} -m k8s.io/code-generator)
 
 #if [[ ! -d ${CODEGEN_PKG} ]]; then
 #    echo "${CODEGEN_PKG} is missing. Run 'go mod vendor'."

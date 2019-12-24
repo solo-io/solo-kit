@@ -25,12 +25,9 @@ var _ = Describe("protodep", func() {
 
 	Context("vendor protos", func() {
 		It("can vendor protos", func() {
-			modules, err := mgr.Gather(Options{
-				MatchPatterns: nil,
-				IncludePackages: []string{
-					"github.com/solo-io/protoc-gen-ext",
-					"github.com/gogo/protobuf",
-				},
+			modules, err := mgr.Gather([]MatchOptions{
+				GogoProtoMatcher,
+				ExtProtoMatcher,
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(modules).To(HaveLen(2))

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
+	"github.com/solo-io/solo-kit/pkg/protodep"
 )
 
 //go:generate go run generate.go
@@ -16,6 +17,14 @@ func main() {
 		CompileProtos:      true,
 		SkipGenMocks:       true,
 		SkipGeneratedTests: true,
+		PreRunFuncs: []cmd.RunFunc{
+			protodep.PreRunProtoVendor(".",
+				[]protodep.MatchOptions{
+					protodep.ExtProtoMatcher,
+					protodep.ValidateProtoMatcher,
+				},
+			),
+		},
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
