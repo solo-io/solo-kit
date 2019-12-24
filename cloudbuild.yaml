@@ -1,8 +1,15 @@
 steps:
+
+- name: gcr.io/cloud-builders/gsutil
+  entrypoint: 'bash'
+  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
+  id: 'untar-mod-cache'
+  dir: &dir '/workspace/solo-kit'
+
 # TODO: during this step, prepare-workspace to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
 # All steps after this must set GOPATH
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.1-dev'
   args:
   - "--repo-owner"
   - "solo-io"
@@ -16,14 +23,6 @@ steps:
   - 'GIT_SSH_CONFIG=FALSE'
   id: 'prepare-workspace'
 
-
-- name: gcr.io/cloud-builders/gsutil
-  entrypoint: 'bash'
-  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
-  id: 'untar-mod-cache'
-  dir: &dir '/workspace/solo-kit'
-  waitFor:
-  - 'prepare-workspace'
 # donwload massive container in parallel
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   entrypoint: 'bash'
@@ -32,17 +31,9 @@ steps:
   waitFor: ['-']
 
 # Installs go executables required by codegen tests
-- name: 'golang:1.13.4'
-  args: ['go', 'mod', 'download']
-  waitFor: ['untar-mod-cache']
-  id: 'go-mod-download'
-  dir: *dir
-
-
-# Installs go executables required by codegen tests
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['update-deps']
-#  waitFor: ['untar-mod-cache']
+  waitFor: ['prepare-workspace']
   id: 'update-deps'
   dir: *dir
 
@@ -93,7 +84,7 @@ steps:
   - 'SKIP_MOCK_GEN=1'
   - 'CLOUD_BUILD=1'
   - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
-  args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=10']
+  args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=2']
   dir: *dir
   id: 'test'
 

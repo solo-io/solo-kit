@@ -86,7 +86,6 @@ var _ = Describe("DocsGen", func() {
 			CompileProtos: true,
 			GenDocs:       genDocs,
 		}
-		// TODO(EItanya): make this only pull in the relevant protos
 		err = cmd.Generate(opts)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -133,7 +132,7 @@ var _ = Describe("DocsGen", func() {
 		Expect(apiSummary).To(Equal(datafile.ApiSummary{
 			RelativePath: filepath.Join(
 				hugoApiDir,
-				relativePathToTempDir,
+				filepath.Base(tempDir),
 				"doc_gen_test.proto.sk/#GenerateDocsForMe"),
 			Package: "testing.solo.io",
 		}))
