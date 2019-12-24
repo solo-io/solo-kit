@@ -86,6 +86,7 @@ var _ = Describe("DocsGen", func() {
 			CompileProtos: true,
 			GenDocs:       genDocs,
 		}
+		// TODO(EItanya): make this only pull in the relevant protos
 		err = cmd.Generate(opts)
 		Expect(err).NotTo(HaveOccurred())
 	})
