@@ -40,7 +40,3 @@ func GetCurrentModPackageFile() (string, error) {
 	}
 	return string(modBytes), nil
 }
-
-// func GetModPackageDir(packageName string) (string, error) {
-//
-// }

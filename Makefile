@@ -101,25 +101,6 @@ verify-envoy-protos:
 	$(GO_BUILD_FLAGS) CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
 
 #----------------------------------------------------------------------------------
-# {gogo,golang}/protobuf dependencies
-#----------------------------------------------------------------------------------
-
-GOGO_PROTO_VERSION=v1.3.1
-GOLANG_PROTO_VERSION=v1.3.2
-.PHONY: install-gen-tools
-install-gogo-proto:
-	mkdir -p  ${GOPATH}/src/github.com/gogo/
-	mkdir -p  ${GOPATH}/src/github.com/golang/
-	cd  ${GOPATH}/src/github.com/gogo/ && if [ -d protobuf ]; then cd protobuf && git fetch && git checkout $(GOGO_PROTO_VERSION); \
-		else  git clone --branch $(GOGO_PROTO_VERSION) http://github.com/gogo/protobuf; fi
-	cd  ${GOPATH}/src/github.com/golang/ && if [ -d protobuf ]; then cd protobuf && git fetch && git checkout $(GOLANG_PROTO_VERSION); \
-		else  git clone --branch $(GOLANG_PROTO_VERSION) http://github.com/golang/protobuf; fi
-	go install github.com/gogo/protobuf/protoc-gen-gogo
-
-.PHONY: install-gen-tools
-install-gen-tools: install-gogo-proto
-
-#----------------------------------------------------------------------------------
 # solo-kit-gen
 #----------------------------------------------------------------------------------
 

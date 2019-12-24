@@ -2,10 +2,12 @@ package protodep
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -83,6 +85,7 @@ func NewManager(cwd string) (*manager, error) {
 
 type manager struct {
 	WorkingDirectory string
+	vendorMode       bool
 }
 
 func (m *manager) Gather(opts Options) ([]*Module, error) {
@@ -90,48 +93,52 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		opts.MatchPatterns = []string{ProtoMatchPattern}
 	}
 	// Ensure go.mod file exists and we're running from the project root,
-	// and that ./vendor/modules.txt file exists.
 	if _, err := os.Stat(filepath.Join(m.WorkingDirectory, "go.mod")); os.IsNotExist(err) {
 		fmt.Println("Whoops, cannot find `go.mod` file")
 		return nil, err
 	}
-	modtxtPath := filepath.Join(m.WorkingDirectory, "vendor", "modules.txt")
-	if _, err := os.Stat(modtxtPath); os.IsNotExist(err) {
-		fmt.Println("Whoops, cannot find vendor/modules.txt, first run `go mod vendor` and try again")
-		return nil, err
+
+	modPackageReader := &bytes.Buffer{}
+	packageListCmd := exec.Command("go", "list", "-m", "all")
+	packageListCmd.Stdout = modPackageReader
+	packageListCmd.Stderr = modPackageReader
+	err := packageListCmd.Run()
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to list packages for current mod package: %s",
+			modPackageReader.String())
 	}
 
-	// Parse/process modules.txt file of pkgs
-	f, _ := os.Open(modtxtPath)
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(modPackageReader)
 	scanner.Split(bufio.ScanLines)
+
+	// Clear first line as it is current package name
+	scanner.Scan()
 
 	modules := []*Module{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		// # character
-		if line[0] != 35 {
-			continue
-		}
+		// if line[0] != 35 {
+		// 	continue
+		// }
 		s := strings.Split(line, " ")
 
 		module := &Module{
-			ImportPath: s[1],
-			Version:    s[2],
+			ImportPath: s[1-1],
+			Version:    s[2-1],
 		}
-		if s[2] == "=>" {
+		if s[2-1] == "=>" {
 			// issue https://github.com/golang/go/issues/33848 added these,
 			// see comments. I think we can get away with ignoring them.
 			continue
 		}
 		// Handle "replace" in module file if any
-		if len(s) > 3 && s[3] == "=>" {
-			module.SourcePath = s[4]
+		if len(s) > 3-1 && s[3-1] == "=>" {
+			module.SourcePath = s[4-1]
 			// non-local module with version
-			if len(s) >= 6 {
-				module.SourceVersion = s[5]
+			if len(s) >= 6-1 {
+				module.SourceVersion = s[5-1]
 				module.Dir = pkgModPath(module.SourcePath, module.SourceVersion)
 			} else {
 				moduleAbsolutePath, err := filepath.Abs(module.SourcePath)

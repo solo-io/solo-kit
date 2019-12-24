@@ -29,11 +29,11 @@ var _ = Describe("protodep", func() {
 				MatchPatterns: nil,
 				IncludePackages: []string{
 					"github.com/solo-io/protoc-gen-ext",
-					// "github.com/envoyproxy/protoc-gen-validate",
+					"github.com/gogo/protobuf",
 				},
 			})
-			Expect(modules).To(HaveLen(2))
 			Expect(err).NotTo(HaveOccurred())
+			Expect(modules).To(HaveLen(2))
 			Expect(mgr.Copy(modules)).NotTo(HaveOccurred())
 		})
 	})
