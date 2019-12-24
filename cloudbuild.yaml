@@ -6,9 +6,7 @@ steps:
   id: 'untar-mod-cache'
   dir: &dir '/workspace/solo-kit'
 
-# TODO: during this step, prepare-workspace to set up the project so it can be built and tested
-# Dep modifies workspace so that the code is moved into the PROJECT_ROOT
-# All steps after this must set GOPATH
+# prepare-workspace to set up the project so it can be built and tested
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
   args:
   - "--repo-owner"
@@ -23,7 +21,7 @@ steps:
   - 'GIT_SSH_CONFIG=FALSE'
   id: 'prepare-workspace'
 
-# donwload massive container in parallel
+# download massive container in parallel
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   entrypoint: 'bash'
   dir: *dir

@@ -67,7 +67,7 @@ type GenerateOptions struct {
 		This allows it to be able to maintain compatility with the old solo-kit
 
 		default: current github.com/solo-io/<current-folder>
-		for example: github.com/solo-io/solo-it
+		for example: github.com/solo-io/solo-kit
 	*/
 	PackageName string
 
@@ -150,7 +150,6 @@ func Generate(opts GenerateOptions) error {
 
 		dest := strings.TrimPrefix(pbgoFile, filepath.Join(descriptorOutDir, r.Opts.PackageName))
 		dest = strings.TrimPrefix(dest, "/")
-		// dest = filepath.Join(relativeRoot, dest)
 		dir, _ := filepath.Split(dest)
 		os.MkdirAll(dir, 0755)
 
@@ -418,8 +417,7 @@ func getCommonImports() ([]string, error) {
 }
 
 var commonImportStrings = []string{
-	".",
-	"./api",
+	"..",
 }
 
 const (

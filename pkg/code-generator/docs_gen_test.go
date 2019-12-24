@@ -10,7 +10,6 @@ import (
 	"text/template"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
-	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 	"gopkg.in/yaml.v2"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -75,12 +74,18 @@ var _ = Describe("DocsGen", func() {
 			},
 		}
 
-		modPackageFile, err := modutils.GetCurrentModPackageFile()
-		Expect(err).NotTo(HaveOccurred())
+		// modPackageFile, err := modutils.GetCurrentModPackageFile()
+		// Expect(err).NotTo(HaveOccurred())
+		// modRootDir := filepath.Dir(modPackageFile)
 
 		// Run code gen
 		opts := cmd.GenerateOptions{
-			CustomImports: []string{filepath.Dir(modPackageFile)},
+			CustomImports: []string{
+				filepath.Join(tempDir, "..", "vendor/github.com/solo-io/protoc-gen-ext"),
+				filepath.Join(tempDir, "..", "api/external"),
+				// filepath.Join(modRootDir, "api/external"),
+				// modRootDir
+			},
 			RelativeRoot:  tempDir,
 			SkipGenMocks:  true,
 			CompileProtos: true,
@@ -132,7 +137,7 @@ var _ = Describe("DocsGen", func() {
 		Expect(apiSummary).To(Equal(datafile.ApiSummary{
 			RelativePath: filepath.Join(
 				hugoApiDir,
-				filepath.Base(tempDir),
+				relativePathToTempDir,
 				"doc_gen_test.proto.sk/#GenerateDocsForMe"),
 			Package: "testing.solo.io",
 		}))
