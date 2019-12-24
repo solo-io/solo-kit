@@ -40,7 +40,7 @@ var (
 	// matches all solo-kit protos, useful for any projects using solo-kit
 	SoloKitProtoMatcher = MatchOptions{
 		Package:  "github.com/solo-io/solo-kit",
-		Patterns: []string{"api/**/*.proto"},
+		Patterns: []string{"api/**/*.proto", SoloKitMatchPattern},
 	}
 
 	// matches gogo.proto, used for gogoproto code gen.
