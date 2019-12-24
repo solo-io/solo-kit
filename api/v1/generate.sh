@@ -2,6 +2,11 @@
 
 set -e
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
+
 ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
 SOLO_KIT=${ROOT}/solo-kit
 IN=${SOLO_KIT}/api/v1/
@@ -16,7 +21,7 @@ cleanup() {
     echo ">> Removing ${TEMP_DIR}"
     rm -rf ${TEMP_DIR}
 }
-#trap "cleanup" EXIT SIGINT
+trap "cleanup" EXIT SIGINT
 
 echo ">> Temporary output directory ${TEMP_DIR}"
 
