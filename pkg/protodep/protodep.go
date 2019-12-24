@@ -14,6 +14,7 @@ import (
 
 	zglob "github.com/mattn/go-zglob"
 	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 )
 
 const (
@@ -71,24 +72,30 @@ type MatchOptions struct {
 	Package  string
 }
 
+type Options struct {
+	MatchOptions  []MatchOptions
+	LocalMatchers []string
+}
+
 // struct which represents a go module package in the module package list
 type Module struct {
-	ImportPath    string
-	SourcePath    string
-	Version       string
-	SourceVersion string
-	Dir           string   // full path, $GOPATH/pkg/mod/
-	VendorList    []string // files to vendor
+	ImportPath     string
+	SourcePath     string
+	Version        string
+	SourceVersion  string
+	Dir            string   // full path, $GOPATH/pkg/mod/
+	VendorList     []string // files to vendor
+	currentPackage bool
 }
 
 // Expose proto dep as a prerun func for solo-kit
-func PreRunProtoVendor(cwd string, matchOpts []MatchOptions) func() error {
+func PreRunProtoVendor(cwd string, opts Options) func() error {
 	return func() error {
 		mgr, err := NewManager(cwd)
 		if err != nil {
 			return err
 		}
-		modules, err := mgr.Gather(matchOpts)
+		modules, err := mgr.Gather(opts)
 		if err != nil {
 			return err
 		}
@@ -114,15 +121,22 @@ func NewManager(cwd string) (*manager, error) {
 
 type manager struct {
 	WorkingDirectory string
-	vendorMode       bool
+	packageName      bool
 }
 
 // gather up all packages for a given go module
 // currently this function uses the cmd `go list -m all` to figure out the list of dep
-func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
+func (m *manager) Gather(opts Options) ([]*Module, error) {
+	matchOptions := opts.MatchOptions
 	// Ensure go.mod file exists and we're running from the project root,
-	if _, err := os.Stat(filepath.Join(m.WorkingDirectory, "go.mod")); os.IsNotExist(err) {
+	f, err := os.Open(filepath.Join(m.WorkingDirectory, "go.mod"))
+	if os.IsNotExist(err) {
 		fmt.Println("Whoops, cannot find `go.mod` file")
+		return nil, err
+	}
+
+	packageName, err := modutils.GetCurrentModPackageName(f.Name())
+	if err != nil {
 		return nil, err
 	}
 
@@ -130,7 +144,7 @@ func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
 	packageListCmd := exec.Command("go", "list", "-m", "all")
 	packageListCmd.Stdout = modPackageReader
 	packageListCmd.Stderr = modPackageReader
-	err := packageListCmd.Run()
+	err = packageListCmd.Run()
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list packages for current mod package: %s",
 			modPackageReader.String())
@@ -226,12 +240,32 @@ func (m *manager) Gather(matchOptions []MatchOptions) ([]*Module, error) {
 
 	}
 
+	localModule := &Module{
+		Dir:            m.WorkingDirectory,
+		ImportPath:     packageName,
+		currentPackage: true,
+	}
+	for _, pat := range opts.LocalMatchers {
+		matches, err := zglob.Glob(filepath.Join(localModule.Dir, pat))
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error! glob match failure")
+		}
+		localModule.VendorList = append(localModule.VendorList, matches...)
+	}
+	modules = append(modules, localModule)
+
 	return modules, nil
 }
 
 func (m *manager) Copy(modules []*Module) error {
 	// Copy mod vendor list files to ./vendor/
 	for _, mod := range modules {
+		if mod.currentPackage == true {
+			for _, vendorFile := range mod.VendorList {
+				localPath := strings.TrimPrefix(vendorFile, m.WorkingDirectory+"/")
+				return prepareForCopy(filepath.Join(mod.ImportPath, localPath), vendorFile, m.WorkingDirectory)
+			}
+		}
 		for _, vendorFile := range mod.VendorList {
 			x := strings.Index(vendorFile, mod.Dir)
 			if x < 0 {
@@ -239,18 +273,25 @@ func (m *manager) Copy(modules []*Module) error {
 			}
 
 			localPath := filepath.Join(mod.ImportPath, vendorFile[len(mod.Dir):])
-			localFile := filepath.Join(m.WorkingDirectory, "vendor", localPath)
-
-			log.Printf("copying %v -> %v", vendorFile, localFile)
-
-			if err := os.MkdirAll(filepath.Dir(localFile), os.ModePerm); err != nil {
+			if err := prepareForCopy(localPath, vendorFile, m.WorkingDirectory); err != nil {
 				return err
 			}
-			if _, err := copyFile(vendorFile, localFile); err != nil {
-				return errors.Wrapf(err, fmt.Sprintf("Error! %s - unable to copy file %s\n",
-					err.Error(), vendorFile))
-			}
 		}
+	}
+	return nil
+}
+
+func prepareForCopy(localPath, vendorFile, workingDirectory string) error {
+	localFile := filepath.Join(workingDirectory, "vendor", localPath)
+
+	log.Printf("copying %v -> %v", vendorFile, localFile)
+
+	if err := os.MkdirAll(filepath.Dir(localFile), os.ModePerm); err != nil {
+		return err
+	}
+	if _, err := copyFile(vendorFile, localFile); err != nil {
+		return errors.Wrapf(err, fmt.Sprintf("Error! %s - unable to copy file %s\n",
+			err.Error(), vendorFile))
 	}
 	return nil
 }

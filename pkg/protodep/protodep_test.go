@@ -25,12 +25,20 @@ var _ = Describe("protodep", func() {
 
 	Context("vendor protos", func() {
 		It("can vendor protos", func() {
-			modules, err := mgr.Gather([]MatchOptions{
-				GogoProtoMatcher,
-				ExtProtoMatcher,
+			modules, err := mgr.Gather(Options{
+				MatchOptions: []MatchOptions{
+					GogoProtoMatcher,
+					ExtProtoMatcher,
+					ValidateProtoMatcher,
+				},
+				LocalMatchers: []string{"api/**/*.proto"},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(modules).To(HaveLen(2))
+			Expect(modules).To(HaveLen(4))
+			Expect(modules[0].ImportPath).To(Equal(ValidateProtoMatcher.Package))
+			Expect(modules[1].ImportPath).To(Equal(GogoProtoMatcher.Package))
+			Expect(modules[2].ImportPath).To(Equal(ExtProtoMatcher.Package))
+			Expect(modules[3].ImportPath).To(Equal("github.com/solo-io/solo-kit"))
 			Expect(mgr.Copy(modules)).NotTo(HaveOccurred())
 		})
 	})

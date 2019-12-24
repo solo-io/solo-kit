@@ -82,19 +82,19 @@ type TestingSnapshotEmitter interface {
 type TestingEmitter interface {
 	TestingSnapshotEmitter
 	Register() error
-	MockResource() MockResourceClient
-	FakeResource() FakeResourceClient
-	AnotherMockResource() AnotherMockResourceClient
-	ClusterResource() ClusterResourceClient
+	MockResource() testing_solo_io.MockResourceClient
+	FakeResource() testing_solo_io.FakeResourceClient
+	AnotherMockResource() testing_solo_io.AnotherMockResourceClient
+	ClusterResource() testing_solo_io.ClusterResourceClient
 	MockCustomType() MockCustomTypeClient
 	Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
+func NewTestingEmitter(mockResourceClient testing_solo_io.MockResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient, anotherMockResourceClient testing_solo_io.AnotherMockResourceClient, clusterResourceClient testing_solo_io.ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
 	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient testing_solo_io.MockResourceClient, fakeResourceClient testing_solo_io.FakeResourceClient, anotherMockResourceClient testing_solo_io.AnotherMockResourceClient, clusterResourceClient testing_solo_io.ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
 		mockResource:        mockResourceClient,
 		fakeResource:        fakeResourceClient,
@@ -108,10 +108,10 @@ func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResour
 
 type testingEmitter struct {
 	forceEmit           <-chan struct{}
-	mockResource        MockResourceClient
-	fakeResource        FakeResourceClient
-	anotherMockResource AnotherMockResourceClient
-	clusterResource     ClusterResourceClient
+	mockResource        testing_solo_io.MockResourceClient
+	fakeResource        testing_solo_io.FakeResourceClient
+	anotherMockResource testing_solo_io.AnotherMockResourceClient
+	clusterResource     testing_solo_io.ClusterResourceClient
 	mockCustomType      MockCustomTypeClient
 	pod                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 }
@@ -138,19 +138,19 @@ func (c *testingEmitter) Register() error {
 	return nil
 }
 
-func (c *testingEmitter) MockResource() MockResourceClient {
+func (c *testingEmitter) MockResource() testing_solo_io.MockResourceClient {
 	return c.mockResource
 }
 
-func (c *testingEmitter) FakeResource() FakeResourceClient {
+func (c *testingEmitter) FakeResource() testing_solo_io.FakeResourceClient {
 	return c.fakeResource
 }
 
-func (c *testingEmitter) AnotherMockResource() AnotherMockResourceClient {
+func (c *testingEmitter) AnotherMockResource() testing_solo_io.AnotherMockResourceClient {
 	return c.anotherMockResource
 }
 
-func (c *testingEmitter) ClusterResource() ClusterResourceClient {
+func (c *testingEmitter) ClusterResource() testing_solo_io.ClusterResourceClient {
 	return c.clusterResource
 }
 
@@ -180,28 +180,28 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	ctx := opts.Ctx
 	/* Create channel for MockResource */
 	type mockResourceListWithNamespace struct {
-		list      MockResourceList
+		list      testing_solo_io.MockResourceList
 		namespace string
 	}
 	mockResourceChan := make(chan mockResourceListWithNamespace)
 
-	var initialMockResourceList MockResourceList
+	var initialMockResourceList testing_solo_io.MockResourceList
 	/* Create channel for FakeResource */
 	type fakeResourceListWithNamespace struct {
-		list      FakeResourceList
+		list      testing_solo_io.FakeResourceList
 		namespace string
 	}
 	fakeResourceChan := make(chan fakeResourceListWithNamespace)
 
-	var initialFakeResourceList FakeResourceList
+	var initialFakeResourceList testing_solo_io.FakeResourceList
 	/* Create channel for AnotherMockResource */
 	type anotherMockResourceListWithNamespace struct {
-		list      AnotherMockResourceList
+		list      testing_solo_io.AnotherMockResourceList
 		namespace string
 	}
 	anotherMockResourceChan := make(chan anotherMockResourceListWithNamespace)
 
-	var initialAnotherMockResourceList AnotherMockResourceList
+	var initialAnotherMockResourceList testing_solo_io.AnotherMockResourceList
 	/* Create channel for ClusterResource */
 	/* Create channel for MockCustomType */
 	type mockCustomTypeListWithNamespace struct {
@@ -410,9 +410,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				stats.Record(ctx, mTestingSnapshotMissed.M(1))
 			}
 		}
-		mocksByNamespace := make(map[string]MockResourceList)
-		fakesByNamespace := make(map[string]FakeResourceList)
-		anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
+		mocksByNamespace := make(map[string]testing_solo_io.MockResourceList)
+		fakesByNamespace := make(map[string]testing_solo_io.FakeResourceList)
+		anothermockresourcesByNamespace := make(map[string]testing_solo_io.AnotherMockResourceList)
 		mctsByNamespace := make(map[string]MockCustomTypeList)
 		podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
 
@@ -444,7 +444,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				// merge lists by namespace
 				mocksByNamespace[namespace] = mockResourceNamespacedList.list
-				var mockResourceList MockResourceList
+				var mockResourceList testing_solo_io.MockResourceList
 				for _, mocks := range mocksByNamespace {
 					mockResourceList = append(mockResourceList, mocks...)
 				}
@@ -463,7 +463,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				// merge lists by namespace
 				fakesByNamespace[namespace] = fakeResourceNamespacedList.list
-				var fakeResourceList FakeResourceList
+				var fakeResourceList testing_solo_io.FakeResourceList
 				for _, fakes := range fakesByNamespace {
 					fakeResourceList = append(fakeResourceList, fakes...)
 				}
@@ -482,7 +482,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 				// merge lists by namespace
 				anothermockresourcesByNamespace[namespace] = anotherMockResourceNamespacedList.list
-				var anotherMockResourceList AnotherMockResourceList
+				var anotherMockResourceList testing_solo_io.AnotherMockResourceList
 				for _, anothermockresources := range anothermockresourcesByNamespace {
 					anotherMockResourceList = append(anotherMockResourceList, anothermockresources...)
 				}

@@ -615,7 +615,6 @@ func (c *templateFunctions) forEachMessage(messagesToSkip map[string]bool) func(
 				str += renderedEnumString.String() + "\n"
 			}
 		}
-		//str = strings.TrimSuffix(str, "\n")
 		return str, nil
 	}
 }

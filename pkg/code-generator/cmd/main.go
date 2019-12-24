@@ -93,7 +93,7 @@ func Generate(opts GenerateOptions) error {
 		}
 	}
 
-	opts.SkipDirs = append(opts.SkipDirs, "vendor/")
+	// opts.SkipDirs = append(opts.SkipDirs, "vendor/")
 
 	workingRootRelative := opts.RelativeRoot
 	if workingRootRelative == "" {
@@ -228,7 +228,7 @@ func (r *Runner) Run() error {
 	descriptorCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports,
 		r.Opts.CustomGogoOutArgs, r.DescriptorOutDir, compileProto)
 
-	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(workingRootAbsolute, r.Opts.SkipDirs)
+	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, "vendor"), r.Opts.SkipDirs)
 	if err != nil {
 		return err
 	}
@@ -417,7 +417,7 @@ func getCommonImports() ([]string, error) {
 }
 
 var commonImportStrings = []string{
-	"..",
+	"vendor",
 }
 
 const (
