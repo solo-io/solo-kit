@@ -27,13 +27,14 @@ init:
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
 
-.PHONY: vendor
-vendor:
+# must be a seperate target so that make waits for it to complete before moving on
+.PHONY: mod-download
+mod-download:
 	go mod download
 
 
 .PHONY: update-deps
-update-deps: vendor
+update-deps: mod-download
 	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports

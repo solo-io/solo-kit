@@ -13,8 +13,8 @@ A collection of code generation and libraries to for API development.
 See `test/mock_resources.proto` and `test/generate.go` for an example of how to use solo-kit
 
 ## Build
-- clone repo to gopath 
-- gather dependencies: `dep ensure -v`
+- clone repo locally
+- gather dependencies: `go mod download`
 - use binary produced with `make solo-kit-gen` or import `cmd.Run(...)` into your own code gen code 
 
 ## Usage
