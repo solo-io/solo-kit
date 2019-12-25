@@ -18,7 +18,7 @@ func main() {
 		SkipGenMocks:       true,
 		SkipGeneratedTests: true,
 		PreRunFuncs: []cmd.RunFunc{
-			protodep.PreRunProtoVendor(".",
+			cmd.PreRunProtoVendor(".",
 				protodep.Options{
 					MatchOptions: []protodep.MatchOptions{
 						protodep.ExtProtoMatcher,

@@ -88,24 +88,6 @@ type Module struct {
 	currentPackage bool
 }
 
-// Expose proto dep as a prerun func for solo-kit
-func PreRunProtoVendor(cwd string, opts Options) func() error {
-	return func() error {
-		mgr, err := NewManager(cwd)
-		if err != nil {
-			return err
-		}
-		modules, err := mgr.Gather(opts)
-		if err != nil {
-			return err
-		}
-		if err := mgr.Copy(modules); err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
 func NewManager(cwd string) (*manager, error) {
 	if !filepath.IsAbs(cwd) {
 		absoluteDir, err := filepath.Abs(cwd)
@@ -210,7 +192,7 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		// If no match options have been supplied, match on all packages using default match patterns
 		if matchOptions == nil {
 			// Build list of files to module path source to project vendor folder
-			vendorList, err := buildModVendorList(DefaultMatchPatterns, module)
+			vendorList, err := buildModVendorList(DefaultMatchPatterns, module.Dir)
 			if err != nil {
 				return nil, err
 			}
@@ -228,7 +210,7 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 				continue
 			}
 			// Build list of files to module path source to project vendor folder
-			vendorList, err := buildModVendorList(matchOpt.Patterns, module)
+			vendorList, err := buildModVendorList(matchOpt.Patterns, module.Dir)
 			if err != nil {
 				return nil, err
 			}
@@ -245,14 +227,19 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		ImportPath:     packageName,
 		currentPackage: true,
 	}
-	for _, pat := range opts.LocalMatchers {
-		matches, err := zglob.Glob(filepath.Join(localModule.Dir, pat))
-		if err != nil {
-			return nil, errors.Wrapf(err, "Error! glob match failure")
-		}
-		localModule.VendorList = append(localModule.VendorList, matches...)
+	localModule.VendorList, err = buildModVendorList(opts.LocalMatchers, localModule.Dir)
+	if err != nil {
+		return nil, err
 	}
 	modules = append(modules, localModule)
+
+	// for _, pat := range opts.LocalMatchers {
+	// 	matches, err := zglob.Glob(filepath.Join(localModule.Dir, pat))
+	// 	if err != nil {
+	// 		return nil, errors.Wrapf(err, "Error! glob match failure")
+	// 	}
+	// 	localModule.VendorList = append(localModule.VendorList, matches...)
+	// }
 
 	return modules, nil
 }
@@ -299,15 +286,23 @@ func prepareForCopy(localPath, vendorFile, workingDirectory string) error {
 	return nil
 }
 
-func buildModVendorList(copyPat []string, mod *Module) ([]string, error) {
+func buildModVendorList(copyPat []string, dir string) ([]string, error) {
 	var vendorList []string
 
 	for _, pat := range copyPat {
-		matches, err := zglob.Glob(filepath.Join(mod.Dir, pat))
+		matches, err := zglob.Glob(filepath.Join(dir, pat))
 		if err != nil {
 			return nil, errors.Wrapf(err, "Error! glob match failure")
 		}
-		vendorList = append(vendorList, matches...)
+		// Filter out all matches which contain a vendor folder, those are leftovers from a previous run.
+		// Might be worth clearing the vendor folder before every run.
+		for _, match := range matches {
+			vendorFolders := strings.Count(match, "vendor")
+			if vendorFolders > 0 {
+				continue
+			}
+			vendorList = append(vendorList, match)
+		}
 	}
 
 	return vendorList, nil

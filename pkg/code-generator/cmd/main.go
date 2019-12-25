@@ -184,7 +184,8 @@ func (r *Runner) Run() error {
 	}
 	// Creates a ProjectConfig from each of the 'solo-kit.json' files
 	// found in the directory tree rooted at 'workingRootAbsolute'.
-	projectConfigs, err := r.collectProjectsFromRoot(workingRootAbsolute, r.Opts.SkipDirs)
+	projectConfigRoot := filepath.Join(r.BaseDir, "vendor", r.Opts.PackageName)
+	projectConfigs, err := r.collectProjectsFromRoot(projectConfigRoot, r.Opts.SkipDirs)
 	if err != nil {
 		return err
 	}
