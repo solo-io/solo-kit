@@ -162,9 +162,9 @@ option go_package = "{{.}}";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 message GenerateDocsForMe {
     option (core.solo.io.resource).short_name = "docs";
@@ -191,9 +191,9 @@ option go_package = "{{.}}";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 message DoNotGenerateDocsForMe {
     option (core.solo.io.resource).short_name = "nodocs";
