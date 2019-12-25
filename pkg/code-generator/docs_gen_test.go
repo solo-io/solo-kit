@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
+	"github.com/solo-io/solo-kit/pkg/protodep"
 	"gopkg.in/yaml.v2"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -61,7 +62,14 @@ var _ = Describe("DocsGen", func() {
 
 		// Generate project config
 		buf = &bytes.Buffer{}
-		err = projectConfigFile().Execute(buf, projectConfigDocsDir)
+		err = projectConfigFile().Execute(buf, struct {
+			Dir       string
+			GoPackage string
+		}{
+			Dir:       projectConfigDocsDir,
+			GoPackage: relativePathToTempDir,
+		})
+		// err = projectConfigFile().Execute(buf, projectConfigDocsDir)
 		Expect(err).NotTo(HaveOccurred())
 		err = ioutil.WriteFile(filepath.Join(tempDir, testProjectConfigName), []byte(buf.String()), 0644)
 		Expect(err).NotTo(HaveOccurred())
@@ -81,15 +89,28 @@ var _ = Describe("DocsGen", func() {
 		// Run code gen
 		opts := cmd.GenerateOptions{
 			CustomImports: []string{
-				filepath.Join(tempDir, "..", "vendor/github.com/solo-io/protoc-gen-ext"),
-				filepath.Join(tempDir, "..", "api/external"),
-				// filepath.Join(modRootDir, "api/external"),
-				// modRootDir
+				filepath.Join(tempDir, "..", "vendor"),
 			},
-			RelativeRoot:  tempDir,
+			RelativeRoot:  filepath.Base(tempDir),
 			SkipGenMocks:  true,
 			CompileProtos: true,
 			GenDocs:       genDocs,
+			PreRunFuncs: []cmd.RunFunc{
+				cmd.PreRunProtoVendor("../..",
+					protodep.Options{
+						MatchOptions: []protodep.MatchOptions{
+							protodep.ExtProtoMatcher,
+							protodep.ValidateProtoMatcher,
+							protodep.GogoProtoMatcher,
+						},
+						LocalMatchers: []string{
+							"test/**/*.proto",
+							"api/**/*.proto",
+							filepath.Join(filepath.Base(tempDir), protodep.ProtoMatchPattern),
+							protodep.SoloKitMatchPattern},
+					},
+				),
+			},
 		}
 		err = cmd.Generate(opts)
 		Expect(err).NotTo(HaveOccurred())
@@ -103,7 +124,12 @@ var _ = Describe("DocsGen", func() {
 
 		// Traverse the generated doc directory tree
 		foundExpectedDoc, foundUnexpectedDoc := false, false
-		err := filepath.Walk(tempDir+"/docs", func(path string, info os.FileInfo, err error) error {
+		outPath, err := filepath.Abs(filepath.Base(tempDir))
+		Expect(err).NotTo(HaveOccurred())
+		err = filepath.Walk(filepath.Join(outPath, "docs"), func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
 			if !info.IsDir() {
 
 				// Verify that a doc file has been generated for GenerateDocsForMe
@@ -129,7 +155,7 @@ var _ = Describe("DocsGen", func() {
 
 		Expect(foundExpectedDoc).To(BeTrue())
 		Expect(foundUnexpectedDoc).To(BeFalse())
-		dataFile, err := ioutil.ReadFile(filepath.Join(tempDir, hugoDataDir, options.HugoProtoDataFile))
+		dataFile, err := ioutil.ReadFile(filepath.Join(outPath, hugoDataDir, options.HugoProtoDataFile))
 		hugoProtoMap := &datafile.HugoProtobufData{}
 		Expect(yaml.Unmarshal(dataFile, hugoProtoMap)).NotTo(HaveOccurred())
 		apiSummary, ok := hugoProtoMap.Apis["testing.solo.io.GenerateDocsForMe"]
@@ -143,7 +169,7 @@ var _ = Describe("DocsGen", func() {
 		}))
 		By("verify that data file's mapping matches Hugo's served url")
 		servedFile := strings.Split(apiSummary.RelativePath, "/#")[0]
-		diskFile := filepath.Join(tempDir, projectConfigDocsDir, servedFile+".md")
+		diskFile := filepath.Join(outPath, projectConfigDocsDir, servedFile+".md")
 		_, err = ioutil.ReadFile(diskFile)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -216,7 +242,8 @@ func projectConfigFile() *template.Template {
   "title": "Solo-Kit Testing",
   "name": "testing.solo.io",
   "version": "v1",
-  "docs_dir": "{{.}}/api"
+  "docs_dir": "{{.Dir}}/api",
+  "go_package": "{{.GoPackage}}"
 }
 
 `))

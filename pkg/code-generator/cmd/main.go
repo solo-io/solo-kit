@@ -94,10 +94,12 @@ func Generate(opts GenerateOptions) error {
 	}
 
 	// opts.SkipDirs = append(opts.SkipDirs, "vendor/")
-
 	workingRootRelative := opts.RelativeRoot
 	if workingRootRelative == "" {
 		workingRootRelative = "."
+	}
+	if filepath.IsAbs(workingRootRelative) {
+		return errors.Errorf("opts.RelativeRoot must be relative")
 	}
 
 	modBytes, err := modutils.GetCurrentModPackageFile()
@@ -137,7 +139,21 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 
-	if err := filepath.Walk(filepath.Join(descriptorOutDir, r.Opts.PackageName), func(pbgoFile string, info os.FileInfo, err error) error {
+	/*
+		this is an extreme edge case, but an important one.
+		before attempting to copy over generated files we need to make sure that any files were generated at all.
+		solo-kit used to write directly into the GOPATH so this could never happen.
+		now however, in the case that solo-kit does not compile any protos, the following directory may never be created,
+		this is not technically an error, but a situation worth noting and logging
+	*/
+	outPath := filepath.Join(descriptorOutDir, r.Opts.PackageName)
+	if _, err := os.Stat(outPath); os.IsNotExist(err) {
+		log.Warnf("the filepath %s does not exist. this means that solo-kit did not compile any proto files."+
+			"this is not technically an error, but could be indicative of an incorrect setup.", outPath)
+		return nil
+	}
+
+	if err := filepath.Walk(outPath, func(pbgoFile string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -184,7 +200,7 @@ func (r *Runner) Run() error {
 	}
 	// Creates a ProjectConfig from each of the 'solo-kit.json' files
 	// found in the directory tree rooted at 'workingRootAbsolute'.
-	projectConfigRoot := filepath.Join(r.BaseDir, "vendor", r.Opts.PackageName)
+	projectConfigRoot := filepath.Join(r.BaseDir, "vendor", r.Opts.PackageName, r.RelativeRoot)
 	projectConfigs, err := r.collectProjectsFromRoot(projectConfigRoot, r.Opts.SkipDirs)
 	if err != nil {
 		return err

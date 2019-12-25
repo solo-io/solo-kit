@@ -28,6 +28,7 @@ type DocsGen struct {
 var ignoredFiles = []string{
 	"validate/validate.proto",
 	"github.com/solo-io/solo-kit/api/external/validate/validate.proto",
+	"github.com/envoyproxy/protoc-gen-validate/validate/validate.proto",
 }
 
 // write docs that are produced from the content of a single project
@@ -123,9 +124,7 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 			}
 
 			// Skip if the file contains a top-level resource that has to be skipped
-			if skipMap[protoFile.GetName()] ||
-				// This is a total temporary hack because this file just will not play nice
-				protoFile.GetName() == "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto" {
+			if skipMap[protoFile.GetName()] {
 				continue
 			}
 

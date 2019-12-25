@@ -49,5 +49,5 @@ func GetCurrentModPackageFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(modBytes), nil
+	return strings.TrimSpace(string(modBytes)), nil
 }

@@ -88,6 +88,7 @@ type Module struct {
 	currentPackage bool
 }
 
+// cwd must point to the root level of a repo
 func NewManager(cwd string) (*manager, error) {
 	if !filepath.IsAbs(cwd) {
 		absoluteDir, err := filepath.Abs(cwd)
@@ -111,13 +112,12 @@ type manager struct {
 func (m *manager) Gather(opts Options) ([]*Module, error) {
 	matchOptions := opts.MatchOptions
 	// Ensure go.mod file exists and we're running from the project root,
-	f, err := os.Open(filepath.Join(m.WorkingDirectory, "go.mod"))
-	if os.IsNotExist(err) {
-		fmt.Println("Whoops, cannot find `go.mod` file")
-		return nil, err
+	modPackageFile, err := modutils.GetCurrentModPackageFile()
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not find go.mod file, must run from go.mod project")
 	}
 
-	packageName, err := modutils.GetCurrentModPackageName(f.Name())
+	packageName, err := modutils.GetCurrentModPackageName(modPackageFile)
 	if err != nil {
 		return nil, err
 	}
