@@ -2,6 +2,10 @@ package protodep
 
 //go:generate bash ./generate.sh
 
+const (
+	DefaultDepDir = "vendor"
+)
+
 type Manager struct {
 }
 

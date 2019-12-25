@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
+	"github.com/solo-io/solo-kit/pkg/protodep"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 )
 
@@ -200,7 +201,10 @@ func (r *Runner) Run() error {
 	}
 	// Creates a ProjectConfig from each of the 'solo-kit.json' files
 	// found in the directory tree rooted at 'workingRootAbsolute'.
-	projectConfigRoot := filepath.Join(r.BaseDir, "vendor", r.Opts.PackageName, r.RelativeRoot)
+	// These files are vendored into the protodep.DefaultDepDir by protodep, and accessed from there.
+	// This root is the proper base directory to find only the roots which matter.
+	// This way solo-kit can be ran from a child directory with no repercussions.
+	projectConfigRoot := filepath.Join(r.BaseDir, protodep.DefaultDepDir, r.Opts.PackageName, strings.TrimPrefix(workingRootAbsolute, r.BaseDir))
 	projectConfigs, err := r.collectProjectsFromRoot(projectConfigRoot, r.Opts.SkipDirs)
 	if err != nil {
 		return err
@@ -245,7 +249,7 @@ func (r *Runner) Run() error {
 	descriptorCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports,
 		r.Opts.CustomGogoOutArgs, r.DescriptorOutDir, compileProto)
 
-	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, "vendor"), r.Opts.SkipDirs)
+	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, protodep.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
 		return err
 	}
@@ -434,7 +438,7 @@ func getCommonImports() ([]string, error) {
 }
 
 var commonImportStrings = []string{
-	"vendor",
+	protodep.DefaultDepDir,
 }
 
 const (
@@ -445,7 +449,7 @@ const (
 func (r *Runner) importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
 	var results []model.CustomResourceConfig
 	for _, imp := range imports {
-		imp = filepath.Join("vendor", imp)
+		imp = filepath.Join(protodep.DefaultDepDir, imp)
 		if !strings.HasSuffix(imp, model.ProjectConfigFilename) {
 			imp = filepath.Join(imp, model.ProjectConfigFilename)
 		}

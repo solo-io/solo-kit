@@ -11,6 +11,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
 	"github.com/solo-io/solo-kit/pkg/protodep"
+	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 	"gopkg.in/yaml.v2"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -29,22 +30,26 @@ var _ = Describe("DocsGen", func() {
 		hugoApiDir            = "api"
 		hugoDataDir           = "docs/data"
 		projectConfigDocsDir  = "docs/content"
+		packageName           = "github.com/solo-io/solo-kit"
 	)
 
 	var (
 		tempDir               string
 		relativePathToTempDir string
+		modRootDir            string
 	)
 
 	BeforeEach(func() {
-
+		modPackageFile, err := modutils.GetCurrentModPackageFile()
+		Expect(err).NotTo(HaveOccurred())
+		modRootDir = filepath.Dir(modPackageFile)
 		// Create temp directory and path variables
 		workingDir, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
-		projectRoot := filepath.Join(workingDir, "../../")
-		tempDir, err = ioutil.TempDir(projectRoot, "doc-gen-test-")
+		// projectRoot := filepath.Join(workingDir, "../../")
+		tempDir, err = ioutil.TempDir(workingDir, "doc-gen-test-")
 		Expect(err).NotTo(HaveOccurred())
-		relativePathToTempDir = filepath.Join("github.com/solo-io/solo-kit", filepath.Base(tempDir))
+		relativePathToTempDir = filepath.Join(packageName, filepath.Base(tempDir))
 
 		// Generate test proto file for which doc has to be generated
 		buf := &bytes.Buffer{}
@@ -82,10 +87,6 @@ var _ = Describe("DocsGen", func() {
 			},
 		}
 
-		// modPackageFile, err := modutils.GetCurrentModPackageFile()
-		// Expect(err).NotTo(HaveOccurred())
-		// modRootDir := filepath.Dir(modPackageFile)
-
 		// Run code gen
 		opts := cmd.GenerateOptions{
 			CustomImports: []string{
@@ -106,7 +107,7 @@ var _ = Describe("DocsGen", func() {
 						LocalMatchers: []string{
 							"test/**/*.proto",
 							"api/**/*.proto",
-							filepath.Join(filepath.Base(tempDir), protodep.ProtoMatchPattern),
+							filepath.Join(strings.TrimPrefix(tempDir, modRootDir), protodep.ProtoMatchPattern),
 							protodep.SoloKitMatchPattern},
 					},
 				),
@@ -163,7 +164,7 @@ var _ = Describe("DocsGen", func() {
 		Expect(apiSummary).To(Equal(datafile.ApiSummary{
 			RelativePath: filepath.Join(
 				hugoApiDir,
-				relativePathToTempDir,
+				filepath.Join(packageName, strings.TrimPrefix(tempDir, modRootDir)),
 				"doc_gen_test.proto.sk/#GenerateDocsForMe"),
 			Package: "testing.solo.io",
 		}))

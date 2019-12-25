@@ -272,7 +272,7 @@ func (m *manager) Copy(modules []*Module) error {
 }
 
 func prepareForCopy(localPath, vendorFile, workingDirectory string) error {
-	localFile := filepath.Join(workingDirectory, "vendor", localPath)
+	localFile := filepath.Join(workingDirectory, DefaultDepDir, localPath)
 
 	log.Printf("copying %v -> %v", vendorFile, localFile)
 
@@ -297,7 +297,7 @@ func buildModVendorList(copyPat []string, dir string) ([]string, error) {
 		// Filter out all matches which contain a vendor folder, those are leftovers from a previous run.
 		// Might be worth clearing the vendor folder before every run.
 		for _, match := range matches {
-			vendorFolders := strings.Count(match, "vendor")
+			vendorFolders := strings.Count(match, DefaultDepDir)
 			if vendorFolders > 0 {
 				continue
 			}
