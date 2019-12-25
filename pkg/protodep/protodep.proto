@@ -1,0 +1,27 @@
+syntax = "proto3";
+package protodep;
+option go_package = "github.com/solo-io/solo-kit/pkg/protodep";
+
+import "validate/validate.proto";
+
+message Config {
+    repeated Import imports = 1;
+}
+
+message Import {
+    oneof ImportType {
+        GoMod go_mod = 1;
+        Git git = 2;
+    }
+}
+
+message GoMod {
+    repeated string patterns = 1;
+    string package = 2;
+}
+
+message Git {
+    string owner = 1;
+    string repo = 2;
+    string revision = 3;
+}
