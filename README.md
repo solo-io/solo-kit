@@ -36,5 +36,7 @@ This means that we needed a new way to reliably import protos outside of the GOP
 protodep. More information on that can be found [here](pkg/protodep/README.md).
 
 Chief among the new changes is that the local `vendor` folder has become the `solo-kit` source of truth for
-both `.proto` files, and `solo-kit.json` files. The `GenerateOptions` struct now takes in a prerun funcs,
-one of which should now be a protodep ensure. An example of this can be found in  
+both `.proto` files, and `solo-kit.json` files. The `GenerateOptions` struct now takes in a protodep config.
+An example of this can be found in `generate.go`. This is how solo-kit know how to vendor in the protos it 
+needs to run. If this config is nil a warning will be printed, as technically this is valid, but will most likely
+lead to an error. 

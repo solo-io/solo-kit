@@ -52,7 +52,7 @@ func (c *collector) CollectDescriptorsFromRoot(root string, skipDirs []string) (
 		descriptors = append(descriptors, &f)
 	}
 	var g errgroup.Group
-	for _, dir := range append([]string{root}, c.customImports...) {
+	for _, dir := range append([]string{root}) {
 		absoluteDir, err := filepath.Abs(dir)
 		if err != nil {
 			return nil, err

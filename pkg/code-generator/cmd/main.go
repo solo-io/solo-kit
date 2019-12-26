@@ -99,14 +99,6 @@ func Generate(opts GenerateOptions) error {
 		return errors.Errorf("opts.RelativeRoot must be relative")
 	}
 
-	mgr, err := protodep.NewManager(opts.RelativeRoot)
-	if err != nil {
-		return err
-	}
-	if err := mgr.Ensure(opts.ProtoDepConfig); err != nil {
-		return err
-	}
-
 	modBytes, err := modutils.GetCurrentModPackageFile()
 	modFileString := strings.TrimSpace(string(modBytes))
 	modPackageName, err := modutils.GetCurrentModPackageName(modFileString)
@@ -136,6 +128,18 @@ func Generate(opts GenerateOptions) error {
 		BaseDir:          modPathString,
 		DescriptorOutDir: descriptorOutDir,
 		CommonImports:    commonImports,
+	}
+
+	if opts.ProtoDepConfig == nil {
+		log.Warnf("ProtoDepConfig is nil, therefore no protos will be vendored. This is not an error," +
+			"but will most likely lead to one.")
+	}
+	mgr, err := protodep.NewManager(r.BaseDir)
+	if err != nil {
+		return err
+	}
+	if err := mgr.Ensure(opts.ProtoDepConfig); err != nil {
+		return err
 	}
 
 	// copy out generated code

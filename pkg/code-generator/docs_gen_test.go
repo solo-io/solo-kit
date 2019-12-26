@@ -89,36 +89,32 @@ var _ = Describe("DocsGen", func() {
 
 		// Run code gen
 		opts := cmd.GenerateOptions{
-			CustomImports: []string{
-				filepath.Join(tempDir, "..", "vendor"),
-			},
+			// CustomImports: []string{
+			// 	filepath.Join(tempDir, "..", "vendor"),
+			// },
 			RelativeRoot:  filepath.Base(tempDir),
 			SkipGenMocks:  true,
 			CompileProtos: true,
 			GenDocs:       genDocs,
-			PreRunFuncs: []cmd.RunFunc{
-				cmd.PreRunProtoVendor("../..",
-					&protodep.Config{
-						Local: &protodep.Local{
-							Patterns: []string{
-								"test/**/*.proto",
-								"api/**/*.proto",
-								filepath.Join(strings.TrimPrefix(tempDir, modRootDir), protodep.ProtoMatchPattern),
-								protodep.SoloKitMatchPattern},
-						},
-						Imports: []*protodep.Import{
-							{
-								ImportType: &protodep.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
-							},
-							{
-								ImportType: &protodep.Import_GoMod{GoMod: protodep.ValidateProtoMatcher},
-							},
-							{
-								ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
-							},
-						},
+			ProtoDepConfig: &protodep.Config{
+				Local: &protodep.Local{
+					Patterns: []string{
+						"test/**/*.proto",
+						"api/**/*.proto",
+						filepath.Join(strings.TrimPrefix(tempDir, modRootDir), protodep.ProtoMatchPattern),
+						protodep.SoloKitMatchPattern},
+				},
+				Imports: []*protodep.Import{
+					{
+						ImportType: &protodep.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
 					},
-				),
+					{
+						ImportType: &protodep.Import_GoMod{GoMod: protodep.ValidateProtoMatcher},
+					},
+					{
+						ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
+					},
+				},
 			},
 		}
 		err = cmd.Generate(opts)
@@ -166,6 +162,7 @@ var _ = Describe("DocsGen", func() {
 		Expect(foundUnexpectedDoc).To(BeFalse())
 		dataFile, err := ioutil.ReadFile(filepath.Join(outPath, hugoDataDir, options.HugoProtoDataFile))
 		hugoProtoMap := &datafile.HugoProtobufData{}
+
 		Expect(yaml.Unmarshal(dataFile, hugoProtoMap)).NotTo(HaveOccurred())
 		apiSummary, ok := hugoProtoMap.Apis["testing.solo.io.GenerateDocsForMe"]
 		Expect(ok).To(BeTrue())
