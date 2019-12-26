@@ -72,7 +72,8 @@ type GenerateOptions struct {
 	*/
 	PackageName string
 
-	PreRunFuncs []RunFunc
+	// config for protodep
+	ProtoDepConfig *protodep.Config
 }
 
 type Runner struct {
@@ -88,11 +89,6 @@ type Runner struct {
 }
 
 func Generate(opts GenerateOptions) error {
-	for _, preRun := range opts.PreRunFuncs {
-		if err := preRun(); err != nil {
-			return err
-		}
-	}
 
 	// opts.SkipDirs = append(opts.SkipDirs, "vendor/")
 	workingRootRelative := opts.RelativeRoot
@@ -101,6 +97,14 @@ func Generate(opts GenerateOptions) error {
 	}
 	if filepath.IsAbs(workingRootRelative) {
 		return errors.Errorf("opts.RelativeRoot must be relative")
+	}
+
+	mgr, err := protodep.NewManager(opts.RelativeRoot)
+	if err != nil {
+		return err
+	}
+	if err := mgr.Ensure(opts.ProtoDepConfig); err != nil {
+		return err
 	}
 
 	modBytes, err := modutils.GetCurrentModPackageFile()

@@ -23,3 +23,18 @@ root level `generate.go` file.
 - api objects generated from messages defined in protobuf files which have 
 - run `solo-kit-gen` recursively at the root of an `api` directory containing one or more `solo-kit.json` files
 - generated files have the `.sk.go` suffix (generated test files do not include this suffix)
+
+## upgrading to v0.12.0 (solo-kit with go.mod)
+
+As of go 1.11, go began introducing support for go modules, it's dependency management system.
+As of solo-kit 0.12.0 we will officially support running solo-kit with go.mod outside of the GOPATH.
+
+This change has been a lot time coming, but it also means a few changes to solo-kit.
+
+As there is no more GOPATH, we cannot rely on the GOPATH as a method of vendoring/importing `.proto` files.
+This means that we needed a new way to reliably import protos outside of the GOPATH. Therefore we created
+protodep. More information on that can be found [here](pkg/protodep/README.md).
+
+Chief among the new changes is that the local `vendor` folder has become the `solo-kit` source of truth for
+both `.proto` files, and `solo-kit.json` files. The `GenerateOptions` struct now takes in a prerun funcs,
+one of which should now be a protodep ensure. An example of this can be found in  

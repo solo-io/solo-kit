@@ -17,25 +17,21 @@ func main() {
 		CompileProtos:      true,
 		SkipGenMocks:       true,
 		SkipGeneratedTests: true,
-		PreRunFuncs: []cmd.RunFunc{
-			cmd.PreRunProtoVendor(".",
-				&protodep.Config{
-					Local: &protodep.Local{
-						Patterns: []string{"test/**/*.proto", "api/**/*.proto", protodep.SoloKitMatchPattern},
-					},
-					Imports: []*protodep.Import{
-						{
-							ImportType: &protodep.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
-						},
-						{
-							ImportType: &protodep.Import_GoMod{GoMod: protodep.ValidateProtoMatcher},
-						},
-						{
-							ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
-						},
-					},
+		ProtoDepConfig: &protodep.Config{
+			Local: &protodep.Local{
+				Patterns: []string{"test/**/*.proto", "api/**/*.proto", protodep.SoloKitMatchPattern},
+			},
+			Imports: []*protodep.Import{
+				{
+					ImportType: &protodep.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
 				},
-			),
+				{
+					ImportType: &protodep.Import_GoMod{GoMod: protodep.ValidateProtoMatcher},
+				},
+				{
+					ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
+				},
+			},
 		},
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)
