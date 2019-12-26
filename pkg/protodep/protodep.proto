@@ -12,6 +12,7 @@ message Config {
 
 message Import {
     oneof ImportType {
+        option (validate.required) = true;
         GoMod go_mod = 2;
 //        Git git = 3;
     }
@@ -22,12 +23,13 @@ message Local {
 }
 
 message GoMod {
-    repeated string patterns = 1;
+    repeated string patterns = 1 [(validate.rules).repeated = { min_items: 1}];
     string package = 2;
 }
 
 message Git {
-    string owner = 1;
-    string repo = 2;
+    string owner = 1 [(validate.rules).string = { min_len: 1}];
+    string repo = 2 [(validate.rules).string = { min_len: 1}];
+    // will default to master, therefore can be left empty
     string revision = 3;
 }

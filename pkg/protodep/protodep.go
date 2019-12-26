@@ -27,6 +27,9 @@ func NewManager(cwd string) (*Manager, error) {
 }
 
 func (m *Manager) Gather(opts *Config) error {
+	if err := opts.Validate(); err != nil {
+		return err
+	}
 	for _, v := range m.depFactories {
 		if err := v.Gather(opts); err != nil {
 			return err

@@ -31,10 +31,12 @@ IMPORTS="\
 INPUT_PROTOS="*.proto"
 
 GO_FLAG="--go_out=${TEMP_DIR}"
+VALIDATE_FLAG="--validate_out=lang=go:${TEMP_DIR}"
 
 
 protoc ${IMPORTS} \
     ${GO_FLAG} \
+    ${VALIDATE_FLAG} \
     ${INPUT_PROTOS}
 
 cp -r  ${TEMP_DIR}/github.com/solo-io/solo-kit/* ${ROOT}
