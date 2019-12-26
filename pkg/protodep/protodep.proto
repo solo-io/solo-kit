@@ -24,7 +24,7 @@ message Local {
 
 message GoMod {
     repeated string patterns = 1 [(validate.rules).repeated = { min_items: 1}];
-    string package = 2;
+    string package = 2 [(validate.rules).string = { min_len: 1}];
 }
 
 message Git {

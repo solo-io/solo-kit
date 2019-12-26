@@ -7,7 +7,7 @@ const (
 )
 
 type DepFactory interface {
-	Gather(opts *Config) error
+	Ensure(opts *Config) error
 }
 
 type Manager struct {
@@ -26,12 +26,12 @@ func NewManager(cwd string) (*Manager, error) {
 	}, nil
 }
 
-func (m *Manager) Gather(opts *Config) error {
+func (m *Manager) Ensure(opts *Config) error {
 	if err := opts.Validate(); err != nil {
 		return err
 	}
 	for _, v := range m.depFactories {
-		if err := v.Gather(opts); err != nil {
+		if err := v.Ensure(opts); err != nil {
 			return err
 		}
 	}

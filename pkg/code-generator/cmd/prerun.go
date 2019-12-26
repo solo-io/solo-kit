@@ -11,6 +11,6 @@ func PreRunProtoVendor(cwd string, opts *protodep.Config) func() error {
 		if err != nil {
 			return err
 		}
-		return mgr.Gather(opts)
+		return mgr.Ensure(opts)
 	}
 }

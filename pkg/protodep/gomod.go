@@ -111,7 +111,7 @@ type goModFactory struct {
 	cp               FileCopier
 }
 
-func (m *goModFactory) Gather(opts *Config) error {
+func (m *goModFactory) Ensure(opts *Config) error {
 	var packages []*GoMod
 	for _, cfg := range opts.Imports {
 		if cfg.GetGoMod() != nil {
