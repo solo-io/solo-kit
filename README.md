@@ -10,12 +10,13 @@ A collection of code generation and libraries to for API development.
 - We are looking for community feedback and support!
 
 ### Examples
-See `test/mock_resources.proto` and `test/generate.go` for an example of how to use solo-kit
+See `test/mock_resources.proto` for an example of how to use solo-kit. These protos are generated using the
+root level `generate.go` file.
 
 ## Build
 - clone repo locally
 - gather dependencies: `go mod download`
-- use binary produced with `make solo-kit-gen` or import `cmd.Run(...)` into your own code gen code 
+- import `cmd.Run(...)` into your own code gen code 
 
 ## Usage
 - re-run whenever you change or add an api (.proto file)
