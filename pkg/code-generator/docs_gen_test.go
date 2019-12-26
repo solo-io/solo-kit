@@ -98,17 +98,25 @@ var _ = Describe("DocsGen", func() {
 			GenDocs:       genDocs,
 			PreRunFuncs: []cmd.RunFunc{
 				cmd.PreRunProtoVendor("../..",
-					protodep.GoModOptions{
-						MatchOptions: []protodep.MatchOptions{
-							protodep.ExtProtoMatcher,
-							protodep.ValidateProtoMatcher,
-							protodep.GogoProtoMatcher,
+					&protodep.Config{
+						Local: &protodep.Local{
+							Patterns: []string{
+								"test/**/*.proto",
+								"api/**/*.proto",
+								filepath.Join(strings.TrimPrefix(tempDir, modRootDir), protodep.ProtoMatchPattern),
+								protodep.SoloKitMatchPattern},
 						},
-						LocalMatchers: []string{
-							"test/**/*.proto",
-							"api/**/*.proto",
-							filepath.Join(strings.TrimPrefix(tempDir, modRootDir), protodep.ProtoMatchPattern),
-							protodep.SoloKitMatchPattern},
+						Imports: []*protodep.Import{
+							{
+								ImportType: &protodep.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
+							},
+							{
+								ImportType: &protodep.Import_GoMod{GoMod: protodep.ValidateProtoMatcher},
+							},
+							{
+								ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
+							},
+						},
 					},
 				),
 			},

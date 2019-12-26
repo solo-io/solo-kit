@@ -25,7 +25,7 @@ var _ = Describe("protodep", func() {
 
 	Context("vendor protos", func() {
 		It("can vendor protos", func() {
-			modules, err := mgr.gather(GoModOptions{
+			modules, err := mgr.gather(goModOptions{
 				MatchOptions: []*GoMod{
 					GogoProtoMatcher,
 					ExtProtoMatcher,

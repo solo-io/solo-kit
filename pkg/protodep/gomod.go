@@ -72,7 +72,7 @@ var (
 	}
 )
 
-type GoModOptions struct {
+type goModOptions struct {
 	MatchOptions  []*GoMod
 	LocalMatchers []string
 }
@@ -118,7 +118,7 @@ func (m *goModFactory) Gather(opts *Config) error {
 			packages = append(packages, cfg.GetGoMod())
 		}
 	}
-	mods, err := m.gather(GoModOptions{
+	mods, err := m.gather(goModOptions{
 		MatchOptions:  packages,
 		LocalMatchers: opts.GetLocal().GetPatterns(),
 	})
@@ -135,7 +135,7 @@ func (m *goModFactory) Gather(opts *Config) error {
 
 // gather up all packages for a given go module
 // currently this function uses the cmd `go list -m all` to figure out the list of dep
-func (m *goModFactory) gather(opts GoModOptions) ([]*Module, error) {
+func (m *goModFactory) gather(opts goModOptions) ([]*Module, error) {
 	matchOptions := opts.MatchOptions
 	// Ensure go.mod file exists and we're running from the project root,
 	modPackageFile, err := modutils.GetCurrentModPackageFile()
