@@ -5,19 +5,12 @@ import (
 )
 
 // Expose proto dep as a prerun func for solo-kit
-func PreRunProtoVendor(cwd string, opts protodep.Options) func() error {
+func PreRunProtoVendor(cwd string, opts *protodep.Config) func() error {
 	return func() error {
 		mgr, err := protodep.NewManager(cwd)
 		if err != nil {
 			return err
 		}
-		modules, err := mgr.Gather(opts)
-		if err != nil {
-			return err
-		}
-		if err := mgr.Copy(modules); err != nil {
-			return err
-		}
-		return nil
+		return mgr.Gather(opts)
 	}
 }

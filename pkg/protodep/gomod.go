@@ -2,19 +2,16 @@ package protodep
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
-	"io"
-	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"unicode"
 
 	zglob "github.com/mattn/go-zglob"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -27,53 +24,56 @@ var (
 	DefaultMatchPatterns = []string{ProtoMatchPattern, SoloKitMatchPattern}
 
 	// matches ext.proto for solo hash gen
-	ExtProtoMatcher = MatchOptions{
+	ExtProtoMatcher = &GoMod{
 		Package:  "github.com/solo-io/protoc-gen-ext",
 		Patterns: []string{"extproto/*.proto"},
 	}
 
 	// matches validate.proto which is needed by envoy protos
-	ValidateProtoMatcher = MatchOptions{
+	ValidateProtoMatcher = &GoMod{
 		Package:  "github.com/envoyproxy/protoc-gen-validate",
 		Patterns: []string{"validate/*.proto"},
 	}
 
 	// matches all solo-kit protos, useful for any projects using solo-kit
-	SoloKitProtoMatcher = MatchOptions{
+	SoloKitProtoMatcher = &GoMod{
 		Package:  "github.com/solo-io/solo-kit",
 		Patterns: []string{"api/**/*.proto", "api/" + SoloKitMatchPattern},
 	}
 
 	// matches gogo.proto, used for gogoproto code gen.
-	GogoProtoMatcher = MatchOptions{
+	GogoProtoMatcher = &GoMod{
 		Package:  "github.com/gogo/protobuf",
 		Patterns: []string{"gogoproto/*.proto"},
 	}
 
 	// default match options which should be used when creating a solo-kit project
-	DefaultMatchOptions = []MatchOptions{
-		ExtProtoMatcher,
-		ValidateProtoMatcher,
-		SoloKitProtoMatcher,
-		GogoProtoMatcher,
+	DefaultMatchOptions = []*Import{
+		{
+			ImportType: &Import_GoMod{
+				GoMod: ExtProtoMatcher,
+			},
+		},
+		{
+			ImportType: &Import_GoMod{
+				GoMod: ValidateProtoMatcher,
+			},
+		},
+		{
+			ImportType: &Import_GoMod{
+				GoMod: SoloKitProtoMatcher,
+			},
+		},
+		{
+			ImportType: &Import_GoMod{
+				GoMod: GogoProtoMatcher,
+			},
+		},
 	}
 )
 
-type GoModManager interface {
-	Gather(opts MatchOptions) ([]*Module, error)
-	Copy([]*Module) error
-}
-
-// struct which represents how to vendor protos.
-// Patters are a set of regexes which match protos for a given go package
-// see examples above
-type MatchOptions struct {
-	Patterns []string
-	Package  string
-}
-
-type Options struct {
-	MatchOptions  []MatchOptions
+type GoModOptions struct {
+	MatchOptions  []*GoMod
 	LocalMatchers []string
 }
 
@@ -88,8 +88,7 @@ type Module struct {
 	currentPackage bool
 }
 
-// cwd must point to the root level of a repo
-func NewManager(cwd string) (*manager, error) {
+func NewGoModFactory(cwd string) (*goModFactory, error) {
 	if !filepath.IsAbs(cwd) {
 		absoluteDir, err := filepath.Abs(cwd)
 		if err != nil {
@@ -97,24 +96,51 @@ func NewManager(cwd string) (*manager, error) {
 		}
 		cwd = absoluteDir
 	}
-	return &manager{
+	fs := afero.NewOsFs()
+	return &goModFactory{
 		WorkingDirectory: cwd,
+		fs:               fs,
+		cp:               NewCopier(fs),
 	}, nil
 }
 
-type manager struct {
+type goModFactory struct {
 	WorkingDirectory string
 	packageName      bool
+	fs               afero.Fs
+	cp               FileCopier
+}
+
+func (m *goModFactory) Gather(opts *Config) error {
+	var packages []*GoMod
+	for _, cfg := range opts.Imports {
+		if cfg.GetGoMod() != nil {
+			packages = append(packages, cfg.GetGoMod())
+		}
+	}
+	mods, err := m.gather(GoModOptions{
+		MatchOptions:  packages,
+		LocalMatchers: opts.GetLocal().GetPatterns(),
+	})
+	if err != nil {
+		return err
+	}
+
+	err = m.copy(mods)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // gather up all packages for a given go module
 // currently this function uses the cmd `go list -m all` to figure out the list of dep
-func (m *manager) Gather(opts Options) ([]*Module, error) {
+func (m *goModFactory) gather(opts GoModOptions) ([]*Module, error) {
 	matchOptions := opts.MatchOptions
 	// Ensure go.mod file exists and we're running from the project root,
 	modPackageFile, err := modutils.GetCurrentModPackageFile()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not find go.mod file, must run from go.mod project")
+		return nil, err
 	}
 
 	packageName, err := modutils.GetCurrentModPackageName(modPackageFile)
@@ -122,14 +148,9 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		return nil, err
 	}
 
-	modPackageReader := &bytes.Buffer{}
-	packageListCmd := exec.Command("go", "list", "-m", "all")
-	packageListCmd.Stdout = modPackageReader
-	packageListCmd.Stderr = modPackageReader
-	err = packageListCmd.Run()
+	modPackageReader, err := modutils.GetCurrentPackageList()
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to list packages for current mod package: %s",
-			modPackageReader.String())
+		return nil, err
 	}
 
 	// split list of pacakges from cmd by line
@@ -183,7 +204,7 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		}
 
 		// make sure module exists
-		if _, err := os.Stat(module.Dir); os.IsNotExist(err) {
+		if _, err := m.fs.Stat(module.Dir); os.IsNotExist(err) {
 			fmt.Printf("Error! %q module path does not exist, check $GOPATH/pkg/mod. "+
 				"Try running go mod download\n", module.Dir)
 			return nil, err
@@ -192,7 +213,7 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		// If no match options have been supplied, match on all packages using default match patterns
 		if matchOptions == nil {
 			// Build list of files to module path source to project vendor folder
-			vendorList, err := buildModVendorList(DefaultMatchPatterns, module.Dir)
+			vendorList, err := buildMatchList(DefaultMatchPatterns, module.Dir)
 			if err != nil {
 				return nil, err
 			}
@@ -210,7 +231,7 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 				continue
 			}
 			// Build list of files to module path source to project vendor folder
-			vendorList, err := buildModVendorList(matchOpt.Patterns, module.Dir)
+			vendorList, err := buildMatchList(matchOpt.Patterns, module.Dir)
 			if err != nil {
 				return nil, err
 			}
@@ -227,32 +248,25 @@ func (m *manager) Gather(opts Options) ([]*Module, error) {
 		ImportPath:     packageName,
 		currentPackage: true,
 	}
-	localModule.VendorList, err = buildModVendorList(opts.LocalMatchers, localModule.Dir)
+	localModule.VendorList, err = buildMatchList(opts.LocalMatchers, localModule.Dir)
 	if err != nil {
 		return nil, err
 	}
 	modules = append(modules, localModule)
 
-	// for _, pat := range opts.LocalMatchers {
-	// 	matches, err := zglob.Glob(filepath.Join(localModule.Dir, pat))
-	// 	if err != nil {
-	// 		return nil, errors.Wrapf(err, "Error! glob match failure")
-	// 	}
-	// 	localModule.VendorList = append(localModule.VendorList, matches...)
-	// }
-
 	return modules, nil
 }
 
-func (m *manager) Copy(modules []*Module) error {
+func (m *goModFactory) copy(modules []*Module) error {
 	// Copy mod vendor list files to ./vendor/
 	for _, mod := range modules {
 		if mod.currentPackage == true {
 			for _, vendorFile := range mod.VendorList {
 				localPath := strings.TrimPrefix(vendorFile, m.WorkingDirectory+"/")
-				if err := prepareForCopy(filepath.Join(mod.ImportPath, localPath),
-					vendorFile, m.WorkingDirectory); err != nil {
-					return err
+				localFile := filepath.Join(m.WorkingDirectory, DefaultDepDir, mod.ImportPath, localPath)
+				if _, err := m.cp.Copy(vendorFile, localFile); err != nil {
+					return errors.Wrapf(err, fmt.Sprintf("Error! %s - unable to copy file %s\n",
+						err.Error(), vendorFile))
 				}
 			}
 		}
@@ -263,30 +277,17 @@ func (m *manager) Copy(modules []*Module) error {
 			}
 
 			localPath := filepath.Join(mod.ImportPath, vendorFile[len(mod.Dir):])
-			if err := prepareForCopy(localPath, vendorFile, m.WorkingDirectory); err != nil {
-				return err
+			localFile := filepath.Join(m.WorkingDirectory, DefaultDepDir, localPath)
+			if _, err := m.cp.Copy(vendorFile, localFile); err != nil {
+				return errors.Wrapf(err, fmt.Sprintf("Error! %s - unable to copy file %s\n",
+					err.Error(), vendorFile))
 			}
 		}
 	}
 	return nil
 }
 
-func prepareForCopy(localPath, vendorFile, workingDirectory string) error {
-	localFile := filepath.Join(workingDirectory, DefaultDepDir, localPath)
-
-	log.Printf("copying %v -> %v", vendorFile, localFile)
-
-	if err := os.MkdirAll(filepath.Dir(localFile), os.ModePerm); err != nil {
-		return err
-	}
-	if _, err := copyFile(vendorFile, localFile); err != nil {
-		return errors.Wrapf(err, fmt.Sprintf("Error! %s - unable to copy file %s\n",
-			err.Error(), vendorFile))
-	}
-	return nil
-}
-
-func buildModVendorList(copyPat []string, dir string) ([]string, error) {
+func buildMatchList(copyPat []string, dir string) ([]string, error) {
 	var vendorList []string
 
 	for _, pat := range copyPat {
@@ -326,29 +327,4 @@ func pkgModPath(importPath, version string) string {
 	}
 
 	return filepath.Join(goPath, "pkg", "mod", fmt.Sprintf("%s@%s", normPath, version))
-}
-
-func copyFile(src, dst string) (int64, error) {
-	srcStat, err := os.Stat(src)
-	if err != nil {
-		return 0, err
-	}
-
-	if !srcStat.Mode().IsRegular() {
-		return 0, fmt.Errorf("%s is not a regular file", src)
-	}
-
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return 0, err
-	}
-	defer srcFile.Close()
-
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return 0, err
-	}
-	defer dstFile.Close()
-
-	return io.Copy(dstFile, srcFile)
 }

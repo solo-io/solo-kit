@@ -12,21 +12,21 @@ import (
 var _ = Describe("protodep", func() {
 	var (
 		modPathString string
-		mgr           *manager
+		mgr           *goModFactory
 	)
 	BeforeEach(func() {
 		modBytes, err := modutils.GetCurrentModPackageFile()
 		modFileString := strings.TrimSpace(modBytes)
 		Expect(err).NotTo(HaveOccurred())
 		modPathString = filepath.Dir(modFileString)
-		mgr, err = NewManager(modPathString)
+		mgr, err = NewGoModFactory(modPathString)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("vendor protos", func() {
 		It("can vendor protos", func() {
-			modules, err := mgr.Gather(Options{
-				MatchOptions: []MatchOptions{
+			modules, err := mgr.gather(GoModOptions{
+				MatchOptions: []*GoMod{
 					GogoProtoMatcher,
 					ExtProtoMatcher,
 					ValidateProtoMatcher,
@@ -39,7 +39,7 @@ var _ = Describe("protodep", func() {
 			Expect(modules[1].ImportPath).To(Equal(GogoProtoMatcher.Package))
 			Expect(modules[2].ImportPath).To(Equal(ExtProtoMatcher.Package))
 			Expect(modules[3].ImportPath).To(Equal("github.com/solo-io/solo-kit"))
-			Expect(mgr.Copy(modules)).NotTo(HaveOccurred())
+			Expect(mgr.copy(modules)).NotTo(HaveOccurred())
 		})
 	})
 })

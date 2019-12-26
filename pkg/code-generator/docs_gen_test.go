@@ -98,7 +98,7 @@ var _ = Describe("DocsGen", func() {
 			GenDocs:       genDocs,
 			PreRunFuncs: []cmd.RunFunc{
 				cmd.PreRunProtoVendor("../..",
-					protodep.Options{
+					protodep.GoModOptions{
 						MatchOptions: []protodep.MatchOptions{
 							protodep.ExtProtoMatcher,
 							protodep.ValidateProtoMatcher,

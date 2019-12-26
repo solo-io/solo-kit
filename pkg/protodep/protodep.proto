@@ -5,14 +5,20 @@ option go_package = "github.com/solo-io/solo-kit/pkg/protodep";
 import "validate/validate.proto";
 
 message Config {
-    repeated Import imports = 1;
+    Local local = 1;
+
+    repeated Import imports = 2;
 }
 
 message Import {
     oneof ImportType {
-        GoMod go_mod = 1;
-        Git git = 2;
+        GoMod go_mod = 2;
+//        Git git = 3;
     }
+}
+
+message Local {
+    repeated string patterns = 1;
 }
 
 message GoMod {

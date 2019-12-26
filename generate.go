@@ -19,13 +19,21 @@ func main() {
 		SkipGeneratedTests: true,
 		PreRunFuncs: []cmd.RunFunc{
 			cmd.PreRunProtoVendor(".",
-				protodep.Options{
-					MatchOptions: []protodep.MatchOptions{
-						protodep.ExtProtoMatcher,
-						protodep.ValidateProtoMatcher,
-						protodep.GogoProtoMatcher,
+				&protodep.Config{
+					Local: &protodep.Local{
+						Patterns: []string{"test/**/*.proto", "api/**/*.proto", protodep.SoloKitMatchPattern},
 					},
-					LocalMatchers: []string{"test/**/*.proto", "api/**/*.proto", protodep.SoloKitMatchPattern},
+					Imports: []*protodep.Import{
+						{
+							ImportType: &protodep.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
+						},
+						{
+							ImportType: &protodep.Import_GoMod{GoMod: protodep.ValidateProtoMatcher},
+						},
+						{
+							ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
+						},
+					},
 				},
 			),
 		},

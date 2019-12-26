@@ -7,6 +7,7 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
+	github.com/charmbracelet/glow v0.1.3 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -41,8 +42,10 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.2
+	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/go-utils v0.11.7
 	github.com/solo-io/protoc-gen-ext v0.0.6
+	github.com/spf13/afero v1.2.2
 	go.opencensus.io v0.22.1
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0
