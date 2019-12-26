@@ -40,6 +40,7 @@ update-deps: mod-download
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	GO111MODULE=off go get -u github.com/golang/protobuf/protoc-gen-go
+	GO111MODULE=off go get -u github.com/envoyproxy/protoc-gen-validate
 	GO111MODULE=off go get -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
 	GO111MODULE=off go get -u github.com/onsi/ginkgo
