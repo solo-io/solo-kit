@@ -45,6 +45,8 @@ update-deps: vendor
 	GO111MODULE=off go get -u github.com/gogo/protobuf/proto
 	GO111MODULE=off go get -u github.com/gogo/protobuf/jsonpb
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
+	GO111MODULE=off go get -u github.com/golang/protobuf/protoc-gen-go
+	GO111MODULE=off go get -u github.com/envoyproxy/protoc-gen-validate
 	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/golang/mock/gomock
