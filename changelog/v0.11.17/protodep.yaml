@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: add tool for managing protos with no GOPATH.
+  issueLink: https://github.com/solo-io/solo-kit/issues/334
