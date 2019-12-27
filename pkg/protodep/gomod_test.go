@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/protodep/api"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 )
 
@@ -26,7 +27,7 @@ var _ = Describe("protodep", func() {
 	Context("vendor protos", func() {
 		It("can vendor protos", func() {
 			modules, err := mgr.gather(goModOptions{
-				MatchOptions: []*GoMod{
+				MatchOptions: []*api.GoModImport{
 					GogoProtoMatcher,
 					ExtProtoMatcher,
 					ValidateProtoMatcher,

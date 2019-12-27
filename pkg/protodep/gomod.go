@@ -2,6 +2,7 @@ package protodep
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 
 	zglob "github.com/mattn/go-zglob"
 	"github.com/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/protodep/api"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 	"github.com/spf13/afero"
 )
@@ -24,48 +26,48 @@ var (
 	DefaultMatchPatterns = []string{ProtoMatchPattern, SoloKitMatchPattern}
 
 	// matches ext.proto for solo hash gen
-	ExtProtoMatcher = &GoMod{
+	ExtProtoMatcher = &api.GoModImport{
 		Package:  "github.com/solo-io/protoc-gen-ext",
 		Patterns: []string{"extproto/*.proto"},
 	}
 
 	// matches validate.proto which is needed by envoy protos
-	ValidateProtoMatcher = &GoMod{
+	ValidateProtoMatcher = &api.GoModImport{
 		Package:  "github.com/envoyproxy/protoc-gen-validate",
 		Patterns: []string{"validate/*.proto"},
 	}
 
 	// matches all solo-kit protos, useful for any projects using solo-kit
-	SoloKitProtoMatcher = &GoMod{
+	SoloKitProtoMatcher = &api.GoModImport{
 		Package:  "github.com/solo-io/solo-kit",
 		Patterns: []string{"api/**/*.proto", "api/" + SoloKitMatchPattern},
 	}
 
 	// matches gogo.proto, used for gogoproto code gen.
-	GogoProtoMatcher = &GoMod{
+	GogoProtoMatcher = &api.GoModImport{
 		Package:  "github.com/gogo/protobuf",
 		Patterns: []string{"gogoproto/*.proto"},
 	}
 
 	// default match options which should be used when creating a solo-kit project
-	DefaultMatchOptions = []*Import{
+	DefaultMatchOptions = []*api.Import{
 		{
-			ImportType: &Import_GoMod{
+			ImportType: &api.Import_GoMod{
 				GoMod: ExtProtoMatcher,
 			},
 		},
 		{
-			ImportType: &Import_GoMod{
+			ImportType: &api.Import_GoMod{
 				GoMod: ValidateProtoMatcher,
 			},
 		},
 		{
-			ImportType: &Import_GoMod{
+			ImportType: &api.Import_GoMod{
 				GoMod: SoloKitProtoMatcher,
 			},
 		},
 		{
-			ImportType: &Import_GoMod{
+			ImportType: &api.Import_GoMod{
 				GoMod: GogoProtoMatcher,
 			},
 		},
@@ -73,7 +75,7 @@ var (
 )
 
 type goModOptions struct {
-	MatchOptions  []*GoMod
+	MatchOptions  []*api.GoModImport
 	LocalMatchers []string
 }
 
@@ -111,8 +113,8 @@ type goModFactory struct {
 	cp               FileCopier
 }
 
-func (m *goModFactory) Ensure(opts *Config) error {
-	var packages []*GoMod
+func (m *goModFactory) Ensure(ctx context.Context, opts *api.Config) error {
+	var packages []*api.GoModImport
 	for _, cfg := range opts.Imports {
 		if cfg.GetGoMod() != nil {
 			packages = append(packages, cfg.GetGoMod())
