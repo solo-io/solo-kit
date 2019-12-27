@@ -1,6 +1,6 @@
 syntax = "proto3";
 package protodep;
-option go_package = "github.com/solo-io/solo-kit/pkg/protodep/api";
+option go_package = "github.com/solo-io/solo-kit/pkg/protodep";
 
 import "validate/validate.proto";
 
@@ -14,7 +14,7 @@ message Import {
     oneof ImportType {
         option (validate.required) = true;
         GoModImport go_mod = 2;
-        GitImport git = 3;
+//        GitImport git = 3;
     }
 }
 

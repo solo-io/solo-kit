@@ -28,7 +28,7 @@ IMPORTS="\
     -I=${IN} \
     -I=${VALIDATE}"
 
-INPUT_PROTOS="api/*.proto"
+INPUT_PROTOS="*.proto"
 
 GO_FLAG="--go_out=${TEMP_DIR}"
 VALIDATE_FLAG="--validate_out=lang=go:${TEMP_DIR}"

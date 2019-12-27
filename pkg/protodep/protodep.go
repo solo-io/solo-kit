@@ -2,8 +2,6 @@ package protodep
 
 import (
 	"context"
-
-	"github.com/solo-io/solo-kit/pkg/protodep/api"
 )
 
 //go:generate bash ./generate.sh
@@ -13,7 +11,7 @@ const (
 )
 
 type DepFactory interface {
-	Ensure(ctx context.Context, opts *api.Config) error
+	Ensure(ctx context.Context, opts *Config) error
 }
 
 type Manager struct {
@@ -28,18 +26,14 @@ func NewManager(ctx context.Context, cwd string) (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
-	git, err := NewGitFactory(ctx)
-	if err != nil {
-		return nil, err
-	}
 	return &Manager{
 		depFactories: []DepFactory{
-			goMod, git,
+			goMod,
 		},
 	}, nil
 }
 
-func (m *Manager) Ensure(ctx context.Context, opts *api.Config) error {
+func (m *Manager) Ensure(ctx context.Context, opts *Config) error {
 	if err := opts.Validate(); err != nil {
 		return err
 	}

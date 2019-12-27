@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -134,11 +135,12 @@ func Generate(opts GenerateOptions) error {
 		log.Warnf("ProtoDepConfig is nil, therefore no protos will be vendored. This is not an error," +
 			"but will most likely lead to one.")
 	}
-	mgr, err := protodep.NewManager(r.BaseDir)
+	ctx := context.Background()
+	mgr, err := protodep.NewManager(ctx, r.BaseDir)
 	if err != nil {
 		return err
 	}
-	if err := mgr.Ensure(opts.ProtoDepConfig); err != nil {
+	if err := mgr.Ensure(ctx, opts.ProtoDepConfig); err != nil {
 		return err
 	}
 
