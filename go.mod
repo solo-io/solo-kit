@@ -48,6 +48,7 @@ require (
 	github.com/jefferai/jsonx v1.0.1 // indirect
 	github.com/joyent/triton-go v1.7.0 // indirect
 	github.com/keybase/go-crypto v0.0.0-20190828182435-a05457805304 // indirect
+	github.com/mattn/go-zglob v0.0.0-20180803001819-2ea3427bfa53
 	github.com/michaelklishin/rabbit-hole v1.5.0 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/ncw/swift v1.0.49 // indirect
@@ -58,10 +59,12 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.2
+	github.com/rotisserie/eris v0.1.1
 	github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da // indirect
 	github.com/schollz/progressbar/v2 v2.12.1 // indirect
 	github.com/solo-io/go-utils v0.11.2
 	github.com/solo-io/protoc-gen-ext v0.0.2
+	github.com/spf13/afero v1.2.2
 	github.com/technosophos/moniker v0.0.0-20180509230615-a5dbd03a2245 // indirect
 	github.com/ugorji/go v1.1.5-pre // indirect
 	github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1 // indirect

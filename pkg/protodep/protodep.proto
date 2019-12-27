@@ -1,0 +1,27 @@
+syntax = "proto3";
+package protodep;
+option go_package = "github.com/solo-io/solo-kit/pkg/protodep";
+
+import "validate/validate.proto";
+
+message Config {
+    Local local = 1;
+
+    repeated Import imports = 2;
+}
+
+message Import {
+    oneof ImportType {
+        option (validate.required) = true;
+        GoModImport go_mod = 2;
+    }
+}
+
+message Local {
+    repeated string patterns = 1;
+}
+
+message GoModImport {
+    repeated string patterns = 1 [(validate.rules).repeated = { min_items: 1}];
+    string package = 2 [(validate.rules).string = { min_len: 1}];
+}
