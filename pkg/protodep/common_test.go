@@ -90,13 +90,15 @@ var _ = Describe("common", func() {
 				fs := afero.NewOsFs()
 				cp := &copier{fs: fs}
 				tmpFile, err := afero.TempFile(fs, "", "")
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 				defer fs.Remove(tmpFile.Name())
 				tmpDir, err := afero.TempDir(fs, "", "")
 				Expect(err).NotTo(HaveOccurred())
 				defer fs.Remove(tmpDir)
 				dstFileName := "test"
 				_, err = cp.Copy(tmpFile.Name(), filepath.Join(tmpDir, dstFileName))
+				Expect(err).NotTo(HaveOccurred())
+				_, err = fs.Stat(filepath.Join(tmpDir, dstFileName))
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
