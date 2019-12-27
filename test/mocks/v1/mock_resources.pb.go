@@ -11,7 +11,6 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
-	_ "google/api"
 	math "math"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -19,6 +18,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

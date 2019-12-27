@@ -6,7 +6,6 @@ package v2
 import (
 	bytes "bytes"
 	fmt "fmt"
-	rpc "google/rpc"
 	math "math"
 
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -14,6 +13,7 @@ import (
 	types "github.com/gogo/protobuf/types"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	status "google.golang.org/genproto/googleapis/rpc/status"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -62,10 +62,10 @@ type DiscoveryRequest struct {
 	// failed to update configuration. The *message* field in *error_details* provides the Envoy
 	// internal exception related to the failure. It is only intended for consumption during manual
 	// debugging, the string provided is not guaranteed to be stable across Envoy versions.
-	ErrorDetail          *rpc.Status `protobuf:"bytes,6,opt,name=error_detail,json=errorDetail,proto3" json:"error_detail,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+	ErrorDetail          *status.Status `protobuf:"bytes,6,opt,name=error_detail,json=errorDetail,proto3" json:"error_detail,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
 func (m *DiscoveryRequest) Reset()         { *m = DiscoveryRequest{} }
@@ -127,7 +127,7 @@ func (m *DiscoveryRequest) GetResponseNonce() string {
 	return ""
 }
 
-func (m *DiscoveryRequest) GetErrorDetail() *rpc.Status {
+func (m *DiscoveryRequest) GetErrorDetail() *status.Status {
 	if m != nil {
 		return m.ErrorDetail
 	}
@@ -319,10 +319,10 @@ type DeltaDiscoveryRequest struct {
 	// This is populated when the previous :ref:`DiscoveryResponse <envoy_api_msg_DiscoveryResponse>`
 	// failed to update configuration. The *message* field in *error_details*
 	// provides the Envoy internal exception related to the failure.
-	ErrorDetail          *rpc.Status `protobuf:"bytes,7,opt,name=error_detail,json=errorDetail,proto3" json:"error_detail,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+	ErrorDetail          *status.Status `protobuf:"bytes,7,opt,name=error_detail,json=errorDetail,proto3" json:"error_detail,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
 func (m *DeltaDiscoveryRequest) Reset()         { *m = DeltaDiscoveryRequest{} }
@@ -391,7 +391,7 @@ func (m *DeltaDiscoveryRequest) GetResponseNonce() string {
 	return ""
 }
 
-func (m *DeltaDiscoveryRequest) GetErrorDetail() *rpc.Status {
+func (m *DeltaDiscoveryRequest) GetErrorDetail() *status.Status {
 	if m != nil {
 		return m.ErrorDetail
 	}

@@ -10,7 +10,6 @@ package v1alpha1
 import (
 	bytes "bytes"
 	fmt "fmt"
-	_ "google/api"
 	math "math"
 
 	_ "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -18,6 +17,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
