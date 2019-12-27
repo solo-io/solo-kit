@@ -314,7 +314,7 @@ func (r *Runner) Run() error {
 
 		for _, file := range code {
 			path := filepath.Join(outDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 				return err
 			}
 			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
@@ -369,7 +369,7 @@ var (
 )
 
 func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
-	if err := os.MkdirAll(filepath.Join(outDir, "mocks"), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Join(outDir, "mocks"), os.ModePerm); err != nil {
 		return err
 	}
 	for _, file := range code {

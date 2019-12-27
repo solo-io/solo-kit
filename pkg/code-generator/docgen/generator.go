@@ -41,7 +41,7 @@ func WritePerProjectsDocs(project *model.Project, genDocs *options.DocsOptions, 
 
 		for _, file := range docs {
 			path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 				return err
 			}
 			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {

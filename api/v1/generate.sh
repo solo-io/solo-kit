@@ -8,7 +8,7 @@ set -o pipefail
 
 
 # The following script is used to generate the solo-kit protos.
-# This script will work both in and our of the GOPATh, however, it does assume that the imported protos will be
+# This script will work both in and our of the GOPATH, however, it does assume that the imported protos will be
 # available in the root level vendor folder. This script will be run as part of `make generated-code` so there
 # should be no need to run it otherwise. `make generated-code` will also vendor the necessary protos.
 ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..

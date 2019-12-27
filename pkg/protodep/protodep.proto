@@ -14,7 +14,6 @@ message Import {
     oneof ImportType {
         option (validate.required) = true;
         GoModImport go_mod = 2;
-//        GitImport git = 3;
     }
 }
 
@@ -25,15 +24,4 @@ message Local {
 message GoModImport {
     repeated string patterns = 1 [(validate.rules).repeated = { min_items: 1}];
     string package = 2 [(validate.rules).string = { min_len: 1}];
-}
-
-message GitImport {
-    string owner = 1 [(validate.rules).string = { min_len: 1}];
-    string repo = 2 [(validate.rules).string = { min_len: 1}];
-    // will default to master, therefore can be left empty
-    oneof Revision {
-        string sha = 3;
-//        string branch = 4;
-        string tag = 5;
-    }
 }

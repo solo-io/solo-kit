@@ -24,6 +24,12 @@ func NewCopier(fs afero.Fs) *copier {
 	}
 }
 
+var (
+	IrregularFileError = func(file string) error {
+		return eris.Errorf("%s is not a regular file", file)
+	}
+)
+
 func NewDefaultCopier() *copier {
 	return &copier{fs: afero.NewOsFs()}
 }
@@ -41,7 +47,7 @@ func (c *copier) Copy(src, dst string) (int64, error) {
 	}
 
 	if !srcStat.Mode().IsRegular() {
-		return 0, eris.Errorf("%s is not a regular file", src)
+		return 0, IrregularFileError(src)
 	}
 
 	srcFile, err := c.fs.Open(src)

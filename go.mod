@@ -7,7 +7,6 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
-	github.com/charmbracelet/glow v0.1.3 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -17,7 +16,6 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
-	github.com/google/go-github v17.0.0+incompatible
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
 	github.com/hashicorp/consul/sdk v0.3.0 // indirect
@@ -50,6 +48,7 @@ require (
 	go.opencensus.io v0.22.1
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
+	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6
 	google.golang.org/grpc v1.24.0

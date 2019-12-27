@@ -89,9 +89,6 @@ var _ = Describe("DocsGen", func() {
 
 		// Run code gen
 		opts := cmd.GenerateOptions{
-			// CustomImports: []string{
-			// 	filepath.Join(tempDir, "..", "vendor"),
-			// },
 			RelativeRoot:  filepath.Base(tempDir),
 			SkipGenMocks:  true,
 			CompileProtos: true,

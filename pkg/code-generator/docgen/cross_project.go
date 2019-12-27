@@ -98,7 +98,7 @@ func WriteCrossProjectDocsHugo(
 
 	// note that the data file is saved in the DataDir, not the directory specified by the project spec
 	path := filepath.Join(absoluteRoot, hugoOptions.DataDir, file.Filename)
-	if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return err
 	}
 	if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
