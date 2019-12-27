@@ -21,9 +21,13 @@ type CodeFetcher interface {
 	GetArchiveUrl(ctx context.Context, owner, repo, ref string) (string, error)
 }
 
-func New(client *github.Client) *codeFetcher {
+func New(client *github.Client, fs afero.Fs) *codeFetcher {
+	if fs == nil {
+		fs = afero.NewOsFs()
+	}
 	return &codeFetcher{
 		client: client,
+		fs:     fs,
 	}
 }
 

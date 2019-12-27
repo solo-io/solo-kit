@@ -30,7 +30,7 @@ func (o Options) saneDefaults(ctx context.Context) (Options, error) {
 		if err != nil {
 			return Options{}, err
 		}
-		opts.WorkingDirectory = configDir
+		opts.WorkingDirectory = filepath.Join(configDir, DefaultConfigDir)
 	}
 	if opts.Fs == nil {
 		opts.Fs = afero.NewOsFs()
@@ -50,7 +50,7 @@ func New(ctx context.Context, opts Options) (cache *gitCache, err error) {
 	if err != nil {
 		return nil, err
 	}
-	fetcher := codefetcher.New(opts.Client)
+	fetcher := codefetcher.New(opts.Client, opts.Fs)
 	return &gitCache{
 		fetcher:          fetcher,
 		fs:               opts.Fs,
@@ -101,7 +101,12 @@ func (g *gitCache) ensureCachedRepo(ctx context.Context, id cachedRepoId) (codef
 		return v, nil
 	}
 	directory := dirFromCachedRepoId(id, g.workingDirectory)
-	return g.fetcher.Fetch(ctx, directory, id.owner, id.repo, id.sha)
+	cachedRepo, err := g.fetcher.Fetch(ctx, directory, id.owner, id.repo, id.sha)
+	if err != nil {
+		return nil, err
+	}
+	g.available[id] = cachedRepo
+	return cachedRepo, nil
 }
 
 func (g *gitCache) reconcileLocalCache() error {

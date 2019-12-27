@@ -69,28 +69,26 @@ func (e *explicitMountedRepo) ListFiles(ctx context.Context, path string) ([]os.
 }
 
 func (e *explicitMountedRepo) ensureCodeMounted(ctx context.Context) error {
-	if e.repoRootPath == "" {
-		if e.client == nil {
-			return vfsutils.InvalidDefinitionError("must provide a github client if not using a local filesystem")
-		}
-		contextutils.LoggerFrom(ctx).Infow("downloading repo archive",
+	if e.client == nil {
+		return vfsutils.InvalidDefinitionError("must provide a github client if not using a local filesystem")
+	}
+	contextutils.LoggerFrom(ctx).Infow("downloading repo archive",
+		zap.String("owner", e.owner),
+		zap.String("repo", e.repo),
+		zap.String("sha", e.sha))
+	if err := e.mountCodeWithDirectory(ctx); err != nil {
+		contextutils.LoggerFrom(ctx).Errorw("Error mounting github code",
+			zap.Error(err),
 			zap.String("owner", e.owner),
 			zap.String("repo", e.repo),
 			zap.String("sha", e.sha))
-		if err := e.mountCodeWithDirectory(ctx); err != nil {
-			contextutils.LoggerFrom(ctx).Errorw("Error mounting github code",
-				zap.Error(err),
-				zap.String("owner", e.owner),
-				zap.String("repo", e.repo),
-				zap.String("sha", e.sha))
-			return vfsutils.CodeMountingError(err)
-		}
-		contextutils.LoggerFrom(ctx).Infow("successfully mounted repo archive",
-			zap.String("owner", e.owner),
-			zap.String("repo", e.repo),
-			zap.String("sha", e.sha),
-			zap.String("repoRootPath", e.repoRootPath))
+		return vfsutils.CodeMountingError(err)
 	}
+	contextutils.LoggerFrom(ctx).Infow("successfully mounted repo archive",
+		zap.String("owner", e.owner),
+		zap.String("repo", e.repo),
+		zap.String("sha", e.sha),
+		zap.String("repoRootPath", e.repoRootPath))
 	return nil
 }
 

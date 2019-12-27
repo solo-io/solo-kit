@@ -14,6 +14,7 @@ var _ = FDescribe("protodep", func() {
 		mgr *gitFactory
 	)
 	BeforeEach(func() {
+		ctx = context.Background()
 		var err error
 		mgr, err = NewGitFactory(ctx)
 		Expect(err).NotTo(HaveOccurred())
