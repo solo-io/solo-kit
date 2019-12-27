@@ -49,7 +49,7 @@ var (
 	}
 
 	// default match options which should be used when creating a solo-kit project
-	DefaultMatchOptions = []Import{
+	DefaultMatchOptions = []*Import{
 		{
 			ImportType: &Import_GoMod{
 				GoMod: ExtProtoMatcher,
