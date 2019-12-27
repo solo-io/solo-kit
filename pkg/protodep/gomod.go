@@ -154,7 +154,7 @@ func (m *goModFactory) gather(opts goModOptions) ([]*Module, error) {
 		return nil, err
 	}
 
-	// split list of pacakges from cmd by line
+	// split list of packages from cmd by line
 	scanner := bufio.NewScanner(modPackageReader)
 	scanner.Split(bufio.ScanLines)
 
