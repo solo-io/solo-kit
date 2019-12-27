@@ -28,7 +28,7 @@ var (
 func GetCurrentModPackageName(module string) (string, error) {
 	f, err := os.Open(module)
 	if err != nil {
-		return "", eris.Wrap(err, ModPackageFileError.Error())
+		return "", eris.Wrap(ModPackageFileError, err.Error())
 	}
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
