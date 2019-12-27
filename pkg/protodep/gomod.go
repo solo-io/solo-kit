@@ -11,6 +11,7 @@ import (
 
 	zglob "github.com/mattn/go-zglob"
 	"github.com/pkg/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 	"github.com/spf13/afero"
 )
@@ -31,7 +32,7 @@ var (
 	}
 
 	// matches validate.proto which is needed by envoy protos
-	ValidateProtoMatcher = &GoModImport{
+	EnvoyValidateProtoMatcher = &GoModImport{
 		Package:  "github.com/envoyproxy/protoc-gen-validate",
 		Patterns: []string{"validate/*.proto"},
 	}
@@ -57,7 +58,7 @@ var (
 		},
 		{
 			ImportType: &Import_GoMod{
-				GoMod: ValidateProtoMatcher,
+				GoMod: EnvoyValidateProtoMatcher,
 			},
 		},
 		{
@@ -136,6 +137,7 @@ func (m *goModFactory) Ensure(ctx context.Context, opts *Config) error {
 
 // gather up all packages for a given go module
 // currently this function uses the cmd `go list -m all` to figure out the list of dep
+// all of the logic surrounding go.mod and the go cli calls are in the modutils package
 func (m *goModFactory) gather(opts goModOptions) ([]*Module, error) {
 	matchOptions := opts.MatchOptions
 	// Ensure go.mod file exists and we're running from the project root,
@@ -167,79 +169,18 @@ func (m *goModFactory) gather(opts goModOptions) ([]*Module, error) {
 		line := scanner.Text()
 		s := strings.Split(line, " ")
 
-		/*
-			the packages come in 3 varities
-			1. helm.sh/helm/v3 v3.0.0
-			2. k8s.io/api v0.0.0-20191121015604-11707872ac1c => k8s.io/api v0.0.0-20191004120104-195af9ec3521
-			3. k8s.io/api v0.0.0-20191121015604-11707872ac1c => /path/to/local
-
-			All three variants share the same first 2 members
-		*/
-		module := &Module{
-			ImportPath: s[0],
-			Version:    s[1],
-		}
 		if s[1] == "=>" {
 			// issue https://github.com/golang/go/issues/33848 added these,
 			// see comments. I think we can get away with ignoring them.
-			continue
-		}
-		// Handle "replace" in module file if any
-		if len(s) > 2 && s[2] == "=>" {
-			module.SourcePath = s[3]
-			// non-local module with version
-			if len(s) >= 5 {
-				// see case 2 above
-				module.SourceVersion = s[4]
-				module.Dir = pkgModPath(module.SourcePath, module.SourceVersion)
-			} else {
-				// see case 3 above
-				moduleAbsolutePath, err := filepath.Abs(module.SourcePath)
-				if err != nil {
-					return nil, err
-				}
-				module.Dir = moduleAbsolutePath
-			}
-		} else {
-			module.Dir = pkgModPath(module.ImportPath, module.Version)
+			return nil, nil
 		}
 
-		// make sure module exists
-		if _, err := m.fs.Stat(module.Dir); os.IsNotExist(err) {
-			fmt.Printf("Error! %q module path does not exist, check $GOPATH/pkg/mod. "+
-				"Try running go mod download\n", module.Dir)
+		mod, err := m.handleSingleModule(s, matchOptions)
+		if err != nil {
 			return nil, err
 		}
-
-		// If no match options have been supplied, match on all packages using default match patterns
-		if matchOptions == nil {
-			// Build list of files to module path source to project vendor folder
-			vendorList, err := buildMatchList(DefaultMatchPatterns, module.Dir)
-			if err != nil {
-				return nil, err
-			}
-			module.VendorList = vendorList
-			if len(vendorList) > 0 {
-				modules = append(modules, module)
-			}
-			continue
-		}
-
-		for _, matchOpt := range matchOptions {
-			// only check module if is in imports list, or imports list in empty
-			if len(matchOpt.Package) != 0 &&
-				!strings.Contains(module.ImportPath, matchOpt.Package) {
-				continue
-			}
-			// Build list of files to module path source to project vendor folder
-			vendorList, err := buildMatchList(matchOpt.Patterns, module.Dir)
-			if err != nil {
-				return nil, err
-			}
-			module.VendorList = vendorList
-			if len(vendorList) > 0 {
-				modules = append(modules, module)
-			}
+		if len(mod.VendorList) > 0 {
+			modules = append(modules, mod)
 		}
 
 	}
@@ -256,6 +197,72 @@ func (m *goModFactory) gather(opts goModOptions) ([]*Module, error) {
 	modules = append(modules, localModule)
 
 	return modules, nil
+}
+
+func (m *goModFactory) handleSingleModule(s []string, matchOptions []*GoModImport) (*Module, error) {
+	/*
+		the packages come in 3 varities
+		1. helm.sh/helm/v3 v3.0.0
+		2. k8s.io/api v0.0.0-20191121015604-11707872ac1c => k8s.io/api v0.0.0-20191004120104-195af9ec3521
+		3. k8s.io/api v0.0.0-20191121015604-11707872ac1c => /path/to/local
+
+		All three variants share the same first 2 members
+	*/
+	module := &Module{
+		ImportPath: s[0],
+		Version:    s[1],
+	}
+	// Handle "replace" in module file if any
+	if len(s) > 2 && s[2] == "=>" {
+		module.SourcePath = s[3]
+		// non-local module with version
+		if len(s) >= 5 {
+			// see case 2 above
+			module.SourceVersion = s[4]
+			module.Dir = pkgModPath(module.SourcePath, module.SourceVersion)
+		} else {
+			// see case 3 above
+			moduleAbsolutePath, err := filepath.Abs(module.SourcePath)
+			if err != nil {
+				return nil, err
+			}
+			module.Dir = moduleAbsolutePath
+		}
+	} else {
+		module.Dir = pkgModPath(module.ImportPath, module.Version)
+	}
+
+	// make sure module exists
+	if _, err := m.fs.Stat(module.Dir); os.IsNotExist(err) {
+		return nil, eris.Wrapf(err, "Error! %q module path does not exist, check $GOPATH/pkg/mod. "+
+			"Try running go mod download\n", module.Dir)
+	}
+
+	// If no match options have been supplied, match on all packages using default match patterns
+	if matchOptions == nil {
+		// Build list of files to module path source to project vendor folder
+		vendorList, err := buildMatchList(DefaultMatchPatterns, module.Dir)
+		if err != nil {
+			return nil, err
+		}
+		module.VendorList = vendorList
+		return module, nil
+	}
+
+	for _, matchOpt := range matchOptions {
+		// only check module if is in imports list, or imports list in empty
+		if len(matchOpt.Package) != 0 &&
+			!strings.Contains(module.ImportPath, matchOpt.Package) {
+			continue
+		}
+		// Build list of files to module path source to project vendor folder
+		vendorList, err := buildMatchList(matchOpt.Patterns, module.Dir)
+		if err != nil {
+			return nil, err
+		}
+		module.VendorList = vendorList
+	}
+	return module, nil
 }
 
 func (m *goModFactory) copy(modules []*Module) error {

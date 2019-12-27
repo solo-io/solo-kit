@@ -104,7 +104,7 @@ var _ = Describe("DocsGen", func() {
 						ImportType: &protodep.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
 					},
 					{
-						ImportType: &protodep.Import_GoMod{GoMod: protodep.ValidateProtoMatcher},
+						ImportType: &protodep.Import_GoMod{GoMod: protodep.EnvoyValidateProtoMatcher},
 					},
 					{
 						ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
