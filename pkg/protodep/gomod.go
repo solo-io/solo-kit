@@ -46,7 +46,13 @@ var (
 	// matches gogo.proto, used for gogoproto code gen.
 	GogoProtoMatcher = &GoModImport{
 		Package:  "github.com/gogo/protobuf",
-		Patterns: []string{"gogoproto/*.proto"},
+		Patterns: []string{"gogoproto/*.proto", "protobuf/**/*.proto"},
+	}
+
+	// matches google/*.proto, usef to replace api/external/google
+	GoogleProtoMatcher = &GoModImport{
+		Package:  "github.com/gogo/googleapis",
+		Patterns: []string{"google/api/*.proto", "google/rpc/*.proto"},
 	}
 
 	// default match options which should be used when creating a solo-kit project
@@ -69,6 +75,11 @@ var (
 		{
 			ImportType: &Import_GoMod{
 				GoMod: GogoProtoMatcher,
+			},
+		},
+		{
+			ImportType: &Import_GoMod{
+				GoMod: GoogleProtoMatcher,
 			},
 		},
 	}

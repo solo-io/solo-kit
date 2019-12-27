@@ -31,6 +31,9 @@ func main() {
 				{
 					ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
 				},
+				{
+					ImportType: &protodep.Import_GoMod{GoMod: protodep.GoogleProtoMatcher},
+				},
 			},
 		},
 	}); err != nil {

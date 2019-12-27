@@ -14,7 +14,7 @@ set -o pipefail
 ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
 SOLO_KIT=${ROOT}/solo-kit
 IN=${SOLO_KIT}/api/v1/
-EXTERNAL=${SOLO_KIT}/api/external/
+VENDOR_ROOT=vendor/github.com
 
 TEMP_DIR=$(mktemp -d)
 cleanup() {
@@ -27,10 +27,10 @@ echo ">> Temporary output directory ${TEMP_DIR}"
 
 IMPORTS="\
     -I=${IN} \
-    -I=${EXTERNAL} \
     -I=${ROOT} \
-    -I=vendor/github.com/gogo/protobuf \
-    -I=vendor/github.com/solo-io/protoc-gen-ext"
+    -I=${VENDOR_ROOT}/gogo/googleapis \
+    -I=${VENDOR_ROOT}/gogo/protobuf \
+    -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext"
 
 GOGO_FLAG="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${TEMP_DIR}"
 HASH_FLAG="--ext_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${TEMP_DIR}"
