@@ -46,7 +46,6 @@ var _ = Describe("DocsGen", func() {
 		// Create temp directory and path variables
 		workingDir, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
-		// projectRoot := filepath.Join(workingDir, "../../")
 		tempDir, err = ioutil.TempDir(workingDir, "doc-gen-test-")
 		Expect(err).NotTo(HaveOccurred())
 		relativePathToTempDir = filepath.Join(packageName, filepath.Base(tempDir))
@@ -74,7 +73,6 @@ var _ = Describe("DocsGen", func() {
 			Dir:       projectConfigDocsDir,
 			GoPackage: relativePathToTempDir,
 		})
-		// err = projectConfigFile().Execute(buf, projectConfigDocsDir)
 		Expect(err).NotTo(HaveOccurred())
 		err = ioutil.WriteFile(filepath.Join(tempDir, testProjectConfigName), []byte(buf.String()), 0644)
 		Expect(err).NotTo(HaveOccurred())

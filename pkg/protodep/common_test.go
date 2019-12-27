@@ -15,6 +15,7 @@ import (
 
 //go:generate mockgen -package mock_protodep -destination ./mocks/afero.go github.com/spf13/afero Fs,File
 //go:generate mockgen -package mock_protodep -destination ./mocks/fileinfo.go os FileInfo
+//go:generate mockgen -package mock_protodep -destination ./mocks/copier.go -source ./common.go
 
 var _ = Describe("common", func() {
 	Context("copier", func() {
