@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 	"github.com/solo-io/solo-kit/pkg/protodep"
@@ -17,19 +18,19 @@ func main() {
 		CompileProtos:      true,
 		SkipGenMocks:       true,
 		SkipGeneratedTests: true,
-		ProtoDepConfig: &protodep.Config{
-			Local: &protodep.Local{
+		ProtoDepConfig: &anyvendor.Config{
+			Local: &anyvendor.Local{
 				Patterns: []string{"test/**/*.proto", "api/**/*.proto", protodep.SoloKitMatchPattern},
 			},
-			Imports: []*protodep.Import{
+			Imports: []*anyvendor.Import{
 				{
-					ImportType: &protodep.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
+					ImportType: &anyvendor.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
 				},
 				{
-					ImportType: &protodep.Import_GoMod{GoMod: protodep.EnvoyValidateProtoMatcher},
+					ImportType: &anyvendor.Import_GoMod{GoMod: protodep.EnvoyValidateProtoMatcher},
 				},
 				{
-					ImportType: &protodep.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
+					ImportType: &anyvendor.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
 				},
 			},
 		},

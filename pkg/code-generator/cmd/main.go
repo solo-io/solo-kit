@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/solo-io/anyvendor/anyvendor"
+	"github.com/solo-io/anyvendor/pkg/manager"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/stringutils"
@@ -23,7 +25,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
-	"github.com/solo-io/solo-kit/pkg/protodep"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 )
 
@@ -74,7 +75,7 @@ type GenerateOptions struct {
 	PackageName string
 
 	// config for protodep
-	ProtoDepConfig *protodep.Config
+	ProtoDepConfig *anyvendor.Config
 }
 
 type Runner struct {
@@ -136,7 +137,7 @@ func Generate(opts GenerateOptions) error {
 			"but will most likely lead to one.")
 	}
 	ctx := context.Background()
-	mgr, err := protodep.NewManager(ctx, r.BaseDir)
+	mgr, err := manager.NewManager(ctx, r.BaseDir)
 	if err != nil {
 		return err
 	}
@@ -214,7 +215,7 @@ func (r *Runner) Run() error {
 	// These files are vendored into the protodep.DefaultDepDir by protodep, and accessed from there.
 	// This root is the proper base directory to find only the roots which matter.
 	// This way solo-kit can be ran from a child directory with no repercussions.
-	projectConfigRoot := filepath.Join(r.BaseDir, protodep.DefaultDepDir, r.Opts.PackageName, strings.TrimPrefix(workingRootAbsolute, r.BaseDir))
+	projectConfigRoot := filepath.Join(r.BaseDir, anyvendor.DefaultDepDir, r.Opts.PackageName, strings.TrimPrefix(workingRootAbsolute, r.BaseDir))
 	projectConfigs, err := r.collectProjectsFromRoot(projectConfigRoot, r.Opts.SkipDirs)
 	if err != nil {
 		return err
@@ -259,7 +260,7 @@ func (r *Runner) Run() error {
 	descriptorCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports,
 		r.Opts.CustomGogoOutArgs, r.DescriptorOutDir, compileProto)
 
-	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, protodep.DefaultDepDir), r.Opts.SkipDirs)
+	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
 		return err
 	}
@@ -448,7 +449,7 @@ func getCommonImports() ([]string, error) {
 }
 
 var commonImportStrings = []string{
-	protodep.DefaultDepDir,
+	anyvendor.DefaultDepDir,
 }
 
 const (
@@ -459,7 +460,7 @@ const (
 func (r *Runner) importCustomResources(imports []string) ([]model.CustomResourceConfig, error) {
 	var results []model.CustomResourceConfig
 	for _, imp := range imports {
-		imp = filepath.Join(protodep.DefaultDepDir, imp)
+		imp = filepath.Join(anyvendor.DefaultDepDir, imp)
 		if !strings.HasSuffix(imp, model.ProjectConfigFilename) {
 			imp = filepath.Join(imp, model.ProjectConfigFilename)
 		}
