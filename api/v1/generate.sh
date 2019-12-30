@@ -14,7 +14,7 @@ set -o pipefail
 ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
 SOLO_KIT=${ROOT}/solo-kit
 IN=${SOLO_KIT}/api/v1/
-VENDOR_ROOT=vendor/github.com
+VENDOR_ROOT=vendor_any/github.com
 
 TEMP_DIR=$(mktemp -d)
 cleanup() {
@@ -28,7 +28,6 @@ echo ">> Temporary output directory ${TEMP_DIR}"
 IMPORTS="\
     -I=${IN} \
     -I=${ROOT} \
-    -I=${VENDOR_ROOT}/gogo/googleapis \
     -I=${VENDOR_ROOT}/gogo/protobuf \
     -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext"
 
