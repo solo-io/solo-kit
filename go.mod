@@ -43,7 +43,7 @@ require (
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
-	github.com/solo-io/anyvendor v0.0.0-20191230205653-8053484594d6
+	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-utils v0.11.7
 	github.com/solo-io/protoc-gen-ext v0.0.6
 	github.com/spf13/afero v1.2.2
@@ -73,8 +73,6 @@ replace (
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
-
-	github.com/solo-io/anyvendor => /Users/eitanya/src/solo-io/anyvendor
 
 	//kube 1.16
 	k8s.io/api => k8s.io/api v0.0.0-20191004120104-195af9ec3521
