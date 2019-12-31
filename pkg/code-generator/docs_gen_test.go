@@ -11,7 +11,7 @@ import (
 
 	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
-	"github.com/solo-io/solo-kit/pkg/protodep"
+	sk_anyvendor "github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 	"gopkg.in/yaml.v2"
 
@@ -98,17 +98,17 @@ var _ = Describe("DocsGen", func() {
 						"test/**/*.proto",
 						"api/**/*.proto",
 						filepath.Join(strings.TrimPrefix(tempDir, modRootDir), anyvendor.ProtoMatchPattern),
-						protodep.SoloKitMatchPattern},
+						sk_anyvendor.SoloKitMatchPattern},
 				},
 				Imports: []*anyvendor.Import{
 					{
-						ImportType: &anyvendor.Import_GoMod{GoMod: protodep.ExtProtoMatcher},
+						ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.ExtProtoMatcher},
 					},
 					{
-						ImportType: &anyvendor.Import_GoMod{GoMod: protodep.EnvoyValidateProtoMatcher},
+						ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.EnvoyValidateProtoMatcher},
 					},
 					{
-						ImportType: &anyvendor.Import_GoMod{GoMod: protodep.GogoProtoMatcher},
+						ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.GogoProtoMatcher},
 					},
 				},
 			},

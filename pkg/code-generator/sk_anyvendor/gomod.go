@@ -1,4 +1,4 @@
-package protodep
+package sk_anyvendor
 
 import (
 	"github.com/solo-io/anyvendor/anyvendor"
