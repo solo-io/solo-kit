@@ -7,9 +7,7 @@ PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 VERSION ?= $(shell git describe --tags)
-
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
-VENDOR=vendor
 
 #----------------------------------------------------------------------------------
 # Repo init
@@ -43,8 +41,6 @@ update-deps: mod-download
 	GO111MODULE=off go get -u github.com/envoyproxy/protoc-gen-validate
 	GO111MODULE=off go get -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
-	GO111MODULE=off go get -u github.com/onsi/ginkgo
-	GO111MODULE=off go install github.com/onsi/ginkgo
 
 	# clone solo's fork of code-generator, required for tests & kube type gen
 	mkdir -p $(GOPATH)/src/k8s.io && \
@@ -77,14 +73,6 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 #----------------------------------------------------------------------------------
 # Generated Code
 #----------------------------------------------------------------------------------
-
-API_ROOT_DIR:=$(ROOTDIR)
-API_IMPORTS:=\
-	-I=$(API_ROOT_DIR) \
-	-I=$(API_ROOT_DIR)/api/external/
-
-GOGO_FLAG:="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:$(TEMPDIR)"
-INPUT_PROTOS=$(wildcard api/v1/*.proto)
 
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code
