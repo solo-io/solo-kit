@@ -1,130 +1,109 @@
 steps:
-  # Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
-  # These two steps should populate the cache
-  - name: gcr.io/cloud-builders/gsutil
-    entrypoint: 'bash'
-    args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/solo-kit/solo-kit-dep.tar.gz | tar -xzf -']
-    id: 'download-untar-dep-cache'
-    waitFor: ['-']
 
-  # Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
-  # These two steps should populate the cache
-  - name: gcr.io/cloud-builders/gsutil
-    entrypoint: 'bash'
-    args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/solo-kit/solo-kit-gocache.tar.gz | tar -xzf -']
-    id: 'download-untar-go-cache'
-    waitFor: ['-']
+- name: gcr.io/cloud-builders/gsutil
+  entrypoint: 'bash'
+  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
+  id: 'untar-mod-cache'
+  dir: &dir '/workspace/solo-kit'
 
-  - name: gcr.io/cloud-builders/gsutil
-    entrypoint: 'bash'
-    args: ['-c', 'mkdir -p ./gopath/pkg && cd ./gopath/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
-    volumes: &vol
-    - name: 'gopath'
-      path: '/workspace/gopath/pkg/mod'
-    id: 'untar-mod-cache'
-    waitFor: ['-']
-  # donwload massive container in parallel
-  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
-    entrypoint: 'bash'
-    args: ['-c', 'ls']
-    waitFor: ['-']
+# prepare-workspace to set up the project so it can be built and tested
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
+  args:
+  - "--repo-owner"
+  - "solo-io"
+  - "--repo-name"
+  - solo-kit
+  - "--repo-sha"
+  - "$COMMIT_SHA"
+  - "--repo-output-dir"
+  - "."
+  env:
+  - 'GIT_SSH_CONFIG=FALSE'
+  id: 'prepare-workspace'
 
-  # Run dep to set up the project so it can be built and tested
-  # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
-  # All steps after this must set GOPATH
-  - name: 'gcr.io/$PROJECT_ID/dep:0.1.5'
-    args: ['ensure']
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GIT_SSH_CONFIG=FALSE'
-    id: 'dep'
-    waitFor: ['download-untar-dep-cache']
+# download massive container in parallel
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+  entrypoint: 'bash'
+  dir: *dir
+  args: ['-c', 'ls']
+  waitFor: ['-']
 
+# Installs go executables required by codegen tests
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+  args: ['update-deps']
+  waitFor: ['prepare-workspace']
+  id: 'update-deps'
+  dir: *dir
 
-  # Installs go executables required by codegen tests
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
-    args: ['update-deps']
-    waitFor: ['dep']
-    dir: './gopath/src/github.com/solo-io/solo-kit'
-    id: 'update-deps'
-    volumes: *vol
-    env:
-      - 'GOPATH=/workspace/gopath'
+# check code gen for kubernetes custom resources, should be no diff
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+  entrypoint: 'bash'
+  args: ['ci/check-code-gen.sh']
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
+  - 'TAGGED_VERSION=$TAG_NAME'
+#  waitFor: ['update-deps']
+  dir: *dir
+  id: 'check-code-and-docs-gen'
 
-  # check code gen for kubernetes custom resources, should be no diff
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
-    entrypoint: 'bash'
-    args: ['ci/check-code-gen.sh']
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'GOPATH=/workspace/gopath'
-      - 'TAGGED_VERSION=$TAG_NAME'
-    dir: './gopath/src/github.com/solo-io/solo-kit'
-    waitFor: ['update-deps']
-    volumes: *vol
-    id: 'check-code-and-docs-gen'
+  # start setting up kubeconfigs
+- name: gcr.io/cloud-builders/gcloud
+  args: ['config', 'set', 'compute/zone', 'us-central1-b']
+  id: 'gcloud-compute-zone'
+  dir: *dir
 
-    # start setting up kubeconfigs
-  - name: gcr.io/cloud-builders/gcloud
-    args: ['config', 'set', 'compute/zone', 'us-central1-b']
-    id: 'gcloud-compute-zone'
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'clusters', 'get-credentials', 'solo-kit-multicluster-2']
+  id: 'gcloud-solo-kit-multicluster-2'
+  dir: *dir
 
-  - name: gcr.io/cloud-builders/gcloud
-    args: ['container', 'clusters', 'get-credentials', 'solo-kit-multicluster-2']
-    id: 'gcloud-solo-kit-multicluster-2'
+- name: gcr.io/cloud-builders/gcloud
+  entrypoint: cp
+  args:
+  - /builder/home/.kube/config
+  - /builder/home/.kube/solo-kit-multicluster-2-config
+  id: 'copy-multicluster-2-config'
 
-  - name: gcr.io/cloud-builders/gcloud
-    entrypoint: cp
-    args:
-      - /builder/home/.kube/config
-      - /builder/home/.kube/solo-kit-multicluster-2-config
-    id: 'copy-multicluster-2-config'
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'clusters', 'get-credentials', 'solo-kit-test']
+  id: 'gcloud-solo-kit-test'
 
-  - name: gcr.io/cloud-builders/gcloud
-    args: ['container', 'clusters', 'get-credentials', 'solo-kit-test']
-    id: 'gcloud-solo-kit-test'
+# e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
+# sets up redis, consul, kubectl, go with required environment variables
+# need to use the provided entrypoint
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
+  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
+  - 'RUN_KUBE_TESTS=1'
+  - 'RUN_CONSUL_TESTS=1'
+  - 'RUN_VAULT_TESTS=1'
+  - 'SKIP_MOCK_GEN=1'
+  - 'CLOUD_BUILD=1'
+  - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
+  args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=2']
+  dir: *dir
+  id: 'test'
 
-  # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
-  # sets up redis, consul, kubectl, go with required environment variables
-  # need to use the provided entrypoint
-  - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
-    dir: './gopath/src/github.com/solo-io/solo-kit'
-    env:
-      - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
-      - 'RUN_KUBE_TESTS=1'
-      - 'RUN_CONSUL_TESTS=1'
-      - 'RUN_VAULT_TESTS=1'
-      - 'SKIP_MOCK_GEN=1'
-      - 'CLOUD_BUILD=1'
-      - 'GOPATH=/workspace/gopath'
-      - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
-    args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=10']
-    volumes: *vol
-    id: 'test'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+  args: ['solo-kit-cli']
+  waitFor: ['test']
+  id: 'build-cli'
+  dir: *dir
+  env:
 
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
-    args: ['solo-kit-cli']
-    waitFor: ['test']
-    dir: './gopath/src/github.com/solo-io/solo-kit'
-    id: 'build-cli'
-    volumes: *vol
-    env:
-    - 'GOPATH=/workspace/gopath'
-
-  - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
-    args: ['solo-kit-gen']
-    waitFor: ['test']
-    dir: './gopath/src/github.com/solo-io/solo-kit'
-    id: 'build-codegen'
-    volumes: *vol
-    env:
-    - 'GOPATH=/workspace/gopath'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+  args: ['solo-kit-gen']
+  waitFor: ['test']
+  id: 'build-codegen'
+  dir: *dir
+  env:
 
 timeout: 1500s
 tags: ['solo-kit']
 options:
   machineType: 'N1_HIGHCPU_32'
-  env:
-  - "GO111MODULE=on"
+  volumes:
+  - name: 'gopath'
+    path: '/go'

@@ -18,7 +18,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//go:generate $GOPATH/src/k8s.io/code-generator/generate-groups.sh all "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client" "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis" testing.solo.io:v2alpha1
+//go:generate bash ../v2alpha1/kube/hack/update-codegen.sh
 
 var _ = Describe("Generated Kube Code", func() {
 	var (

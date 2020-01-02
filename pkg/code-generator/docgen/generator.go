@@ -28,6 +28,7 @@ type DocsGen struct {
 var ignoredFiles = []string{
 	"validate/validate.proto",
 	"github.com/solo-io/solo-kit/api/external/validate/validate.proto",
+	"github.com/envoyproxy/protoc-gen-validate/validate/validate.proto",
 }
 
 // write docs that are produced from the content of a single project
@@ -40,7 +41,7 @@ func WritePerProjectsDocs(project *model.Project, genDocs *options.DocsOptions, 
 
 		for _, file := range docs {
 			path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 				return err
 			}
 			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {

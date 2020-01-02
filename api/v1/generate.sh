@@ -2,28 +2,45 @@
 
 set -e
 
-ROOT=${GOPATH}/src
-SOLO_KIT=${ROOT}/github.com/solo-io/solo-kit
+set -o errexit
+set -o nounset
+set -o pipefail
+
+
+# The following script is used to generate the solo-kit protos.
+# This script will work both in and our of the GOPATH, however, it does assume that the imported protos will be
+# available in the root level vendor folder. This script will be run as part of `make generated-code` so there
+# should be no need to run it otherwise. `make generated-code` will also vendor the necessary protos.
+ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
+SOLO_KIT=${ROOT}/solo-kit
 IN=${SOLO_KIT}/api/v1/
-EXTERNAL=${SOLO_KIT}/api/external/
-OUT=${SOLO_KIT}/pkg/api/external/istio/encryption/v1/
+VENDOR_ROOT=vendor_any/github.com
+
+TEMP_DIR=$(mktemp -d)
+cleanup() {
+    echo ">> Removing ${TEMP_DIR}"
+    rm -rf ${TEMP_DIR}
+}
+trap "cleanup" EXIT SIGINT
+
+echo ">> Temporary output directory ${TEMP_DIR}"
 
 IMPORTS="\
     -I=${IN} \
-    -I=${EXTERNAL} \
-    -I=${ROOT}
-    -I=vendor/github.com/solo-io/protoc-gen-ext
-    "
+    -I=${ROOT} \
+    -I=${VENDOR_ROOT}/gogo/protobuf \
+    -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext"
 
-GOGO_FLAG="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${GOPATH}/src/"
-HASH_FLAG="--ext_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${GOPATH}/src/"
+GOGO_FLAG="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${TEMP_DIR}"
+HASH_FLAG="--ext_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${TEMP_DIR}"
 
 INPUT_PROTOS="${IN}*.proto"
 
-mkdir -p ${OUT}
 protoc ${IMPORTS} \
     ${GOGO_FLAG} \
     ${HASH_FLAG} \
     ${INPUT_PROTOS}
+
+cp -r  ${TEMP_DIR}/github.com/solo-io/solo-kit ${ROOT}
 
 goimports -w pkg

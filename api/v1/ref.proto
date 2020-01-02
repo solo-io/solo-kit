@@ -9,7 +9,6 @@ import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
 // A way to reference resources across namespaces
-// TODO(ilackarms): make upstreamname and secretref into ResourceRefs
 message ResourceRef {
     option (gogoproto.goproto_sizecache) = false;
     option (gogoproto.goproto_unkeyed) = false;
