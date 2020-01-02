@@ -61,16 +61,21 @@ type Imports struct {
 }
 
 func (i *Imports) ToAnyvendorConfig() *anyvendor.Config {
-	result := &anyvendor.Config{}
-	var imports []*anyvendor.GoModImport
+	var imports []*anyvendor.Import
 	for pkg, patterns := range i.External {
-		imports = append(imports, &anyvendor.GoModImport{
-			Patterns: patterns,
-			Package:  pkg,
+		imports = append(imports, &anyvendor.Import{
+			ImportType: &anyvendor.Import_GoMod{
+				GoMod: &anyvendor.GoModImport{
+					Patterns: patterns,
+					Package:  pkg,
+				},
+			},
 		})
 	}
-	result.Local = &anyvendor.Local{
-		Patterns: i.Local,
+	return &anyvendor.Config{
+		Local: &anyvendor.Local{
+			Patterns: i.Local,
+		},
+		Imports: imports,
 	}
-	return result
 }
