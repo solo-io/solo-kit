@@ -92,24 +92,16 @@ var _ = Describe("DocsGen", func() {
 			SkipGenMocks:  true,
 			CompileProtos: true,
 			GenDocs:       genDocs,
-			ProtoDepConfig: &anyvendor.Config{
-				Local: &anyvendor.Local{
-					Patterns: []string{
-						"test/**/*.proto",
-						"api/**/*.proto",
-						filepath.Join(strings.TrimPrefix(tempDir, modRootDir), anyvendor.ProtoMatchPattern),
-						sk_anyvendor.SoloKitMatchPattern},
-				},
-				Imports: []*anyvendor.Import{
-					{
-						ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.ExtProtoMatcher},
-					},
-					{
-						ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.EnvoyValidateProtoMatcher},
-					},
-					{
-						ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.GogoProtoMatcher},
-					},
+			ExternalImports: &sk_anyvendor.Imports{
+				Local: []string{
+					"test/**/*.proto",
+					"api/**/*.proto",
+					filepath.Join(strings.TrimPrefix(tempDir, modRootDir), anyvendor.ProtoMatchPattern),
+					sk_anyvendor.SoloKitMatchPattern},
+				External: map[string][]string{
+					sk_anyvendor.ExtProtoMatcher.Package:           sk_anyvendor.ExtProtoMatcher.Patterns,
+					sk_anyvendor.EnvoyValidateProtoMatcher.Package: sk_anyvendor.EnvoyValidateProtoMatcher.Patterns,
+					sk_anyvendor.GogoProtoMatcher.Package:          sk_anyvendor.GogoProtoMatcher.Patterns,
 				},
 			},
 		}

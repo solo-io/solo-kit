@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 	"github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
@@ -18,20 +17,12 @@ func main() {
 		CompileProtos:      true,
 		SkipGenMocks:       true,
 		SkipGeneratedTests: true,
-		ProtoDepConfig: &anyvendor.Config{
-			Local: &anyvendor.Local{
-				Patterns: []string{"test/**/*.proto", "api/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
-			},
-			Imports: []*anyvendor.Import{
-				{
-					ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.ExtProtoMatcher},
-				},
-				{
-					ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.EnvoyValidateProtoMatcher},
-				},
-				{
-					ImportType: &anyvendor.Import_GoMod{GoMod: sk_anyvendor.GogoProtoMatcher},
-				},
+		ExternalImports: &sk_anyvendor.Imports{
+			Local: []string{"test/**/*.proto", "api/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
+			External: map[string][]string{
+				sk_anyvendor.ExtProtoMatcher.Package:           sk_anyvendor.ExtProtoMatcher.Patterns,
+				sk_anyvendor.EnvoyValidateProtoMatcher.Package: sk_anyvendor.EnvoyValidateProtoMatcher.Patterns,
+				sk_anyvendor.GogoProtoMatcher.Package:          sk_anyvendor.GogoProtoMatcher.Patterns,
 			},
 		},
 	}); err != nil {

@@ -25,6 +25,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
+	"github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 )
 
@@ -74,8 +75,8 @@ type GenerateOptions struct {
 	*/
 	PackageName string
 
-	// config for protodep
-	ProtoDepConfig *anyvendor.Config
+	// config for anyvendor
+	ExternalImports *sk_anyvendor.Imports
 }
 
 type Runner struct {
@@ -132,8 +133,8 @@ func Generate(opts GenerateOptions) error {
 		CommonImports:    commonImports,
 	}
 
-	if opts.ProtoDepConfig == nil {
-		log.Warnf("ProtoDepConfig is nil, therefore no protos will be vendored. This is not an error," +
+	if opts.ExternalImports == nil {
+		log.Warnf("ExternalImports is nil, therefore no protos will be vendored. This is not an error," +
 			"but will most likely lead to one.")
 	}
 	ctx := context.Background()
@@ -141,7 +142,7 @@ func Generate(opts GenerateOptions) error {
 	if err != nil {
 		return err
 	}
-	if err := mgr.Ensure(ctx, opts.ProtoDepConfig); err != nil {
+	if err := mgr.Ensure(ctx, opts.ExternalImports.ConvertToAnvendorConfig()); err != nil {
 		return err
 	}
 

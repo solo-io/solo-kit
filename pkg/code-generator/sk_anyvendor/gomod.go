@@ -37,26 +37,37 @@ var (
 	}
 
 	// default match options which should be used when creating a solo-kit project
-	DefaultMatchOptions = []*anyvendor.Import{
-		{
-			ImportType: &anyvendor.Import_GoMod{
-				GoMod: ExtProtoMatcher,
-			},
-		},
-		{
-			ImportType: &anyvendor.Import_GoMod{
-				GoMod: EnvoyValidateProtoMatcher,
-			},
-		},
-		{
-			ImportType: &anyvendor.Import_GoMod{
-				GoMod: SoloKitProtoMatcher,
-			},
-		},
-		{
-			ImportType: &anyvendor.Import_GoMod{
-				GoMod: GogoProtoMatcher,
-			},
-		},
+	DefaultExternalMatchOptions = map[string][]string{
+		ExtProtoMatcher.Package:           ExtProtoMatcher.Patterns,
+		EnvoyValidateProtoMatcher.Package: EnvoyValidateProtoMatcher.Patterns,
+		SoloKitProtoMatcher.Package:       SoloKitProtoMatcher.Patterns,
+		GogoProtoMatcher.Package:          GogoProtoMatcher.Patterns,
 	}
 )
+
+func CreateDefaultMatchOptions(local []string) *Imports {
+	return &Imports{
+		Local:    local,
+		External: DefaultExternalMatchOptions,
+	}
+}
+
+type Imports struct {
+	Local    []string
+	External map[string][]string
+}
+
+func (i *Imports) ConvertToAnvendorConfig() *anyvendor.Config {
+	result := &anyvendor.Config{}
+	var imports []*anyvendor.GoModImport
+	for pkg, patterns := range i.External {
+		imports = append(imports, &anyvendor.GoModImport{
+			Patterns: patterns,
+			Package:  pkg,
+		})
+	}
+	result.Local = &anyvendor.Local{
+		Patterns: i.Local,
+	}
+	return result
+}
