@@ -52,12 +52,15 @@ func CreateDefaultMatchOptions(local []string) *Imports {
 	}
 }
 
+// this type represents a solo-kit abstraction of the anyvendor API for vendoring non-go files.
 type Imports struct {
-	Local    []string
+	// files which should be gathered from the local repo
+	Local []string
+	// files which should be gathered from other go.mod repos
 	External map[string][]string
 }
 
-func (i *Imports) ConvertToAnvendorConfig() *anyvendor.Config {
+func (i *Imports) ToAnyvendorConfig() *anyvendor.Config {
 	result := &anyvendor.Config{}
 	var imports []*anyvendor.GoModImport
 	for pkg, patterns := range i.External {

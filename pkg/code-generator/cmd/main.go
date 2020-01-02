@@ -142,7 +142,7 @@ func Generate(opts GenerateOptions) error {
 	if err != nil {
 		return err
 	}
-	if err := mgr.Ensure(ctx, opts.ExternalImports.ConvertToAnvendorConfig()); err != nil {
+	if err := mgr.Ensure(ctx, opts.ExternalImports.ToAnyvendorConfig()); err != nil {
 		return err
 	}
 
