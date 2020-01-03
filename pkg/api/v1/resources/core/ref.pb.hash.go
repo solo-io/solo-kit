@@ -34,6 +34,9 @@ func (m *ResourceRef) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.ResourceRef")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err

@@ -45,7 +45,7 @@ require (
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-utils v0.11.7
-	github.com/solo-io/protoc-gen-ext v0.0.6
+	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/spf13/afero v1.2.2
 	go.opencensus.io v0.22.1
 	go.uber.org/multierr v1.3.0
