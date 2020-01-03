@@ -34,6 +34,9 @@ func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("testing.solo.io.github.com/solo-io/solo-kit/test/mocks/v1alpha1.MockResource")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(&m.Metadata).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -82,6 +85,9 @@ func (m *FakeResource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("testing.solo.io.github.com/solo-io/solo-kit/test/mocks/v1alpha1.FakeResource")); err != nil {
+		return 0, err
+	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetCount())
 	if err != nil {

@@ -33,7 +33,6 @@ require (
 	github.com/ilackarms/protoc-gen-doc v1.0.0
 	github.com/ilackarms/protokit v0.0.0-20181231193355-ee2393f3bbf0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
-	github.com/mattn/go-zglob v0.0.1
 	github.com/miekg/dns v1.1.15 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/onsi/ginkgo v1.11.0
@@ -45,8 +44,7 @@ require (
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-utils v0.11.7
-	github.com/solo-io/protoc-gen-ext v0.0.6
-	github.com/spf13/afero v1.2.2
+	github.com/solo-io/protoc-gen-ext v0.0.7
 	go.opencensus.io v0.22.1
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
