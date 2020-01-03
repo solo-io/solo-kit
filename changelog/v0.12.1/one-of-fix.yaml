@@ -1,3 +1,4 @@
 changelog:
-- type: NON_USER_FACING
+- type: FIX
   description: Fix the way messages are hashed so oneofs diff correctly.
+  issueLink: https://github.com/solo-io/solo-kit/issues/336
