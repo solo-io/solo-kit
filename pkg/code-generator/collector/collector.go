@@ -24,7 +24,7 @@ type Collector interface {
 	CollectDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error)
 }
 
-func NewCollector(customImports, commonImports, customGogoArgs []string,
+func NewCollector(customImports, commonImports, customGogoArgs, customPlugins []string,
 	descriptorOutDir string, wantCompile func(string) bool) *collector {
 	return &collector{
 		descriptorOutDir: descriptorOutDir,
@@ -32,6 +32,7 @@ func NewCollector(customImports, commonImports, customGogoArgs []string,
 		commonImports:    commonImports,
 		customGogoArgs:   customGogoArgs,
 		wantCompile:      wantCompile,
+		customPlugins:    customPlugins,
 	}
 }
 
@@ -41,6 +42,7 @@ type collector struct {
 	commonImports    []string
 	customGogoArgs   []string
 	wantCompile      func(string) bool
+	customPlugins    []string
 }
 
 func (c *collector) CollectDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error) {
@@ -272,6 +274,12 @@ func (c *collector) writeDescriptors(protoFile, toFile string, imports []string,
 			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
 			"--ext_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
 		)
+
+		for _, plugin := range c.customPlugins {
+			cmd.Args = append(cmd.Args,
+				"--"+plugin+"_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
+			)
+		}
 	}
 
 	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",

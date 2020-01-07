@@ -57,9 +57,14 @@ type GenerateOptions struct {
 	CompileProtos bool
 	// compile protos found in these directories. can also point directly to .proto files
 	CustomCompileProtos []string
-	GenDocs             *DocsOptions
-	CustomImports       []string
-	SkipDirs            []string
+
+	// custom plugins
+	// each will append a <plugin>_out= directive to protoc command
+	CustomPlugins []string
+
+	GenDocs       *DocsOptions
+	CustomImports []string
+	SkipDirs      []string
 	// arguments for gogo_out=
 	CustomGogoOutArgs []string
 	// skip generated mocks
@@ -259,7 +264,7 @@ func (r *Runner) Run() error {
 	}
 
 	descriptorCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports,
-		r.Opts.CustomGogoOutArgs, r.DescriptorOutDir, compileProto)
+		r.Opts.CustomGogoOutArgs, r.Opts.CustomPlugins, r.DescriptorOutDir, compileProto)
 
 	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
