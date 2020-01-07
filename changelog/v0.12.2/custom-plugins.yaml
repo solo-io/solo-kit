@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Enable running protoc with custom plugins. Each plugin provided is added as a directive to the protoc invocation in the form --<plugin name>_out=[plugin params]. Currently plugin params default to the same used for gogo and protoc-gen-ext
+    issueLink: https://github.com/solo-io/solo-kit/issues/337
