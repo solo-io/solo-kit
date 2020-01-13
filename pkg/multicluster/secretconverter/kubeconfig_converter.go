@@ -3,7 +3,7 @@ package secretconverter
 import (
 	"context"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	apiv1 "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -26,7 +26,7 @@ func KubeCfgFromSecret(secret *kubev1.Secret) (*v1.KubeConfig, error) {
 		keys = append(keys, k)
 	}
 	if len(keys) != 1 {
-		return nil, errors.Errorf("kubeconfig secret data must contain exactly one value")
+		return nil, eris.Errorf("kubeconfig secret data must contain exactly one value")
 	}
 	// cluster name is set from the key the user uses for their kubeconfig
 	cluster := keys[0]

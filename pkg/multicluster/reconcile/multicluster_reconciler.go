@@ -3,7 +3,7 @@ package reconcile
 import (
 	"sync"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reconcile"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -52,10 +52,10 @@ func (r *multiClusterReconciler) Reconcile(namespace string, desiredResources re
 	for cluster, desiredForCluster := range byCluster {
 		rc, ok := r.rcs[cluster]
 		if !ok {
-			return errors.Errorf("no client found for cluster %v", cluster)
+			return eris.Errorf("no client found for cluster %v", cluster)
 		}
 		if err := reconcile.NewReconciler(rc).Reconcile(namespace, desiredForCluster, transitionFunc, opts); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "reconciling cluster %v", cluster))
+			errs = multierr.Append(errs, eris.Wrapf(err, "reconciling cluster %v", cluster))
 		}
 	}
 	return errs

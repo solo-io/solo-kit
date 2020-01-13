@@ -13,9 +13,9 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/anyvendor/pkg/manager"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/stringutils"
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
@@ -104,7 +104,7 @@ func Generate(opts GenerateOptions) error {
 		workingRootRelative = "."
 	}
 	if filepath.IsAbs(workingRootRelative) {
-		return errors.Errorf("opts.RelativeRoot must be relative")
+		return eris.Errorf("opts.RelativeRoot must be relative")
 	}
 
 	modBytes, err := modutils.GetCurrentModPackageFile()
@@ -315,7 +315,7 @@ func (r *Runner) Run() error {
 
 		split := strings.SplitAfterN(project.ProjectConfig.GoPackage, "/", filepathValidLength)
 		if len(split) < filepathValidLength {
-			return errors.Errorf("projectConfig.GoPackage is not valid, %s", project.ProjectConfig.GoPackage)
+			return eris.Errorf("projectConfig.GoPackage is not valid, %s", project.ProjectConfig.GoPackage)
 		}
 		outDir := split[filepathValidLength-1]
 
@@ -331,16 +331,16 @@ func (r *Runner) Run() error {
 			switch {
 			case strings.HasSuffix(file.Filename, ".sh"):
 				if out, err := exec.Command("chmod", "+x", filepath.Join(workingRootAbsolute, path)).CombinedOutput(); err != nil {
-					return errors.Wrapf(err, "chmod failed: %s", out)
+					return eris.Wrapf(err, "chmod failed: %s", out)
 				}
 
 			case strings.HasSuffix(file.Filename, ".go"):
 				if out, err := exec.Command("gofmt", "-w", path).CombinedOutput(); err != nil {
-					return errors.Wrapf(err, "gofmt failed: %s", out)
+					return eris.Wrapf(err, "gofmt failed: %s", out)
 				}
 
 				if out, err := exec.Command("goimports", "-w", path).CombinedOutput(); err != nil {
-					return errors.Wrapf(err, "goimports failed: %s", out)
+					return eris.Wrapf(err, "goimports failed: %s", out)
 				}
 			}
 		}
@@ -381,7 +381,7 @@ func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
 	}
 	for _, file := range code {
 		if out, err := genMockForFile(file, outDir, absoluteRoot); err != nil {
-			return errors.Wrapf(err, "mockgen failed: %s", out)
+			return eris.Wrapf(err, "mockgen failed: %s", out)
 		}
 
 	}
@@ -483,7 +483,7 @@ func (r *Runner) importCustomResources(imports []string) ([]model.CustomResource
 			*/
 			split := strings.SplitAfterN(imp, "/", filepathWithVendorLength)
 			if len(split) < filepathWithVendorLength {
-				return nil, errors.Errorf("filepath is not valid, %s", imp)
+				return nil, eris.Errorf("filepath is not valid, %s", imp)
 			}
 			byt, err = ioutil.ReadFile(split[filepathWithVendorLength-1])
 			if err != nil {

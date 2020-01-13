@@ -1,0 +1,4 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: Update to go-utils 0.13.0, which removes the go-utils/errors package
+    issueLink: https://github.com/solo-io/solo-kit/issues/340

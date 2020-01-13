@@ -6,7 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	mocks2 "github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
 	mock_factory "github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/mocks"
@@ -22,7 +22,7 @@ var _ = Describe("ClusterClientGetter", func() {
 		client1, client2   *mocks2.MockResourceClient
 		cluster1, cluster2 = "one", "two"
 		cfg1, cfg2         = &rest.Config{Host: "foo"}, &rest.Config{Host: "foo"}
-		testErr            = errors.New("test error")
+		testErr            = eris.New("test error")
 	)
 
 	BeforeEach(func() {

@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/solo-io/go-utils/testutils"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -33,7 +34,7 @@ var _ = Describe("crd unit tests", func() {
 			Expect(registry.addCrd(baseCrd)).NotTo(HaveOccurred())
 			err := registry.addCrd(baseCrd)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(VersionExistsError(baseCrd.Version.Version)))
+			Expect(err).To(HaveInErrorChain(VersionExistsError(baseCrd.Version.Version)))
 		})
 		It("adding multiple crds of the same gk with different versions will work successfully", func() {
 			versionString := "crdversion"
@@ -99,12 +100,12 @@ var _ = Describe("crd unit tests", func() {
 			Expect(registry.addCrd(baseCrd)).NotTo(HaveOccurred())
 			_, err := registry.getMultiVersionCrd(schema.GroupKind{})
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(NotFoundError(schema.GroupKind{}.String())))
+			Expect(err).To(HaveInErrorChain(NotFoundError(schema.GroupKind{}.String())))
 			gvk := baseCrd.GroupVersionKind()
 			gvk.Version = "hello"
 			_, err = registry.getCrd(gvk)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(NotFoundError(gvk.String())))
+			Expect(err).To(HaveInErrorChain(NotFoundError(gvk.String())))
 		})
 	})
 
@@ -117,7 +118,7 @@ var _ = Describe("crd unit tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 			_, err = registry.getKubeCrd(mvCrd, gvk)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(InvalidGVKError(gvk)))
+			Expect(err).To(HaveInErrorChain(InvalidGVKError(gvk)))
 		})
 		It("can build the proper crd from multiple versions", func() {
 			crdNumber := 3
