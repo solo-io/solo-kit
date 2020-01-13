@@ -24,7 +24,7 @@ var (
 	registry *crdRegistry
 
 	VersionExistsError = func(version string) error {
-		return eris.Errorf("tried adding version %s, but it already exists")
+		return eris.Errorf("tried adding version %s, but it already exists", version)
 	}
 
 	NotFoundError = func(id string) error {
