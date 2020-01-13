@@ -1,7 +1,7 @@
 package namespace
 
 import (
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
@@ -29,7 +29,7 @@ func (g *namespaceResourceClientFactory) GetClient(cluster string, restConfig *r
 	kubeCache := g.cacheGetter.GetCache(cluster, restConfig)
 	typedCache, ok := kubeCache.(cache.KubeCoreCache)
 	if !ok {
-		return nil, errors.Errorf("expected KubeCoreCache, got %T", kubeCache)
+		return nil, eris.Errorf("expected KubeCoreCache, got %T", kubeCache)
 	}
 	return wrapper.NewClusterResourceClient(newResourceClient(kube, typedCache), cluster), nil
 }

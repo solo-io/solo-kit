@@ -3,7 +3,8 @@ package namespace
 import (
 	"sort"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/bugsnag/bugsnag-go/errors"
+	"github.com/rotisserie/eris"
 	kubenamespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
@@ -63,7 +64,7 @@ func ToKubeNamespace(resource resources.Resource) (*kubev1.Namespace, error) {
 
 func (rc *namespaceResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
-		return nil, errors.Wrapf(err, "validation error")
+		return nil, eris.Wrapf(err, "validation error")
 	}
 	opts = opts.WithDefaults()
 
@@ -72,12 +73,12 @@ func (rc *namespaceResourceClient) Read(namespace, name string, opts clients.Rea
 		if apierrors.IsNotFound(err) {
 			return nil, skerrors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "reading namespaceObj from kubernetes")
+		return nil, eris.Wrapf(err, "reading namespaceObj from kubernetes")
 	}
 	resource := FromKubeNamespace(namespaceObj)
 
 	if resource == nil {
-		return nil, errors.Errorf("namespaceObj %v is not kind %v", name, rc.Kind())
+		return nil, eris.Errorf("namespaceObj %v is not kind %v", name, rc.Kind())
 	}
 	return resource, nil
 }
@@ -85,7 +86,7 @@ func (rc *namespaceResourceClient) Read(namespace, name string, opts clients.Rea
 func (rc *namespaceResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	opts = opts.WithDefaults()
 	if err := resources.Validate(resource); err != nil {
-		return nil, errors.Wrapf(err, "validation error")
+		return nil, eris.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
 
@@ -108,11 +109,11 @@ func (rc *namespaceResourceClient) Write(resource resources.Resource, opts clien
 			return nil, skerrors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
 		if _, err := rc.Kube.CoreV1().Namespaces().Update(namespaceObj); err != nil {
-			return nil, errors.Wrapf(err, "updating kube namespaceObj %v", namespaceObj.Name)
+			return nil, eris.Wrapf(err, "updating kube namespaceObj %v", namespaceObj.Name)
 		}
 	} else {
 		if _, err := rc.Kube.CoreV1().Namespaces().Create(namespaceObj); err != nil {
-			return nil, errors.Wrapf(err, "creating kube namespaceObj %v", namespaceObj.Name)
+			return nil, eris.Wrapf(err, "creating kube namespaceObj %v", namespaceObj.Name)
 		}
 	}
 
@@ -130,7 +131,7 @@ func (rc *namespaceResourceClient) Delete(namespace, name string, opts clients.D
 	}
 
 	if err := rc.Kube.CoreV1().Namespaces().Delete(name, nil); err != nil {
-		return errors.Wrapf(err, "deleting namespaceObj %v", name)
+		return eris.Wrapf(err, "deleting namespaceObj %v", name)
 	}
 	return nil
 }
@@ -139,12 +140,12 @@ func (rc *namespaceResourceClient) List(namespace string, opts clients.ListOpts)
 	opts = opts.WithDefaults()
 
 	if rc.cache.NamespaceLister() == nil {
-		return nil, errors.New("to list namespaces you must watch all namespaces")
+		return nil, eris.New("to list namespaces you must watch all namespaces")
 	}
 
 	namespaceObjList, err := rc.cache.NamespaceLister().List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
-		return nil, errors.Wrapf(err, "listing namespaces level")
+		return nil, eris.Wrapf(err, "listing namespaces level")
 	}
 	var resourceList resources.ResourceList
 	for _, namespaceObj := range namespaceObjList {

@@ -43,10 +43,10 @@ require (
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
-	github.com/solo-io/go-utils v0.11.7
+	github.com/solo-io/go-utils v0.13.0
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	go.opencensus.io v0.22.1
-	go.uber.org/multierr v1.3.0
+	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
