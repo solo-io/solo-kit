@@ -18,6 +18,11 @@ import (
 var (
 	_ = errors.New("")
 	_ = fmt.Print
+	_ = binary.LittleEndian
+	_ = new(hash.Hash64)
+	_ = fnv.New64
+	_ = hashstructure.Hash
+	_ = new(safe_hasher.SafeHasher)
 )
 
 // Hash function
@@ -29,6 +34,9 @@ func (m *Metadata) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.Metadata")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err
@@ -118,6 +126,9 @@ func (m *Metadata_OwnerReference) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.Metadata_OwnerReference")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetApiVersion())); err != nil {
 		return 0, err
