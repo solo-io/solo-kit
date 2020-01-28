@@ -70,14 +70,14 @@ steps:
     id: 'gcloud-compute-zone'
 
   - name: gcr.io/cloud-builders/gcloud
-    args: ['container', 'clusters', 'get-credentials', 'solo-kit-multicluster-2']
-    id: 'gcloud-solo-kit-multicluster-2'
+    args: ['container', 'clusters', 'get-credentials', 'solo-kit-multicluster']
+    id: 'gcloud-solo-kit-multicluster'
 
   - name: gcr.io/cloud-builders/gcloud
     entrypoint: cp
     args:
       - /builder/home/.kube/config
-      - /builder/home/.kube/solo-kit-multicluster-2-config
+      - /builder/home/.kube/solo-kit-multicluster-config
     id: 'copy-multicluster-2-config'
 
   - name: gcr.io/cloud-builders/gcloud
@@ -99,7 +99,7 @@ steps:
       - 'SKIP_MOCK_GEN=1'
       - 'CLOUD_BUILD=1'
       - 'GOPATH=/workspace/gopath'
-      - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
+      - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-config'
     args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=10']
     volumes: *vol
     id: 'test'
