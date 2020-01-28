@@ -122,6 +122,10 @@ func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) 
 }
 
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
+
+	// to avoid race with watch on virtual service/notification stream
+	//time.Sleep(2 * time.Second)
+
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -140,6 +144,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			continue
 		}
 		resourceToWrite.SetStatus(status)
+	WriteResource:
 		res, writeErr := client.Write(resourceToWrite, clients.WriteOpts{
 			Ctx:               ctx,
 			OverwriteExisting: true,
@@ -153,10 +158,8 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 				if equal {
 					// same hash, something not important was done, try again:
 					updatedRes.(resources.InputResource).SetStatus(status)
-					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
-						Ctx:               ctx,
-						OverwriteExisting: true,
-					})
+					resourceToWrite = resources.Clone(updatedRes).(resources.InputResource)
+					goto WriteResource
 				}
 			} else {
 				logger.Warnw("error reading client to compare conflict when writing status", "error", readErr)
