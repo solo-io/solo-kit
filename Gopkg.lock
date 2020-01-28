@@ -157,12 +157,14 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:021029438e3e03f4f40da0009c95b579b1a61d814eddf8b8c5b798d447b7dc42"
+  digest = "1:5e280b2fb5f4ba98c5e27e430ecd64e868c78876e011c8f826839bda848cf5a6"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
     "proto",
     "protoc-gen-go/descriptor",
+    "protoc-gen-go/generator",
+    "protoc-gen-go/generator/internal/remap",
     "protoc-gen-go/plugin",
     "ptypes",
     "ptypes/any",
@@ -438,6 +440,17 @@
   version = "v2.3.0"
 
 [[projects]]
+  digest = "1:367e578e8aec4ae4949a7dc2dd3b961d721ceb61cebc3e636caac5bd20211e9f"
+  name = "github.com/lyft/protoc-gen-star"
+  packages = [
+    ".",
+    "lang/go",
+  ]
+  pruneopts = "UT"
+  revision = "069c3e1b02c79c8685b2f4e83c40e624b5fe8f13"
+  version = "v0.4.14"
+
+[[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -606,6 +619,34 @@
   pruneopts = "UT"
   revision = "01471632103fbbd9302f9d876d8c81db331081ee"
   version = "v0.11.0"
+
+[[projects]]
+  digest = "1:953c9822cb71f509fc682bd31c0c92edff3fd7527c178e6709035fdff8a4eb6b"
+  name = "github.com/solo-io/protoc-gen-ext"
+  packages = [
+    ".",
+    "extproto",
+    "extproto/gogoproto",
+    "module/equal",
+    "module/hash",
+    "pkg/hasher",
+    "templates",
+    "templates/go",
+  ]
+  pruneopts = "UT"
+  revision = "cf0e4f96f53c8c8cf563a0598985be8f9ad35138"
+  version = "v0.0.7"
+
+[[projects]]
+  digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem",
+  ]
+  pruneopts = "UT"
+  revision = "588a75ec4f32903aa5e39a2619ba6a4631e28424"
+  version = "v1.2.2"
 
 [[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
@@ -1353,6 +1394,9 @@
     "github.com/solo-io/go-utils/testutils/clusterlock",
     "github.com/solo-io/go-utils/testutils/kube",
     "github.com/solo-io/go-utils/versionutils/kubeapi",
+    "github.com/solo-io/protoc-gen-ext",
+    "github.com/solo-io/protoc-gen-ext/extproto",
+    "github.com/solo-io/protoc-gen-ext/pkg/hasher",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
