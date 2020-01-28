@@ -18,6 +18,11 @@ import (
 var (
 	_ = errors.New("")
 	_ = fmt.Print
+	_ = binary.LittleEndian
+	_ = new(hash.Hash64)
+	_ = fnv.New64
+	_ = hashstructure.Hash
+	_ = new(safe_hasher.SafeHasher)
 )
 
 // Hash function
@@ -29,6 +34,9 @@ func (m *AnotherMockResource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("testing.solo.io.github.com/solo-io/solo-kit/test/mocks/v1.AnotherMockResource")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(&m.Metadata).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -60,6 +68,9 @@ func (m *ClusterResource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("testing.solo.io.github.com/solo-io/solo-kit/test/mocks/v1.ClusterResource")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(&m.Metadata).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
