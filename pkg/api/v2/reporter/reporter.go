@@ -122,10 +122,6 @@ func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) 
 }
 
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
-
-	// to avoid race with watch on virtual service/notification stream
-	//time.Sleep(2 * time.Second)
-
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
