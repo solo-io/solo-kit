@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"context"
+	"k8s.io/client-go/util/retry"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
@@ -140,28 +141,32 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			continue
 		}
 		resourceToWrite.SetStatus(status)
-		res, writeErr := client.Write(resourceToWrite, clients.WriteOpts{
-			Ctx:               ctx,
-			OverwriteExisting: true,
-		})
-		if writeErr != nil && errors.IsResourceVersion(writeErr) {
+		var res resources.Resource
+		writeErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+			var writeErr error
+			res, writeErr = client.Write(resourceToWrite, clients.WriteOpts{
+				Ctx:               ctx,
+				OverwriteExisting: true,
+			})
+			if writeErr == nil {
+				return nil
+			}
 			updatedRes, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{
 				Ctx: ctx,
 			})
-			if readErr == nil {
-				equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
-				if equal {
-					// same hash, something not important was done, try again:
-					updatedRes.(resources.InputResource).SetStatus(status)
-					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
-						Ctx:               ctx,
-						OverwriteExisting: true,
-					})
-				}
-			} else {
-				logger.Warnw("error reading client to compare conflict when writing status", "error", readErr)
+			if readErr != nil {
+				return readErr
 			}
-		}
+			equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
+			if !equal {
+				// different hash, something important was done, do not try again:
+				return nil
+			}
+			updatedRes.(resources.InputResource).SetStatus(status)
+			resourceToWrite = updatedRes.(resources.InputResource)
+			return writeErr
+		})
+
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
 			logger.Warn(err)
