@@ -2,6 +2,7 @@ package reconcile
 
 import (
 	"context"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
@@ -56,41 +57,49 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResources resources.ResourceList, transition TransitionResourcesFunc) error {
 	var overwriteExisting bool
 	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
-	if original != nil {
-		// if this is an update,
-		// update resource version
-		// set status to 0, needs to be re-processed
-		overwriteExisting = true
-		resources.UpdateMetadata(desired, func(meta *core.Metadata) {
-			meta.ResourceVersion = original.GetMetadata().ResourceVersion
-		})
-		if desiredInput, ok := desired.(resources.InputResource); ok {
-			desiredInput.SetStatus(core.Status{})
-		}
-		// default transition policy: only perform an update if the Hash has changed
-		if transition == nil {
-			transition = func(original, desired resources.Resource) (b bool, e error) {
-				equal, ok := hashutils.HashableEqual(original, desired)
-				if ok {
-					return !equal, nil
-				}
 
-				// default behavior: perform the update if one if the objects are not hashable
-				return true, nil
-			}
-		}
-		if transition != nil {
-			needsUpdate, err := transition(original, desired)
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if original != nil {
+			// if this is an update,
+			// update resource version
+			// set status to 0, needs to be re-processed
+			overwriteExisting = true
+			var err error
+			original, err = r.rc.Read(original.GetMetadata().GetNamespace(), original.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
-			if !needsUpdate {
-				return nil
+			resources.UpdateMetadata(desired, func(meta *core.Metadata) {
+				meta.ResourceVersion = original.GetMetadata().ResourceVersion
+			})
+			if desiredInput, ok := desired.(resources.InputResource); ok {
+				desiredInput.SetStatus(core.Status{})
+			}
+			// default transition policy: only perform an update if the Hash has changed
+			if transition == nil {
+				transition = func(original, desired resources.Resource) (b bool, e error) {
+					equal, ok := hashutils.HashableEqual(original, desired)
+					if ok {
+						return !equal, nil
+					}
+
+					// default behavior: perform the update if one if the objects are not hashable
+					return true, nil
+				}
+			}
+			if transition != nil {
+				needsUpdate, err := transition(original, desired)
+				if err != nil {
+					return err
+				}
+				if !needsUpdate {
+					return nil
+				}
 			}
 		}
-	}
-	_, err := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: overwriteExisting})
-	return err
+		_, err := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: overwriteExisting})
+		return err
+	})
 }
 
 func deleteStaleResource(ctx context.Context, rc clients.ResourceClient, original resources.Resource) error {
