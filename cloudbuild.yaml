@@ -61,8 +61,8 @@ steps:
   entrypoint: cp
   args:
   - /builder/home/.kube/config
-  - /builder/home/.kube/solo-kit-multicluster-2-config
-  id: 'copy-multicluster-2-config'
+  - /builder/home/.kube/solo-kit-multicluster-config
+  id: 'copy-multicluster-config'
 
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'clusters', 'get-credentials', 'solo-kit-test']
@@ -81,7 +81,7 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'SKIP_MOCK_GEN=1'
   - 'CLOUD_BUILD=1'
-  - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-2-config'
+  - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-config'
   args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=2']
   dir: *dir
   id: 'test'
