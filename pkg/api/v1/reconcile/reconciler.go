@@ -59,7 +59,7 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 	var overwriteExisting, alreadyAttemptedUpdate bool
 	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
 
-	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+	return errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 
 		if alreadyAttemptedUpdate {
 			var err error

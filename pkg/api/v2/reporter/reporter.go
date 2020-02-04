@@ -143,7 +143,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 		resourceToWrite.SetStatus(status)
 		var res resources.Resource
-		writeErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
 			res, writeErr = client.Write(resourceToWrite, clients.WriteOpts{
 				Ctx:               ctx,
@@ -166,6 +166,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			}
 			updatedRes.(resources.InputResource).SetStatus(status)
 			resourceToWrite = updatedRes.(resources.InputResource)
+
 			return writeErr
 		})
 
