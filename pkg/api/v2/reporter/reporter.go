@@ -155,7 +155,8 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 				Ctx: ctx,
 			})
 			if readErr != nil {
-				return readErr
+				logger.Warnf("unable to read updated resource %v to get updated resource version", resourceToWrite.GetMetadata().Ref())
+				return writeErr
 			}
 			equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
 			if !equal {
