@@ -56,21 +56,20 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 }
 
 func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResources resources.ResourceList, transition TransitionResourcesFunc) error {
-	var overwriteExisting bool
+	var overwriteExisting, alreadyAttemptedUpdate bool
 	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
 
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		if original != nil {
-			if overwriteExisting {
-				// this is not the first time we are trying to reconcile, let's use the provided desired resource
-				// before attempting a read to get an updated resource version
-				var err error
-				original, err = r.rc.Read(original.GetMetadata().Namespace, original.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
-				if err != nil {
-					return err
-				}
-			}
 
+		if alreadyAttemptedUpdate {
+			var err error
+			original, err = r.rc.Read(original.GetMetadata().Namespace, original.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+			if err != nil {
+				return err
+			}
+		}
+
+		if original != nil {
 			// if this is an update,
 			// update resource version
 			// set status to 0, needs to be re-processed
@@ -104,6 +103,7 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 			}
 		}
 		_, err := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: overwriteExisting})
+		alreadyAttemptedUpdate = true
 		return err
 	})
 }
