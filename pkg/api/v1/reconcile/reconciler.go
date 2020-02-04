@@ -64,7 +64,7 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 				// this is the first time we are trying to reconcile, let's use the provided desired resource
 				// before attempting a read to get an updated resource version
 				var err error
-				original, err = r.rc.Read(original.GetMetadata().GetNamespace(), original.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+				original, err = r.rc.Read(original.GetMetadata().Namespace, original.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 				if err != nil {
 					return err
 				}
