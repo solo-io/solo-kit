@@ -2,8 +2,9 @@ package reporter
 
 import (
 	"context"
-	"k8s.io/client-go/util/retry"
 	"strings"
+
+	"k8s.io/client-go/util/retry"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
