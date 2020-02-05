@@ -3,6 +3,7 @@ package reporter_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -83,8 +84,8 @@ var _ = Describe("Reporter", func() {
 
 	Context("completely mocked resource client", func() {
 
-		var(
-			mockCtrl  *gomock.Controller
+		var (
+			mockCtrl             *gomock.Controller
 			mockedResourceClient *mocks.MockResourceClient
 		)
 
