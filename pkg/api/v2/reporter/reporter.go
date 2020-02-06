@@ -175,7 +175,7 @@ func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, res
 		if errors.IsResourceVersion(writeErr) {
 			// we don't want to return the unwrapped resource version writeErr if we also had a read error
 			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
-			return nil, resourceToWrite, errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict")
+			return nil, resourceToWrite, errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict; readErr %v", readErr)
 		}
 		return nil, resourceToWrite, writeErr
 	}
