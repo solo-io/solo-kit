@@ -57,37 +57,47 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 
 func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResources resources.ResourceList, transition TransitionResourcesFunc) error {
 	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
-
 	return errors.RetryOnConflict(retry.DefaultBackoff, func() error {
-		if original != nil {
-			// this is an update: update resource version, set status to 0, needs to be re-processed
-			desired = updateDesiredResourceVersionAndStatus(desired, original)
-			if transition == nil {
-				transition = defaultTransition
-			}
-			needsUpdate, err := transition(original, desired)
-			if err != nil {
-				return err // default transition will never error
-			}
-			if !needsUpdate {
-				return nil
-			}
+		var err error
+		original, err = attemptSyncResource(ctx, desired, original, r.rc, transition)
+		return err
+	})
+}
+
+func attemptSyncResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc) (resources.Resource, error) {
+	err := writeDesiredResource(ctx, desired, original, client, transition)
+	if err == nil {
+		return original, nil
+	}
+
+	var readErr error
+	original, readErr = refreshOriginalResource(ctx, client, desired)
+	// we don't want to return the unwrapped resource version writeErr if we also had a read error
+	// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
+	if readErr != nil && errors.IsResourceVersion(err) {
+		return original, errors.Wrapf(err, "unable to read updated resource, no reason to retry resource version conflict")
+	}
+
+	return original, err
+}
+
+func writeDesiredResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc) error {
+	if original != nil {
+		// this is an update: update resource version, set status to 0, needs to be re-processed
+		desired = updateDesiredResourceVersionAndStatus(desired, original)
+		if transition == nil {
+			transition = defaultTransition
 		}
-		_, writeErr := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-		if writeErr == nil {
+		needsUpdate, err := transition(original, desired)
+		if err != nil {
+			return err // default transition will never error
+		}
+		if !needsUpdate {
 			return nil
 		}
-
-		var readErr error
-		original, readErr = refreshOriginalResource(ctx, r.rc, desired)
-		// we don't want to return the unwrapped resource version writeErr if we also had a read error
-		// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
-		if readErr != nil {
-			return errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict")
-		}
-
-		return writeErr
-	})
+	}
+	_, writeErr := client.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+	return writeErr
 }
 
 func updateDesiredResourceVersionAndStatus(desired, original resources.Resource) resources.Resource {
