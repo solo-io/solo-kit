@@ -186,7 +186,7 @@ func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, res
 		return updatedRes, resourceToWrite, nil
 	}
 	updatedRes.(resources.InputResource).SetStatus(statusToWrite)
-	return writtenResource, updatedRes.(resources.InputResource), writeErr
+	return updatedRes, updatedRes.(resources.InputResource), writeErr
 }
 
 func statusFromReport(ref string, report Report, subresourceStatuses map[string]*core.Status) core.Status {
