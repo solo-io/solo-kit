@@ -169,7 +169,7 @@ var _ = Describe("Reconciler", func() {
 			mockResourceClient.Write(res, clients.WriteOpts{})
 
 			// use test client to check that Write is not called
-			mockReconciler = NewReconciler(&testResourceClient{errorOnWrite: true, base: mockResourceClient})
+			mockReconciler = NewReconciler(&testResourceClient{errorOnRead: true, errorOnWrite: true, base: mockResourceClient})
 			err := mockReconciler.Reconcile(namespace, resources.ResourceList{res}, func(original, desired resources.Resource) (b bool, e error) {
 				// always return true
 				return true, nil
@@ -182,6 +182,7 @@ var _ = Describe("Reconciler", func() {
 })
 
 type testResourceClient struct {
+	errorOnRead  bool
 	errorOnWrite bool
 	base         clients.ResourceClient
 }
@@ -199,7 +200,10 @@ func (c *testResourceClient) Register() error {
 }
 
 func (c *testResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
-	panic("implement me")
+	if c.errorOnRead {
+		return nil, errors.Errorf("read should not have been called")
+	}
+	return nil, nil
 }
 
 func (c *testResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {

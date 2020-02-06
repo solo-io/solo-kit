@@ -56,25 +56,12 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 }
 
 func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResources resources.ResourceList, transition TransitionResourcesFunc) error {
-	var overwriteExisting, alreadyAttemptedUpdate bool
 	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
 
 	return errors.RetryOnConflict(retry.DefaultBackoff, func() error {
-		var err error
-		original, err = refreshOriginalResource(ctx, r.rc, original, alreadyAttemptedUpdate)
-		if err != nil {
-			return err
-		}
-
 		if original != nil {
 			// this is an update: update resource version, set status to 0, needs to be re-processed
-			overwriteExisting = true
-			resources.UpdateMetadata(desired, func(meta *core.Metadata) {
-				meta.ResourceVersion = original.GetMetadata().ResourceVersion
-			})
-			if desiredInput, ok := desired.(resources.InputResource); ok {
-				desiredInput.SetStatus(core.Status{})
-			}
+			desired = updateDesiredResourceVersionAndStatus(desired, original)
 			if transition == nil {
 				transition = defaultTransition
 			}
@@ -86,10 +73,28 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 				return nil
 			}
 		}
-		_, err = r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: overwriteExisting})
-		alreadyAttemptedUpdate = true
-		return err
+		_, writeErr := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		if writeErr == nil {
+			return nil
+		}
+
+		// TODO(kdorosh) cap number of times we allow read errors with write errors on resource version
+		// e.g., no read permissions and try to write wrong resource version!
+		// also add to reporter
+		original = refreshOriginalResource(ctx, r.rc, desired)
+		return writeErr
 	})
+}
+
+func updateDesiredResourceVersionAndStatus(desired, original resources.Resource) resources.Resource {
+	resources.UpdateMetadata(desired, func(meta *core.Metadata) {
+		meta.ResourceVersion = original.GetMetadata().ResourceVersion
+	})
+	if desiredInput, ok := desired.(resources.InputResource); ok {
+		desiredInput.SetStatus(core.Status{})
+		desired = desiredInput
+	}
+	return desired
 }
 
 // default transition policy: only perform an update if the Hash has changed
@@ -103,15 +108,13 @@ func defaultTransition(original, desired resources.Resource) (b bool, e error) {
 	return true, nil
 }
 
-func refreshOriginalResource(ctx context.Context, client clients.ResourceClient, original resources.Resource, alreadyAttemptedUpdate bool) (resources.Resource, error) {
-	if alreadyAttemptedUpdate {
-		var err error
-		original, err = client.Read(original.GetMetadata().Namespace, original.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
-		if err != nil {
-			return nil, err
-		}
+func refreshOriginalResource(ctx context.Context, client clients.ResourceClient, desired resources.Resource) resources.Resource {
+	original, err := client.Read(desired.GetMetadata().Namespace, desired.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Warnf("unable to read updated resource %v to get updated resource version; %v", desired.GetMetadata().Ref(), err.Error())
+		return nil
 	}
-	return original, nil
+	return original
 }
 
 func deleteStaleResource(ctx context.Context, rc clients.ResourceClient, original resources.Resource) error {
