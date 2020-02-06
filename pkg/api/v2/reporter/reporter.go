@@ -144,10 +144,10 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		resourceToWrite.SetStatus(status)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
-			var writeErr error
-			updatedResource, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite)
-			if writeErr != nil && updatedResource != nil {
-				// updatedResource is not nil, so we successfully read an updated version of the resource we are
+			var writeErr, readErr error
+			updatedResource, writeErr, readErr = attemptUpdateStatus(ctx, client, resourceToWrite)
+			if writeErr != nil && readErr == nil {
+				// we successfully read an updated version of the resource we are
 				// trying to update. let's update resourceToWrite for the next iteration
 				equal, _ := hashutils.HashableEqual(updatedResource, resourceToWrite)
 				if !equal {
@@ -156,6 +156,12 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 				}
 				updatedResource.(resources.InputResource).SetStatus(status)
 				resourceToWrite = updatedResource.(resources.InputResource)
+			}
+
+			// we don't want to return the unwrapped resource version writeErr if we also had a read error
+			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
+			if readErr != nil && errors.IsResourceVersion(writeErr) {
+				return errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict")
 			}
 			return writeErr
 		})
@@ -175,17 +181,18 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 	return merr.ErrorOrNil()
 }
 
-func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resToWrite resources.InputResource) (resources.Resource, error) {
+// returns, in order, updatedResource, writeErr, readErr
+func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resToWrite resources.InputResource) (resources.Resource, error, error) {
 	writtenRes, writeErr := client.Write(resToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
-		return writtenRes, nil
+		return writtenRes, nil, nil
 	}
 	updatedRes, readErr := client.Read(resToWrite.GetMetadata().Namespace, resToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil {
 		contextutils.LoggerFrom(ctx).Warnf("unable to read updated resource %v to get updated resource version; %v", resToWrite.GetMetadata().Ref(), readErr.Error())
-		return nil, writeErr
+		return nil, writeErr, readErr
 	}
-	return updatedRes, writeErr
+	return updatedRes, writeErr, nil
 }
 
 func statusFromReport(ref string, report Report, subresourceStatuses map[string]*core.Status) core.Status {

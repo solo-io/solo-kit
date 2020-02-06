@@ -3,8 +3,8 @@ package reporter_test
 import (
 	"context"
 	"fmt"
-
 	"github.com/golang/mock/gomock"
+	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -95,6 +95,7 @@ var _ = Describe("Reporter", func() {
 			mockedResourceClient.EXPECT().Kind().Return("*v1.MockResource")
 			reporter = rep.NewReporter("test", mockedResourceClient)
 		})
+
 		It("handles multiple conflict", func() {
 			res := v1.NewMockResource("", "mocky")
 			resourceErrs := rep.ResourceReports{
@@ -114,6 +115,25 @@ var _ = Describe("Reporter", func() {
 
 			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("doesn't infinite retry on resource version write error and read errors (e.g., no read RBAC)", func() {
+			res := v1.NewMockResource("", "mocky")
+			resourceErrs := rep.ResourceReports{
+				res: rep.Report{Errors: fmt.Errorf("everyone makes mistakes")},
+			}
+
+			resVerErr := errors.NewResourceVersionErr("ns", "name", "given", "expected")
+
+			// first write fails due to resource version
+			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, resVerErr)
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, errors.Errorf("no read RBAC"))
+
+			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
+			Expect(err).To(HaveOccurred())
+			flattenedErrs := err.(*multierror.Error).WrappedErrors()
+			Expect(flattenedErrs).To(HaveLen(1))
+			Expect(flattenedErrs[0]).To(MatchError(ContainSubstring(resVerErr.Error())))
 		})
 	})
 })
