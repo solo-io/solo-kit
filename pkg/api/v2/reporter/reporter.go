@@ -147,6 +147,8 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			var writeErr error
 			updatedResource, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite)
 			if writeErr != nil && updatedResource != nil {
+				// updatedResource is not nil, so we successfully read an updated version of the resource we are
+				// trying to update. let's update resourceToWrite for the next iteration
 				equal, _ := hashutils.HashableEqual(updatedResource, resourceToWrite)
 				if !equal {
 					// different hash, something important was done, do not try again:
