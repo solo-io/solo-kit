@@ -177,7 +177,7 @@ func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, res
 		Ctx: ctx,
 	})
 	if readErr != nil {
-		contextutils.LoggerFrom(ctx).Warnf("unable to read updated resource %v to get updated resource version", resourceToWrite.GetMetadata().Ref())
+		contextutils.LoggerFrom(ctx).Warnf("unable to read updated resource %v to get updated resource version; %v", resourceToWrite.GetMetadata().Ref(), readErr.Error())
 		return updatedRes, resourceToWrite, writeErr
 	}
 	equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
