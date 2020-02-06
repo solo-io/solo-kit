@@ -56,11 +56,14 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 }
 
 func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResources resources.ResourceList, transition TransitionResourcesFunc) error {
+	var overwriteExisting bool
 	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
 
+	// TODO retry on isExist and conflict!
 	return errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if original != nil {
 			// this is an update: update resource version, set status to 0, needs to be re-processed
+			overwriteExisting = true
 			desired = updateDesiredResourceVersionAndStatus(desired, original)
 			if transition == nil {
 				transition = defaultTransition
@@ -73,15 +76,19 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 				return nil
 			}
 		}
-		_, writeErr := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		_, writeErr := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: overwriteExisting})
 		if writeErr == nil {
 			return nil
 		}
 
-		// TODO(kdorosh) cap number of times we allow read errors with write errors on resource version
-		// e.g., no read permissions and try to write wrong resource version!
-		// also add to reporter
-		original = refreshOriginalResource(ctx, r.rc, desired)
+		var readErr error
+		original, readErr = refreshOriginalResource(ctx, r.rc, desired)
+		// we don't want to return the unwrapped resource version writeErr if we also had a read error
+		// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
+		if readErr != nil {
+			return errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict")
+		}
+
 		return writeErr
 	})
 }
@@ -108,13 +115,13 @@ func defaultTransition(original, desired resources.Resource) (b bool, e error) {
 	return true, nil
 }
 
-func refreshOriginalResource(ctx context.Context, client clients.ResourceClient, desired resources.Resource) resources.Resource {
+func refreshOriginalResource(ctx context.Context, client clients.ResourceClient, desired resources.Resource) (resources.Resource, error) {
 	original, err := client.Read(desired.GetMetadata().Namespace, desired.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Warnf("unable to read updated resource %v to get updated resource version; %v", desired.GetMetadata().Ref(), err.Error())
-		return nil
+		return nil, err
 	}
-	return original
+	return original, nil
 }
 
 func deleteStaleResource(ctx context.Context, rc clients.ResourceClient, original resources.Resource) error {

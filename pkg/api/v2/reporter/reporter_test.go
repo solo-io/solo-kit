@@ -128,7 +128,7 @@ var _ = Describe("Reporter", func() {
 
 			// first write fails due to resource version
 			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, resVerErr)
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, errors.Errorf("no read RBAC"))
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, errors.Errorf("no read RBAC"))
 
 			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
 			Expect(err).To(HaveOccurred())
