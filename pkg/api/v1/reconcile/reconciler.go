@@ -56,13 +56,11 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 }
 
 func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResources resources.ResourceList, transition TransitionResourcesFunc) error {
-	var overwriteExisting bool
 	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
 
 	return errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if original != nil {
 			// this is an update: update resource version, set status to 0, needs to be re-processed
-			overwriteExisting = true
 			desired = updateDesiredResourceVersionAndStatus(desired, original)
 			if transition == nil {
 				transition = defaultTransition
@@ -75,7 +73,7 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 				return nil
 			}
 		}
-		_, writeErr := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: overwriteExisting})
+		_, writeErr := r.rc.Write(desired, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 		if writeErr == nil {
 			return nil
 		}
