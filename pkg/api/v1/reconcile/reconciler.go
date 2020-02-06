@@ -67,7 +67,7 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 			}
 			needsUpdate, err := transition(original, desired)
 			if err != nil {
-				return err
+				return err // default transition will never error
 			}
 			if !needsUpdate {
 				return nil
