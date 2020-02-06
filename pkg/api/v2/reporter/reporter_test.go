@@ -3,6 +3,7 @@ package reporter_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
