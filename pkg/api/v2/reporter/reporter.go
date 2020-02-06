@@ -144,9 +144,9 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		resourceToWrite.SetStatus(status)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
-			var err error
-			updatedResource, err = attemptUpdateStatus(ctx, client, resourceToWrite)
-			if err != nil && updatedResource != nil {
+			var writeErr error
+			updatedResource, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite)
+			if writeErr != nil && updatedResource != nil {
 				equal, _ := hashutils.HashableEqual(updatedResource, resourceToWrite)
 				if !equal {
 					// different hash, something important was done, do not try again:
@@ -155,7 +155,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 				updatedResource.(resources.InputResource).SetStatus(status)
 				resourceToWrite = updatedResource.(resources.InputResource)
 			}
-			return err
+			return writeErr
 		})
 
 		if writeErr != nil {
