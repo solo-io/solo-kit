@@ -187,10 +187,9 @@ func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, res
 		// different hash, something important was done, do not try again:
 		return updatedResource, resourceToWrite, nil
 	}
-	updatedResource.(resources.InputResource).SetStatus(resourceToWrite.GetStatus())
-	resourceToWrite = updatedResource.(resources.InputResource)
-
-	return updatedResource, resourceToWrite, writeErr
+	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
+	resourceToWriteUpdated.SetStatus(resourceToWrite.GetStatus())
+	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
 func statusFromReport(ref string, report Report, subresourceStatuses map[string]*core.Status) core.Status {
