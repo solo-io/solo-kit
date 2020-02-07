@@ -108,7 +108,6 @@ func updateDesiredResourceVersionAndStatus(desired, original resources.Resource)
 	})
 	if desiredInput, ok := desired.(resources.InputResource); ok {
 		desiredInput.SetStatus(core.Status{})
-		desired = desiredInput
 	}
 	return desired
 }
