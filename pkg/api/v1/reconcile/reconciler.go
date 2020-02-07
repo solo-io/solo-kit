@@ -71,10 +71,13 @@ func attemptSyncResource(ctx context.Context, desired, original resources.Resour
 	}
 
 	updatedOriginal, readErr := refreshOriginalResource(ctx, client, desired)
-	// we don't want to return the unwrapped resource version writeErr if we also had a read error
-	// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
-	if readErr != nil && errors.IsResourceVersion(err) {
-		return original, errors.Wrapf(err, "unable to read updated resource, no reason to retry resource version conflict; readErr: %v", readErr)
+	if readErr != nil {
+		if errors.IsResourceVersion(err) {
+			// we don't want to return the unwrapped resource version writeErr if we also had a read error
+			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
+			return original, errors.Wrapf(err, "unable to read updated resource, no reason to retry resource version conflict; readErr: %v", readErr)
+		}
+		return original, err
 	}
 
 	return updatedOriginal, err
