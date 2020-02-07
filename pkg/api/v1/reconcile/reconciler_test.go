@@ -1,11 +1,12 @@
 package reconcile_test
 
 import (
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/reconcile"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -100,6 +101,70 @@ var _ = Describe("Reconciler", func() {
 
 		Expect(mockList).To(HaveLen(0))
 	})
+
+	Context("completely mocked resource client", func() {
+
+		var (
+			mockCtrl              *gomock.Controller
+			mockedResourceClient  *mocks.MockResourceClient
+			mockResource          *v1.MockResource
+			originalMockResources resources.ResourceList
+			desiredMockResources  resources.ResourceList
+		)
+
+		BeforeEach(func() {
+			mockCtrl = gomock.NewController(GinkgoT())
+			mockedResourceClient = mocks.NewMockResourceClient(mockCtrl)
+			mockReconciler = NewReconciler(mockedResourceClient)
+
+			// original state of the world
+			mockResource = v1.NewMockResource(namespace, "name")
+			mockResource.Metadata.Labels = map[string]string{"ver": "v1"}
+			originalMockResources = resources.ResourceList{
+				mockResource,
+			}
+
+			// desired state of the world; must be different than original state so we try to write updated resources
+			desiredMockResource := v1.NewMockResource(namespace, "name")
+			desiredMockResource.Metadata.Labels = map[string]string{"ver": "v2"}
+			desiredMockResources = resources.ResourceList{
+				desiredMockResource,
+			}
+		})
+
+		It("handles multiple conflict", func() {
+			mockedResourceClient.EXPECT().List(gomock.Any(), gomock.Any()).Return(originalMockResources, nil)
+
+			// first write fails due to resource version
+			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
+			mockedResourceClient.EXPECT().Read(mockResource.Metadata.Namespace, mockResource.Metadata.Name, gomock.Any()).Return(mockResource, nil)
+
+			// we retry, and fail again on resource version error
+			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
+			mockedResourceClient.EXPECT().Read(mockResource.Metadata.Namespace, mockResource.Metadata.Name, gomock.Any()).Return(mockResource, nil)
+
+			// this time we succeed to write the status
+			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(mockResource, nil)
+
+			err := mockReconciler.Reconcile(namespace, desiredMockResources, nil, clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("doesn't infinite retry on resource version write error and read errors (e.g., no read RBAC)", func() {
+			resVerErr := errors.NewResourceVersionErr("ns", "name", "given", "expected")
+
+			mockedResourceClient.EXPECT().List(gomock.Any(), gomock.Any()).Return(originalMockResources, nil)
+
+			// first write fails due to resource version
+			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, resVerErr)
+			mockedResourceClient.EXPECT().Read(mockResource.Metadata.Namespace, mockResource.Metadata.Name, gomock.Any()).Return(nil, errors.Errorf("no read RBAC"))
+
+			err := mockReconciler.Reconcile(namespace, desiredMockResources, nil, clients.ListOpts{})
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring(resVerErr.Error())))
+		})
+	})
+
 	Context("nil transition function passed", func() {
 		It("does not re-write resources which are identical", func() {
 
@@ -120,7 +185,7 @@ var _ = Describe("Reconciler", func() {
 			mockResourceClient.Write(res, clients.WriteOpts{})
 
 			// use test client to check that Write is not called
-			mockReconciler = NewReconciler(&testResourceClient{errorOnWrite: true, base: mockResourceClient})
+			mockReconciler = NewReconciler(&testResourceClient{errorOnRead: true, errorOnWrite: true, base: mockResourceClient})
 			err := mockReconciler.Reconcile(namespace, resources.ResourceList{res}, func(original, desired resources.Resource) (b bool, e error) {
 				// always return true
 				return true, nil
@@ -133,6 +198,7 @@ var _ = Describe("Reconciler", func() {
 })
 
 type testResourceClient struct {
+	errorOnRead  bool
 	errorOnWrite bool
 	base         clients.ResourceClient
 }
@@ -150,7 +216,10 @@ func (c *testResourceClient) Register() error {
 }
 
 func (c *testResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
-	panic("implement me")
+	if c.errorOnRead {
+		return nil, errors.Errorf("read should not have been called")
+	}
+	return nil, nil
 }
 
 func (c *testResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {

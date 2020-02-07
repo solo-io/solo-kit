@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: Retry resource reconciliation on resource version errors
+    issueLink: https://github.com/solo-io/solo-kit/issues/345
+  - type: FIX
+    description: Retry resource writes in v2 reporter
+    issueLink: https://github.com/solo-io/solo-kit/issues/345
