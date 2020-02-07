@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"k8s.io/client-go/util/retry"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -140,28 +142,13 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			continue
 		}
 		resourceToWrite.SetStatus(status)
-		res, writeErr := client.Write(resourceToWrite, clients.WriteOpts{
-			Ctx:               ctx,
-			OverwriteExisting: true,
+		var updatedResource resources.Resource
+		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
+			var writeErr error
+			updatedResource, resourceToWrite, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite)
+			return writeErr
 		})
-		if writeErr != nil && errors.IsResourceVersion(writeErr) {
-			updatedRes, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{
-				Ctx: ctx,
-			})
-			if readErr == nil {
-				equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
-				if equal {
-					// same hash, something not important was done, try again:
-					updatedRes.(resources.InputResource).SetStatus(status)
-					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
-						Ctx:               ctx,
-						OverwriteExisting: true,
-					})
-				}
-			} else {
-				logger.Warnw("error reading client to compare conflict when writing status", "error", readErr)
-			}
-		}
+
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
 			logger.Warn(err)
@@ -169,12 +156,40 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			continue
 		}
 		resources.UpdateMetadata(resource, func(meta *core.Metadata) {
-			meta.ResourceVersion = res.GetMetadata().ResourceVersion
+			meta.ResourceVersion = updatedResource.GetMetadata().ResourceVersion
 		})
 
-		logger.Debugf("wrote report %v : %v", resourceToWrite.GetMetadata().Ref(), status)
+		logger.Debugf("wrote report %v : %v", updatedResource.GetMetadata().Ref(), status)
 	}
 	return merr.ErrorOrNil()
+}
+
+func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+	if writeErr == nil {
+		return updatedResource, resourceToWrite, nil
+	}
+	var readErr error
+	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+	if readErr != nil {
+		if errors.IsResourceVersion(writeErr) {
+			// we don't want to return the unwrapped resource version writeErr if we also had a read error
+			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
+			return nil, resourceToWrite, errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict; readErr %v", readErr)
+		}
+		return nil, resourceToWrite, writeErr
+	}
+
+	// we successfully read an updated version of the resource we are
+	// trying to update. let's update resourceToWrite for the next iteration
+	equal, _ := hashutils.HashableEqual(updatedResource, resourceToWrite)
+	if !equal {
+		// different hash, something important was done, do not try again:
+		return updatedResource, resourceToWrite, nil
+	}
+	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
+	resourceToWriteUpdated.SetStatus(resourceToWrite.GetStatus())
+	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
 func statusFromReport(ref string, report Report, subresourceStatuses map[string]*core.Status) core.Status {
