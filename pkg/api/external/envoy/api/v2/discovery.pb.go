@@ -58,7 +58,7 @@ type DiscoveryRequest struct {
 	// or 2) the client has not yet accepted an update in this xDS stream (unlike
 	// delta, where it is populated only for new explicit ACKs).
 	ResponseNonce string `protobuf:"bytes,5,opt,name=response_nonce,json=responseNonce,proto3" json:"response_nonce,omitempty"`
-	// This is populated when the previous :ref:`DiscoveryResponse <envoy_api_msg_DiscoveryResponse>`
+	// This is populated when the previous `DiscoveryResponse (envoy_api_msg_DiscoveryResponse)`
 	// failed to update configuration. The *message* field in *error_details* provides the Envoy
 	// internal exception related to the failure. It is only intended for consumption during manual
 	// debugging, the string provided is not guaranteed to be stable across Envoy versions.
@@ -316,7 +316,7 @@ type DeltaDiscoveryRequest struct {
 	// nonce in the DeltaDiscoveryResponse.
 	// Otherwise (unlike in DiscoveryRequest) response_nonce must be omitted.
 	ResponseNonce string `protobuf:"bytes,6,opt,name=response_nonce,json=responseNonce,proto3" json:"response_nonce,omitempty"`
-	// This is populated when the previous :ref:`DiscoveryResponse <envoy_api_msg_DiscoveryResponse>`
+	// This is populated when the previous `DiscoveryResponse (envoy_api_msg_DiscoveryResponse)`
 	// failed to update configuration. The *message* field in *error_details*
 	// provides the Envoy internal exception related to the failure.
 	ErrorDetail          *rpc.Status `protobuf:"bytes,7,opt,name=error_detail,json=errorDetail,proto3" json:"error_detail,omitempty"`
