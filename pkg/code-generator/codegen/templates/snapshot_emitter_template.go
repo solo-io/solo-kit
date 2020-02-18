@@ -211,7 +211,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 					return
 {{- range .Resources}}
 {{- if (not .ClusterScoped) }}
-				case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}NamespacesChan:
+				case {{ lower_camel .Name }}List, ok := <- {{ lower_camel .Name }}NamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
@@ -287,21 +290,28 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 		for {
 			record := func(){stats.Record(ctx, m{{ $resource_group }}SnapshotIn.M(1))}
+			defer func() {
+				close(snapshots)
+				// we must wait for done before closing the error chan,
+				// to avoid sending on close channel.
+				done.Wait()
+				close(errs)
+			}()
 			
 			select {
 			case <-timer.C:
 				sync()
 			case <-ctx.Done():
-				close(snapshots)
-				done.Wait()
-				close(errs)
 				return
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
 {{- range .Resources}}
 {{- if .ClusterScoped }}
-			case {{ lower_camel .Name }}List := <- {{ lower_camel .Name }}Chan:
+			case {{ lower_camel .Name }}List, ok := <- {{ lower_camel .Name }}Chan:
+				if !ok {
+					return
+				}
 				record()
 
 				skstats.IncrementResourceCount(
@@ -313,7 +323,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List
 {{- else }}
-			case {{ lower_camel .Name }}NamespacedList := <- {{ lower_camel .Name }}Chan:
+			case {{ lower_camel .Name }}NamespacedList, ok := <- {{ lower_camel .Name }}Chan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := {{ lower_camel .Name }}NamespacedList.namespace
