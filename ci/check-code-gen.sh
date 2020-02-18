@@ -22,7 +22,7 @@ if [[ $? -ne 0 ]]; then
 fi
 if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
   echo "Generating code produced a non-empty diff."
-  echo "Try running 'dep ensure && make install-codegen-deps generated-code -B' then re-pushing."
+  echo "Try running 'make update-deps generated-code -B' then re-pushing."
   git status --porcelain
   git diff | cat
   exit 1;
