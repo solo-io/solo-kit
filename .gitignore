@@ -16,7 +16,7 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
-vendor/
+vendor*
 _output/
 /solo-kit-gen
 /doc-gen-test-*

@@ -19,8 +19,8 @@ steps:
     entrypoint: 'bash'
     args: ['-c', 'mkdir -p ./gopath/pkg && cd ./gopath/pkg && gsutil cat gs://$PROJECT_ID-cache/solo-kit/solo-kit-mod.tar.gz | tar -xzf -']
     volumes: &vol
-    - name: 'gopath'
-      path: '/workspace/gopath/pkg/mod'
+      - name: 'gopath'
+        path: '/workspace/gopath/pkg/mod'
     id: 'untar-mod-cache'
     waitFor: ['-']
   # donwload massive container in parallel
@@ -111,7 +111,7 @@ steps:
     id: 'build-cli'
     volumes: *vol
     env:
-    - 'GOPATH=/workspace/gopath'
+      - 'GOPATH=/workspace/gopath'
 
   - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
     args: ['solo-kit-gen']
@@ -120,11 +120,11 @@ steps:
     id: 'build-codegen'
     volumes: *vol
     env:
-    - 'GOPATH=/workspace/gopath'
+      - 'GOPATH=/workspace/gopath'
 
 timeout: 1500s
 tags: ['solo-kit']
 options:
   machineType: 'N1_HIGHCPU_32'
   env:
-  - "GO111MODULE=on"
+    - "GO111MODULE=on"
