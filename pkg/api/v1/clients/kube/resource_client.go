@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/test/debugprint"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
@@ -336,6 +337,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	errs := make(chan error)
 	ctx := opts.Ctx
 
+	var previous *resources.ResourceList
 	updateResourceList := func() {
 		list, err := rc.List(namespace, clients.ListOpts{
 			Ctx:      ctx,
@@ -345,6 +347,20 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 			errs <- err
 			return
 		}
+
+		if previous != nil {
+			og := debugprint.SprintAny(list)
+			new := debugprint.SprintAny(*previous)
+			if og == new {
+				return // deep equal appears to work on upstreams, this not needed?
+			}
+
+			if list.Equal(*previous) {
+				return
+			}
+		}
+		previous = &list
+
 		select {
 		case resourcesChan <- list:
 		default:
@@ -370,7 +386,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 
 		// Perform an initial list operation
 
-		timer := time.NewTicker(time.Second)
+		timer := time.NewTicker(1 * time.Second)
 		defer timer.Stop()
 
 		// watch should open up with an initial read

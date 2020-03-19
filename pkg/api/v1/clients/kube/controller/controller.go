@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/solo-io/go-utils/log"
@@ -10,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/yaml"
 )
 
 // This custom Kubernetes controller is used to provide a shared caching mechanism for the solo-kit resource clients.
@@ -187,9 +189,32 @@ func (c *Controller) enqueueSync(t eventType, old, new interface{}) {
 		runtime.HandleError(err)
 		return
 	}
+
+	// we should ensure event is namespaced to our watch namespaces!
+	if strings.Contains(key, "kube-system") {
+		fmt.Println("skipping due to kube system event")
+		return
+	}
+
+	og := SprintAny(old)
+	newyam := SprintAny(new)
+	if og == newyam {
+		fmt.Println("skipping due to equivalent events")
+		return
+	}
+
 	// TODO: create multiple verbosity levels
-	if false {
-		log.Debugf("[%s] EVENT: %s: %s", c.name, e.eventType, key)
+	if true {
+		log.Warnf("[%s] EVENT: %s: %s, old: %v new: %v", c.name, e.eventType, key, old, new)
 	}
 	c.workQueue.AddRateLimited(e)
+}
+
+func SprintAny(any ...interface{}) string {
+	var yams []string
+	for _, res := range any {
+		yam, _ := yaml.Marshal(res)
+		yams = append(yams, string(yam))
+	}
+	return strings.Join(yams, "\n---\n")
 }
