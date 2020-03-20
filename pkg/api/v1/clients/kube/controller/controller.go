@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -175,6 +176,13 @@ func (c *Controller) eventHandlerFunctions() cache.ResourceEventHandlerFuncs {
 }
 
 // Adds events to the work queue
+// be careful, if we get and enqueue too many than our memory usage can skyrocket
+// this happens even as we start up pods, we can see memory usage go up before coming back down
+// for example, 50 namespaces with 50 services each, discovery will go from 200mb to 600mb+,
+// before coming back down.
+// if we aren't good about skipping some events, then we can't keep up and our queue will forever increase in size,
+// until eviction
+// perhaps we should consider dropping events if we still get overloaded (even after ignoring some)
 func (c *Controller) enqueueSync(t eventType, old, new interface{}) {
 	e := &event{
 		eventType: t,
@@ -189,27 +197,31 @@ func (c *Controller) enqueueSync(t eventType, old, new interface{}) {
 		runtime.HandleError(err)
 		return
 	}
-
-	// we should ensure event is namespaced to our watch namespaces!
-	if strings.Contains(key, "kube-system") {
-		fmt.Println("skipping due to kube system event")
+	// if no relevant changes were made, no reason to queue up work
+	if reflect.DeepEqual(old, new) {
 		return
 	}
 
-	og := SprintAny(old)
-	newyam := SprintAny(new)
-	if og == newyam {
-		fmt.Println("skipping due to equivalent events")
+	oldYaml := SprintAny(old)
+	newYaml := SprintAny(new)
+	if oldYaml == newYaml {
+		return // reflect deep equals appears to work here, may want to remove this
+	}
+
+	// being more safe than we have to be.. remove??
+	// we should ensure event is namespaced to our watch namespaces!
+	if strings.Contains(key, "kube-system") {
 		return
 	}
 
 	// TODO: create multiple verbosity levels
-	if true {
-		log.Warnf("[%s] EVENT: %s: %s, old: %v new: %v", c.name, e.eventType, key, old, new)
+	if false {
+		log.Debugf("[%s] EVENT: %s: %s", c.name, e.eventType, key)
 	}
 	c.workQueue.AddRateLimited(e)
 }
 
+// TODO(kdorosh) put in utils somewhere
 func SprintAny(any ...interface{}) string {
 	var yams []string
 	for _, res := range any {

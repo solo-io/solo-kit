@@ -3,7 +3,6 @@
 package kubernetes
 
 import (
-	"fmt"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -105,7 +104,6 @@ func (client *kubeNamespaceClient) Watch(opts clients.WatchOpts) (<-chan KubeNam
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				fmt.Println(resourceList)
 				kubenamespacesChan <- convertToKubeNamespace(resourceList)
 			case <-opts.Ctx.Done():
 				close(kubenamespacesChan)

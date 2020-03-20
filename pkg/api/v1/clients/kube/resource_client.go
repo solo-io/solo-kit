@@ -3,11 +3,11 @@ package kube
 import (
 	"context"
 	"reflect"
+	"sigs.k8s.io/yaml"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/test/debugprint"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
@@ -349,9 +349,9 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		}
 
 		if previous != nil {
-			og := debugprint.SprintAny(list)
-			new := debugprint.SprintAny(*previous)
-			if og == new {
+			oldYaml := SprintAny(list)
+			newYaml := SprintAny(*previous)
+			if oldYaml == newYaml {
 				return // deep equal appears to work on upstreams, this not needed?
 			}
 
@@ -386,7 +386,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 
 		// Perform an initial list operation
 
-		timer := time.NewTicker(1 * time.Second)
+		timer := time.NewTicker(time.Second)
 		defer timer.Stop()
 
 		// watch should open up with an initial read
@@ -466,4 +466,14 @@ func matchesTargetNamespace(targetNs, resourceNs string) bool {
 		return true
 	}
 	return targetNs == resourceNs
+}
+
+// TODO(kdorosh) put in utils somewhere
+func SprintAny(any ...interface{}) string {
+	var yams []string
+	for _, res := range any {
+		yam, _ := yaml.Marshal(res)
+		yams = append(yams, string(yam))
+	}
+	return strings.Join(yams, "\n---\n")
 }
