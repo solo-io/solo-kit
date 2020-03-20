@@ -48,7 +48,7 @@ func NewController(
 
 // Starts the controller by:
 //
-// 1. Registering the event handler with each if the informers
+// 1. Registering the event handler with each of the informers
 // 2. Starting each informer
 // 3. Wait for the informer caches to sync
 // 4. Starting a number of parallel workers equal to the "parallelism" parameter
@@ -176,7 +176,7 @@ func (c *Controller) eventHandlerFunctions() cache.ResourceEventHandlerFuncs {
 }
 
 // Adds events to the work queue
-// be careful, if we get and enqueue too many than our memory usage can skyrocket
+// be careful, if we get and enqueue too many events then our memory usage can skyrocket
 // this happens even as we start up pods, we can see memory usage go up before coming back down
 // for example, 50 namespaces with 50 services each, discovery will go from 200mb to 600mb+,
 // before coming back down.
