@@ -3,10 +3,11 @@ package kube
 import (
 	"context"
 	"reflect"
-	"sigs.k8s.io/yaml"
 	"sort"
 	"strings"
 	"time"
+
+	"sigs.k8s.io/yaml"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
