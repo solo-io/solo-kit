@@ -157,6 +157,37 @@ var _ = Describe("Test KubeController", func() {
 
 			Expect(count).To(BeEquivalentTo(2))
 		})
+
+		PIt("resyncs every period at scale", func() {
+			// Put an object into the store so the ListWatch has something to list
+			scale := 50
+			for i := 0; i < scale; i++ {
+				Expect(util.CreateMockResource(clientset, namespace1, "res-"+string(i), "test")).To(BeNil())
+			}
+			// drain channel from creation event to have accurate resync count
+		DRAIN:
+			for {
+				select {
+				case <-resultChan:
+				default:
+					break DRAIN
+				}
+			}
+
+			count := 0
+			after := time.After(2200 * time.Millisecond)
+		LOOP:
+			for {
+				select {
+				case <-resultChan:
+					count = count + 1
+				case <-after:
+					break LOOP
+				}
+			}
+
+			Expect(count).To(BeEquivalentTo(3 * scale))
+		})
 	})
 
 	Context("two registered informers", func() {

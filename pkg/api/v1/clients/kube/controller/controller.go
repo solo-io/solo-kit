@@ -45,7 +45,7 @@ func NewController(
 
 // Starts the controller by:
 //
-// 1. Registering the event handler with each if the informers
+// 1. Registering the event handler with each of the informers
 // 2. Starting each informer
 // 3. Wait for the informer caches to sync
 // 4. Starting a number of parallel workers equal to the "parallelism" parameter
@@ -80,7 +80,8 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 	// Start workers in goroutine so we can defer the queue shutdown
 	go func() {
 		defer c.workQueue.ShutDown()
-		log.Debugf("Starting workers")
+		log.Debugf("Starting worker! controller: %v, %v, informers: %v", c.name, c, c.informers)
+		fmt.Println(fmt.Sprintf("Starting worker! controller: %v, %v, informers: %v", c.name, c, c.informers))
 
 		// Launch parallel workers to process resources
 		for i := 0; i < parallelism; i++ {
@@ -92,6 +93,7 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 
 		<-stopCh
 		log.Debugf("Stopping workers")
+		fmt.Println(fmt.Sprintf("Stopping worker! controller: %v, %v, informers: %v", c.name, c, c.informers))
 	}()
 
 	return nil
@@ -109,6 +111,11 @@ func (c *Controller) processNextWorkItem() bool {
 	obj, shutdown := c.workQueue.Get()
 
 	if shutdown {
+		//if c.workQueue.Len() > 0 {
+		//	fmt.Println("emptying workqueue")
+		//	// we want to empty the workqueue before it shuts down so we don't leak event objects
+		//	return true
+		//}
 		return false
 	}
 
@@ -121,29 +128,57 @@ func (c *Controller) processNextWorkItem() bool {
 		// put back on the workqueue and attempted again after a back-off
 		// period.
 		defer c.workQueue.Done(obj)
-		var w *event
-		var ok bool
 		// We expect strings to come off the workqueue. These are of the
 		// form namespace/name. We do this as the delayed nature of the
 		// workqueue means the items in the informer cache may actually be
 		// more up to date that when the item was initially put onto the
 		// workqueue.
-		if w, ok = obj.(*event); !ok {
-			// As the item in the workqueue is actually invalid, we call
-			// Forget here else we'd go into a loop of attempting to
-			// process a work item that is invalid.
-			c.workQueue.Forget(obj)
-			runtime.HandleError(fmt.Errorf("expected event type in workqueue but got %#v", obj))
-			return nil
+
+		var val interface{}
+		var exists bool
+		for _, informer := range c.informers {
+			var err error
+			//TODO(kdorosh) we can't just loop over all of them, need to know the GVK as well..
+			val, exists, err = informer.GetIndexer().GetByKey(obj.(string))
+			if err != nil {
+				// As the item in the workqueue is actually invalid, we call
+				// Forget here else we'd go into a loop of attempting to
+				// process a work item that is invalid.
+				c.workQueue.Forget(obj)
+				runtime.HandleError(fmt.Errorf("expected event type in workqueue but got %#v", obj))
+				return nil
+			}
+
+			if exists {
+				break
+			}
 		}
-		switch w.eventType {
-		case added:
-			c.handler.OnAdd(w.new)
-		case updated:
-			c.handler.OnUpdate(w.old, w.new)
-		case deleted:
-			c.handler.OnDelete(w.new)
-		}
+
+		if exists {
+			c.handler.OnUpdate(val, val)
+		} else {
+			c.handler.OnDelete(val)
+		} // TODO(kdorosh)
+
+		//if w, ok = obj.(*event); !ok {
+		//	// As the item in the workqueue is actually invalid, we call
+		//	// Forget here else we'd go into a loop of attempting to
+		//	// process a work item that is invalid.
+		//	c.workQueue.Forget(obj)
+		//	runtime.HandleError(fmt.Errorf("expected event type in workqueue but got %#v", obj))
+		//	return nil
+		//}
+
+		//c.handler.OnAdd(val)
+
+		//switch w.eventType {
+		//case added:
+		//	c.handler.OnAdd(val)
+		//case updated:
+		//	c.handler.OnUpdate(val, val) //TODO(kdorosh)
+		//case deleted:
+		//	c.handler.OnDelete(val)
+		//}
 
 		c.workQueue.Forget(obj)
 		return nil
@@ -161,13 +196,27 @@ func (c *Controller) processNextWorkItem() bool {
 func (c *Controller) eventHandlerFunctions() cache.ResourceEventHandlerFuncs {
 	return cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueSync(added, nil, obj)
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				c.workQueue.AddRateLimited(key)
+			}
+			//c.enqueueSync(added, nil, obj)
 		},
 		UpdateFunc: func(old, new interface{}) {
-			c.enqueueSync(updated, old, new)
+			key, err := cache.MetaNamespaceKeyFunc(new)
+			if err == nil {
+				c.workQueue.AddRateLimited(key)
+			}
+			//c.enqueueSync(updated, old, new)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueSync(deleted, nil, obj)
+			// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+			// key function.
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err == nil {
+				c.workQueue.AddRateLimited(key)
+			}
+			//c.enqueueSync(deleted, nil, obj)
 		},
 	}
 }
@@ -179,6 +228,18 @@ func (c *Controller) enqueueSync(t eventType, old, new interface{}) {
 		old:       old,
 		new:       new,
 	}
+
+	if old == new {
+		// these are the same object, ignore!
+		fmt.Println("same obj")
+		//return
+	}
+	if old != new && e.eventType == "updated" {
+		fmt.Println("diff obj")
+	}
+
+	fmt.Println(fmt.Sprintf("controller: %v, workqueue %v, size: %v, item: %v, num requeues: %v", c, c.workQueue, c.workQueue.Len(), e, c.workQueue.NumRequeues(e)))
+
 	// logger the meta key for the obj
 	// currently unused otherwise
 	var key string
