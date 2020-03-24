@@ -60,7 +60,7 @@ func NewLockingCallbackHandler(callback func(v1.Resource)) cache.ResourceEventHa
 			callback(toResource(obj))
 			mu.Unlock()
 		},
-		// Disregard  the old version of the resource
+		// Disregard the old version of the resource
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			mu.Lock()
 			callback(toResource(newObj))

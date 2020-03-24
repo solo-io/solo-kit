@@ -80,8 +80,7 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 	// Start workers in goroutine so we can defer the queue shutdown
 	go func() {
 		defer c.workQueue.ShutDown()
-		log.Debugf("Starting worker! controller: %v, %v, informers: %v", c.name, c, c.informers)
-		fmt.Println(fmt.Sprintf("Starting worker! controller: %v, %v, informers: %v", c.name, c, c.informers))
+		log.Debugf("Starting workers")
 
 		// Launch parallel workers to process resources
 		for i := 0; i < parallelism; i++ {
@@ -93,7 +92,6 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 
 		<-stopCh
 		log.Debugf("Stopping workers")
-		fmt.Println(fmt.Sprintf("Stopping worker! controller: %v, %v, informers: %v", c.name, c, c.informers))
 	}()
 
 	return nil
@@ -111,11 +109,6 @@ func (c *Controller) processNextWorkItem() bool {
 	obj, shutdown := c.workQueue.Get()
 
 	if shutdown {
-		//if c.workQueue.Len() > 0 {
-		//	fmt.Println("emptying workqueue")
-		//	// we want to empty the workqueue before it shuts down so we don't leak event objects
-		//	return true
-		//}
 		return false
 	}
 
@@ -155,30 +148,10 @@ func (c *Controller) processNextWorkItem() bool {
 		}
 
 		if exists {
-			c.handler.OnUpdate(val, val)
+			c.handler.OnUpdate(val, val) // TODO(kdorosh), handle OnAdd, don't send same value for old & new OnUpdate
 		} else {
 			c.handler.OnDelete(val)
-		} // TODO(kdorosh)
-
-		//if w, ok = obj.(*event); !ok {
-		//	// As the item in the workqueue is actually invalid, we call
-		//	// Forget here else we'd go into a loop of attempting to
-		//	// process a work item that is invalid.
-		//	c.workQueue.Forget(obj)
-		//	runtime.HandleError(fmt.Errorf("expected event type in workqueue but got %#v", obj))
-		//	return nil
-		//}
-
-		//c.handler.OnAdd(val)
-
-		//switch w.eventType {
-		//case added:
-		//	c.handler.OnAdd(val)
-		//case updated:
-		//	c.handler.OnUpdate(val, val) //TODO(kdorosh)
-		//case deleted:
-		//	c.handler.OnDelete(val)
-		//}
+		}
 
 		c.workQueue.Forget(obj)
 		return nil
@@ -200,14 +173,12 @@ func (c *Controller) eventHandlerFunctions() cache.ResourceEventHandlerFuncs {
 			if err == nil {
 				c.workQueue.AddRateLimited(key)
 			}
-			//c.enqueueSync(added, nil, obj)
 		},
 		UpdateFunc: func(old, new interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(new)
 			if err == nil {
 				c.workQueue.AddRateLimited(key)
 			}
-			//c.enqueueSync(updated, old, new)
 		},
 		DeleteFunc: func(obj interface{}) {
 			// IndexerInformer uses a delta queue, therefore for deletes we have to use this
@@ -216,41 +187,6 @@ func (c *Controller) eventHandlerFunctions() cache.ResourceEventHandlerFuncs {
 			if err == nil {
 				c.workQueue.AddRateLimited(key)
 			}
-			//c.enqueueSync(deleted, nil, obj)
 		},
 	}
-}
-
-// Adds events to the work queue
-func (c *Controller) enqueueSync(t eventType, old, new interface{}) {
-	e := &event{
-		eventType: t,
-		old:       old,
-		new:       new,
-	}
-
-	if old == new {
-		// these are the same object, ignore!
-		fmt.Println("same obj")
-		//return
-	}
-	if old != new && e.eventType == "updated" {
-		fmt.Println("diff obj")
-	}
-
-	fmt.Println(fmt.Sprintf("controller: %v, workqueue %v, size: %v, item: %v, num requeues: %v", c, c.workQueue, c.workQueue.Len(), e, c.workQueue.NumRequeues(e)))
-
-	// logger the meta key for the obj
-	// currently unused otherwise
-	var key string
-	var err error
-	if key, err = cache.MetaNamespaceKeyFunc(e.new); err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	// TODO: create multiple verbosity levels
-	if false {
-		log.Debugf("[%s] EVENT: %s: %s", c.name, e.eventType, key)
-	}
-	c.workQueue.AddRateLimited(e)
 }
