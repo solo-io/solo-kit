@@ -82,7 +82,7 @@ steps:
   - 'SKIP_MOCK_GEN=1'
   - 'CLOUD_BUILD=1'
   - 'ALT_CLUSTER_KUBECONFIG=/builder/home/.kube/solo-kit-multicluster-config'
-  args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=2']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=2', '-failOnPending',  '-noColor']
   dir: *dir
   id: 'test'
 
