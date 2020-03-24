@@ -106,39 +106,39 @@ func (c *Controller) runWorker() {
 
 // processNextWorkItem will read a single work item off the work queue and attempt to process it
 func (c *Controller) processNextWorkItem() bool {
-	obj, shutdown := c.workQueue.Get()
+	key, shutdown := c.workQueue.Get()
 
 	if shutdown {
 		return false
 	}
 
 	// We wrap this block in a func so we can defer c.workqueue.Done.
-	err := func(obj interface{}) error {
+	err := func(key interface{}) error {
 		// We call Done here so the workqueue knows we have finished
 		// processing this item. We also must remember to call Forget if we
 		// do not want this work item being re-queued. For example, we do
 		// not call Forget if a transient error occurs, instead the item is
 		// put back on the workqueue and attempted again after a back-off
 		// period.
-		defer c.workQueue.Done(obj)
+		defer c.workQueue.Done(key)
 		// We expect strings to come off the workqueue. These are of the
 		// form namespace/name. We do this as the delayed nature of the
 		// workqueue means the items in the informer cache may actually be
 		// more up to date that when the item was initially put onto the
 		// workqueue.
 
-		var val interface{}
+		var obj interface{}
 		var exists bool
 		for _, informer := range c.informers {
 			var err error
 			//TODO(kdorosh) we can't just loop over all of them, need to know the GVK as well..
-			val, exists, err = informer.GetIndexer().GetByKey(obj.(string))
+			obj, exists, err = informer.GetIndexer().GetByKey(key.(string))
 			if err != nil {
 				// As the item in the workqueue is actually invalid, we call
 				// Forget here else we'd go into a loop of attempting to
 				// process a work item that is invalid.
-				c.workQueue.Forget(obj)
-				runtime.HandleError(fmt.Errorf("expected event type in workqueue but got %#v", obj))
+				c.workQueue.Forget(key)
+				runtime.HandleError(fmt.Errorf("expected event type in workqueue but got %#v", key))
 				return nil
 			}
 
@@ -148,14 +148,14 @@ func (c *Controller) processNextWorkItem() bool {
 		}
 
 		if exists {
-			c.handler.OnUpdate(val, val) // TODO(kdorosh), handle OnAdd, don't send same value for old & new OnUpdate
+			c.handler.OnUpdate(obj, obj) // TODO(kdorosh), handle OnAdd, don't send same value for old & new OnUpdate
 		} else {
-			c.handler.OnDelete(val)
+			c.handler.OnDelete(obj)
 		}
 
-		c.workQueue.Forget(obj)
+		c.workQueue.Forget(key)
 		return nil
-	}(obj)
+	}(key)
 
 	if err != nil {
 		runtime.HandleError(err)
@@ -183,7 +183,8 @@ func (c *Controller) eventHandlerFunctions() cache.ResourceEventHandlerFuncs {
 		DeleteFunc: func(obj interface{}) {
 			// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 			// key function.
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			//key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj) //TODO(kdorosh) should we be using this?
+			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
 				c.workQueue.AddRateLimited(key)
 			}
