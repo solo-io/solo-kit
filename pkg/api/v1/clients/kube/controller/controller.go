@@ -121,14 +121,14 @@ func (c *Controller) processNextWorkItem() bool {
 		// put back on the workqueue and attempted again after a back-off
 		// period.
 		defer c.workQueue.Done(obj)
-		var w *event
+		var e event
 		var ok bool
 		// We expect strings to come off the workqueue. These are of the
 		// form namespace/name. We do this as the delayed nature of the
 		// workqueue means the items in the informer cache may actually be
 		// more up to date that when the item was initially put onto the
 		// workqueue.
-		if w, ok = obj.(*event); !ok {
+		if e, ok = obj.(event); !ok {
 			// As the item in the workqueue is actually invalid, we call
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
@@ -136,13 +136,13 @@ func (c *Controller) processNextWorkItem() bool {
 			runtime.HandleError(fmt.Errorf("expected event type in workqueue but got %#v", obj))
 			return nil
 		}
-		switch w.eventType {
+		switch e.eventType {
 		case added:
-			c.handler.OnAdd(w.new)
+			c.handler.OnAdd(e.new)
 		case updated:
-			c.handler.OnUpdate(w.old, w.new)
+			c.handler.OnUpdate(e.old, e.new)
 		case deleted:
-			c.handler.OnDelete(w.new)
+			c.handler.OnDelete(e.new)
 		}
 
 		c.workQueue.Forget(obj)
@@ -174,7 +174,7 @@ func (c *Controller) eventHandlerFunctions() cache.ResourceEventHandlerFuncs {
 
 // Adds events to the work queue
 func (c *Controller) enqueueSync(t eventType, old, new interface{}) {
-	e := &event{
+	e := event{
 		eventType: t,
 		old:       old,
 		new:       new,
