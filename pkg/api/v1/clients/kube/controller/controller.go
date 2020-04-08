@@ -191,5 +191,11 @@ func (c *Controller) enqueueSync(t eventType, old, new interface{}) {
 	if false {
 		log.Debugf("[%s] EVENT: %s: %s", c.name, e.eventType, key)
 	}
-	c.workQueue.AddRateLimited(e)
+	// important we use Add() here instead of AddRateLimited(), as Add() immediately processes and
+	// de-duplicates the event whereas AddRateLimited() can backup the event before being processed.
+	// As a result, with AddRateLimited(), we had a slow memory leak in very active kube environments
+	// that eventually lead to pod eviction. AddRateLimited() should be reserved for re-processing a
+	// failed event off the workqueue if there's a reasonable chance it would succeed during the retry.
+	// (see example here: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go)
+	c.workQueue.Add(e)
 }
