@@ -54,11 +54,11 @@ require (
 	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6
 	google.golang.org/grpc v1.24.0
 	gopkg.in/yaml.v2 v2.2.4
-	k8s.io/api v0.0.0-20191121015604-11707872ac1c
-	k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
-	k8s.io/apimachinery v0.0.0-20191121015412-41065c7a8c2a
-	k8s.io/client-go v8.0.0+incompatible
-	k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
+	k8s.io/api v0.17.0
+	k8s.io/apiextensions-apiserver v0.17.0
+	k8s.io/apimachinery v0.17.0
+	k8s.io/client-go v0.17.0
+	k8s.io/code-generator v0.17.0
 	sigs.k8s.io/yaml v1.1.0
 )
 
@@ -72,12 +72,4 @@ replace (
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
-
-	//kube 1.16
-	k8s.io/api => k8s.io/api v0.0.0-20191004120104-195af9ec3521
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191204090712-e0e829f17bab
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb
-	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20191109104512-b243870e034b
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.0.0-20191004123735-6bff60de4370
-	k8s.io/client-go => k8s.io/client-go v0.0.0-20191016111102-bec269661e48
 )
