@@ -72,4 +72,11 @@ replace (
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
+
+	// kube 1.17
+	k8s.io/api => k8s.io/api v0.17.0
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.17.0
+	k8s.io/client-go => k8s.io/client-go v0.17.0
+	k8s.io/code-generator => k8s.io/code-generator v0.17.0
 )

@@ -2,20 +2,20 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: api
-    dependencyTag: kubernetes-1.16.2
+    dependencyTag: kubernetes-1.17.0
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: client-go
-    dependencyTag: kubernetes-1.16.2
+    dependencyTag: kubernetes-1.17.0
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: apimachinery
-    dependencyTag: kubernetes-1.16.2
+    dependencyTag: kubernetes-1.17.0
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: apiextensions-apiserver
-    dependencyTag: kubernetes-1.16.2
+    dependencyTag: kubernetes-1.17.0
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: code-generator
-    dependencyTag: kubernetes-1.16.2
+    dependencyTag: kubernetes-1.17.0
