@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix memory leak in active (event-heavy) kubernetes environments which could lead to memory usage growing
+      without bound by using keys in the workqueue that can be compared for equality to de-duplicate them.
+    issueLink: https://github.com/solo-io/gloo/issues/2361
+    resolvesIssue: false
