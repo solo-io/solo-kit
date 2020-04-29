@@ -165,11 +165,15 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 }
 
 func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+	var readErr error
+	_, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+	if readErr != nil { // resource has been deleted, don't re-create
+		return resourceToWrite, resourceToWrite, nil
+	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
 		return updatedResource, resourceToWrite, nil
 	}
-	var readErr error
 	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil {
 		if errors.IsResourceVersion(writeErr) {
