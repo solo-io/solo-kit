@@ -97,6 +97,18 @@ var _ = Describe("Reporter", func() {
 			reporter = rep.NewReporter("test", mockedResourceClient)
 		})
 
+		It("checks to make sure a resource exists before writing to it", func() {
+			res := v1.NewMockResource("", "mocky")
+			resourceErrs := rep.ResourceReports{
+				res: rep.Report{Errors: fmt.Errorf("pocky")},
+			}
+
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, errors.NewNotExistErr("", "mocky"))
+
+			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("handles multiple conflict", func() {
 			res := v1.NewMockResource("", "mocky")
 			resourceErrs := rep.ResourceReports{
