@@ -105,14 +105,15 @@ var _ = Describe("Reporter", func() {
 
 			// first write fails due to resource version
 			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil)
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil).Times(2)
 
 			// we retry, and fail again on resource version error
 			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil)
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil).Times(2)
 
 			// this time we succeed to write the status
 			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(res, nil)
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil)
 
 			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
 			Expect(err).NotTo(HaveOccurred())
@@ -127,8 +128,9 @@ var _ = Describe("Reporter", func() {
 			resVerErr := errors.NewResourceVersionErr("ns", "name", "given", "expected")
 
 			// first write fails due to resource version
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, nil) // resource exists
 			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, resVerErr)
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, errors.Errorf("no read RBAC"))
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, errors.Errorf("no read RBAC")).Times(2)
 
 			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
 			Expect(err).To(HaveOccurred())
