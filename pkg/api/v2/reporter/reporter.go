@@ -159,9 +159,10 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			resources.UpdateMetadata(resource, func(meta *core.Metadata) {
 				meta.ResourceVersion = updatedResource.GetMetadata().ResourceVersion
 			})
+			logger.Debugf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
+		} else {
+			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
 		}
-
-		logger.Debugf("wrote report %v : %v", updatedResource.GetMetadata().Ref(), status)
 	}
 	return merr.ErrorOrNil()
 }
