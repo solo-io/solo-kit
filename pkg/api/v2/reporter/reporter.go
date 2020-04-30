@@ -123,13 +123,20 @@ func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) 
 	}
 }
 
+// ResourceReports may be modified, and end up with fewer resources than originally requested.
+// If resources referenced in the resourceErrs don't exist, they will be removed.
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
 	var merr *multierror.Error
 
+	resourceErrsCopy := make(ResourceReports, len(resourceErrs))
 	for resource, report := range resourceErrs {
+		resourceErrsCopy[resource] = report
+	}
+
+	for resource, report := range resourceErrsCopy {
 		kind := resources.Kind(resource)
 		client, ok := r.clients[kind]
 		if !ok {
@@ -162,6 +169,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			logger.Debugf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
 		} else {
 			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
+			delete(resourceErrs, resource)
 		}
 	}
 	return merr.ErrorOrNil()

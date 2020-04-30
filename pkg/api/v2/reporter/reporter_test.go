@@ -104,9 +104,12 @@ var _ = Describe("Reporter", func() {
 			}
 
 			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, errors.NewNotExistErr("", "mocky"))
+			// Since the resource doesn't exist, we shouldn't write to it.
+			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, nil).Times(0)
 
 			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(len(resourceErrs)).To(Equal(0))
 		})
 
 		It("handles multiple conflict", func() {
