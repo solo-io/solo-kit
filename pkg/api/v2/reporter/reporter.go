@@ -155,9 +155,11 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			merr = multierror.Append(merr, err)
 			continue
 		}
-		resources.UpdateMetadata(resource, func(meta *core.Metadata) {
-			meta.ResourceVersion = updatedResource.GetMetadata().ResourceVersion
-		})
+		if updatedResource != nil {
+			resources.UpdateMetadata(resource, func(meta *core.Metadata) {
+				meta.ResourceVersion = updatedResource.GetMetadata().ResourceVersion
+			})
+		}
 
 		logger.Debugf("wrote report %v : %v", updatedResource.GetMetadata().Ref(), status)
 	}
