@@ -131,6 +131,8 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 
 	var merr *multierror.Error
 
+	// copy the map so we can iterate over the copy, deleting resources from
+	// the original map if they are not found/no longer exist.
 	resourceErrsCopy := make(ResourceReports, len(resourceErrs))
 	for resource, report := range resourceErrs {
 		resourceErrsCopy[resource] = report
@@ -178,7 +180,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	_, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
-	if readErr != nil { // resource has been deleted, don't re-create
+	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
 		return nil, resourceToWrite, nil
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
