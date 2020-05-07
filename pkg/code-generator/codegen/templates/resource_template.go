@@ -110,8 +110,7 @@ type {{ .Name }}List []*{{ .Name }}
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list {{ .Name }}List) Find(namespace, name string) (*{{ .Name }}, error) {
 	for _, {{ lower_camel .Name }} := range list {
-		if {{ lower_camel .Name }}.GetMetadata().Name == name {
-			if namespace == "" || {{ lower_camel .Name }}.GetMetadata().Namespace == namespace {
+		if {{ lower_camel .Name }}.GetMetadata().Name == name && {{ lower_camel .Name }}.GetMetadata().Namespace == namespace {
 				return {{ lower_camel .Name }}, nil
 			}
 		}
