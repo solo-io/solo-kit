@@ -36,11 +36,11 @@ update-deps: mod-download
 	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
-	go get -v github.com/gogo/protobuf/protoc-gen-gogo
-	go get -v github.com/golang/protobuf/protoc-gen-go@v1.3.2
-	go get -v github.com/envoyproxy/protoc-gen-validate@v0.1.0
-	go get -v github.com/golang/mock/gomock@v1.3.1
-	go get -v github.com/golang/mock/mockgen@v1.3.1
+	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
+	GO111MODULE=off go get -u github.com/golang/protobuf/protoc-gen-go
+	GO111MODULE=off go get -u github.com/envoyproxy/protoc-gen-validate
+	GO111MODULE=off go get -u github.com/golang/mock/gomock
+	GO111MODULE=off go install github.com/golang/mock/mockgen
 
 	# clone solo's fork of code-generator, required for tests & kube type gen
 	mkdir -p $(GOPATH)/src/k8s.io && \
