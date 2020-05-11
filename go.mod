@@ -16,8 +16,8 @@ require (
 	github.com/go-test/deep v1.0.2 // indirect
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/mock v1.3.1
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/mock v1.4.3
+	github.com/golang/protobuf v1.4.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
 	github.com/hashicorp/consul/sdk v0.3.0 // indirect
@@ -49,8 +49,8 @@ require (
 	go.opencensus.io v0.22.1
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
-	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/tools v0.0.0-20200423205358-59e73619c742 // indirect
 	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6
 	google.golang.org/grpc v1.24.0
 	gopkg.in/yaml.v2 v2.2.4

@@ -45,13 +45,10 @@ func (r *ClusterResource) GroupVersionKind() schema.GroupVersionKind {
 
 type ClusterResourceList []*ClusterResource
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ClusterResourceList) Find(namespace, name string) (*ClusterResource, error) {
 	for _, clusterResource := range list {
-		if clusterResource.GetMetadata().Name == name {
-			if namespace == "" || clusterResource.GetMetadata().Namespace == namespace {
-				return clusterResource, nil
-			}
+		if clusterResource.GetMetadata().Name == name && clusterResource.GetMetadata().Namespace == namespace {
+			return clusterResource, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find clusterResource %v.%v", namespace, name)
