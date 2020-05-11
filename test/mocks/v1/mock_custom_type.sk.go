@@ -73,13 +73,10 @@ func (r *MockCustomType) GroupVersionKind() schema.GroupVersionKind {
 
 type MockCustomTypeList []*MockCustomType
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list MockCustomTypeList) Find(namespace, name string) (*MockCustomType, error) {
 	for _, mockCustomType := range list {
-		if mockCustomType.GetMetadata().Name == name {
-			if namespace == "" || mockCustomType.GetMetadata().Namespace == namespace {
-				return mockCustomType, nil
-			}
+		if mockCustomType.GetMetadata().Name == name && mockCustomType.GetMetadata().Namespace == namespace {
+			return mockCustomType, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find mockCustomType %v.%v", namespace, name)
