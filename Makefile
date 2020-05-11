@@ -36,7 +36,7 @@ update-deps: mod-download
 	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
-	go get -v github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
+	go get -v github.com/gogo/protobuf/protoc-gen-gogo
 	go get -v github.com/golang/protobuf/protoc-gen-go@v1.3.2
 	go get -v github.com/envoyproxy/protoc-gen-validate@v0.1.0
 	go get -v github.com/golang/mock/gomock@v1.3.1
