@@ -37,7 +37,7 @@ update-deps: mod-download
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200423205358-59e73619c742
 	go get -v github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
-	go get -v github.com/golang/protobuf/protoc-gen-go@v1.4.1
+	go get -v github.com/golang/protobuf/protoc-gen-go@v1.3.1
 	go get -v github.com/envoyproxy/protoc-gen-validate@v0.1.0
 	go get -v github.com/golang/mock/gomock@v1.4.3
 	go get -v github.com/golang/mock/mockgen@v1.4.3
