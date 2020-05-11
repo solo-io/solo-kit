@@ -41,13 +41,10 @@ func (r *FrequentlyChangingAnnotationsResource) GroupVersionKind() schema.GroupV
 
 type FrequentlyChangingAnnotationsResourceList []*FrequentlyChangingAnnotationsResource
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list FrequentlyChangingAnnotationsResourceList) Find(namespace, name string) (*FrequentlyChangingAnnotationsResource, error) {
 	for _, frequentlyChangingAnnotationsResource := range list {
-		if frequentlyChangingAnnotationsResource.GetMetadata().Name == name {
-			if namespace == "" || frequentlyChangingAnnotationsResource.GetMetadata().Namespace == namespace {
-				return frequentlyChangingAnnotationsResource, nil
-			}
+		if frequentlyChangingAnnotationsResource.GetMetadata().Name == name && frequentlyChangingAnnotationsResource.GetMetadata().Namespace == namespace {
+			return frequentlyChangingAnnotationsResource, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find frequentlyChangingAnnotationsResource %v.%v", namespace, name)
