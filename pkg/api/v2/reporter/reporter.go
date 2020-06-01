@@ -177,11 +177,22 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 	return merr.ErrorOrNil()
 }
 
+// Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
+//    to avoid confusion about whether this may update the resource rather than just its status.
+//    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
 func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
 	var readErr error
-	_, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
 		return nil, resourceToWrite, nil
+	}
+	if readErr == nil {
+		status := resourceToWrite.GetStatus()
+		// set resourceToWrite to the resource we read but with the new status
+		var ok bool
+		if resourceToWrite, ok = resourceFromRead.(resources.InputResource); ok {
+			resourceToWrite.SetStatus(status)
+		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
