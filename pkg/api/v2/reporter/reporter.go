@@ -189,6 +189,10 @@ func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, res
 	if readErr == nil {
 		status := resourceToWrite.GetStatus()
 		// set resourceToWrite to the resource we read but with the new status
+		// Note: it's possible that this resourceFromRead is newer than the resourceToWrite and therefore the status will be out of sync.
+		//    If so, we will soon recalculate the status. The interim incorrect status is not dangerous since the status is informational only.
+		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
+		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		var ok bool
 		if resourceToWrite, ok = resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite.SetStatus(status)
