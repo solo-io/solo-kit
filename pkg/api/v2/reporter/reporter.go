@@ -177,11 +177,26 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 	return merr.ErrorOrNil()
 }
 
+// Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
+//    to avoid confusion about whether this may update the resource rather than just its status.
+//    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
 func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
 	var readErr error
-	_, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
 		return nil, resourceToWrite, nil
+	}
+	if readErr == nil {
+		// set resourceToWrite to the resource we read but with the new status
+		// Note: it's possible that this resourceFromRead is newer than the resourceToWrite and therefore the status will be out of sync.
+		//    If so, we will soon recalculate the status. The interim incorrect status is not dangerous since the status is informational only.
+		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
+		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
+		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
+			status := resourceToWrite.GetStatus()
+			resourceToWrite = inputResourceFromRead
+			resourceToWrite.SetStatus(status)
+		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {

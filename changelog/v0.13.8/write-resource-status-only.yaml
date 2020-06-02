@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      `WriteReports` will only update a resource's status, no longer the resource itself, to avoid bugs and race conditions.
+    issueLink: https://github.com/solo-io/gloo/issues/2954 
