@@ -1,3 +1,4 @@
+// Deprecated: This package is no longer being maintained. Use https://github.com/solo-io/skv2 instead for multicluster functionality.
 package multicluster
 
 import (
