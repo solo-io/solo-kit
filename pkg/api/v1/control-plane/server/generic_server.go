@@ -1,18 +1,3 @@
-// Copyright 2018 Envoyproxy Authors
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
-
-// Package server provides an implementation of a streaming xDS server.
 package server
 
 import (
@@ -21,22 +6,20 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/gogo/protobuf/proto"
-	any "github.com/golang/protobuf/ptypes/any"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Stream interface {
-	Send(*v2.DiscoveryResponse) error
-	Recv() (*v2.DiscoveryRequest, error)
 	grpc.ServerStream
+	Send(*discovery.DiscoveryResponse) error
+	Recv() (*discovery.DiscoveryRequest, error)
 }
 
 // Server is a collection of handlers for streaming discovery requests.
@@ -44,7 +27,7 @@ type Server interface {
 	discovery.AggregatedDiscoveryServiceServer
 
 	// Fetch is the universal fetch method.
-	Fetch(context.Context, *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error)
+	Fetch(context.Context, *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error)
 	Stream(stream Stream, typeURL string) error
 }
 
@@ -52,17 +35,80 @@ type Server interface {
 // The callbacks are invoked synchronously.
 type Callbacks interface {
 	// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-	OnStreamOpen(int64, string)
+	// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+	OnStreamOpen(context.Context, int64, string) error
 	// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
 	OnStreamClosed(int64)
 	// OnStreamRequest is called once a request is received on a stream.
-	OnStreamRequest(int64, *v2.DiscoveryRequest)
+	// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+	OnStreamRequest(int64, *discovery.DiscoveryRequest) error
 	// OnStreamResponse is called immediately prior to sending a response on a stream.
-	OnStreamResponse(int64, *v2.DiscoveryRequest, *v2.DiscoveryResponse)
-	// OnFetchRequest is called for each Fetch request
-	OnFetchRequest(*v2.DiscoveryRequest)
+	OnStreamResponse(int64, *discovery.DiscoveryRequest, *discovery.DiscoveryResponse)
+	// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
+	// request and respond with an error.
+	OnFetchRequest(context.Context, *discovery.DiscoveryRequest) error
 	// OnFetchResponse is called immediately prior to sending a response.
-	OnFetchResponse(*v2.DiscoveryRequest, *v2.DiscoveryResponse)
+	OnFetchResponse(*discovery.DiscoveryRequest, *discovery.DiscoveryResponse)
+}
+
+// CallbackFuncs is a convenience type for implementing the Callbacks interface.
+type CallbackFuncs struct {
+	StreamOpenFunc     func(context.Context, int64, string) error
+	StreamClosedFunc   func(int64)
+	StreamRequestFunc  func(int64, *discovery.DiscoveryRequest) error
+	StreamResponseFunc func(int64, *discovery.DiscoveryRequest, *discovery.DiscoveryResponse)
+	FetchRequestFunc   func(context.Context, *discovery.DiscoveryRequest) error
+	FetchResponseFunc  func(*discovery.DiscoveryRequest, *discovery.DiscoveryResponse)
+}
+
+var _ Callbacks = CallbackFuncs{}
+
+// OnStreamOpen invokes StreamOpenFunc.
+func (c CallbackFuncs) OnStreamOpen(ctx context.Context, streamID int64, typeURL string) error {
+	if c.StreamOpenFunc != nil {
+		return c.StreamOpenFunc(ctx, streamID, typeURL)
+	}
+
+	return nil
+}
+
+// OnStreamClosed invokes StreamClosedFunc.
+func (c CallbackFuncs) OnStreamClosed(streamID int64) {
+	if c.StreamClosedFunc != nil {
+		c.StreamClosedFunc(streamID)
+	}
+}
+
+// OnStreamRequest invokes StreamRequestFunc.
+func (c CallbackFuncs) OnStreamRequest(streamID int64, req *discovery.DiscoveryRequest) error {
+	if c.StreamRequestFunc != nil {
+		return c.StreamRequestFunc(streamID, req)
+	}
+
+	return nil
+}
+
+// OnStreamResponse invokes StreamResponseFunc.
+func (c CallbackFuncs) OnStreamResponse(streamID int64, req *discovery.DiscoveryRequest, resp *discovery.DiscoveryResponse) {
+	if c.StreamResponseFunc != nil {
+		c.StreamResponseFunc(streamID, req, resp)
+	}
+}
+
+// OnFetchRequest invokes FetchRequestFunc.
+func (c CallbackFuncs) OnFetchRequest(ctx context.Context, req *discovery.DiscoveryRequest) error {
+	if c.FetchRequestFunc != nil {
+		return c.FetchRequestFunc(ctx, req)
+	}
+
+	return nil
+}
+
+// OnFetchResponse invoked FetchResponseFunc.
+func (c CallbackFuncs) OnFetchResponse(req *discovery.DiscoveryRequest, resp *discovery.DiscoveryResponse) {
+	if c.FetchResponseFunc != nil {
+		c.FetchResponseFunc(req, resp)
+	}
 }
 
 // NewServer creates handlers from a config watcher and an optional logger.
@@ -112,7 +158,7 @@ func (values *watches) Cancel() {
 	}
 }
 
-func createResponse(resp *cache.Response, typeURL string) (*v2.DiscoveryResponse, error) {
+func createResponse(resp *cache.Response, typeURL string) (*discovery.DiscoveryResponse, error) {
 	if resp == nil {
 		return nil, errors.New("missing response")
 	}
@@ -127,7 +173,7 @@ func createResponse(resp *cache.Response, typeURL string) (*v2.DiscoveryResponse
 			Value:   data,
 		}
 	}
-	out := &v2.DiscoveryResponse{
+	out := &discovery.DiscoveryResponse{
 		VersionInfo: resp.Version,
 		Resources:   resources,
 		TypeUrl:     typeURL,
@@ -141,7 +187,7 @@ type TypedResponse struct {
 }
 
 // process handles a bi-di stream request
-func (s *server) process(stream Stream, reqCh <-chan *v2.DiscoveryRequest, defaultTypeURL string) error {
+func (s *server) process(stream Stream, reqCh <-chan *discovery.DiscoveryRequest, defaultTypeURL string) error {
 	// increment stream count
 	streamID := atomic.AddInt64(&s.streamCount, 1)
 
@@ -175,13 +221,13 @@ func (s *server) process(stream Stream, reqCh <-chan *v2.DiscoveryRequest, defau
 	}
 
 	if s.callbacks != nil {
-		s.callbacks.OnStreamOpen(streamID, defaultTypeURL)
+		s.callbacks.OnStreamOpen(stream.Context(), streamID, defaultTypeURL)
 	}
 
 	responses := make(chan TypedResponse)
 
 	// node may only be set on the first discovery request
-	var node = &envoy_api_v2_core.Node{}
+	var node = &envoycore.Node{}
 	for {
 		select {
 		// config watcher can send the requested resources types in any order
@@ -299,7 +345,7 @@ func (s *server) createWatch(responses chan<- TypedResponse, req *cache.Request)
 // handler converts a blocking read call to channels and initiates stream processing
 func (s *server) Stream(stream Stream, typeURL string) error {
 	// a channel for receiving incoming requests
-	reqCh := make(chan *v2.DiscoveryRequest)
+	reqCh := make(chan *discovery.DiscoveryRequest)
 	reqStop := int32(0)
 	go func() {
 		for {
@@ -325,9 +371,9 @@ func (s *server) Stream(stream Stream, typeURL string) error {
 }
 
 // Fetch is the universal fetch method.
-func (s *server) Fetch(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+func (s *server) Fetch(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
 	if s.callbacks != nil {
-		s.callbacks.OnFetchRequest(req)
+		s.callbacks.OnFetchRequest(ctx, req)
 	}
 	resp, err := s.cache.Fetch(ctx, *req)
 	if err != nil {
