@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
-
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
