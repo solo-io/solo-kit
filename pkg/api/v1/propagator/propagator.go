@@ -168,8 +168,9 @@ func (p *Propagator) syncStatuses(parents, children resources.ResourceList, opts
 			// no-op
 			continue
 		}
-		resources.UpdateStatus(parent, func(status *core.Status) {
+		_ = resources.UpdateStatus(parent, func(status *core.Status) error {
 			status.SubresourceStatuses = childStatuses
+			return nil
 		})
 		rc, err := p.resourceClients.ForResource(parent)
 		if err != nil {

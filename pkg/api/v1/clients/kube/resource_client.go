@@ -422,10 +422,19 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resources.Resource, error) {
 	resource := rc.NewResource()
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
+
 	if withStatus, ok := resource.(resources.InputResource); ok {
-		resources.UpdateStatus(withStatus, func(status *core.Status) {
-			*status = resourceCrd.Status
-		})
+		updateFunc := func(status *core.Status) error {
+			typedStatus := core.Status{}
+			if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
+				return err
+			}
+			*status = typedStatus
+			return nil
+		}
+		if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
+			return nil, err
+		}
 	}
 	if resourceCrd.Spec != nil {
 		if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {

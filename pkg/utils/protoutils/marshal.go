@@ -6,6 +6,7 @@ package protoutils
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -98,12 +99,33 @@ func MarshalMapEmitZeroValues(from resources.Resource) (map[string]interface{}, 
 	return m, err
 }
 
+func MarshalMapFromProto(from proto.Message) (map[string]interface{}, error) {
+	out := &bytes.Buffer{}
+	if err := jsonpbMarshaler.Marshal(out, from); err != nil {
+		panic(fmt.Sprintf("failed to marshal proto to bytes: %v", err))
+	}
+
+	var m map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &m); err != nil {
+		panic(fmt.Sprintf("failed to unmarshal bytes to map: %v", err))
+	}
+	return m, nil
+}
+
 func UnmarshalMap(m map[string]interface{}, into resources.Resource) error {
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err
 	}
 	return UnmarshalBytes(data, into)
+}
+
+func UnmarshalMapToProto(m map[string]interface{}, into proto.Message) error {
+	data, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
 }
 
 // ilackarms: help come up with a better name for this please
@@ -143,9 +165,20 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	}
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
 	if withStatus, ok := resource.(resources.InputResource); ok {
-		resources.UpdateStatus(withStatus, func(status *core.Status) {
-			*status = resourceCrd.Status
-		})
+
+		updateFunc := func(status *core.Status) error {
+			typedStatus := core.Status{}
+			err := UnmarshalMapToProto(resourceCrd.Status, &typedStatus)
+			if err != nil {
+				return err
+			}
+			*status = typedStatus
+			return nil
+		}
+
+		if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
+			return err
+		}
 	}
 
 	if resourceCrd.Spec != nil {
