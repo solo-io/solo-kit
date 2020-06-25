@@ -74,24 +74,43 @@ func (d Crd) Register(apiexts apiexts.Interface) error {
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
+	var (
+		spec   v1.Spec
+		status v1.Status
+	)
 
-	// Handle spec
-	data, err := protoutils.MarshalMap(resource)
-	if err != nil {
-		panic(fmt.Sprintf("internal error: failed to marshal resource to map: %v", err))
+	if withConverters, ok := resource.(resources.CustomInputResource); ok {
+		// Handle custom spec/status marshalling
+
+		var err error
+		spec, err = withConverters.MarshalSpec()
+		if err != nil {
+			panic(fmt.Sprintf("internal error: failed to marshal resource spec to map: %v", err))
+		}
+		status, err = withConverters.MarshalStatus()
+		if err != nil {
+			panic(fmt.Sprintf("internal error: failed to marshal resource status to map: %v", err))
+		}
+
+	} else {
+		// Handle regular solo-kit resources
+
+		data, err := protoutils.MarshalMap(resource)
+		if err != nil {
+			panic(fmt.Sprintf("internal error: failed to marshal resource to map: %v", err))
+		}
+
+		delete(data, "metadata")
+		delete(data, "status")
+		spec = data
+
+		statusProto := resource.GetStatus()
+		statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(&statusProto)
+		if err != nil {
+			panic(fmt.Sprintf("internal error: failed to marshal resource status to map %v", err))
+		}
+		status = statusMap
 	}
-
-	delete(data, "metadata")
-	delete(data, "status")
-	spec := v1.Spec(data)
-
-	// Handle status
-	statusProto := resource.GetStatus()
-	statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(&statusProto)
-	if err != nil {
-		panic(fmt.Sprintf("internal error: failed to marshal resource status to map %v", err))
-	}
-	status := v1.Status(statusMap)
 
 	return &v1.Resource{
 		TypeMeta:   d.TypeMeta(),
