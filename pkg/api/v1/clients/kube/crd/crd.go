@@ -89,7 +89,7 @@ func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
 	statusProto := resource.GetStatus()
 	statusMap, err := protoutils.MarshalMapFromProto(&statusProto)
 	if err != nil {
-		panic(fmt.Sprintf("internal error: %v", err))
+		panic(fmt.Sprintf("internal error: failed to marshal resource status to map %v", err))
 	}
 	status := v1.Status(statusMap)
 
