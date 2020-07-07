@@ -33,7 +33,7 @@ type ResourceList struct {
 // spec implements deepcopy
 type Spec map[string]interface{}
 
-// newStatus implements deepcopy
+// status implements deepcopy
 type Status map[string]interface{}
 
 func (in *Resource) GetObjectKind() schema.ObjectKind {
