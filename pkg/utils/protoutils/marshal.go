@@ -6,7 +6,7 @@ package protoutils
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"github.com/rotisserie/eris"
 
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -102,12 +102,12 @@ func MarshalMapEmitZeroValues(from resources.Resource) (map[string]interface{}, 
 func MarshalMapFromProto(from proto.Message) (map[string]interface{}, error) {
 	out := &bytes.Buffer{}
 	if err := jsonpbMarshaler.Marshal(out, from); err != nil {
-		panic(fmt.Sprintf("failed to marshal proto to bytes: %v", err))
+		return nil, eris.Wrap(err, "failed to marshal proto to bytes")
 	}
 
 	var m map[string]interface{}
 	if err := json.Unmarshal(out.Bytes(), &m); err != nil {
-		panic(fmt.Sprintf("failed to unmarshal bytes to map: %v", err))
+		return nil, eris.Wrap(err, "failed to unmarshal bytes to map")
 	}
 	return m, nil
 }
