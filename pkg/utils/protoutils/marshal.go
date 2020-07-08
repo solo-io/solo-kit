@@ -23,6 +23,7 @@ import (
 
 var jsonpbMarshaler = &jsonpb.Marshaler{OrigName: false}
 var jsonpbMarshalerEmitZeroValues = &jsonpb.Marshaler{OrigName: false, EmitDefaults: true}
+var jsonpbMarshalerEnumsAsInts = &jsonpb.Marshaler{OrigName: false, EnumsAsInts: true}
 
 func UnmarshalBytes(data []byte, into resources.Resource) error {
 	if protoInto, ok := into.(proto.Message); ok {
@@ -99,9 +100,9 @@ func MarshalMapEmitZeroValues(from resources.Resource) (map[string]interface{}, 
 	return m, err
 }
 
-func MarshalMapFromProto(from proto.Message) (map[string]interface{}, error) {
+func MarshalMapFromProtoWithEnumsAsInts(from proto.Message) (map[string]interface{}, error) {
 	out := &bytes.Buffer{}
-	if err := jsonpbMarshaler.Marshal(out, from); err != nil {
+	if err := jsonpbMarshalerEnumsAsInts.Marshal(out, from); err != nil {
 		return nil, eris.Wrap(err, "failed to marshal proto to bytes")
 	}
 
