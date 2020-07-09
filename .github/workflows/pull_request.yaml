@@ -62,4 +62,4 @@ jobs:
         SKIP_MOCK_GEN: "1"
       run: |
         go get -v github.com/onsi/ginkgo/ginkgo@v1.12.0 && export PATH=$PATH:$(go env GOPATH)/bin/
-        ginkgo -r -p -failFast -tags solokit
+        ginkgo -r -failFast -tags solokit
