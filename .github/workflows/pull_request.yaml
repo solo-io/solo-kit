@@ -38,6 +38,12 @@ jobs:
       with:
         version: 'v1.18.0'
     - uses: engineerd/setup-kind@v0.3.0
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v1.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        version: '3.6.1'
     - name: install consul
       run: |
         apt-get update && \
