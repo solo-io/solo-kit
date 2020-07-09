@@ -52,6 +52,9 @@ jobs:
     - name: make update deps
       run: |
         make update-deps
+    - name: check consul
+      run: |
+        consul --version
     - name: Run tests
       env:
         CONSUL_BINARY: /usr/local/bin/consul
