@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Allow custom resource to define their own marshalling behavior for `spec` and `status` fields.
