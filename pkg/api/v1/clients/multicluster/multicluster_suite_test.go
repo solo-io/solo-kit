@@ -29,7 +29,7 @@ var (
 	err                   error
 
 	_ = SynchronizedBeforeSuite(func() []byte {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+		if os.Getenv("RUN_MULTICLUSTER_TESTS") != "1" {
 			return nil
 		}
 
@@ -53,7 +53,7 @@ var (
 	}, func([]byte) {})
 
 	_ = SynchronizedAfterSuite(func() {}, func() {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+		if os.Getenv("RUN_MULTICLUSTER_TESTS") != "1" {
 			return
 		}
 
