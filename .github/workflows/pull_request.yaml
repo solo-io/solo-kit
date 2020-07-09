@@ -45,10 +45,10 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
     - name: install consul
       run: |
-        wget -q https://releases.hashicorp.com/consul/1.4.0/consul_1.4.0_linux_amd64.zip && \
-        unzip -q consul_1.4.0_linux_amd64.zip && \
+        wget -q https://releases.hashicorp.com/consul/1.6.2/consul_1.6.2_linux_amd64.zip && \
+        unzip -q consul_1.6.2_linux_amd64.zip && \
         sudo mv consul /usr/local/bin/ && \
-        rm consul_1.4.0_linux_amd64.zip
+        rm consul_1.6.2_linux_amd64.zip
     - name: make update deps
       run: |
         make update-deps
