@@ -36,7 +36,7 @@ jobs:
           ${{ runner.os }}-go-
     - name: Generate Code
       run: |
-        ./ci/check-code-and-docs-gen.sh
+        ./ci/check-code-gen.sh
 
 
   test:
