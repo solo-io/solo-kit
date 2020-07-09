@@ -37,7 +37,8 @@ ${CODEGEN_PKG}/generate-groups.sh all \
     ${CLIENT_PKG} \
     ${APIS_PKG} \
     testing.solo.io:v2alpha1 \
-    --output-base "${TEMP_DIR}"
+    --output-base "${TEMP_DIR}" \
+	--go-header-file "${CODEGEN_PKG}"/hack/boilerplate.go.txt
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/.."
 
