@@ -46,13 +46,10 @@ jobs:
         version: '3.6.1'
     - name: install consul
       run: |
-        apt-get update && \
-        apt-get -y install wget && \
         wget -q https://releases.hashicorp.com/consul/1.4.0/consul_1.4.0_linux_amd64.zip && \
         unzip -q consul_1.4.0_linux_amd64.zip && \
         mv consul /usr/local/bin/ && \
-        rm consul_1.4.0_linux_amd64.zip && \
-        apt-get -y remove wget
+        rm consul_1.4.0_linux_amd64.zip
     - name: Run tests
       env:
         CONSUL_BINARY: /usr/local/bin/consul
