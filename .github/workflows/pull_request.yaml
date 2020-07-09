@@ -50,6 +50,9 @@ jobs:
         unzip -q consul_1.4.0_linux_amd64.zip && \
         sudo mv consul /usr/local/bin/ && \
         rm consul_1.4.0_linux_amd64.zip
+    - name: make update deps
+      run: |
+        make update-deps
     - name: Run tests
       env:
         CONSUL_BINARY: /usr/local/bin/consul
