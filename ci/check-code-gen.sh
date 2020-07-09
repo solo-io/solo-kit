@@ -2,16 +2,21 @@
 
 set -ex
 
+go mod tidy
+
+if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
+  echo "Need to run go mod tidy before committing"
+  git diff
+  exit 1;
+fi
+
 protoc --version
 
 if [ ! -f .gitignore ]; then
   echo "_output" > .gitignore
 fi
 
-
-git config user.email "you@example.com"
-git config user.name "Your Name"
-
+make update-deps
 
 set +e
 
