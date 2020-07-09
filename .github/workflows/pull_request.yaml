@@ -38,8 +38,18 @@ jobs:
       with:
         version: 'v1.18.0'
     - uses: engineerd/setup-kind@v0.3.0
+    - name: install consul
+      run: |
+        apt-get update && \
+        apt-get -y install wget && \
+        wget -q https://releases.hashicorp.com/consul/1.4.0/consul_1.4.0_linux_amd64.zip && \
+        unzip -q consul_1.4.0_linux_amd64.zip && \
+        mv consul /usr/local/bin/ && \
+        rm consul_1.4.0_linux_amd64.zip && \
+        apt-get -y remove wget
     - name: Run tests
       env:
+        CONSUL_BINARY: /usr/local/bin/consul
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         RUN_KUBE_TESTS: "1"
         RUN_VAULT_TESTS: "1"
