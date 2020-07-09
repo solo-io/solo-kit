@@ -41,14 +41,12 @@ steps:
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['solo-kit-cli']
-  waitFor: ['test']
   id: 'build-cli'
   dir: *dir
   env:
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['solo-kit-gen']
-  waitFor: ['test']
   id: 'build-codegen'
   dir: *dir
   env:
