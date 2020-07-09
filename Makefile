@@ -33,24 +33,13 @@ mod-download:
 
 .PHONY: update-deps
 update-deps: mod-download
-	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
+	go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200423205358-59e73619c742
+	go get -v github.com/solo-io/protoc-gen-ext@v0.0.7
+	go get -v github.com/google/wire/cmd/wire@v0.4.0
+	go get -v github.com/golang/mock/mockgen@v1.4.3
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	GO111MODULE=off go get -u github.com/golang/protobuf/protoc-gen-go
-	GO111MODULE=off go get -u github.com/envoyproxy/protoc-gen-validate
-	GO111MODULE=off go get -u github.com/golang/mock/gomock
-	GO111MODULE=off go install github.com/golang/mock/mockgen
-
-	# clone solo's fork of code-generator, required for tests & kube type gen
-	mkdir -p $(GOPATH)/src/k8s.io && \
-		cd $(GOPATH)/src/k8s.io && \
-		(git clone https://github.com/kubernetes/code-generator || echo "already found code-generator") && \
-		cd $(GOPATH)/src/k8s.io/code-generator && \
-		(git remote add solo https://github.com/solo-io/k8s-code-generator  || echo "already have remote solo") && \
-		git fetch solo && \
-		git checkout fixed-for-solo-kit-1-16-2 && \
-		git pull
 
 #----------------------------------------------------------------------------------
 # Kubernetes Clientsets
@@ -79,10 +68,12 @@ generated-code: $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
+	rm -rf vendor_any
 	mkdir -p ${OUTPUT_DIR}
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
+	go mod tidy
 	touch $@
 
 .PHONY: verify-envoy-protos
