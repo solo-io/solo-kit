@@ -53,12 +53,12 @@ require (
 	golang.org/x/tools v0.0.0-20200423205358-59e73619c742 // indirect
 	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6
 	google.golang.org/grpc v1.24.0
-	gopkg.in/yaml.v2 v2.2.4
-	k8s.io/api v0.17.0
-	k8s.io/apiextensions-apiserver v0.17.0
-	k8s.io/apimachinery v0.17.0
-	k8s.io/client-go v0.17.0
-	k8s.io/code-generator v0.17.0
+	gopkg.in/yaml.v2 v2.2.8
+	k8s.io/api v0.17.4
+	k8s.io/apiextensions-apiserver v0.17.4
+	k8s.io/apimachinery v0.17.4
+	k8s.io/client-go v0.17.4
+	k8s.io/code-generator v0.17.4
 	sigs.k8s.io/yaml v1.1.0
 )
 
@@ -74,9 +74,9 @@ replace (
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
 
 	// kube 1.17
-	k8s.io/api => k8s.io/api v0.17.0
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.17.0
-	k8s.io/client-go => k8s.io/client-go v0.17.0
-	k8s.io/code-generator => k8s.io/code-generator v0.17.0
+	k8s.io/api => k8s.io/api v0.17.4
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
+	k8s.io/client-go => k8s.io/client-go v0.17.4
+	k8s.io/code-generator => k8s.io/code-generator v0.17.4
 )

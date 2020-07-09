@@ -47,6 +47,7 @@ ${CODEGEN_PKG}/generate-groups.sh all \
     ${APIS_PKG} \
     {{ .ProjectConfig.Name }}:{{ .ProjectConfig.Version }} \
     --output-base "${TEMP_DIR}"
+	--go-header-file "${{CODEGEN_PKG}}"/hack/boilerplate.go.txt
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/.."
 
