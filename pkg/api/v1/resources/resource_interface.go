@@ -48,9 +48,8 @@ type InputResource interface {
 	SetStatus(status core.Status)
 }
 
-// Custom resource imported in a solo-kit project can implement this interface to control
+// Custom resources imported in a solo-kit project can implement this interface to control
 // how spec and status data is mapped to/from the generic `Resource` type.
-// this interface in order
 type CustomInputResource interface {
 	InputResource
 	UnmarshalSpec(spec v1.Spec) error

@@ -79,21 +79,21 @@ func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
 		status v1.Status
 	)
 
-	if withConverters, ok := resource.(resources.CustomInputResource); ok {
+	if customResource, ok := resource.(resources.CustomInputResource); ok {
 		// Handle custom spec/status marshalling
 
 		var err error
-		spec, err = withConverters.MarshalSpec()
+		spec, err = customResource.MarshalSpec()
 		if err != nil {
 			panic(fmt.Sprintf("internal error: failed to marshal resource spec to map: %v", err))
 		}
-		status, err = withConverters.MarshalStatus()
+		status, err = customResource.MarshalStatus()
 		if err != nil {
 			panic(fmt.Sprintf("internal error: failed to marshal resource status to map: %v", err))
 		}
 
 	} else {
-		// Handle regular solo-kit resources
+		// Default marshalling
 
 		data, err := protoutils.MarshalMap(resource)
 		if err != nil {

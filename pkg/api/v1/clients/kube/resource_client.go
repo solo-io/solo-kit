@@ -438,7 +438,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 		}
 
 	} else {
-		// Handle regular solo-kit resources
+		// Default unmarshalling
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
 			updateFunc := func(status *core.Status) error {
