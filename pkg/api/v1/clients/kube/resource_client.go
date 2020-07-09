@@ -198,7 +198,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	// mutate and return clone
 	clone := resources.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
-	resourceCrd := rc.crd.KubeResource(clone)
+	resourceCrd, err := rc.crd.KubeResource(clone)
+	if err != nil {
+		return nil, err
+	}
 
 	ctx := opts.Ctx
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName), tag.Insert(KeyOpKind, "write")); err == nil {
