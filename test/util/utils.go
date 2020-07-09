@@ -32,11 +32,15 @@ func MockClientForNamespace(cache kube.SharedCache, namespaces []string) *kube.R
 }
 
 func CreateMockResource(cs *fake.Clientset, namespace, name, dumbFieldValue string) error {
-	_, err := cs.ResourcesV1().Resources(namespace).Create(
-		v1.MockResourceCrd.KubeResource(&v1.MockResource{
-			Metadata:      core.Metadata{Name: name},
-			SomeDumbField: dumbFieldValue,
-		}))
+	kubeResource, err := v1.MockResourceCrd.KubeResource(&v1.MockResource{
+		Metadata:      core.Metadata{Name: name},
+		SomeDumbField: dumbFieldValue,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = cs.ResourcesV1().Resources(namespace).Create(kubeResource)
 	return err
 }
 
@@ -45,12 +49,16 @@ func DeleteMockResource(cs *fake.Clientset, namespace, name string) error {
 }
 
 func CreateV2Alpha1MockResource(cs *fake.Clientset, namespace, name, dumbFieldValue string) error {
-	_, err := cs.ResourcesV1().Resources(namespace).Create(
-		v2alpha1.MockResourceCrd.KubeResource(&v2alpha1.MockResource{
-			Metadata: core.Metadata{Name: name},
-			WeStuckItInAOneof: &v2alpha1.MockResource_SomeDumbField{
-				SomeDumbField: dumbFieldValue,
-			},
-		}))
+	kubeResource, err := v2alpha1.MockResourceCrd.KubeResource(&v2alpha1.MockResource{
+		Metadata: core.Metadata{Name: name},
+		WeStuckItInAOneof: &v2alpha1.MockResource_SomeDumbField{
+			SomeDumbField: dumbFieldValue,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = cs.ResourcesV1().Resources(namespace).Create(kubeResource)
 	return err
 }

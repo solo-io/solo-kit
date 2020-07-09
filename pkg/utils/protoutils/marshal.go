@@ -101,6 +101,19 @@ func MarshalMapEmitZeroValues(from resources.Resource) (map[string]interface{}, 
 	return m, err
 }
 
+func MarshalMapFromProto(from proto.Message) (map[string]interface{}, error) {
+	out := &bytes.Buffer{}
+	if err := jsonpbMarshaler.Marshal(out, from); err != nil {
+		return nil, eris.Wrap(err, "failed to marshal proto to bytes")
+	}
+
+	var m map[string]interface{}
+	if err := json.Unmarshal(out.Bytes(), &m); err != nil {
+		return nil, eris.Wrap(err, "failed to unmarshal bytes to map")
+	}
+	return m, nil
+}
+
 func MarshalMapFromProtoWithEnumsAsInts(from proto.Message) (map[string]interface{}, error) {
 	out := &bytes.Buffer{}
 	if err := jsonpbMarshalerEnumsAsInts.Marshal(out, from); err != nil {

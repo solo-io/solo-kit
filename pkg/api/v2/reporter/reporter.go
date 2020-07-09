@@ -103,18 +103,25 @@ func (e ResourceReports) ValidateStrict() error {
 	return errs
 }
 
+// Minimal set of client operations required for reporters.
+type ReporterResourceClient interface {
+	Kind() string
+	Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error)
+	Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error)
+}
+
 type Reporter interface {
 	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status) error
 }
 
 type reporter struct {
-	clients clients.ResourceClients
+	clients map[string]ReporterResourceClient
 	ref     string
 }
 
-func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) Reporter {
-	clientsByKind := make(clients.ResourceClients)
-	for _, client := range resourceClients {
+func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) Reporter {
+	clientsByKind := make(map[string]ReporterResourceClient)
+	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
 	return &reporter{
@@ -180,7 +187,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create

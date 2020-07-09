@@ -1,9 +1,10 @@
 package crd
 
 import (
-	"fmt"
 	"log"
 	"sync"
+
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -17,7 +18,13 @@ import (
 )
 
 // TODO(ilackarms): evaluate this fix for concurrent map access in k8s.io/apimachinery/pkg/runtime.SchemaBuider
-var registerLock sync.Mutex
+var (
+	registerLock sync.Mutex
+
+	MarshalErr = func(err error, detail string) error {
+		return eris.Wrapf(err, "internal error: failed to marshal %s", detail)
+	}
+)
 
 type CrdMeta struct {
 	Plural        string
@@ -73,32 +80,51 @@ func (d Crd) Register(apiexts apiexts.Interface) error {
 	return getRegistry().registerCrd(d.GroupVersionKind(), apiexts)
 }
 
-func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
+func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error) {
+	var (
+		spec   v1.Spec
+		status v1.Status
+	)
 
-	// Handle spec
-	data, err := protoutils.MarshalMap(resource)
-	if err != nil {
-		panic(fmt.Sprintf("internal error: failed to marshal resource to map: %v", err))
+	if customResource, ok := resource.(resources.CustomInputResource); ok {
+		// Handle custom spec/status marshalling
+
+		var err error
+		spec, err = customResource.MarshalSpec()
+		if err != nil {
+			return nil, MarshalErr(err, "resource spec to map")
+		}
+		status, err = customResource.MarshalStatus()
+		if err != nil {
+			return nil, MarshalErr(err, "resource status to map")
+		}
+
+	} else {
+		// Default marshalling
+
+		data, err := protoutils.MarshalMap(resource)
+		if err != nil {
+			return nil, MarshalErr(err, "resource to map")
+		}
+
+		delete(data, "metadata")
+		delete(data, "status")
+		spec = data
+
+		statusProto := resource.GetStatus()
+		statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(&statusProto)
+		if err != nil {
+			return nil, MarshalErr(err, "resource status to map")
+		}
+		status = statusMap
 	}
-
-	delete(data, "metadata")
-	delete(data, "status")
-	spec := v1.Spec(data)
-
-	// Handle status
-	statusProto := resource.GetStatus()
-	statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(&statusProto)
-	if err != nil {
-		panic(fmt.Sprintf("internal error: failed to marshal resource status to map %v", err))
-	}
-	status := v1.Status(statusMap)
 
 	return &v1.Resource{
 		TypeMeta:   d.TypeMeta(),
 		ObjectMeta: kubeutils.ToKubeMetaMaintainNamespace(resource.GetMetadata()),
 		Status:     status,
 		Spec:       &spec,
-	}
+	}, nil
 }
 
 func (d CrdMeta) FullName() string {

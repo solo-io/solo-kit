@@ -198,7 +198,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	// mutate and return clone
 	clone := resources.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
-	resourceCrd := rc.crd.KubeResource(clone)
+	resourceCrd, err := rc.crd.KubeResource(clone)
+	if err != nil {
+		return nil, err
+	}
 
 	ctx := opts.Ctx
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName), tag.Insert(KeyOpKind, "write")); err == nil {
@@ -423,22 +426,40 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 	resource := rc.NewResource()
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
 
-	if withStatus, ok := resource.(resources.InputResource); ok {
-		updateFunc := func(status *core.Status) error {
-			typedStatus := core.Status{}
-			if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
-				return err
+	if customResource, ok := resource.(resources.CustomInputResource); ok {
+		// Handle custom spec/status unmarshalling
+
+		if resourceCrd.Spec != nil {
+			if err := customResource.UnmarshalSpec(*resourceCrd.Spec); err != nil {
+				return nil, errors.Wrapf(err, "unmarshalling crd spec on custom resource %v in namespace %v into %v",
+					resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
-			*status = typedStatus
-			return nil
 		}
-		if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
-			return nil, err
+		if err := customResource.UnmarshalStatus(resourceCrd.Status); err != nil {
+			return nil, errors.Wrapf(err, "unmarshalling crd status on custom resource %v in namespace %v into %v",
+				resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 		}
-	}
-	if resourceCrd.Spec != nil {
-		if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
-			return nil, errors.Wrapf(err, "reading crd spec on resource %v in namespace %v into %v", resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
+
+	} else {
+		// Default unmarshalling
+
+		if withStatus, ok := resource.(resources.InputResource); ok {
+			updateFunc := func(status *core.Status) error {
+				typedStatus := core.Status{}
+				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
+					return err
+				}
+				*status = typedStatus
+				return nil
+			}
+			if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
+				return nil, err
+			}
+		}
+		if resourceCrd.Spec != nil {
+			if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+				return nil, errors.Wrapf(err, "reading crd spec on resource %v in namespace %v into %v", resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
+			}
 		}
 	}
 	return resource, nil

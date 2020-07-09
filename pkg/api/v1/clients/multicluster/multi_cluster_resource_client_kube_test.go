@@ -32,8 +32,9 @@ import (
 )
 
 var _ = Describe("MultiClusterResourceClient e2e test", func() {
-	if os.Getenv("RUN_KUBE_TESTS") != "1" {
-		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+	if !shouldRunMultiClusterTests() {
+		log.Printf("Multi-cluster kubernetes tests are disabled by default. To enable, set RUN_KUBE_TESTS=1 and " +
+			"RUN_MULTI_CLUSTER_TESTS=1 in your env, and set ALT_CLUSTER_KUBECONFIG to a valid kubernetes config file.")
 		return
 	}
 

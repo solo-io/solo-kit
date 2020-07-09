@@ -29,7 +29,7 @@ var (
 	err                   error
 
 	_ = SynchronizedBeforeSuite(func() []byte {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+		if !shouldRunMultiClusterTests() {
 			return nil
 		}
 
@@ -53,7 +53,7 @@ var (
 	}, func([]byte) {})
 
 	_ = SynchronizedAfterSuite(func() {}, func() {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+		if !shouldRunMultiClusterTests() {
 			return
 		}
 
@@ -84,4 +84,8 @@ func remoteKubeClient() kubernetes.Interface {
 	client, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 	return client
+}
+
+func shouldRunMultiClusterTests() bool {
+	return os.Getenv("RUN_KUBE_TESTS") == "1" && os.Getenv("RUN_MULTI_CLUSTER_TESTS") == "1"
 }
