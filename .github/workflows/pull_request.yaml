@@ -7,40 +7,6 @@ on:
   pull_request:
 
 jobs:
-  gen:
-    name: Code Gen
-    runs-on: ubuntu-18.04
-    steps:
-    - name: Cancel Previous Runs
-      uses: styfle/cancel-workflow-action@0.4.0
-      with:
-        access_token: ${{ github.token }}
-    - name: Set up Go 1.14
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.14
-      id: go
-    - name: Install Protoc
-      uses: arduino/setup-protoc@v1.1.0
-      with:
-        version: '3.6.1'
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - name: Generate Code
-      env:
-        GOPATH: /home/runner/go
-      run: |
-        ./ci/check-code-gen.sh
-
-
   test:
     name: Tests
     runs-on: ubuntu-18.04
