@@ -35,6 +35,8 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
     - name: Generate Code
+      env:
+        GOPATH: /home/runner/go
       run: |
         ./ci/check-code-gen.sh
 
