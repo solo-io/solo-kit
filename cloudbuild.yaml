@@ -22,14 +22,14 @@ steps:
   id: 'prepare-workspace'
 
 # Installs go executables required by codegen tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.3'
   args: ['update-deps']
   waitFor: ['prepare-workspace']
   id: 'update-deps'
   dir: *dir
 
 # check code gen for kubernetes custom resources, should be no diff
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.3'
   entrypoint: 'bash'
   args: ['ci/check-code-gen.sh']
   env:
