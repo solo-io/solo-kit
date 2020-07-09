@@ -74,17 +74,29 @@ func (d Crd) Register(apiexts apiexts.Interface) error {
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) *v1.Resource {
+
+	// Handle spec
 	data, err := protoutils.MarshalMap(resource)
 	if err != nil {
 		panic(fmt.Sprintf("internal error: failed to marshal resource to map: %v", err))
 	}
+
 	delete(data, "metadata")
 	delete(data, "status")
 	spec := v1.Spec(data)
+
+	// Handle status
+	statusProto := resource.GetStatus()
+	statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(&statusProto)
+	if err != nil {
+		panic(fmt.Sprintf("internal error: failed to marshal resource status to map %v", err))
+	}
+	status := v1.Status(statusMap)
+
 	return &v1.Resource{
 		TypeMeta:   d.TypeMeta(),
 		ObjectMeta: kubeutils.ToKubeMetaMaintainNamespace(resource.GetMetadata()),
-		Status:     resource.GetStatus(),
+		Status:     status,
 		Spec:       &spec,
 	}
 }

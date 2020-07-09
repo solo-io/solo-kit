@@ -436,10 +436,14 @@ func UpdateListMetadata(resources ResourceList, updateFunc func(meta *core.Metad
 	}
 }
 
-func UpdateStatus(resource InputResource, updateFunc func(status *core.Status)) {
+func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) error) error {
 	status := resource.GetStatus()
-	updateFunc(&status)
+	err := updateFunc(&status)
+	if err != nil {
+		return err
+	}
 	resource.SetStatus(status)
+	return nil
 }
 
 func Validate(resource Resource) error {
