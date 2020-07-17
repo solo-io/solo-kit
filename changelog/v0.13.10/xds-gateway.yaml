@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix xds-gateway server to use golang/protobuf vs gogo
+    issueLink: https://github.com/solo-io/solo-kit/issues/366
