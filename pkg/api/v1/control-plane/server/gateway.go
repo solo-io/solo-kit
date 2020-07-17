@@ -20,9 +20,8 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/gogo/protobuf/jsonpb"
-
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
 )
 
@@ -53,22 +52,26 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 	typeURL, ok := h.UrlToType[p]
 	if !ok {
+		h.Log.Debugf("no endpoint")
 		http.Error(resp, "no endpoint", http.StatusNotFound)
 		return
 	}
 
 	if req.Body == nil {
+		h.Log.Debugf("nil body")
 		http.Error(resp, "nil body", http.StatusBadRequest)
 		return
 	}
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
+		h.Log.Debugf("cannot read body")
 		http.Error(resp, "cannot read body", http.StatusBadRequest)
 		return
 	}
 
 	if len(body) == 0 {
+		h.Log.Debugf("empty body")
 		http.Error(resp, "empty body", http.StatusBadRequest)
 		return
 	}
@@ -77,6 +80,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	out := &v2.DiscoveryRequest{}
 	err = jsonpb.UnmarshalString(string(body), out)
 	if err != nil {
+		h.Log.Debugf("cannot parse JSON body: " + err.Error())
 		http.Error(resp, "cannot parse JSON body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -85,6 +89,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	// fetch results
 	res, err := h.Server.Fetch(req.Context(), out)
 	if err != nil {
+		h.Log.Debugf("fetch error: " + err.Error())
 		// Note that this is treated as internal error. We may want to use another code for
 		// the latest version fetch request.
 		http.Error(resp, "fetch error: "+err.Error(), http.StatusInternalServerError)
@@ -93,6 +98,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 	buf := &bytes.Buffer{}
 	if err := (&jsonpb.Marshaler{OrigName: true}).Marshal(buf, res); err != nil {
+		h.Log.Debugf("marshal error: " + err.Error())
 		http.Error(resp, "marshal error: "+err.Error(), http.StatusInternalServerError)
 	}
 
