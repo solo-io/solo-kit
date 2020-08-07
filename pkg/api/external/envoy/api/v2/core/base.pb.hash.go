@@ -242,6 +242,30 @@ func (m *HeaderValue) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *HeaderSecretValue) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderSecretValue")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetNamespace())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -252,20 +276,6 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 	var err error
 	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderValueOption")); err != nil {
 		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetHeader()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetHeader(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
 	}
 
 	if h, ok := interface{}(m.GetAppend()).(safe_hasher.SafeHasher); ok {
@@ -280,6 +290,42 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	switch m.HeaderOption.(type) {
+
+	case *HeaderValueOption_Header:
+
+		if h, ok := interface{}(m.GetHeader()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetHeader(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *HeaderValueOption_HeaderSecretValue:
+
+		if h, ok := interface{}(m.GetHeaderSecretValue()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetHeaderSecretValue(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil

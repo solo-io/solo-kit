@@ -180,10 +180,22 @@ message HeaderValue {
   string value = 2 [(validate.rules).string = {max_bytes: 16384}];
 }
 
+// Header secret lookup key.
+message HeaderSecretValue { 
+    string name = 1;
+    string namespace = 2;
+}
+
 // Header name/value pair plus option to control append behavior.
 message HeaderValueOption {
   // Header name/value pair that this option applies to.
-  HeaderValue header = 1 [(validate.rules).message = {required: true}];
+  oneof header_option {
+    option (validate.required) = true;
+    // Explicitly specified herader
+    HeaderValue header = 1;
+    // Reference to header contained in a secret
+    HeaderSecretValue header_secret_value = 3;
+  }
 
   // Should the value be appended? If true (default), the value is appended to
   // existing values.
