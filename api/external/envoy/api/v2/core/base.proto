@@ -181,7 +181,7 @@ message HeaderValue {
 }
 
 // Header secret lookup key.
-message HeaderSecretValue { 
+message HeaderSecretRef { 
     string name = 1;
     string namespace = 2;
 }
@@ -191,10 +191,10 @@ message HeaderValueOption {
   // Header name/value pair that this option applies to.
   oneof header_option {
     option (validate.required) = true;
-    // Explicitly specified herader
+    // Explicitly specified header
     HeaderValue header = 1;
     // Reference to header contained in a secret
-    HeaderSecretValue header_secret_value = 3;
+    HeaderSecretRef header_secret_ref = 3;
   }
 
   // Should the value be appended? If true (default), the value is appended to

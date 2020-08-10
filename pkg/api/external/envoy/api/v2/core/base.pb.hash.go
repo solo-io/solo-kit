@@ -242,7 +242,7 @@ func (m *HeaderValue) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *HeaderSecretValue) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *HeaderSecretRef) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -250,7 +250,7 @@ func (m *HeaderSecretValue) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderSecretValue")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderSecretRef")); err != nil {
 		return 0, err
 	}
 
@@ -310,14 +310,14 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *HeaderValueOption_HeaderSecretValue:
+	case *HeaderValueOption_HeaderSecretRef:
 
-		if h, ok := interface{}(m.GetHeaderSecretValue()).(safe_hasher.SafeHasher); ok {
+		if h, ok := interface{}(m.GetHeaderSecretRef()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetHeaderSecretValue(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetHeaderSecretRef(), nil); err != nil {
 				return 0, err
 			} else {
 				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
