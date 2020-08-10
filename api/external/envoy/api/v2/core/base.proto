@@ -21,6 +21,8 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
+import "solo-kit/api/v1/ref.proto";
+
 // [#protodoc-title: Common types]
 
 // Envoy supports `upstream priority routing
@@ -180,12 +182,6 @@ message HeaderValue {
   string value = 2 [(validate.rules).string = {max_bytes: 16384}];
 }
 
-// Header secret lookup key.
-message HeaderSecretRef { 
-    string name = 1;
-    string namespace = 2;
-}
-
 // Header name/value pair plus option to control append behavior.
 message HeaderValueOption {
   // Header name/value pair that this option applies to.
@@ -194,7 +190,7 @@ message HeaderValueOption {
     // Explicitly specified header
     HeaderValue header = 1;
     // Reference to header contained in a secret
-    HeaderSecretRef header_secret_ref = 3;
+    .core.solo.io.ResourceRef header_secret_ref = 3;
   }
 
   // Should the value be appended? If true (default), the value is appended to
