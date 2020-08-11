@@ -33,7 +33,7 @@ echo ">> Temporary output directory ${TEMP_DIR}"
 chmod +x ${CODEGEN_PKG}/generate-groups.sh
 
 
-${CODEGEN_PKG}/generate-groups.sh all \
+${CODEGEN_PKG}/generate-groups.sh deepcopy,client,informer \
     ${CLIENT_PKG} \
     ${APIS_PKG} \
     solo.io:v1 \
