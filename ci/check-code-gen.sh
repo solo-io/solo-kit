@@ -8,9 +8,7 @@ if [ ! -f .gitignore ]; then
   echo "_output" > .gitignore
 fi
 
-
-git config user.email "you@example.com"
-git config user.name "Your Name"
+make update-deps
 
 
 set +e
