@@ -166,7 +166,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 
 	stats.Record(ctx, MInFlight.M(1))
-	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{})
+	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(ctx, name, metav1.GetOptions{})
 	stats.Record(ctx, MInFlight.M(-1))
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -220,9 +220,9 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		}
 		stats.Record(ctx, MUpdates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, updateErr := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Update(resourceCrd); updateErr != nil {
+		if _, updateErr := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Update(ctx, resourceCrd, metav1.UpdateOptions{}); updateErr != nil {
 
-			original, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			original, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Get(ctx, meta.Name, metav1.GetOptions{})
 			if err == nil {
 				if apierrors.IsConflict(updateErr) {
 					return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, "", meta.ResourceVersion)
@@ -238,7 +238,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	} else {
 		stats.Record(ctx, MCreates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Create(resourceCrd); err != nil {
+		if _, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Create(ctx, resourceCrd, metav1.CreateOptions{}); err != nil {
 			if apierrors.IsAlreadyExists(err) {
 				return nil, errors.NewExistErr(meta)
 			}
@@ -274,7 +274,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 
 	stats.Record(ctx, MInFlight.M(1))
 	defer stats.Record(ctx, MInFlight.M(-1))
-	if err := rc.crdClientset.ResourcesV1().Resources(namespace).Delete(name, nil); err != nil {
+	if err := rc.crdClientset.ResourcesV1().Resources(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting resource %v", name)
 	}
 	return nil
@@ -417,7 +417,7 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 	stats.Record(ctx, MInFlight.M(1))
 	defer stats.Record(ctx, MInFlight.M(-1))
 
-	_, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{}) // TODO(yuval-k): check error for real
+	_, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(ctx, name, metav1.GetOptions{}) // TODO(yuval-k): check error for real
 	return err == nil
 
 }

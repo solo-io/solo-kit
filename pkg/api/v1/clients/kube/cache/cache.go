@@ -151,7 +151,7 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 			// Pods
 			watch := client.CoreV1().Pods(nsToWatch).Watch
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Pods(nsToWatch).List(options)
+				return client.CoreV1().Pods(nsToWatch).List(ctx, options)
 			}
 			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Pod{}, list, watch)
 			informers = append(informers, informer)
@@ -166,7 +166,7 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 			// Services
 			watch := client.CoreV1().Services(nsToWatch).Watch
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Services(nsToWatch).List(options)
+				return client.CoreV1().Services(nsToWatch).List(ctx, options)
 			}
 			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Service{}, list, watch)
 			informers = append(informers, informer)
@@ -181,7 +181,7 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 			// ConfigMap
 			watch := client.CoreV1().ConfigMaps(nsToWatch).Watch
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().ConfigMaps(nsToWatch).List(options)
+				return client.CoreV1().ConfigMaps(nsToWatch).List(ctx, options)
 			}
 			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.ConfigMap{}, list, watch)
 			informers = append(informers, informer)
@@ -196,7 +196,7 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 			// Secrets
 			watch := client.CoreV1().Secrets(nsToWatch).Watch
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Secrets(nsToWatch).List(options)
+				return client.CoreV1().Secrets(nsToWatch).List(ctx, options)
 			}
 			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Secret{}, list, watch)
 			informers = append(informers, informer)
@@ -212,7 +212,7 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 		// Pods
 		watch := client.CoreV1().Namespaces().Watch
 		list := func(options metav1.ListOptions) (runtime.Object, error) {
-			return client.CoreV1().Namespaces().List(options)
+			return client.CoreV1().Namespaces().List(ctx, options)
 		}
 		nsCtx := ctx
 		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(metav1.NamespaceAll)), tag.Insert(skkube.KeyKind, "Namespaces")); err == nil {

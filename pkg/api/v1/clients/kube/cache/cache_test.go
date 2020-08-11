@@ -111,9 +111,9 @@ var _ = Describe("kube core cache tests", func() {
 					testns = fmt.Sprintf("test-%d", randomvalue)
 					testns2 = fmt.Sprintf("test2-%d", randomvalue)
 					for _, ns := range []string{testns, testns2} {
-						_, err := client.CoreV1().Namespaces().Create(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}})
+						_, err := client.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
 						Expect(err).NotTo(HaveOccurred())
-						_, err = client.CoreV1().ConfigMaps(ns).Create(&v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cfg"}})
+						_, err = client.CoreV1().ConfigMaps(ns).Create(ctx, &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cfg"}}, metav1.CreateOptions{})
 						Expect(err).NotTo(HaveOccurred())
 
 					}
@@ -124,7 +124,7 @@ var _ = Describe("kube core cache tests", func() {
 
 				AfterEach(func() {
 					for _, ns := range []string{testns, testns2} {
-						client.CoreV1().Namespaces().Delete(ns, nil)
+						client.CoreV1().Namespaces().Delete(ctx, ns, metav1.DeleteOptions{})
 					}
 				})
 

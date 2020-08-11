@@ -134,7 +134,7 @@ func NotEmptyValue(ns string) string {
 
 func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType runtime.Object,
 	listFunc func(options metav1.ListOptions) (runtime.Object, error),
-	watchFunc func(opts metav1.ListOptions) (kubewatch.Interface, error)) cache.SharedIndexInformer {
+	watchFunc func(context.Context, metav1.ListOptions) (kubewatch.Interface, error)) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
@@ -154,7 +154,7 @@ func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType 
 
 				stats.Record(watchCtx, MWatches.M(1), MInFlight.M(1))
 				defer stats.Record(watchCtx, MInFlight.M(-1))
-				return watchFunc(options)
+				return watchFunc(ctx, options)
 			},
 		},
 		objType,
@@ -205,7 +205,7 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 		resourceList := rc.crdClientset.ResourcesV1().Resources(ns).List
 		list := func(options metav1.ListOptions) (runtime.Object, error) {
-			return resourceList(options)
+			return resourceList(ctx, options)
 		}
 		watch := rc.crdClientset.ResourcesV1().Resources(ns).Watch
 		sharedInformer := NewSharedInformer(nsCtx, resyncPeriod, &v1.Resource{}, list, watch)

@@ -46,7 +46,7 @@ require (
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
-	github.com/solo-io/go-utils v0.16.7-0.20200810222326-6508aa020965
+	github.com/solo-io/go-utils v0.17.0
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	go.opencensus.io v0.22.1
 	go.uber.org/multierr v1.4.0

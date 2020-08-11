@@ -22,6 +22,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	scheme "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,13 +54,15 @@ type ResourceInterface interface {
 type resources struct {
 	client rest.Interface
 	ns     string
+	def    crd.Crd
 }
 
 // newResources returns a Resources
-func newResources(c *ResourcesV1Client, namespace string) *resources {
+func newResources(c *ResourcesV1Client, namespace string, def crd.Crd) *resources {
 	return &resources{
 		client: c.RESTClient(),
 		ns:     namespace,
+		def:    def,
 	}
 }
 
@@ -68,7 +71,7 @@ func (c *resources) Get(ctx context.Context, name string, options metav1.GetOpti
 	result = &v1.Resource{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("resources").
+		Resource(c.def.Plural).
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
 		Do(ctx).
@@ -85,7 +88,7 @@ func (c *resources) List(ctx context.Context, opts metav1.ListOptions) (result *
 	result = &v1.ResourceList{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("resources").
+		Resource(c.def.Plural).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Do(ctx).
@@ -102,7 +105,7 @@ func (c *resources) Watch(ctx context.Context, opts metav1.ListOptions) (watch.I
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
-		Resource("resources").
+		Resource(c.def.Plural).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Watch(ctx)
@@ -113,7 +116,7 @@ func (c *resources) Create(ctx context.Context, resource *v1.Resource, opts meta
 	result = &v1.Resource{}
 	err = c.client.Post().
 		Namespace(c.ns).
-		Resource("resources").
+		Resource(c.def.Plural).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(resource).
 		Do(ctx).
@@ -126,7 +129,7 @@ func (c *resources) Update(ctx context.Context, resource *v1.Resource, opts meta
 	result = &v1.Resource{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("resources").
+		Resource(c.def.Plural).
 		Name(resource.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(resource).
@@ -139,7 +142,7 @@ func (c *resources) Update(ctx context.Context, resource *v1.Resource, opts meta
 func (c *resources) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("resources").
+		Resource(c.def.Plural).
 		Name(name).
 		Body(&opts).
 		Do(ctx).
@@ -154,7 +157,7 @@ func (c *resources) DeleteCollection(ctx context.Context, opts metav1.DeleteOpti
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("resources").
+		Resource(c.def.Plural).
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(&opts).
@@ -167,7 +170,7 @@ func (c *resources) Patch(ctx context.Context, name string, pt types.PatchType, 
 	result = &v1.Resource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
-		Resource("resources").
+		Resource(c.def.Plural).
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
