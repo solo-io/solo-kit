@@ -15,7 +15,6 @@ import (
 
 var _ = Describe("ClusterClientGetter", func() {
 	var (
-		ctx                context.Context
 		subject            *clusterClientManager
 		mockCtrl           *gomock.Controller
 		factory            *mock_factory.MockClusterClientFactory
@@ -27,7 +26,7 @@ var _ = Describe("ClusterClientGetter", func() {
 	)
 
 	BeforeEach(func() {
-		mockCtrl, ctx = gomock.WithContext(context.Background(), GinkgoT())
+		mockCtrl = gomock.NewController(GinkgoT())
 		factory = mock_factory.NewMockClusterClientFactory(mockCtrl)
 		handler = mocks.NewMockClientForClusterHandler(mockCtrl)
 		client1 = mocks2.NewMockResourceClient(mockCtrl)
@@ -36,7 +35,7 @@ var _ = Describe("ClusterClientGetter", func() {
 	})
 
 	expectClusterAdded := func(client *mocks2.MockResourceClient, cluster string, cfg *rest.Config) {
-		factory.EXPECT().GetClient(ctx, cluster, cfg).Return(client, nil)
+		factory.EXPECT().GetClient(gomock.Any(), cluster, cfg).Return(client, nil)
 		client.EXPECT().Register().Return(nil)
 		handler.EXPECT().HandleNewClusterClient(cluster, client)
 		subject.ClusterAdded(cluster, cfg)
@@ -51,7 +50,7 @@ var _ = Describe("ClusterClientGetter", func() {
 		})
 
 		It("does nothing when a client cannot be created", func() {
-			factory.EXPECT().GetClient(ctx, cluster1, cfg1).Return(nil, testErr)
+			factory.EXPECT().GetClient(gomock.Any(), cluster1, cfg1).Return(nil, testErr)
 			subject.ClusterAdded(cluster1, cfg1)
 			newClient, found := subject.ClientForCluster(cluster1)
 			Expect(found).To(BeFalse())
@@ -59,7 +58,7 @@ var _ = Describe("ClusterClientGetter", func() {
 		})
 
 		It("does nothing when a client cannot be registered", func() {
-			factory.EXPECT().GetClient(ctx, cluster1, cfg1).Return(client1, nil)
+			factory.EXPECT().GetClient(gomock.Any(), cluster1, cfg1).Return(client1, nil)
 			client1.EXPECT().Register().Return(testErr)
 			client1.EXPECT().Kind() // Called in error log
 			subject.ClusterAdded(cluster1, cfg1)
