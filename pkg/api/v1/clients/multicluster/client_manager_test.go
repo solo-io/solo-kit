@@ -59,7 +59,7 @@ var _ = Describe("ClusterClientGetter", func() {
 		})
 
 		It("does nothing when a client cannot be registered", func() {
-			factory.EXPECT().GetClient(cluster1, cfg1).Return(client1, nil)
+			factory.EXPECT().GetClient(ctx, cluster1, cfg1).Return(client1, nil)
 			client1.EXPECT().Register().Return(testErr)
 			client1.EXPECT().Kind() // Called in error log
 			subject.ClusterAdded(cluster1, cfg1)
