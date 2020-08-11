@@ -1,4 +1,4 @@
-package kubesecret_test
+package plain_test
 
 import (
 	"context"

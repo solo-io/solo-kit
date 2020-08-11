@@ -1,4 +1,4 @@
-package kubesecret_test
+package struct_test
 
 import (
 	"context"
