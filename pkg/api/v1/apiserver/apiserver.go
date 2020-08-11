@@ -72,7 +72,7 @@ func (s *ApiServer) resourceClient(ctx context.Context, resourceKind string) (cl
 	if !ok {
 		return nil, errors.Errorf("no resource type registered for kind %s", resourceKind)
 	}
-	return s.factory.NewResourceClient(factory.NewResourceClientParams{
+	return s.factory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		Token:        token,
 		ResourceType: resourceType,
 	})

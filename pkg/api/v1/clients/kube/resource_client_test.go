@@ -49,6 +49,7 @@ var (
 	lock       *clusterlock.TestClusterLocker
 )
 var _ = SynchronizedBeforeSuite(func() []byte {
+	ctx := context.Background()
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 
@@ -64,7 +65,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	apiExts, err := apiext.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = v1.MockResourceCrd.Register(apiExts)
+	err = v1.MockResourceCrd.Register(ctx, apiExts)
 	Expect(err).NotTo(HaveOccurred())
 	return nil
 }, func(data []byte) {
@@ -96,6 +97,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 	)
 
 	var (
+		ctx             context.Context
 		mockResourceCrd = &solov1.Resource{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "testing.solo.io/v1",
@@ -113,7 +115,8 @@ var _ = Describe("Test Kube ResourceClient", func() {
 	)
 
 	BeforeEach(func() {
-		client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(context.TODO()), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
+		ctx = context.Background()
+		client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(ctx), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
 	})
 
 	Context("integrations tests", func() {
@@ -129,12 +132,12 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			ns1 = helpers.RandString(8)
 			ns2 = helpers.RandString(8)
 			kubeClient = helpers.MustKubeClient()
-			err := kubeutils.CreateNamespacesInParallel(kubeClient, ns1, ns2)
+			err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, ns1, ns2)
+			err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -144,7 +147,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			}
 			generic.TestCrudClient(ns1, ns2, client, clients.WatchOpts{
 				Selector:    selector,
-				Ctx:         context.TODO(),
+				Ctx:         ctx,
 				RefreshRate: time.Minute,
 			})
 		})
@@ -159,12 +162,12 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			ns1 = helpers.RandString(8)
 			ns2 = helpers.RandString(8)
 			kubeClient = helpers.MustKubeClient()
-			err := kubeutils.CreateNamespacesInParallel(kubeClient, ns1, ns2)
+			err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, ns1, ns2)
+			err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, ns1, ns2)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("can watch resources across namespaces when using NamespaceAll", func() {
@@ -176,7 +179,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			err := client.Register()
 			Expect(err).NotTo(HaveOccurred())
 
-			w, errs, err := client.Watch(watchNamespace, clients.WatchOpts{Ctx: context.TODO(), Selector: selectors})
+			w, errs, err := client.Watch(watchNamespace, clients.WatchOpts{Ctx: ctx, Selector: selectors})
 			Expect(err).NotTo(HaveOccurred())
 
 			var r1, r2 resources.Resource
@@ -243,7 +246,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 		BeforeEach(func() {
 			clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
-			cache = kube.NewKubeCache(context.TODO())
+			cache = kube.NewKubeCache(ctx)
 			rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
 		})
 
@@ -397,7 +400,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
 
 				// Create an initial resource with the name of resourceToUpdate
-				err := util.CreateMockResource(clientset, namespace1, resourceToUpdate.Metadata.Name, "to-be-updated")
+				err := util.CreateMockResource(ctx, clientset, namespace1, resourceToUpdate.Metadata.Name, "to-be-updated")
 				Expect(err).NotTo(HaveOccurred())
 
 				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
@@ -431,7 +434,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				It("correctly applies the pre write callback", func() {
 					_, err := rc.Write(resourceToCreate, clients.WriteOpts{StorageWriteOpts: kubeWriteOpts})
 					Expect(err).NotTo(HaveOccurred())
-					r, err := clientset.ResourcesV1().Resources(namespace1).Get(resourceToCreate.Metadata.Name, metav1.GetOptions{})
+					r, err := clientset.ResourcesV1().Resources(namespace1).Get(ctx, resourceToCreate.Metadata.Name, metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(r.OwnerReferences).To(HaveLen(1))
@@ -457,7 +460,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				It("correctly applies the pre write callback", func() {
 					_, err := rc.Write(resourceToUpdate, clients.WriteOpts{OverwriteExisting: true, StorageWriteOpts: kubeWriteOpts})
 					Expect(err).NotTo(HaveOccurred())
-					r, err := clientset.ResourcesV1().Resources(namespace1).Get(resourceToUpdate.Metadata.Name, metav1.GetOptions{})
+					r, err := clientset.ResourcesV1().Resources(namespace1).Get(ctx, resourceToUpdate.Metadata.Name, metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(r.OwnerReferences).To(HaveLen(1))
@@ -484,12 +487,12 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
 
 				// Create initial resources
-				Expect(util.CreateMockResource(clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
-				Expect(util.CreateMockResource(clientset, namespace1, "res-2", "val-2")).NotTo(HaveOccurred())
-				Expect(util.CreateMockResource(clientset, namespace1, "res-3", "val-3")).NotTo(HaveOccurred())
-				Expect(util.CreateMockResource(clientset, namespace2, "res-4", "val-4")).NotTo(HaveOccurred())
+				Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
+				Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-2", "val-2")).NotTo(HaveOccurred())
+				Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-3", "val-3")).NotTo(HaveOccurred())
+				Expect(util.CreateMockResource(ctx, clientset, namespace2, "res-4", "val-4")).NotTo(HaveOccurred())
 				// v2alpha1 resources should be ignored by this v1 MockResource client
-				Expect(util.CreateV2Alpha1MockResource(clientset, namespace2, "res-5", "val-5")).NotTo(HaveOccurred())
+				Expect(util.CreateV2Alpha1MockResource(ctx, clientset, namespace2, "res-5", "val-5")).NotTo(HaveOccurred())
 
 				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1, namespace2, "empty"}, 0)
 				Expect(rc.Register()).NotTo(HaveOccurred())
@@ -518,7 +521,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
 
 				// Create initial resource
-				Expect(util.CreateMockResource(clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
+				Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
 
 				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
 				Expect(rc.Register()).NotTo(HaveOccurred())
@@ -567,7 +570,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create a resource
-				go Expect(util.CreateMockResource(clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
 
 				skippedInitialRead := false
 				after := time.After(2 * time.Second)
@@ -596,7 +599,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create a resource
-				go Expect(util.CreateMockResource(clientset, namespace2, "res-1", "val-1")).NotTo(HaveOccurred())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "res-1", "val-1")).NotTo(HaveOccurred())
 
 				skippedInitialRead := false
 				after := time.After(200 * time.Millisecond)

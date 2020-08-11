@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"os"
 
 	"github.com/solo-io/go-utils/kubeutils"
@@ -14,8 +15,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func MustGetNamespaces() []string {
-	ns, err := GetNamespaces()
+func MustGetNamespaces(ctx context.Context) []string {
+	ns, err := GetNamespaces(ctx)
 	if err != nil {
 		log.Fatalf("failed to list namespaces: %v", err)
 	}
@@ -23,7 +24,7 @@ func MustGetNamespaces() []string {
 }
 
 // Note: requires RBAC permission to list namespaces at the cluster level
-func GetNamespaces() ([]string, error) {
+func GetNamespaces(ctx context.Context) ([]string, error) {
 	if memoryResourceClient != nil {
 		return []string{"default", "supergloo-system"}, nil
 	}
@@ -33,7 +34,7 @@ func GetNamespaces() ([]string, error) {
 		return nil, errors.Wrapf(err, "getting kube client")
 	}
 	var namespaces []string
-	nsList, err := kubeClient.CoreV1().Namespaces().List(metav1.ListOptions{})
+	nsList, err := kubeClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

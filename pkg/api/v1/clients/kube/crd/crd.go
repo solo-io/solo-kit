@@ -1,6 +1,7 @@
 package crd
 
 import (
+	"context"
 	"log"
 	"sync"
 
@@ -76,8 +77,8 @@ func NewCrd(
 	return c
 }
 
-func (d Crd) Register(apiexts apiexts.Interface) error {
-	return getRegistry().registerCrd(d.GroupVersionKind(), apiexts)
+func (d Crd) Register(ctx context.Context, apiexts apiexts.Interface) error {
+	return getRegistry().registerCrd(ctx, d.GroupVersionKind(), apiexts)
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error) {

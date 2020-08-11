@@ -25,6 +25,7 @@ var _ = Describe("DeploymentBaseClient", func() {
 		return
 	}
 	var (
+		ctx       context.Context
 		namespace string
 		client    *deploymentResourceClient
 		kube      kubernetes.Interface
@@ -32,22 +33,23 @@ var _ = Describe("DeploymentBaseClient", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace)
 		kubeCache, err = cache.NewKubeDeploymentCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("converts a kubernetes deployment to solo-kit resource", func() {
 
 		labs := map[string]string{"a": "b"}
-		deployment, err := kube.AppsV1().Deployments(namespace).Create(&v1.Deployment{
+		deployment, err := kube.AppsV1().Deployments(namespace).Create(ctx, &v1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "happy",
 				Namespace: namespace,
@@ -66,7 +68,7 @@ var _ = Describe("DeploymentBaseClient", func() {
 					},
 				},
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		var deployments resources.ResourceList

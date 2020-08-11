@@ -25,6 +25,7 @@ var _ = Describe("JobBaseClient", func() {
 		return
 	}
 	var (
+		ctx       context.Context
 		namespace string
 		client    *jobResourceClient
 		kube      kubernetes.Interface
@@ -32,22 +33,23 @@ var _ = Describe("JobBaseClient", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace)
 		kubeCache, err = cache.NewKubeJobCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("converts a kubernetes job to solo-kit resource", func() {
 
 		labs := map[string]string{"a": "b"}
-		job, err := kube.BatchV1().Jobs(namespace).Create(&batchv1.Job{
+		job, err := kube.BatchV1().Jobs(namespace).Create(ctx, &batchv1.Job{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "happy",
 				Namespace: namespace,
@@ -66,7 +68,7 @@ var _ = Describe("JobBaseClient", func() {
 					},
 				},
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		var jobs resources.ResourceList

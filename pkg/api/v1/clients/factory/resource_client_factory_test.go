@@ -56,9 +56,11 @@ var _ = Describe("ResourceClientFactory", func() {
 			return
 		}
 		var (
+			ctx context.Context
 			cfg *rest.Config
 		)
 		BeforeEach(func() {
+			ctx = context.Background()
 			var err error
 			cfg, err = kubeutils.GetConfig("", "")
 			Expect(err).NotTo(HaveOccurred())
@@ -68,7 +70,7 @@ var _ = Describe("ResourceClientFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// ensure the crd is not registered
-			err = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(v1.MockResourceCrd.FullName(), nil)
+			err = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, v1.MockResourceCrd.FullName(), v12.DeleteOptions{})
 			if err != nil {
 				Expect(err).To(BeErrTypeMatcher{
 					ExpectedErrType: "not found",
@@ -76,7 +78,7 @@ var _ = Describe("ResourceClientFactory", func() {
 				})
 			}
 			Eventually(func() bool {
-				_, err := apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(v1.MockResourceCrd.FullName(), v12.GetOptions{})
+				_, err := apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(ctx, v1.MockResourceCrd.FullName(), v12.GetOptions{})
 				return err != nil && errors.IsNotFound(err)
 			}, time.Minute, time.Second*5).Should(BeTrue())
 
@@ -91,7 +93,7 @@ var _ = Describe("ResourceClientFactory", func() {
 					SharedCache:     kube.NewKubeCache(context.TODO()),
 					SkipCrdCreation: true,
 				}
-				_, err := factory.NewResourceClient(NewResourceClientParams{
+				_, err := factory.NewResourceClient(ctx, NewResourceClientParams{
 					ResourceType: &v1.MockResource{},
 				})
 				Expect(err).To(HaveOccurred())
@@ -105,7 +107,7 @@ var _ = Describe("ResourceClientFactory", func() {
 					Cfg:         cfg,
 					SharedCache: kube.NewKubeCache(context.TODO()),
 				}
-				_, err := factory.NewResourceClient(NewResourceClientParams{
+				_, err := factory.NewResourceClient(ctx, NewResourceClientParams{
 					ResourceType: &v1.MockResource{},
 				})
 				Expect(err).NotTo(HaveOccurred())

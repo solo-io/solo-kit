@@ -23,6 +23,7 @@ var _ = Describe("ServiceBaseClient", func() {
 		return
 	}
 	var (
+		ctx       context.Context
 		namespace string
 		client    *serviceResourceClient
 		kube      kubernetes.Interface
@@ -30,21 +31,22 @@ var _ = Describe("ServiceBaseClient", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("converts a kubernetes service to solo-kit resource", func() {
 
-		service, err := kube.CoreV1().Services(namespace).Create(&kubev1.Service{
+		service, err := kube.CoreV1().Services(namespace).Create(ctx, &kubev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "happy",
 				Namespace: namespace,
@@ -58,7 +60,7 @@ var _ = Describe("ServiceBaseClient", func() {
 				},
 				Selector: map[string]string{"foo": "bar"},
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		var services resources.ResourceList
