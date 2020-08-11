@@ -85,6 +85,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
 	mkdir -p ${OUTPUT_DIR}
+	go mod tidy
 	PATH=$(DEPSGOBIN):$$PATH $(GO_BUILD_FLAGS) go generate ./...
 	PATH=$(DEPSGOBIN):$$PATH gofmt -w $(SUBDIRS)
 	PATH=$(DEPSGOBIN):$$PATH goimports -w $(SUBDIRS)
