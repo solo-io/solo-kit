@@ -19,6 +19,7 @@ limitations under the License.
 package v2alpha1
 
 import (
+	"context"
 	"time"
 
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
@@ -37,14 +38,14 @@ type FrequentlyChangingAnnotationsResourcesGetter interface {
 
 // FrequentlyChangingAnnotationsResourceInterface has methods to work with FrequentlyChangingAnnotationsResource resources.
 type FrequentlyChangingAnnotationsResourceInterface interface {
-	Create(*v2alpha1.FrequentlyChangingAnnotationsResource) (*v2alpha1.FrequentlyChangingAnnotationsResource, error)
-	Update(*v2alpha1.FrequentlyChangingAnnotationsResource) (*v2alpha1.FrequentlyChangingAnnotationsResource, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v2alpha1.FrequentlyChangingAnnotationsResource, error)
-	List(opts v1.ListOptions) (*v2alpha1.FrequentlyChangingAnnotationsResourceList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error)
+	Create(ctx context.Context, frequentlyChangingAnnotationsResource *v2alpha1.FrequentlyChangingAnnotationsResource, opts v1.CreateOptions) (*v2alpha1.FrequentlyChangingAnnotationsResource, error)
+	Update(ctx context.Context, frequentlyChangingAnnotationsResource *v2alpha1.FrequentlyChangingAnnotationsResource, opts v1.UpdateOptions) (*v2alpha1.FrequentlyChangingAnnotationsResource, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v2alpha1.FrequentlyChangingAnnotationsResource, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v2alpha1.FrequentlyChangingAnnotationsResourceList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error)
 	FrequentlyChangingAnnotationsResourceExpansion
 }
 
@@ -63,20 +64,20 @@ func newFrequentlyChangingAnnotationsResources(c *TestingV2alpha1Client, namespa
 }
 
 // Get takes name of the frequentlyChangingAnnotationsResource, and returns the corresponding frequentlyChangingAnnotationsResource object, and an error if there is any.
-func (c *frequentlyChangingAnnotationsResources) Get(name string, options v1.GetOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+func (c *frequentlyChangingAnnotationsResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
 	result = &v2alpha1.FrequentlyChangingAnnotationsResource{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("fcars").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of FrequentlyChangingAnnotationsResources that match those selectors.
-func (c *frequentlyChangingAnnotationsResources) List(opts v1.ListOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResourceList, err error) {
+func (c *frequentlyChangingAnnotationsResources) List(ctx context.Context, opts v1.ListOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -87,13 +88,13 @@ func (c *frequentlyChangingAnnotationsResources) List(opts v1.ListOptions) (resu
 		Resource("fcars").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested frequentlyChangingAnnotationsResources.
-func (c *frequentlyChangingAnnotationsResources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *frequentlyChangingAnnotationsResources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -104,71 +105,74 @@ func (c *frequentlyChangingAnnotationsResources) Watch(opts v1.ListOptions) (wat
 		Resource("fcars").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a frequentlyChangingAnnotationsResource and creates it.  Returns the server's representation of the frequentlyChangingAnnotationsResource, and an error, if there is any.
-func (c *frequentlyChangingAnnotationsResources) Create(frequentlyChangingAnnotationsResource *v2alpha1.FrequentlyChangingAnnotationsResource) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+func (c *frequentlyChangingAnnotationsResources) Create(ctx context.Context, frequentlyChangingAnnotationsResource *v2alpha1.FrequentlyChangingAnnotationsResource, opts v1.CreateOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
 	result = &v2alpha1.FrequentlyChangingAnnotationsResource{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("fcars").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(frequentlyChangingAnnotationsResource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a frequentlyChangingAnnotationsResource and updates it. Returns the server's representation of the frequentlyChangingAnnotationsResource, and an error, if there is any.
-func (c *frequentlyChangingAnnotationsResources) Update(frequentlyChangingAnnotationsResource *v2alpha1.FrequentlyChangingAnnotationsResource) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+func (c *frequentlyChangingAnnotationsResources) Update(ctx context.Context, frequentlyChangingAnnotationsResource *v2alpha1.FrequentlyChangingAnnotationsResource, opts v1.UpdateOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
 	result = &v2alpha1.FrequentlyChangingAnnotationsResource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("fcars").
 		Name(frequentlyChangingAnnotationsResource.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(frequentlyChangingAnnotationsResource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the frequentlyChangingAnnotationsResource and deletes it. Returns an error if one occurs.
-func (c *frequentlyChangingAnnotationsResources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *frequentlyChangingAnnotationsResources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("fcars").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *frequentlyChangingAnnotationsResources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *frequentlyChangingAnnotationsResources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("fcars").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched frequentlyChangingAnnotationsResource.
-func (c *frequentlyChangingAnnotationsResources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+func (c *frequentlyChangingAnnotationsResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
 	result = &v2alpha1.FrequentlyChangingAnnotationsResource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("fcars").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

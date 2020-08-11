@@ -64,7 +64,7 @@ clientset: $(OUTPUT_DIR) $(OUTPUT_DIR)/.clientset
 
 $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 
-	$(GOPATH)/src/k8s.io/code-generator/generate-groups.sh all \
+	$(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh all \
 		$(PACKAGE_PATH)/pkg/api/v1/clients/kube/crd/client \
 		$(PACKAGE_PATH)/pkg/api/v1/clients/kube/crd \
 		"solo.io:v1"

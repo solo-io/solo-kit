@@ -1,6 +1,7 @@
 package crd
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"sync"
@@ -109,7 +110,7 @@ func (r *crdRegistry) registerCrd(gvk schema.GroupVersionKind, clientset apiexts
 	if err != nil {
 		return err
 	}
-	_, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister)
+	_, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(context.TODO(), toRegister, metav1.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to register crd: %v", err)
 	}

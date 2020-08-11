@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
 	github.com/bugsnag/bugsnag-go v1.5.0
+	github.com/coreos/etcd v3.3.15+incompatible // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -16,8 +17,9 @@ require (
 	github.com/go-test/deep v1.0.2 // indirect
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
+	github.com/golang/lint v0.0.0-20180702182130-06c8688daad7 // indirect
 	github.com/golang/mock v1.3.1
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
 	github.com/hashicorp/consul/sdk v0.3.0 // indirect
@@ -36,30 +38,32 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/miekg/dns v1.1.15 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.8.1
+	github.com/onsi/ginkgo v1.12.1
+	github.com/onsi/gomega v1.10.1
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
-	github.com/solo-io/go-utils v0.13.0
+	github.com/solo-io/go-utils v0.16.7-0.20200810222326-6508aa020965
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	go.opencensus.io v0.22.1
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
-	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e // indirect
 	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6
-	google.golang.org/grpc v1.24.0
-	gopkg.in/yaml.v2 v2.2.4
-	k8s.io/api v0.17.0
-	k8s.io/apiextensions-apiserver v0.17.0
-	k8s.io/apimachinery v0.17.0
-	k8s.io/client-go v0.17.0
-	k8s.io/code-generator v0.17.0
-	sigs.k8s.io/yaml v1.1.0
+	google.golang.org/grpc v1.27.0
+	gopkg.in/yaml.v2 v2.3.0
+	k8s.io/api v0.18.6
+	k8s.io/apiextensions-apiserver v0.18.6
+	k8s.io/apimachinery v0.18.6
+	k8s.io/client-go v0.18.6
+	k8s.io/code-generator v0.18.6
+	sigs.k8s.io/structured-merge-diff v0.0.0-20190817042607-6149e4549fca // indirect
+	sigs.k8s.io/testing_frameworks v0.1.2 // indirect
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
@@ -72,11 +76,4 @@ replace (
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
-
-	// kube 1.17
-	k8s.io/api => k8s.io/api v0.17.0
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.17.0
-	k8s.io/client-go => k8s.io/client-go v0.17.0
-	k8s.io/code-generator => k8s.io/code-generator v0.17.0
 )
