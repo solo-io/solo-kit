@@ -1,6 +1,8 @@
 package pod
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
@@ -21,7 +23,7 @@ func NewPodResourceClientFactory(cacheGetter clustercache.CacheGetter) *podResou
 	return &podResourceClientFactory{cacheGetter: cacheGetter}
 }
 
-func (g *podResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *podResourceClientFactory) GetClient(ctx context.Context, cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err

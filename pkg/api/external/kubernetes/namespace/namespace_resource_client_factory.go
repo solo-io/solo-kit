@@ -1,6 +1,8 @@
 package namespace
 
 import (
+	"context"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -21,7 +23,7 @@ func NewNamespaceResourceClientFactory(cacheGetter clustercache.CacheGetter) *na
 	return &namespaceResourceClientFactory{cacheGetter: cacheGetter}
 }
 
-func (g *namespaceResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *namespaceResourceClientFactory) GetClient(ctx context.Context, cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err

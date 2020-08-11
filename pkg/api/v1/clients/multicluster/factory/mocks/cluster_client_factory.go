@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -36,16 +37,16 @@ func (m *MockClusterClientFactory) EXPECT() *MockClusterClientFactoryMockRecorde
 }
 
 // GetClient mocks base method
-func (m *MockClusterClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (m *MockClusterClientFactory) GetClient(ctx context.Context, cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetClient", cluster, restConfig)
+	ret := m.ctrl.Call(m, "GetClient", ctx, cluster, restConfig)
 	ret0, _ := ret[0].(clients.ResourceClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetClient indicates an expected call of GetClient
-func (mr *MockClusterClientFactoryMockRecorder) GetClient(cluster, restConfig interface{}) *gomock.Call {
+func (mr *MockClusterClientFactoryMockRecorder) GetClient(ctx, cluster, restConfig interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockClusterClientFactory)(nil).GetClient), cluster, restConfig)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockClusterClientFactory)(nil).GetClient), ctx, cluster, restConfig)
 }
