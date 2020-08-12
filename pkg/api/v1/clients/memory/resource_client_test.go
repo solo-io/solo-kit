@@ -86,7 +86,7 @@ var _ = Describe("Base", func() {
 			Expect(output).To(HaveLen(numobjs))
 			Expect(output[0].GetMetadata().Name).To(Equal("n-1"))
 
-			Expect(runtime.Seconds()).Should(BeNumerically("<", 1.5), "List() shouldn't take too long.")
+			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.5), "List() shouldn't take too long.")
 		}, 10)
 
 	})
