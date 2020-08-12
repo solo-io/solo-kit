@@ -70,7 +70,7 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'SKIP_MOCK_GEN=1'
   - 'CLOUD_BUILD=1'
-  args: ['-c', 'make', 'test']
+  args: ['-c', 'make test']
   dir: *dir
   id: 'test'
 

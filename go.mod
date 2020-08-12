@@ -44,7 +44,7 @@ require (
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
-	github.com/solo-io/anyvendor v0.0.2
+	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-utils v0.17.0
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/spf13/afero v1.3.4 // indirect
