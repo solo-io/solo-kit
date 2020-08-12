@@ -34,6 +34,7 @@ require (
 	github.com/ilackarms/protoc-gen-doc v1.0.0
 	github.com/ilackarms/protokit v0.0.0-20181231193355-ee2393f3bbf0
 	github.com/lyft/protoc-gen-star v0.5.1 // indirect
+	github.com/mattn/go-zglob v0.0.3 // indirect
 	github.com/miekg/dns v1.1.15 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/onsi/ginkgo v1.12.1
@@ -43,7 +44,7 @@ require (
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
-	github.com/solo-io/anyvendor v0.0.3-0.20200812121553-8166744f1eb0
+	github.com/solo-io/anyvendor v0.0.2
 	github.com/solo-io/go-utils v0.17.0
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/spf13/afero v1.3.4 // indirect
