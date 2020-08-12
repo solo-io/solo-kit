@@ -9,6 +9,7 @@ var ResourceClientTestTemplate = template.Must(template.New("resource_client_tes
 package {{ .Project.ProjectConfig.Version }}
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -25,6 +26,7 @@ import (
 var _ = Describe("{{ .Name }}Client", func() {
 {{- if (not .ClusterScoped) }}
 	var (
+		ctx context.Context
 		namespace string
 	)
 {{- end }}
@@ -53,8 +55,9 @@ var _ = Describe("{{ .Name }}Client", func() {
 {{- if .ClusterScoped }}
 {{/* cluster-scoped resources get no namespace, must delete individual resources*/}}
 			BeforeEach(func() {
-				factory := test.Setup("")
-				client, err = New{{ .Name }}Client(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, "")
+				client, err = New{{ .Name }}Client(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -69,8 +72,9 @@ var _ = Describe("{{ .Name }}Client", func() {
 {{/* non-cluster-scoped resources get a namespace and then the ns is deleted*/}}
 			BeforeEach(func() {
 				namespace = helpers.RandString(6)
-				factory := test.Setup(namespace)
-				client, err = New{{ .Name }}Client(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, namespace)
+				client, err = New{{ .Name }}Client(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
