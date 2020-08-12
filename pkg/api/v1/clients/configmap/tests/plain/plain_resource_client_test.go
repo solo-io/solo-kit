@@ -31,16 +31,18 @@ var _ = Describe("PlainConfigmap", func() {
 		return
 	}
 	var (
+		ctx       context.Context
 		ns1, ns2  string
 		client    *ResourceClient
 		kube      kubernetes.Interface
 		kubeCache cache.KubeCoreCache
 	)
 	BeforeEach(func() {
+		ctx = context.Background()
 		randomSeed, node := GinkgoRandomSeed(), GinkgoParallelNode()
 		ns1, ns2 = helpers.RandStringGinkgo(8, randomSeed, node), helpers.RandStringGinkgo(8, randomSeed, node)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, ns1, ns2)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
@@ -48,11 +50,11 @@ var _ = Describe("PlainConfigmap", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns1, ns2)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
 
-		kubehelpers.WaitForNamespaceTeardown(ns1)
-		kubehelpers.WaitForNamespaceTeardown(ns2)
+		kubehelpers.WaitForNamespaceTeardown(ctx, ns1)
+		kubehelpers.WaitForNamespaceTeardown(ctx, ns2)
 	})
 	It("CRUDs resources", func() {
 		selector := map[string]string{
@@ -78,7 +80,7 @@ var _ = Describe("PlainConfigmap", func() {
 		_, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
+		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(ctx, input.Metadata.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
 		Expect(string(cm.Data["data.json"])).To(Equal("hello: goodbye"))
@@ -97,7 +99,7 @@ var _ = Describe("PlainConfigmap", func() {
 		_, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
+		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(ctx, input.Metadata.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
 	})

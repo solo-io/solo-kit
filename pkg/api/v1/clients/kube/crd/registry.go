@@ -1,6 +1,7 @@
 package crd
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"sync"
@@ -98,7 +99,7 @@ func (r *crdRegistry) getMultiVersionCrd(gk schema.GroupKind) (MultiVersionCrd, 
 	return MultiVersionCrd{}, NotFoundError(gk.String())
 }
 
-func (r *crdRegistry) registerCrd(gvk schema.GroupVersionKind, clientset apiexts.Interface) error {
+func (r *crdRegistry) registerCrd(ctx context.Context, gvk schema.GroupVersionKind, clientset apiexts.Interface) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	crd, err := r.getMultiVersionCrd(gvk.GroupKind())
@@ -109,11 +110,11 @@ func (r *crdRegistry) registerCrd(gvk schema.GroupVersionKind, clientset apiexts
 	if err != nil {
 		return err
 	}
-	_, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister)
+	_, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(context.TODO(), toRegister, metav1.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to register crd: %v", err)
 	}
-	return kubeutils.WaitForCrdActive(clientset, toRegister.Name)
+	return kubeutils.WaitForCrdActive(ctx, clientset, toRegister.Name)
 }
 
 func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {

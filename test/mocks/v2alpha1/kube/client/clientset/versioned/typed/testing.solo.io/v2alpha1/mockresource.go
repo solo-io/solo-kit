@@ -19,6 +19,7 @@ limitations under the License.
 package v2alpha1
 
 import (
+	"context"
 	"time"
 
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
@@ -37,15 +38,15 @@ type MockResourcesGetter interface {
 
 // MockResourceInterface has methods to work with MockResource resources.
 type MockResourceInterface interface {
-	Create(*v2alpha1.MockResource) (*v2alpha1.MockResource, error)
-	Update(*v2alpha1.MockResource) (*v2alpha1.MockResource, error)
-	UpdateStatus(*v2alpha1.MockResource) (*v2alpha1.MockResource, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v2alpha1.MockResource, error)
-	List(opts v1.ListOptions) (*v2alpha1.MockResourceList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v2alpha1.MockResource, err error)
+	Create(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.CreateOptions) (*v2alpha1.MockResource, error)
+	Update(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (*v2alpha1.MockResource, error)
+	UpdateStatus(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (*v2alpha1.MockResource, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v2alpha1.MockResource, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v2alpha1.MockResourceList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.MockResource, err error)
 	MockResourceExpansion
 }
 
@@ -64,20 +65,20 @@ func newMockResources(c *TestingV2alpha1Client, namespace string) *mockResources
 }
 
 // Get takes name of the mockResource, and returns the corresponding mockResource object, and an error if there is any.
-func (c *mockResources) Get(name string, options v1.GetOptions) (result *v2alpha1.MockResource, err error) {
+func (c *mockResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2alpha1.MockResource, err error) {
 	result = &v2alpha1.MockResource{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("mocks").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of MockResources that match those selectors.
-func (c *mockResources) List(opts v1.ListOptions) (result *v2alpha1.MockResourceList, err error) {
+func (c *mockResources) List(ctx context.Context, opts v1.ListOptions) (result *v2alpha1.MockResourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *mockResources) List(opts v1.ListOptions) (result *v2alpha1.MockResource
 		Resource("mocks").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested mockResources.
-func (c *mockResources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *mockResources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *mockResources) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("mocks").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a mockResource and creates it.  Returns the server's representation of the mockResource, and an error, if there is any.
-func (c *mockResources) Create(mockResource *v2alpha1.MockResource) (result *v2alpha1.MockResource, err error) {
+func (c *mockResources) Create(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.CreateOptions) (result *v2alpha1.MockResource, err error) {
 	result = &v2alpha1.MockResource{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("mocks").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(mockResource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a mockResource and updates it. Returns the server's representation of the mockResource, and an error, if there is any.
-func (c *mockResources) Update(mockResource *v2alpha1.MockResource) (result *v2alpha1.MockResource, err error) {
+func (c *mockResources) Update(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (result *v2alpha1.MockResource, err error) {
 	result = &v2alpha1.MockResource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("mocks").
 		Name(mockResource.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(mockResource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *mockResources) UpdateStatus(mockResource *v2alpha1.MockResource) (result *v2alpha1.MockResource, err error) {
+func (c *mockResources) UpdateStatus(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (result *v2alpha1.MockResource, err error) {
 	result = &v2alpha1.MockResource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("mocks").
 		Name(mockResource.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(mockResource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the mockResource and deletes it. Returns an error if one occurs.
-func (c *mockResources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *mockResources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("mocks").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *mockResources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *mockResources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("mocks").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched mockResource.
-func (c *mockResources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v2alpha1.MockResource, err error) {
+func (c *mockResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.MockResource, err error) {
 	result = &v2alpha1.MockResource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("mocks").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

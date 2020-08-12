@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ import (
 )
 
 var _ = Describe("MockResourceClient", func() {
+	var ctx context.Context
 	var (
 		namespace string
 	)
@@ -39,12 +41,13 @@ var _ = Describe("MockResourceClient", func() {
 
 			BeforeEach(func() {
 				namespace = helpers.RandString(6)
-				factory := test.Setup(namespace)
-				client, err = NewMockResourceClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, namespace)
+				client, err = NewMockResourceClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				test.Teardown(namespace)
+				test.Teardown(ctx, namespace)
 			})
 			It("CRUDs MockResources "+test.Description(), func() {
 				MockResourceClientTest(namespace, client, name1, name2, name3)

@@ -1,6 +1,7 @@
 package customresourcedefinition
 
 import (
+	"context"
 	"sort"
 
 	"github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition"
@@ -69,7 +70,7 @@ func (rc *customResourceDefinitionResourceClient) Read(namespace, name string, o
 	}
 	opts = opts.WithDefaults()
 
-	customResourceDefinitionObj, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(name, metav1.GetOptions{})
+	customResourceDefinitionObj, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -109,11 +110,11 @@ func (rc *customResourceDefinitionResourceClient) Write(resource resources.Resou
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Update(customResourceDefinitionObj); err != nil {
+		if _, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Update(opts.Ctx, customResourceDefinitionObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube customResourceDefinitionObj %v", customResourceDefinitionObj.Name)
 		}
 	} else {
-		if _, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(customResourceDefinitionObj); err != nil {
+		if _, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(opts.Ctx, customResourceDefinitionObj, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube customResourceDefinitionObj %v", customResourceDefinitionObj.Name)
 		}
 	}
@@ -124,14 +125,14 @@ func (rc *customResourceDefinitionResourceClient) Write(resource resources.Resou
 
 func (rc *customResourceDefinitionResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	if !rc.exist(namespace, name) {
+	if !rc.exist(opts.Ctx, namespace, name) {
 		if !opts.IgnoreNotExist {
 			return errors.NewNotExistErr("", name)
 		}
 		return nil
 	}
 
-	if err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(name, nil); err != nil {
+	if err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting customResourceDefinitionObj %v", name)
 	}
 	return nil
@@ -165,7 +166,7 @@ func (rc *customResourceDefinitionResourceClient) Watch(namespace string, opts c
 	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
-func (rc *customResourceDefinitionResourceClient) exist(namespace, name string) bool {
-	_, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(name, metav1.GetOptions{})
+func (rc *customResourceDefinitionResourceClient) exist(ctx context.Context, namespace, name string) bool {
+	_, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }

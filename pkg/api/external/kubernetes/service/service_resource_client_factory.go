@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
@@ -21,7 +23,7 @@ func NewServiceResourceClientFactory(cacheGetter clustercache.CacheGetter) *serv
 	return &serviceResourceClientFactory{cacheGetter: cacheGetter}
 }
 
-func (g *serviceResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *serviceResourceClientFactory) GetClient(ctx context.Context, cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err

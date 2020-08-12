@@ -1,6 +1,7 @@
 package versioned_test
 
 import (
+	"context"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -27,29 +28,31 @@ var _ = Describe("Clientset", func() {
 		return
 	}
 	var (
+		ctx       context.Context
 		namespace string
 		cfg       *rest.Config
 		kube      kubernetes.Interface
 	)
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("registers, creates, deletes resource implementations", func() {
 		apiextsClient, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		err = mocksv1.MockResourceCrd.Register(apiextsClient)
+		err = mocksv1.MockResourceCrd.Register(ctx, apiextsClient)
 		Expect(err).NotTo(HaveOccurred())
 
-		c, err := apiextsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(v1.ListOptions{})
+		c, err := apiextsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(ctx, v1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(c.Items)).To(BeNumerically(">=", 1))
 		var found bool
@@ -68,7 +71,7 @@ var _ = Describe("Clientset", func() {
 		input.Data = name
 		inputCrd, err := mocksv1.MockResourceCrd.KubeResource(input)
 		Expect(err).NotTo(HaveOccurred())
-		created, err := mockCrdClient.ResourcesV1().Resources(namespace).Create(inputCrd)
+		created, err := mockCrdClient.ResourcesV1().Resources(namespace).Create(ctx, inputCrd, v1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(created).NotTo(BeNil())
 		Expect(created.Spec).NotTo(BeNil())

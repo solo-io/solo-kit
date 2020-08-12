@@ -1,12 +1,9 @@
 /*
 Copyright The Kubernetes Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,10 +16,10 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
-
 	scheme "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,14 +36,14 @@ type ResourcesGetter interface {
 
 // ResourceInterface has methods to work with Resource resources.
 type ResourceInterface interface {
-	Create(*v1.Resource) (*v1.Resource, error)
-	Update(*v1.Resource) (*v1.Resource, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
-	Get(name string, options metav1.GetOptions) (*v1.Resource, error)
-	List(opts metav1.ListOptions) (*v1.ResourceList, error)
-	Watch(opts metav1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Resource, err error)
+	Create(ctx context.Context, resource *v1.Resource, opts metav1.CreateOptions) (*v1.Resource, error)
+	Update(ctx context.Context, resource *v1.Resource, opts metav1.UpdateOptions) (*v1.Resource, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Resource, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v1.ResourceList, error)
+	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Resource, err error)
 	ResourceExpansion
 }
 
@@ -67,7 +64,7 @@ func newResources(c *ResourcesV1Client, namespace string, def crd.Crd) *resource
 }
 
 // Get takes name of the resource, and returns the corresponding resource object, and an error if there is any.
-func (c *resources) Get(name string, options metav1.GetOptions) (result *v1.Resource, err error) {
+func (c *resources) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Resource, err error) {
 	result = &v1.Resource{}
 	req := c.client.Get()
 	if !c.def.ClusterScoped {
@@ -77,13 +74,13 @@ func (c *resources) Get(name string, options metav1.GetOptions) (result *v1.Reso
 		Resource(c.def.Plural).
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Resources that match those selectors.
-func (c *resources) List(opts metav1.ListOptions) (result *v1.ResourceList, err error) {
+func (c *resources) List(ctx context.Context, opts metav1.ListOptions) (result *v1.ResourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -97,13 +94,13 @@ func (c *resources) List(opts metav1.ListOptions) (result *v1.ResourceList, err 
 		Resource(c.def.Plural).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested resources.
-func (c *resources) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+func (c *resources) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -117,11 +114,11 @@ func (c *resources) Watch(opts metav1.ListOptions) (watch.Interface, error) {
 		Resource(c.def.Plural).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a resource and creates it.  Returns the server's representation of the resource, and an error, if there is any.
-func (c *resources) Create(resource *v1.Resource) (result *v1.Resource, err error) {
+func (c *resources) Create(ctx context.Context, resource *v1.Resource, opts metav1.CreateOptions) (result *v1.Resource, err error) {
 	result = &v1.Resource{}
 	req := c.client.Post()
 	if !c.def.ClusterScoped {
@@ -129,14 +126,15 @@ func (c *resources) Create(resource *v1.Resource) (result *v1.Resource, err erro
 	}
 	err = req.
 		Resource(c.def.Plural).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(resource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a resource and updates it. Returns the server's representation of the resource, and an error, if there is any.
-func (c *resources) Update(resource *v1.Resource) (result *v1.Resource, err error) {
+func (c *resources) Update(ctx context.Context, resource *v1.Resource, opts metav1.UpdateOptions) (result *v1.Resource, err error) {
 	result = &v1.Resource{}
 	req := c.client.Put()
 	if !c.def.ClusterScoped {
@@ -145,14 +143,15 @@ func (c *resources) Update(resource *v1.Resource) (result *v1.Resource, err erro
 	err = req.
 		Resource(c.def.Plural).
 		Name(resource.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(resource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the resource and deletes it. Returns an error if one occurs.
-func (c *resources) Delete(name string, options *metav1.DeleteOptions) error {
+func (c *resources) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	req := c.client.Delete()
 	if !c.def.ClusterScoped {
 		req = req.Namespace(c.ns)
@@ -160,16 +159,16 @@ func (c *resources) Delete(name string, options *metav1.DeleteOptions) error {
 	return req.
 		Resource(c.def.Plural).
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *resources) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+func (c *resources) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	req := c.client.Delete()
 	if !c.def.ClusterScoped {
@@ -177,15 +176,15 @@ func (c *resources) DeleteCollection(options *metav1.DeleteOptions, listOptions 
 	}
 	return req.
 		Resource(c.def.Plural).
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched resource.
-func (c *resources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Resource, err error) {
+func (c *resources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Resource, err error) {
 	result = &v1.Resource{}
 	req := c.client.Patch(pt)
 	if !c.def.ClusterScoped {
@@ -193,10 +192,11 @@ func (c *resources) Patch(name string, pt types.PatchType, data []byte, subresou
 	}
 	err = req.
 		Resource(c.def.Plural).
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

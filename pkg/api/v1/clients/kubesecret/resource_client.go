@@ -127,7 +127,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	// TODO(yuval-k): do NOT use the lister on read. As Read is mainly called after write, to
 	// refresh the object. In theory we could use the object returned from the write call to kubernetes
 	// but that requres further investigation.
-	secret, err := rc.Kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := rc.Kube.CoreV1().Secrets(namespace).Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -180,11 +180,11 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.Kube.CoreV1().Secrets(secret.Namespace).Update(secret); err != nil {
+		if _, err := rc.Kube.CoreV1().Secrets(secret.Namespace).Update(opts.Ctx, secret, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube secret %v", secret.Name)
 		}
 	} else {
-		if _, err := rc.Kube.CoreV1().Secrets(secret.Namespace).Create(secret); err != nil {
+		if _, err := rc.Kube.CoreV1().Secrets(secret.Namespace).Create(opts.Ctx, secret, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube secret %v", secret.Name)
 		}
 	}
@@ -195,14 +195,14 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	if !rc.exist(namespace, name) {
+	if !rc.exist(opts.Ctx, namespace, name) {
 		if !opts.IgnoreNotExist {
 			return errors.NewNotExistErr(namespace, name)
 		}
 		return nil
 	}
 
-	if err := rc.Kube.CoreV1().Secrets(namespace).Delete(name, nil); err != nil {
+	if err := rc.Kube.CoreV1().Secrets(namespace).Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting secret %v", name)
 	}
 	return nil
@@ -254,7 +254,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
-func (rc *ResourceClient) exist(namespace, name string) bool {
-	_, err := rc.Kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {
+	_, err := rc.Kube.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }

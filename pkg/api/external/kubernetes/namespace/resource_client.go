@@ -1,6 +1,7 @@
 package namespace
 
 import (
+	"context"
 	"sort"
 
 	"github.com/bugsnag/bugsnag-go/errors"
@@ -68,7 +69,7 @@ func (rc *namespaceResourceClient) Read(namespace, name string, opts clients.Rea
 	}
 	opts = opts.WithDefaults()
 
-	namespaceObj, err := rc.Kube.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
+	namespaceObj, err := rc.Kube.CoreV1().Namespaces().Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, skerrors.NewNotExistErr(namespace, name, err)
@@ -108,11 +109,11 @@ func (rc *namespaceResourceClient) Write(resource resources.Resource, opts clien
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, skerrors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.Kube.CoreV1().Namespaces().Update(namespaceObj); err != nil {
+		if _, err := rc.Kube.CoreV1().Namespaces().Update(opts.Ctx, namespaceObj, metav1.UpdateOptions{}); err != nil {
 			return nil, eris.Wrapf(err, "updating kube namespaceObj %v", namespaceObj.Name)
 		}
 	} else {
-		if _, err := rc.Kube.CoreV1().Namespaces().Create(namespaceObj); err != nil {
+		if _, err := rc.Kube.CoreV1().Namespaces().Create(opts.Ctx, namespaceObj, metav1.CreateOptions{}); err != nil {
 			return nil, eris.Wrapf(err, "creating kube namespaceObj %v", namespaceObj.Name)
 		}
 	}
@@ -123,14 +124,14 @@ func (rc *namespaceResourceClient) Write(resource resources.Resource, opts clien
 
 func (rc *namespaceResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	if !rc.exist(namespace, name) {
+	if !rc.exist(opts.Ctx, namespace, name) {
 		if !opts.IgnoreNotExist {
 			return skerrors.NewNotExistErr("", name)
 		}
 		return nil
 	}
 
-	if err := rc.Kube.CoreV1().Namespaces().Delete(name, nil); err != nil {
+	if err := rc.Kube.CoreV1().Namespaces().Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return eris.Wrapf(err, "deleting namespaceObj %v", name)
 	}
 	return nil
@@ -168,7 +169,7 @@ func (rc *namespaceResourceClient) Watch(namespace string, opts clients.WatchOpt
 	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
-func (rc *namespaceResourceClient) exist(namespace, name string) bool {
-	_, err := rc.Kube.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
+func (rc *namespaceResourceClient) exist(ctx context.Context, namespace, name string) bool {
+	_, err := rc.Kube.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }

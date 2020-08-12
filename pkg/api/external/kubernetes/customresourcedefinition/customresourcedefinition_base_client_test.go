@@ -23,6 +23,7 @@ var _ = Describe("DeploymentBaseClient", func() {
 		return
 	}
 	var (
+		ctx       context.Context
 		client    *customResourceDefinitionResourceClient
 		apiExts   apiexts.Interface
 		kubeCache KubeCustomResourceDefinitionCache
@@ -30,6 +31,7 @@ var _ = Describe("DeploymentBaseClient", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		apiExts = helpers.MustApiExtsClient()
 		var err error
 		kubeCache, err = NewKubeCustomResourceDefinitionCache(context.TODO(), apiExts)
@@ -37,10 +39,10 @@ var _ = Describe("DeploymentBaseClient", func() {
 		client = newResourceClient(apiExts, kubeCache)
 	})
 	AfterEach(func() {
-		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crdName, nil)
+		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, crdName, metav1.DeleteOptions{})
 	})
 	It("converts a kubernetes deployment to solo-kit resource", func() {
-		originalKubeCrd, err := apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&v1beta1.CustomResourceDefinition{
+		originalKubeCrd, err := apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(ctx, &v1beta1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: crdName,
 			},
@@ -54,7 +56,7 @@ var _ = Describe("DeploymentBaseClient", func() {
 					ShortNames: []string{"tc"},
 				},
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		var kubeCrd resources.Resource

@@ -24,6 +24,7 @@ var _ = Describe("Namespace base client", func() {
 		return
 	}
 	var (
+		ctx          context.Context
 		namespace    string
 		client       *namespaceResourceClient
 		kube         kubernetes.Interface
@@ -32,6 +33,7 @@ var _ = Describe("Namespace base client", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		var err error
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
@@ -39,16 +41,16 @@ var _ = Describe("Namespace base client", func() {
 		Expect(err).NotTo(HaveOccurred())
 		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
-		namespaceObj, err = kube.CoreV1().Namespaces().Create(&kubev1.Namespace{
+		namespaceObj, err = kube.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Name:      namespace,
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("converts a kubernetes namespace to solo-kit resource", func() {

@@ -60,6 +60,7 @@ steps:
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+  entrypoint: 'bash'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
   - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
@@ -69,7 +70,7 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'SKIP_MOCK_GEN=1'
   - 'CLOUD_BUILD=1'
-  args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=2']
+  args: ['-c', 'make test']
   dir: *dir
   id: 'test'
 

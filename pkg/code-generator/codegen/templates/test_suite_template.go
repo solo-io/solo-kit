@@ -15,6 +15,7 @@ var ProjectTestSuiteTemplate = template.Must(template.New("project_template").Fu
 {{- $uniqueCrds := (unique $uniqueCrds)}}
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -41,6 +42,7 @@ var (
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
 			return
 		}
+		ctx := context.Background()
 		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
@@ -48,7 +50,7 @@ var (
 		Expect(err).NotTo(HaveOccurred())
 		
 		{{- range $uniqueCrds}}
-		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("{{lowercase .}}", &metav1.DeleteOptions{})
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "{{lowercase .}}", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 		{{- end}}
 		Expect(lock.ReleaseLock()).NotTo(HaveOccurred())

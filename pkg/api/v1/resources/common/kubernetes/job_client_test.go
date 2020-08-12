@@ -5,6 +5,7 @@
 package kubernetes
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ import (
 )
 
 var _ = Describe("JobClient", func() {
+	var ctx context.Context
 	var (
 		namespace string
 	)
@@ -38,12 +40,13 @@ var _ = Describe("JobClient", func() {
 
 			BeforeEach(func() {
 				namespace = helpers.RandString(6)
-				factory := test.Setup(namespace)
-				client, err = NewJobClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, namespace)
+				client, err = NewJobClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				test.Teardown(namespace)
+				test.Teardown(ctx, namespace)
 			})
 			It("CRUDs Jobs "+test.Description(), func() {
 				JobClientTest(namespace, client, name1, name2, name3)

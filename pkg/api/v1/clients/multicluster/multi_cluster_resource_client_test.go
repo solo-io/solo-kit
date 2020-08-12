@@ -73,11 +73,11 @@ var _ = Describe("MultiClusterResourceClient", func() {
 		)
 
 		BeforeEach(func() {
-			mockClientFactory.EXPECT().GetClient(cluster1, config1).Return(mockResourceClient1, nil)
+			mockClientFactory.EXPECT().GetClient(gomock.Any(), cluster1, config1).Return(mockResourceClient1, nil)
 			mockResourceClient1.EXPECT().Register().Return(nil)
 			clientSet.ClusterAdded(cluster1, config1)
 
-			mockClientFactory.EXPECT().GetClient(cluster2, config2).Return(mockResourceClient2, nil)
+			mockClientFactory.EXPECT().GetClient(gomock.Any(), cluster2, config2).Return(mockResourceClient2, nil)
 			mockResourceClient2.EXPECT().Register().Return(nil)
 			clientSet.ClusterAdded(cluster2, config2)
 		})

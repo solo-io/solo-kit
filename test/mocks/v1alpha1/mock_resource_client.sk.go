@@ -3,6 +3,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type mockResourceClient struct {
 	rc clients.ResourceClient
 }
 
-func NewMockResourceClient(rcFactory factory.ResourceClientFactory) (MockResourceClient, error) {
-	return NewMockResourceClientWithToken(rcFactory, "")
+func NewMockResourceClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (MockResourceClient, error) {
+	return NewMockResourceClientWithToken(ctx, rcFactory, "")
 }
 
-func NewMockResourceClientWithToken(rcFactory factory.ResourceClientFactory, token string) (MockResourceClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewMockResourceClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (MockResourceClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &MockResource{},
 		Token:        token,
 	})

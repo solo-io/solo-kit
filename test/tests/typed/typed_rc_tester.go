@@ -29,8 +29,8 @@ import (
 type ResourceClientTester interface {
 	Description() string
 	Skip() bool
-	Setup(namespace string) factory.ResourceClientFactory
-	Teardown(namespace string)
+	Setup(ctx context.Context, namespace string) factory.ResourceClientFactory
+	Teardown(ctx context.Context, namespace string)
 }
 
 func skipKubeTests() bool {
@@ -59,10 +59,10 @@ func (rct *KubeRcTester) Skip() bool {
 	return skipKubeTests()
 }
 
-func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *KubeRcTester) Setup(ctx context.Context, namespace string) factory.ResourceClientFactory {
 	if namespace != "" {
 		kubeClient := helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	}
 	cfg, err := kubeutils.GetConfig("", "")
@@ -74,9 +74,9 @@ func (rct *KubeRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	}
 }
 
-func (rct *KubeRcTester) Teardown(namespace string) {
+func (rct *KubeRcTester) Teardown(ctx context.Context, namespace string) {
 	kubeClient := helpers.MustKubeClient()
-	err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+	err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -102,7 +102,7 @@ func (rct *ConsulRcTester) Skip() bool {
 	return false
 }
 
-func (rct *ConsulRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *ConsulRcTester) Setup(_ context.Context, namespace string) factory.ResourceClientFactory {
 	var err error
 	rct.consulFactory, err = setup.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
@@ -121,7 +121,7 @@ func (rct *ConsulRcTester) Setup(namespace string) factory.ResourceClientFactory
 	}
 }
 
-func (rct *ConsulRcTester) Teardown(namespace string) {
+func (rct *ConsulRcTester) Teardown(_ context.Context, namespace string) {
 	rct.consulInstance.Clean()
 	rct.consulFactory.Clean()
 }
@@ -143,7 +143,7 @@ func (rct *FileRcTester) Skip() bool {
 	return false
 }
 
-func (rct *FileRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *FileRcTester) Setup(_ context.Context, namespace string) factory.ResourceClientFactory {
 	var err error
 	rct.rootDir, err = ioutil.TempDir("", "base_test")
 	Expect(err).NotTo(HaveOccurred())
@@ -152,7 +152,7 @@ func (rct *FileRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	}
 }
 
-func (rct *FileRcTester) Teardown(namespace string) {
+func (rct *FileRcTester) Teardown(_ context.Context, namespace string) {
 	os.RemoveAll(rct.rootDir)
 }
 
@@ -173,7 +173,7 @@ func (rct *MemoryRcTester) Skip() bool {
 	return false
 }
 
-func (rct *MemoryRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *MemoryRcTester) Setup(_ context.Context, namespace string) factory.ResourceClientFactory {
 	var err error
 	rct.rootDir, err = ioutil.TempDir("", "base_test")
 	Expect(err).NotTo(HaveOccurred())
@@ -182,7 +182,7 @@ func (rct *MemoryRcTester) Setup(namespace string) factory.ResourceClientFactory
 	}
 }
 
-func (rct *MemoryRcTester) Teardown(namespace string) {}
+func (rct *MemoryRcTester) Teardown(_ context.Context, namespace string) {}
 
 /*
  *
@@ -199,9 +199,9 @@ func (rct *KubeConfigMapRcTester) Skip() bool {
 	return skipKubeTests()
 }
 
-func (rct *KubeConfigMapRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *KubeConfigMapRcTester) Setup(ctx context.Context, namespace string) factory.ResourceClientFactory {
 	kubeClient := helpers.MustKubeClient()
-	err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
+	err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
 	Expect(err).NotTo(HaveOccurred())
@@ -211,9 +211,9 @@ func (rct *KubeConfigMapRcTester) Setup(namespace string) factory.ResourceClient
 	}
 }
 
-func (rct *KubeConfigMapRcTester) Teardown(namespace string) {
+func (rct *KubeConfigMapRcTester) Teardown(ctx context.Context, namespace string) {
 	kubeClient := helpers.MustKubeClient()
-	err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+	err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -232,9 +232,9 @@ func (rct *KubeSecretRcTester) Skip() bool {
 	return skipKubeTests()
 }
 
-func (rct *KubeSecretRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *KubeSecretRcTester) Setup(ctx context.Context, namespace string) factory.ResourceClientFactory {
 	kubeClient := helpers.MustKubeClient()
-	err := kubeutils.CreateNamespacesInParallel(kubeClient, namespace)
+	err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
 	Expect(err).NotTo(HaveOccurred())
@@ -244,9 +244,9 @@ func (rct *KubeSecretRcTester) Setup(namespace string) factory.ResourceClientFac
 	}
 }
 
-func (rct *KubeSecretRcTester) Teardown(namespace string) {
+func (rct *KubeSecretRcTester) Teardown(ctx context.Context, namespace string) {
 	kubeClient := helpers.MustKubeClient()
-	err := kubeutils.DeleteNamespacesInParallelBlocking(kubeClient, namespace)
+	err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -272,7 +272,7 @@ func (rct *VaultRcTester) Skip() bool {
 	return false
 }
 
-func (rct *VaultRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *VaultRcTester) Setup(_ context.Context, namespace string) factory.ResourceClientFactory {
 	var err error
 	rct.vaultFactory, err = setup.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
@@ -292,7 +292,7 @@ func (rct *VaultRcTester) Setup(namespace string) factory.ResourceClientFactory 
 	}
 }
 
-func (rct *VaultRcTester) Teardown(namespace string) {
+func (rct *VaultRcTester) Teardown(_ context.Context, namespace string) {
 	rct.vaultInstance.Clean()
 	rct.vaultFactory.Clean()
 }

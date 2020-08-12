@@ -7,6 +7,8 @@ import (
 var ResourceClientTemplate = template.Must(template.New("resource_reconciler").Funcs(Funcs).Parse(`package {{ .Project.ProjectConfig.Version }}
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -46,12 +48,12 @@ type {{ lower_camel .Name }}Client struct {
 	rc clients.ResourceClient
 }
 
-func New{{ .Name }}Client(rcFactory factory.ResourceClientFactory) ({{ .Name }}Client, error) {
-	return New{{ .Name }}ClientWithToken(rcFactory, "")
+func New{{ .Name }}Client(ctx context.Context, rcFactory factory.ResourceClientFactory) ({{ .Name }}Client, error) {
+	return New{{ .Name }}ClientWithToken(ctx, rcFactory, "")
 }
 
-func New{{ .Name }}ClientWithToken(rcFactory factory.ResourceClientFactory, token string) ({{ .Name }}Client, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func New{{ .Name }}ClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) ({{ .Name }}Client, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &{{ .Name }}{},
 		Token: token,
 	})

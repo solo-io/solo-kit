@@ -7,6 +7,7 @@ import (
 	v12 "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	v1 "github.com/solo-io/solo-kit/pkg/multicluster/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,17 +23,19 @@ import (
 
 var _ = Describe("WatchKubeconfigs", func() {
 	var (
+		ctx       context.Context
 		namespace string
 		kube      kubernetes.Interface
 	)
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace = "kubeconfighandler" + testutils.RandString(6)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("returns a channel of kubeconfigs", func() {
@@ -51,7 +54,7 @@ var _ = Describe("WatchKubeconfigs", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-		kubeCfgSecret1, err = kubeClient.CoreV1().Secrets(namespace).Create(kubeCfgSecret1)
+		kubeCfgSecret1, err = kubeClient.CoreV1().Secrets(namespace).Create(ctx, kubeCfgSecret1, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		kubeCfg1, err := secretconverter.KubeCfgFromSecret(kubeCfgSecret1)
 		Expect(err).NotTo(HaveOccurred())
@@ -64,7 +67,7 @@ var _ = Describe("WatchKubeconfigs", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-		kubeCfgSecret2, err = kubeClient.CoreV1().Secrets(namespace).Create(kubeCfgSecret2)
+		kubeCfgSecret2, err = kubeClient.CoreV1().Secrets(namespace).Create(ctx, kubeCfgSecret2, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		kubeCfg2, err := secretconverter.KubeCfgFromSecret(kubeCfgSecret2)
 		Expect(err).NotTo(HaveOccurred())

@@ -32,6 +32,7 @@ var _ = Describe("V1Emitter", func() {
 		return
 	}
 	var (
+		ctx              context.Context
 		namespace1       string
 		namespace2       string
 		name1, name2     = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
@@ -41,22 +42,23 @@ var _ = Describe("V1Emitter", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace1, namespace2)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		// KubeConfig Constructor
 		kubeConfigClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		kubeConfigClient, err = NewKubeConfigClient(kubeConfigClientFactory)
+		kubeConfigClient, err = NewKubeConfigClient(ctx, kubeConfigClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("tracks snapshots on changes to any resource", func() {

@@ -1,6 +1,7 @@
 package controller_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -24,6 +25,12 @@ var _ = Describe("Test KubeController", func() {
 		namespace1 = "test-ns-1"
 		namespace2 = "test-ns-2"
 	)
+
+	var ctx context.Context
+
+	BeforeEach(func() {
+		ctx = context.Background()
+	})
 
 	Context("one registered informer", func() {
 
@@ -49,7 +56,7 @@ var _ = Describe("Test KubeController", func() {
 					resultChan <- resource
 				}),
 				cache.NewSharedIndexInformer(
-					listWatchForClientAndNamespace(clientset, namespace1),
+					listWatchForClientAndNamespace(ctx, clientset, namespace1),
 					&solov1.Resource{},
 					resyncPeriod,
 					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}),
@@ -66,7 +73,7 @@ var _ = Describe("Test KubeController", func() {
 		})
 
 		It("sends the correct notification through the event handler", func() {
-			err = util.CreateMockResource(clientset, namespace1, "res-1", "test")
+			err = util.CreateMockResource(ctx, clientset, namespace1, "res-1", "test")
 			Expect(err).NotTo(HaveOccurred())
 
 			for {
@@ -89,7 +96,7 @@ var _ = Describe("Test KubeController", func() {
 		})
 
 		It("does not react to events in a non relevant namespace", func() {
-			err = util.CreateMockResource(clientset, "ns-X", "res-1", "test")
+			err = util.CreateMockResource(ctx, clientset, "ns-X", "res-1", "test")
 			Expect(err).NotTo(HaveOccurred())
 
 			select {
@@ -125,7 +132,7 @@ var _ = Describe("Test KubeController", func() {
 					resultChan <- resource
 				}),
 				cache.NewSharedIndexInformer(
-					listWatchForClientAndNamespace(clientset, namespace1),
+					listWatchForClientAndNamespace(ctx, clientset, namespace1),
 					&solov1.Resource{},
 					resyncPeriod,
 					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}),
@@ -139,7 +146,7 @@ var _ = Describe("Test KubeController", func() {
 
 		It("resyncs every period", func() {
 			// Put an object into the store so the ListWatch has something to list
-			Expect(util.CreateMockResource(clientset, namespace1, "res-1", "test")).To(BeNil())
+			Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-1", "test")).To(BeNil())
 			// drain channel from creation event to have accurate resync count
 			<-resultChan
 
@@ -183,8 +190,8 @@ var _ = Describe("Test KubeController", func() {
 					// block until someone receives from the channel
 					resultChan <- resource
 				}),
-				informerWith(listWatchForClientAndNamespace(clientset1, namespace1), resyncPeriod),
-				informerWith(listWatchForClientAndNamespace(clientset2, namespace2), resyncPeriod),
+				informerWith(listWatchForClientAndNamespace(ctx, clientset1, namespace1), resyncPeriod),
+				informerWith(listWatchForClientAndNamespace(ctx, clientset2, namespace2), resyncPeriod),
 			)
 
 			Expect(kubeController.Run(2, stopChan)).To(BeNil())
@@ -195,8 +202,8 @@ var _ = Describe("Test KubeController", func() {
 		})
 
 		It("correctly sends notification for both informers", func() {
-			Expect(util.CreateMockResource(clientset1, namespace1, "res-1", "test-1")).To(BeNil())
-			Expect(util.CreateMockResource(clientset2, namespace2, "res-2", "test-2")).To(BeNil())
+			Expect(util.CreateMockResource(ctx, clientset1, namespace1, "res-1", "test-1")).To(BeNil())
+			Expect(util.CreateMockResource(ctx, clientset2, namespace2, "res-2", "test-2")).To(BeNil())
 
 			results := make(map[string]solov1.Resource)
 			after := time.After(100 * time.Millisecond)
@@ -228,13 +235,13 @@ var _ = Describe("Test KubeController", func() {
 
 })
 
-func listWatchForClientAndNamespace(clientset *fake.Clientset, namespace string) *cache.ListWatch {
+func listWatchForClientAndNamespace(ctx context.Context, clientset *fake.Clientset, namespace string) *cache.ListWatch {
 	return &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return clientset.ResourcesV1().Resources(namespace).List(options)
+			return clientset.ResourcesV1().Resources(namespace).List(ctx, options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return clientset.ResourcesV1().Resources(namespace).Watch(options)
+			return clientset.ResourcesV1().Resources(namespace).Watch(ctx, options)
 		},
 	}
 }

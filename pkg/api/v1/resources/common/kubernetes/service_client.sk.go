@@ -3,6 +3,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type serviceClient struct {
 	rc clients.ResourceClient
 }
 
-func NewServiceClient(rcFactory factory.ResourceClientFactory) (ServiceClient, error) {
-	return NewServiceClientWithToken(rcFactory, "")
+func NewServiceClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (ServiceClient, error) {
+	return NewServiceClientWithToken(ctx, rcFactory, "")
 }
 
-func NewServiceClientWithToken(rcFactory factory.ResourceClientFactory, token string) (ServiceClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewServiceClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (ServiceClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &Service{},
 		Token:        token,
 	})

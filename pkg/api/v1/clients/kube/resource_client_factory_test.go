@@ -136,7 +136,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			It("receives an event in that namespace", func() {
 
 				// Add a resource in a separate goroutine
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
 
 				select {
 				case res := <-watch:
@@ -153,7 +153,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			It("ignores an event in a different namespace", func() {
 
 				// Add a resource in a different namespace
-				go Expect(util.CreateMockResource(clientset, namespace2, "mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-1", "test")).To(BeNil())
 
 				select {
 				case <-watch:
@@ -181,10 +181,10 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 					}
 				}()
 
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-1", "test")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace2, "mock-res-2", "test")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-3", "test")).To(BeNil())
-				go Expect(util.DeleteMockResource(clientset, namespace1, "mock-res-1")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-2", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-3", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(ctx, clientset, namespace1, "mock-res-1")).To(BeNil())
 
 				<-ctx.Done()
 
@@ -222,12 +222,12 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 					}(i, watch)
 				}
 
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-1", "test")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace2, "mock-res-2", "test")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-3", "test")).To(BeNil())
-				go Expect(util.DeleteMockResource(clientset, namespace1, "mock-res-1")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-4", "test")).To(BeNil())
-				go Expect(util.DeleteMockResource(clientset, namespace2, "mock-res-2")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-2", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-3", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(ctx, clientset, namespace1, "mock-res-1")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-4", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(ctx, clientset, namespace2, "mock-res-2")).To(BeNil())
 
 				// Wait for results to be collected
 				time.Sleep(100 * time.Millisecond)
@@ -271,12 +271,12 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 					}(i, watch)
 				}
 
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-1", "test")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace2, "mock-res-2", "test")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-3", "test")).To(BeNil())
-				go Expect(util.DeleteMockResource(clientset, namespace1, "mock-res-1")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace1, "mock-res-4", "test")).To(BeNil())
-				go Expect(util.DeleteMockResource(clientset, namespace2, "mock-res-2")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-2", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-3", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(ctx, clientset, namespace1, "mock-res-1")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-4", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(ctx, clientset, namespace2, "mock-res-2")).To(BeNil())
 
 				for i := range watchResults {
 					Eventually(func() int {
@@ -296,12 +296,12 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 					return runtime.NumGoroutine()
 				}, time.Second).Should(Equal(preStartGoroutines))
 
-				go Expect(util.CreateMockResource(clientset, namespace1, "another-mock-res-1", "test")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace2, "another-mock-res-2", "test")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace1, "another-mock-res-3", "test")).To(BeNil())
-				go Expect(util.DeleteMockResource(clientset, namespace1, "another-mock-res-1")).To(BeNil())
-				go Expect(util.CreateMockResource(clientset, namespace1, "another-mock-res-4", "test")).To(BeNil())
-				go Expect(util.DeleteMockResource(clientset, namespace2, "another-mock-res-2")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "another-mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "another-mock-res-2", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "another-mock-res-3", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(ctx, clientset, namespace1, "another-mock-res-1")).To(BeNil())
+				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "another-mock-res-4", "test")).To(BeNil())
+				go Expect(util.DeleteMockResource(ctx, clientset, namespace2, "another-mock-res-2")).To(BeNil())
 
 				for i := range watchResults {
 					Eventually(func() int {

@@ -30,7 +30,7 @@ func (kcw *defaultKubeConfigWatcher) WatchKubeConfigs(ctx context.Context, kube 
 }
 
 func WatchKubeConfigs(ctx context.Context, kube kubernetes.Interface, cache cache.KubeCoreCache) (<-chan v1.KubeConfigList, <-chan error, error) {
-	kubeConfigClient, err := v1.NewKubeConfigClient(&factory.KubeSecretClientFactory{
+	kubeConfigClient, err := v1.NewKubeConfigClient(ctx, &factory.KubeSecretClientFactory{
 		Clientset:       kube,
 		Cache:           cache,
 		SecretConverter: &secretconverter.KubeConfigSecretConverter{},

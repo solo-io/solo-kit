@@ -18,17 +18,19 @@ import (
 
 var _ = Describe("TestingEventLoop", func() {
 	var (
+		ctx       context.Context
 		namespace string
 		emitter   TestingEmitter
 		err       error
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 
 		mockResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		mockResourceClient, err := NewMockResourceClient(mockResourceClientFactory)
+		mockResourceClient, err := NewMockResourceClient(ctx, mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewTestingEmitter(mockResourceClient)

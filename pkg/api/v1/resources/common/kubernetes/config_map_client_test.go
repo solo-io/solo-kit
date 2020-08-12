@@ -5,6 +5,7 @@
 package kubernetes
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ import (
 )
 
 var _ = Describe("ConfigMapClient", func() {
+	var ctx context.Context
 	var (
 		namespace string
 	)
@@ -38,12 +40,13 @@ var _ = Describe("ConfigMapClient", func() {
 
 			BeforeEach(func() {
 				namespace = helpers.RandString(6)
-				factory := test.Setup(namespace)
-				client, err = NewConfigMapClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, namespace)
+				client, err = NewConfigMapClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				test.Teardown(namespace)
+				test.Teardown(ctx, namespace)
 			})
 			It("CRUDs ConfigMaps "+test.Description(), func() {
 				ConfigMapClientTest(namespace, client, name1, name2, name3)

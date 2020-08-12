@@ -3,6 +3,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type configMapClient struct {
 	rc clients.ResourceClient
 }
 
-func NewConfigMapClient(rcFactory factory.ResourceClientFactory) (ConfigMapClient, error) {
-	return NewConfigMapClientWithToken(rcFactory, "")
+func NewConfigMapClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (ConfigMapClient, error) {
+	return NewConfigMapClientWithToken(ctx, rcFactory, "")
 }
 
-func NewConfigMapClientWithToken(rcFactory factory.ResourceClientFactory, token string) (ConfigMapClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewConfigMapClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (ConfigMapClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &ConfigMap{},
 		Token:        token,
 	})

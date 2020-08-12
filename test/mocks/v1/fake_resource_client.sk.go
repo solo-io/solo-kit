@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type fakeResourceClient struct {
 	rc clients.ResourceClient
 }
 
-func NewFakeResourceClient(rcFactory factory.ResourceClientFactory) (FakeResourceClient, error) {
-	return NewFakeResourceClientWithToken(rcFactory, "")
+func NewFakeResourceClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (FakeResourceClient, error) {
+	return NewFakeResourceClientWithToken(ctx, rcFactory, "")
 }
 
-func NewFakeResourceClientWithToken(rcFactory factory.ResourceClientFactory, token string) (FakeResourceClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewFakeResourceClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (FakeResourceClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &FakeResource{},
 		Token:        token,
 	})
