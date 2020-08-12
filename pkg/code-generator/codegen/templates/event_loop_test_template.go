@@ -29,18 +29,20 @@ import (
 
 var _ = Describe("{{ .GoName }}EventLoop", func() {
 	var (
+		ctx context.Context
 		namespace string
 		emitter     {{ .GoName }}Emitter
 		err       error
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 {{- range .Resources}}
 
 		{{ lower_camel .Name }}ClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		{{ lower_camel .Name }}Client, err := {{ .ImportPrefix }}New{{ .Name }}Client({{ lower_camel .Name }}ClientFactory)
+		{{ lower_camel .Name }}Client, err := {{ .ImportPrefix }}New{{ .Name }}Client(ctx, {{ lower_camel .Name }}ClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 {{- end}}
 

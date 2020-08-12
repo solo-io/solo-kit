@@ -36,6 +36,7 @@ var _ = Describe("V1Emitter", func() {
 		return
 	}
 	var (
+		ctx                       context.Context
 		namespace1                string
 		namespace2                string
 		name1, name2              = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
@@ -51,10 +52,11 @@ var _ = Describe("V1Emitter", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace1, namespace2)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
@@ -65,14 +67,14 @@ var _ = Describe("V1Emitter", func() {
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
-		mockResourceClient, err = NewMockResourceClient(mockResourceClientFactory)
+		mockResourceClient, err = NewMockResourceClient(ctx, mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// FakeResource Constructor
 		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		fakeResourceClient, err = NewFakeResourceClient(fakeResourceClientFactory)
+		fakeResourceClient, err = NewFakeResourceClient(ctx, fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// AnotherMockResource Constructor
 		anotherMockResourceClientFactory := &factory.KubeResourceClientFactory{
@@ -81,7 +83,7 @@ var _ = Describe("V1Emitter", func() {
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
-		anotherMockResourceClient, err = NewAnotherMockResourceClient(anotherMockResourceClientFactory)
+		anotherMockResourceClient, err = NewAnotherMockResourceClient(ctx, anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// ClusterResource Constructor
 		clusterResourceClientFactory := &factory.KubeResourceClientFactory{
@@ -90,26 +92,26 @@ var _ = Describe("V1Emitter", func() {
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
-		clusterResourceClient, err = NewClusterResourceClient(clusterResourceClientFactory)
+		clusterResourceClient, err = NewClusterResourceClient(ctx, clusterResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// MockCustomType Constructor
 		mockCustomTypeClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		mockCustomTypeClient, err = NewMockCustomTypeClient(mockCustomTypeClientFactory)
+		mockCustomTypeClient, err = NewMockCustomTypeClient(ctx, mockCustomTypeClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// Pod Constructor
 		podClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		podClient, err = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(podClientFactory)
+		podClient, err = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(ctx, podClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		clusterResourceClient.Delete(name1, clients.DeleteOpts{})
 		clusterResourceClient.Delete(name2, clients.DeleteOpts{})

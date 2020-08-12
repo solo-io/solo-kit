@@ -20,47 +20,49 @@ import (
 
 var _ = Describe("TestingEventLoop", func() {
 	var (
+		ctx       context.Context
 		namespace string
 		emitter   TestingEmitter
 		err       error
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 
 		mockResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		mockResourceClient, err := NewMockResourceClient(mockResourceClientFactory)
+		mockResourceClient, err := NewMockResourceClient(ctx, mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		fakeResourceClient, err := NewFakeResourceClient(fakeResourceClientFactory)
+		fakeResourceClient, err := NewFakeResourceClient(ctx, fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		anotherMockResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		anotherMockResourceClient, err := NewAnotherMockResourceClient(anotherMockResourceClientFactory)
+		anotherMockResourceClient, err := NewAnotherMockResourceClient(ctx, anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		clusterResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		clusterResourceClient, err := NewClusterResourceClient(clusterResourceClientFactory)
+		clusterResourceClient, err := NewClusterResourceClient(ctx, clusterResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		mockCustomTypeClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		mockCustomTypeClient, err := NewMockCustomTypeClient(mockCustomTypeClientFactory)
+		mockCustomTypeClient, err := NewMockCustomTypeClient(ctx, mockCustomTypeClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		podClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		podClient, err := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(podClientFactory)
+		podClient, err := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(ctx, podClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
