@@ -143,7 +143,7 @@ func (rct *FileRcTester) Skip() bool {
 	return false
 }
 
-func (rct *FileRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *FileRcTester) Setup(_ context.Context, namespace string) factory.ResourceClientFactory {
 	var err error
 	rct.rootDir, err = ioutil.TempDir("", "base_test")
 	Expect(err).NotTo(HaveOccurred())
@@ -152,7 +152,7 @@ func (rct *FileRcTester) Setup(namespace string) factory.ResourceClientFactory {
 	}
 }
 
-func (rct *FileRcTester) Teardown(namespace string) {
+func (rct *FileRcTester) Teardown(_ context.Context, namespace string) {
 	os.RemoveAll(rct.rootDir)
 }
 
@@ -173,7 +173,7 @@ func (rct *MemoryRcTester) Skip() bool {
 	return false
 }
 
-func (rct *MemoryRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *MemoryRcTester) Setup(_ context.Context, namespace string) factory.ResourceClientFactory {
 	var err error
 	rct.rootDir, err = ioutil.TempDir("", "base_test")
 	Expect(err).NotTo(HaveOccurred())
@@ -182,7 +182,7 @@ func (rct *MemoryRcTester) Setup(namespace string) factory.ResourceClientFactory
 	}
 }
 
-func (rct *MemoryRcTester) Teardown(namespace string) {}
+func (rct *MemoryRcTester) Teardown(_ context.Context, namespace string) {}
 
 /*
  *
@@ -272,7 +272,7 @@ func (rct *VaultRcTester) Skip() bool {
 	return false
 }
 
-func (rct *VaultRcTester) Setup(namespace string) factory.ResourceClientFactory {
+func (rct *VaultRcTester) Setup(_ context.Context, namespace string) factory.ResourceClientFactory {
 	var err error
 	rct.vaultFactory, err = setup.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
@@ -292,7 +292,7 @@ func (rct *VaultRcTester) Setup(namespace string) factory.ResourceClientFactory 
 	}
 }
 
-func (rct *VaultRcTester) Teardown(namespace string) {
+func (rct *VaultRcTester) Teardown(_ context.Context, namespace string) {
 	rct.vaultInstance.Clean()
 	rct.vaultFactory.Clean()
 }
