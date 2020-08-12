@@ -24,9 +24,9 @@ import (
 )
 
 var _ = Describe("{{ .Name }}Client", func() {
+	var ctx context.Context
 {{- if (not .ClusterScoped) }}
 	var (
-		ctx context.Context
 		namespace string
 	)
 {{- end }}
@@ -78,7 +78,7 @@ var _ = Describe("{{ .Name }}Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				test.Teardown(namespace)
+				test.Teardown(ctx, namespace)
 			})
 			It("CRUDs {{ .Name }}s "+test.Description(), func() {
 				{{ .Name }}ClientTest(namespace, client, name1, name2, name3)

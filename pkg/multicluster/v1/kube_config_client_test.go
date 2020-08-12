@@ -19,8 +19,8 @@ import (
 )
 
 var _ = Describe("KubeConfigClient", func() {
+	var ctx context.Context
 	var (
-		ctx       context.Context
 		namespace string
 	)
 	for _, test := range []typed.ResourceClientTester{
@@ -46,7 +46,7 @@ var _ = Describe("KubeConfigClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				test.Teardown(namespace)
+				test.Teardown(ctx, namespace)
 			})
 			It("CRUDs KubeConfigs "+test.Description(), func() {
 				KubeConfigClientTest(namespace, client, name1, name2, name3)

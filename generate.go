@@ -13,10 +13,10 @@ func main() {
 
 	log.Printf("starting generate")
 	if err := cmd.Generate(cmd.GenerateOptions{
-		RelativeRoot:       ".",
-		CompileProtos:      true,
-		SkipGenMocks:       true,
-		SkipGeneratedTests: true,
+		RelativeRoot:  ".",
+		CompileProtos: true,
+		SkipGenMocks:  true,
+		// SkipGeneratedTests: true,
 		ExternalImports: &sk_anyvendor.Imports{
 			Local: []string{"test/**/*.proto", "api/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
 			External: map[string][]string{

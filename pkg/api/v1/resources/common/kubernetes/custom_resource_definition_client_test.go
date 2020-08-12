@@ -19,6 +19,7 @@ import (
 )
 
 var _ = Describe("CustomResourceDefinitionClient", func() {
+	var ctx context.Context
 	for _, test := range []typed.ResourceClientTester{} {
 		Context("resource client backed by "+test.Description(), func() {
 			var (

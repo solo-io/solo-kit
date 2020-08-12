@@ -19,6 +19,7 @@ import (
 )
 
 var _ = Describe("ClusterResourceClient", func() {
+	var ctx context.Context
 	for _, test := range []typed.ResourceClientTester{
 		&typed.KubeRcTester{Crd: ClusterResourceCrd},
 	} {

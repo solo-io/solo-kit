@@ -69,7 +69,9 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'SKIP_MOCK_GEN=1'
   - 'CLOUD_BUILD=1'
-  args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=2']
+  args: ['-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=2', '-skip=multicluster', '-regexScansFilePath']
+  # '-skip=multicluster', '-regexScansFilePath' skips any filepath which includes multicluster, which is useful
+  # as this code is no longer used
   dir: *dir
   id: 'test'
 
