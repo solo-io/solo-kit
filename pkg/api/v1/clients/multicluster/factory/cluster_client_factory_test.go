@@ -34,11 +34,13 @@ var _ = Describe("ClusterClientFactory", func() {
 	}
 
 	var (
+		ctx                           context.Context
 		cacheGetter, awfulCacheGetter clustercache.CacheGetter
 		err                           error
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		awfulCacheGetter, err = clustercache.NewCacheManager(context.Background(), NewAlwaysWrongCacheForConfig)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -51,29 +53,29 @@ var _ = Describe("ClusterClientFactory", func() {
 
 		Describe("namespace client factory", func() {
 			It("works", func() {
-				testClientFactory(kubenamespace.NewNamespaceResourceClientFactory(cacheGetter))
-				testClientFactoryWithWrongCache(kubenamespace.NewNamespaceResourceClientFactory(awfulCacheGetter))
+				testClientFactory(ctx, kubenamespace.NewNamespaceResourceClientFactory(cacheGetter))
+				testClientFactoryWithWrongCache(ctx, kubenamespace.NewNamespaceResourceClientFactory(awfulCacheGetter))
 			})
 		})
 
 		Describe("configmap client factory", func() {
 			It("works", func() {
-				testClientFactory(kubernetes.NewConfigmapResourceClientFactory(cacheGetter, &v1.MockResource{}))
-				testClientFactoryWithWrongCache(kubernetes.NewConfigmapResourceClientFactory(awfulCacheGetter, &v1.MockResource{}))
+				testClientFactory(ctx, kubernetes.NewConfigmapResourceClientFactory(cacheGetter, &v1.MockResource{}))
+				testClientFactoryWithWrongCache(ctx, kubernetes.NewConfigmapResourceClientFactory(awfulCacheGetter, &v1.MockResource{}))
 			})
 		})
 
 		Describe("pod client factory", func() {
 			It("works", func() {
-				testClientFactory(pod.NewPodResourceClientFactory(cacheGetter))
-				testClientFactoryWithWrongCache(pod.NewPodResourceClientFactory(awfulCacheGetter))
+				testClientFactory(ctx, pod.NewPodResourceClientFactory(cacheGetter))
+				testClientFactoryWithWrongCache(ctx, pod.NewPodResourceClientFactory(awfulCacheGetter))
 			})
 		})
 
 		Describe("service client factory", func() {
 			It("works", func() {
-				testClientFactory(service.NewServiceResourceClientFactory(cacheGetter))
-				testClientFactoryWithWrongCache(service.NewServiceResourceClientFactory(awfulCacheGetter))
+				testClientFactory(ctx, service.NewServiceResourceClientFactory(cacheGetter))
+				testClientFactoryWithWrongCache(ctx, service.NewServiceResourceClientFactory(awfulCacheGetter))
 			})
 		})
 	})
@@ -82,8 +84,8 @@ var _ = Describe("ClusterClientFactory", func() {
 		It("works", func() {
 			cacheGetter, err = clustercache.NewCacheManager(context.Background(), cache.NewDeploymentCacheFromConfig)
 			Expect(err).NotTo(HaveOccurred())
-			testClientFactory(deployment.NewDeploymentResourceClientFactory(cacheGetter))
-			testClientFactoryWithWrongCache(deployment.NewDeploymentResourceClientFactory(awfulCacheGetter))
+			testClientFactory(ctx, deployment.NewDeploymentResourceClientFactory(cacheGetter))
+			testClientFactoryWithWrongCache(ctx, deployment.NewDeploymentResourceClientFactory(awfulCacheGetter))
 		})
 	})
 
@@ -91,8 +93,8 @@ var _ = Describe("ClusterClientFactory", func() {
 		It("works", func() {
 			cacheGetter, err = clustercache.NewCacheManager(context.Background(), customresourcedefinition.NewCrdCacheForConfig)
 			Expect(err).NotTo(HaveOccurred())
-			testClientFactory(customresourcedefinition.NewCrdResourceClientFactory(cacheGetter))
-			testClientFactoryWithWrongCache(customresourcedefinition.NewCrdResourceClientFactory(awfulCacheGetter))
+			testClientFactory(ctx, customresourcedefinition.NewCrdResourceClientFactory(cacheGetter))
+			testClientFactoryWithWrongCache(ctx, customresourcedefinition.NewCrdResourceClientFactory(awfulCacheGetter))
 		})
 	})
 
@@ -102,7 +104,7 @@ var _ = Describe("ClusterClientFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 			clientset, err := apiexts.NewForConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
-			err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("mocks.testing.solo.io", &metav1.DeleteOptions{})
+			err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "mocks.testing.solo.io", metav1.DeleteOptions{})
 			testutils.ErrorNotOccuredOrNotFound(err)
 		})
 
@@ -110,6 +112,7 @@ var _ = Describe("ClusterClientFactory", func() {
 			cacheGetter, err = clustercache.NewCacheManager(context.Background(), kube.NewKubeSharedCacheForConfig)
 			Expect(err).NotTo(HaveOccurred())
 			testClientFactory(
+				ctx,
 				kubefactory.NewKubeResourceClientFactory(
 					cacheGetter,
 					v1.MockResourceCrd,
@@ -122,6 +125,7 @@ var _ = Describe("ClusterClientFactory", func() {
 				),
 			)
 			testClientFactoryWithWrongCache(
+				ctx,
 				kubefactory.NewKubeResourceClientFactory(
 					awfulCacheGetter,
 					v1.MockResourceCrd,
@@ -137,18 +141,18 @@ var _ = Describe("ClusterClientFactory", func() {
 	})
 })
 
-func testClientFactory(f factory.ClusterClientFactory) {
+func testClientFactory(ctx context.Context, f factory.ClusterClientFactory) {
 	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
 	Expect(err).NotTo(HaveOccurred())
-	client, err := f.GetClient("", cfg)
+	client, err := f.GetClient(ctx, "", cfg)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(client).NotTo(BeNil())
 }
 
-func testClientFactoryWithWrongCache(f factory.ClusterClientFactory) {
+func testClientFactoryWithWrongCache(ctx context.Context, f factory.ClusterClientFactory) {
 	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
 	Expect(err).NotTo(HaveOccurred())
-	client, err := f.GetClient("", cfg)
+	client, err := f.GetClient(ctx, "", cfg)
 	Expect(err).To(HaveOccurred())
 	Expect(client).To(BeNil())
 }
