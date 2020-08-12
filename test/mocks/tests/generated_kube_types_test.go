@@ -22,12 +22,14 @@ import (
 
 var _ = Describe("Generated Kube Code", func() {
 	var (
+		ctx        context.Context
 		apiExts    apiext.Interface
 		testClient v2alpha1client.TestingV2alpha1Interface
 		skClient   skv1alpha2.MockResourceClient
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -35,13 +37,13 @@ var _ = Describe("Generated Kube Code", func() {
 		apiExts, err = apiext.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = skv1alpha2.MockResourceCrd.Register(apiExts)
+		err = skv1alpha2.MockResourceCrd.Register(ctx, apiExts)
 		Expect(err).NotTo(HaveOccurred())
 
 		testClient, err = v2alpha1client.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		skClient, err = skv1alpha2.NewMockResourceClient(&factory.KubeResourceClientFactory{
+		skClient, err = skv1alpha2.NewMockResourceClient(ctx, &factory.KubeResourceClientFactory{
 			Crd:             skv1alpha2.MockResourceCrd,
 			Cfg:             cfg,
 			SharedCache:     kube.NewKubeCache(context.TODO()),
@@ -50,7 +52,7 @@ var _ = Describe("Generated Kube Code", func() {
 
 	})
 	AfterEach(func() {
-		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(skv1alpha2.MockResourceCrd.FullName(), nil)
+		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, skv1alpha2.MockResourceCrd.FullName(), v1.DeleteOptions{})
 	})
 
 	It("can read and write a solo kit resource as a typed kube object", func() {
@@ -63,7 +65,7 @@ var _ = Describe("Generated Kube Code", func() {
 			},
 		}
 
-		out, err := testClient.MockResources(res.Namespace).Create(res)
+		out, err := testClient.MockResources(res.Namespace).Create(ctx, res, v1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		out.Spec.Metadata = core.Metadata{}
 		Expect(out.Spec).To(Equal(res.Spec))
