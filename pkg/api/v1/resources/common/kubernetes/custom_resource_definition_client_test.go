@@ -5,6 +5,7 @@
 package kubernetes
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -27,8 +28,9 @@ var _ = Describe("CustomResourceDefinitionClient", func() {
 			)
 
 			BeforeEach(func() {
-				factory := test.Setup("")
-				client, err = NewCustomResourceDefinitionClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, "")
+				client, err = NewCustomResourceDefinitionClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {

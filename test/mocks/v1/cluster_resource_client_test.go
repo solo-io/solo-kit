@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -29,8 +30,9 @@ var _ = Describe("ClusterResourceClient", func() {
 			)
 
 			BeforeEach(func() {
-				factory := test.Setup("")
-				client, err = NewClusterResourceClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, "")
+				client, err = NewClusterResourceClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {

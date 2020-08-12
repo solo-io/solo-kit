@@ -5,6 +5,7 @@
 package kubernetes
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -19,6 +20,7 @@ import (
 
 var _ = Describe("ServiceClient", func() {
 	var (
+		ctx       context.Context
 		namespace string
 	)
 	for _, test := range []typed.ResourceClientTester{
@@ -38,8 +40,9 @@ var _ = Describe("ServiceClient", func() {
 
 			BeforeEach(func() {
 				namespace = helpers.RandString(6)
-				factory := test.Setup(namespace)
-				client, err = NewServiceClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, namespace)
+				client, err = NewServiceClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {

@@ -34,7 +34,6 @@ var (
 		}
 		ctx := context.Background()
 		var err error
-
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		clientset, err := apiexts.NewForConfig(cfg)

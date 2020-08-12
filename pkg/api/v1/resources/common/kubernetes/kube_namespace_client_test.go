@@ -5,6 +5,7 @@
 package kubernetes
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -27,8 +28,9 @@ var _ = Describe("KubeNamespaceClient", func() {
 			)
 
 			BeforeEach(func() {
-				factory := test.Setup("")
-				client, err = NewKubeNamespaceClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, "")
+				client, err = NewKubeNamespaceClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
