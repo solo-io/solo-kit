@@ -101,6 +101,8 @@ verify-envoy-protos:
 # Unit Tests
 #----------------------------------------------------------------------------------
 
+# '-skip=multicluster', '-regexScansFilePath' skips any filepath which includes multicluster, which is useful
+# as this code is no longer used
 .PHONY: test
 test:
 	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
