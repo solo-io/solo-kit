@@ -143,7 +143,7 @@ func Generate(opts GenerateOptions) error {
 			"but will most likely lead to one.")
 	}
 	ctx := context.Background()
-	mgr, err := manager.NewManager(ctx, r.BaseDir)
+	mgr, err := manager.NewManager(ctx, &anyvendor.FactorySettings{Cwd: r.BaseDir})
 	if err != nil {
 		return err
 	}

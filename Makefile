@@ -96,6 +96,15 @@ verify-envoy-protos:
 	@echo Verifying validity of generated envoy files...
 	PATH=$(DEPSGOBIN):$$PATH $(GO_BUILD_FLAGS) CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
 
+
+#----------------------------------------------------------------------------------
+# Unit Tests
+#----------------------------------------------------------------------------------
+
+.PHONY: test
+test:
+	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
+
 #----------------------------------------------------------------------------------
 # solo-kit-gen
 #----------------------------------------------------------------------------------
