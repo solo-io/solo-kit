@@ -1,0 +1,2 @@
+- type: NON_USER_FACING
+  description: Disable all multicluster tests. 
