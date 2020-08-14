@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -36,7 +37,7 @@ type NewResourceClientParams struct {
 }
 
 // TODO(ilackarms): more opts validation
-func newResourceClient(factory ResourceClientFactory, params NewResourceClientParams) (clients.ResourceClient, error) {
+func newResourceClient(ctx context.Context, factory ResourceClientFactory, params NewResourceClientParams) (clients.ResourceClient, error) {
 	resourceType := params.ResourceType
 	switch opts := factory.(type) {
 	case *KubeResourceClientFactory:
@@ -76,10 +77,10 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 			if err != nil {
 				return nil, errors.Wrapf(err, "creating api extensions client")
 			}
-			if err := opts.Crd.Register(apiExts); err != nil {
+			if err := opts.Crd.Register(ctx, apiExts); err != nil {
 				return nil, err
 			}
-			if err := kubeutils.WaitForCrdActive(apiExts, opts.Crd.FullName()); err != nil {
+			if err := kubeutils.WaitForCrdActive(ctx, apiExts, opts.Crd.FullName()); err != nil {
 				return nil, err
 			}
 		}
@@ -93,7 +94,7 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 		for _, ns := range namespaceWhitelist {
 			// verify the crd is registered and we have List permission
 			// for the given namespaces
-			if _, err := crdClient.ResourcesV1().Resources(ns).List(metav1.ListOptions{}); err != nil {
+			if _, err := crdClient.ResourcesV1().Resources(ns).List(ctx, metav1.ListOptions{}); err != nil {
 				return nil, errors.Wrapf(err, "list check failed")
 			}
 		}
@@ -154,7 +155,7 @@ func newResourceClient(factory ResourceClientFactory, params NewResourceClientPa
 
 // https://golang.org/doc/faq#generics
 type ResourceClientFactory interface {
-	NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error)
+	NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error)
 }
 
 // If SkipCrdCreation is set to 'true', the clients built with this factory will not attempt to create the given CRD
@@ -175,8 +176,8 @@ type KubeResourceClientFactory struct {
 	Cluster string
 }
 
-func (f *KubeResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
-	return newResourceClient(f, params)
+func (f *KubeResourceClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(ctx, f, params)
 }
 
 type ConsulResourceClientFactory struct {
@@ -184,24 +185,24 @@ type ConsulResourceClientFactory struct {
 	RootKey string
 }
 
-func (f *ConsulResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
-	return newResourceClient(f, params)
+func (f *ConsulResourceClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(ctx, f, params)
 }
 
 type FileResourceClientFactory struct {
 	RootDir string
 }
 
-func (f *FileResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
-	return newResourceClient(f, params)
+func (f *FileResourceClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(ctx, f, params)
 }
 
 type MemoryResourceClientFactory struct {
 	Cache memory.InMemoryResourceCache
 }
 
-func (f *MemoryResourceClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
-	return newResourceClient(f, params)
+func (f *MemoryResourceClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(ctx, f, params)
 }
 
 type KubeConfigMapClientFactory struct {
@@ -219,8 +220,8 @@ type KubeConfigMapClientFactory struct {
 	Cluster string
 }
 
-func (f *KubeConfigMapClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
-	return newResourceClient(f, params)
+func (f *KubeConfigMapClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(ctx, f, params)
 }
 
 type KubeSecretClientFactory struct {
@@ -236,8 +237,8 @@ type KubeSecretClientFactory struct {
 	Cluster string
 }
 
-func (f *KubeSecretClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
-	return newResourceClient(f, params)
+func (f *KubeSecretClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(ctx, f, params)
 }
 
 type VaultSecretClientFactory struct {
@@ -245,6 +246,6 @@ type VaultSecretClientFactory struct {
 	RootKey string
 }
 
-func (f *VaultSecretClientFactory) NewResourceClient(params NewResourceClientParams) (clients.ResourceClient, error) {
-	return newResourceClient(f, params)
+func (f *VaultSecretClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(ctx, f, params)
 }

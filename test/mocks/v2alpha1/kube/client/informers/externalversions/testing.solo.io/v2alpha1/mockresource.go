@@ -19,6 +19,7 @@ limitations under the License.
 package v2alpha1
 
 import (
+	"context"
 	time "time"
 
 	testingsoloiov2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
@@ -61,13 +62,13 @@ func NewFilteredMockResourceInformer(client versioned.Interface, namespace strin
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.TestingV2alpha1().MockResources(namespace).List(options)
+				return client.TestingV2alpha1().MockResources(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.TestingV2alpha1().MockResources(namespace).Watch(options)
+				return client.TestingV2alpha1().MockResources(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&testingsoloiov2alpha1.MockResource{},

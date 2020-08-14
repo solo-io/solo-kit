@@ -3,6 +3,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type kubeNamespaceClient struct {
 	rc clients.ResourceClient
 }
 
-func NewKubeNamespaceClient(rcFactory factory.ResourceClientFactory) (KubeNamespaceClient, error) {
-	return NewKubeNamespaceClientWithToken(rcFactory, "")
+func NewKubeNamespaceClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (KubeNamespaceClient, error) {
+	return NewKubeNamespaceClientWithToken(ctx, rcFactory, "")
 }
 
-func NewKubeNamespaceClientWithToken(rcFactory factory.ResourceClientFactory, token string) (KubeNamespaceClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewKubeNamespaceClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (KubeNamespaceClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &KubeNamespace{},
 		Token:        token,
 	})

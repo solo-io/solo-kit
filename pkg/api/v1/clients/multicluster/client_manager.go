@@ -1,3 +1,4 @@
+// Deprecated: This package is no longer being maintained. Use https://github.com/solo-io/skv2 instead for multicluster functionality.
 package multicluster
 
 import (
@@ -49,7 +50,7 @@ func NewClusterClientManager(ctx context.Context, clientFactory factory.ClusterC
 }
 
 func (c *clusterClientManager) ClusterAdded(cluster string, restConfig *rest.Config) {
-	client, err := c.clientFactory.GetClient(cluster, restConfig)
+	client, err := c.clientFactory.GetClient(c.ctx, cluster, restConfig)
 	if err != nil {
 		contextutils.LoggerFrom(c.ctx).Error("failed to get client for cluster",
 			zap.Error(err),

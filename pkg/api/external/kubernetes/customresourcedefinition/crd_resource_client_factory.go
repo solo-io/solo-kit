@@ -1,6 +1,8 @@
 package customresourcedefinition
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/multicluster/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
@@ -20,7 +22,7 @@ func NewCrdResourceClientFactory(cacheGetter clustercache.CacheGetter) *crdResou
 	return &crdResourceClientFactory{cacheGetter: cacheGetter}
 }
 
-func (g *crdResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *crdResourceClientFactory) GetClient(ctx context.Context, cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kube, err := apiexts.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err

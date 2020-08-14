@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var mockresourcesResource = schema.GroupVersionResource{Group: "testing.solo.io"
 var mockresourcesKind = schema.GroupVersionKind{Group: "testing.solo.io", Version: "v2alpha1", Kind: "MockResource"}
 
 // Get takes name of the mockResource, and returns the corresponding mockResource object, and an error if there is any.
-func (c *FakeMockResources) Get(name string, options v1.GetOptions) (result *v2alpha1.MockResource, err error) {
+func (c *FakeMockResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2alpha1.MockResource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(mockresourcesResource, c.ns, name), &v2alpha1.MockResource{})
 
@@ -50,7 +52,7 @@ func (c *FakeMockResources) Get(name string, options v1.GetOptions) (result *v2a
 }
 
 // List takes label and field selectors, and returns the list of MockResources that match those selectors.
-func (c *FakeMockResources) List(opts v1.ListOptions) (result *v2alpha1.MockResourceList, err error) {
+func (c *FakeMockResources) List(ctx context.Context, opts v1.ListOptions) (result *v2alpha1.MockResourceList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(mockresourcesResource, mockresourcesKind, c.ns, opts), &v2alpha1.MockResourceList{})
 
@@ -72,14 +74,14 @@ func (c *FakeMockResources) List(opts v1.ListOptions) (result *v2alpha1.MockReso
 }
 
 // Watch returns a watch.Interface that watches the requested mockResources.
-func (c *FakeMockResources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeMockResources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(mockresourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a mockResource and creates it.  Returns the server's representation of the mockResource, and an error, if there is any.
-func (c *FakeMockResources) Create(mockResource *v2alpha1.MockResource) (result *v2alpha1.MockResource, err error) {
+func (c *FakeMockResources) Create(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.CreateOptions) (result *v2alpha1.MockResource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(mockresourcesResource, c.ns, mockResource), &v2alpha1.MockResource{})
 
@@ -90,7 +92,7 @@ func (c *FakeMockResources) Create(mockResource *v2alpha1.MockResource) (result 
 }
 
 // Update takes the representation of a mockResource and updates it. Returns the server's representation of the mockResource, and an error, if there is any.
-func (c *FakeMockResources) Update(mockResource *v2alpha1.MockResource) (result *v2alpha1.MockResource, err error) {
+func (c *FakeMockResources) Update(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (result *v2alpha1.MockResource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(mockresourcesResource, c.ns, mockResource), &v2alpha1.MockResource{})
 
@@ -102,7 +104,7 @@ func (c *FakeMockResources) Update(mockResource *v2alpha1.MockResource) (result 
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeMockResources) UpdateStatus(mockResource *v2alpha1.MockResource) (*v2alpha1.MockResource, error) {
+func (c *FakeMockResources) UpdateStatus(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (*v2alpha1.MockResource, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(mockresourcesResource, "status", c.ns, mockResource), &v2alpha1.MockResource{})
 
@@ -113,7 +115,7 @@ func (c *FakeMockResources) UpdateStatus(mockResource *v2alpha1.MockResource) (*
 }
 
 // Delete takes name of the mockResource and deletes it. Returns an error if one occurs.
-func (c *FakeMockResources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeMockResources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(mockresourcesResource, c.ns, name), &v2alpha1.MockResource{})
 
@@ -121,15 +123,15 @@ func (c *FakeMockResources) Delete(name string, options *v1.DeleteOptions) error
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeMockResources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(mockresourcesResource, c.ns, listOptions)
+func (c *FakeMockResources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(mockresourcesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v2alpha1.MockResourceList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched mockResource.
-func (c *FakeMockResources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v2alpha1.MockResource, err error) {
+func (c *FakeMockResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.MockResource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(mockresourcesResource, c.ns, name, pt, data, subresources...), &v2alpha1.MockResource{})
 

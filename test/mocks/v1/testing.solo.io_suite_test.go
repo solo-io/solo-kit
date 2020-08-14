@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -31,20 +32,21 @@ var (
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
 			return
 		}
+		ctx := context.Background()
 		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		clientset, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "anothermockresources.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
-		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("clusterresources.testing.solo.io", &metav1.DeleteOptions{})
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "clusterresources.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
-		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("fakes.testing.solo.io", &metav1.DeleteOptions{})
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "fakes.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
-		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("fcars.testing.solo.io", &metav1.DeleteOptions{})
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "fcars.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
-		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("mocks.testing.solo.io", &metav1.DeleteOptions{})
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "mocks.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 		Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
 	})

@@ -32,8 +32,9 @@ import (
 )
 
 var _ = Describe("MultiClusterResourceClient e2e test", func() {
-	if os.Getenv("RUN_KUBE_TESTS") != "1" {
-		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+	if !shouldRunMultiClusterTests() {
+		log.Printf("Multi-cluster kubernetes tests are disabled by default. To enable, set RUN_KUBE_TESTS=1 and " +
+			"RUN_MULTI_CLUSTER_TESTS=1 in your env, and set ALT_CLUSTER_KUBECONFIG to a valid kubernetes config file.")
 		return
 	}
 
@@ -97,26 +98,26 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 
 		// Create namespaces
 		namespace = helpers.RandString(6)
-		err = kubeutils.CreateNamespacesInParallel(localKubeClient, namespace)
+		err = kubeutils.CreateNamespacesInParallel(ctx, localKubeClient, namespace)
 		Expect(err).NotTo(HaveOccurred())
-		err = kubeutils.CreateNamespacesInParallel(remoteKubeClient(), namespace)
+		err = kubeutils.CreateNamespacesInParallel(ctx, remoteKubeClient(), namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		// Delete remote cluster kube config secret
-		err := localKubeClient.CoreV1().Secrets(namespace).Delete(cfgSecret.GetName(), &metav1.DeleteOptions{})
+		err := localKubeClient.CoreV1().Secrets(namespace).Delete(ctx, cfgSecret.GetName(), metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 
 		remoteClient := remoteKubeClient()
 
 		// Delete namespaces
-		err = kubeutils.DeleteNamespacesInParallelBlocking(localKubeClient, namespace)
+		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, localKubeClient, namespace)
 		Expect(err).NotTo(HaveOccurred())
-		err = kubeutils.DeleteNamespacesInParallelBlocking(remoteClient, namespace)
+		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, remoteClient, namespace)
 		Expect(err).NotTo(HaveOccurred())
-		kubehelpers.WaitForNamespaceTeardownWithClient(namespace, localKubeClient)
-		kubehelpers.WaitForNamespaceTeardownWithClient(namespace, remoteClient)
+		kubehelpers.WaitForNamespaceTeardownWithClient(ctx, namespace, localKubeClient)
+		kubehelpers.WaitForNamespaceTeardownWithClient(ctx, namespace, remoteClient)
 		cancel()
 	})
 
@@ -145,7 +146,7 @@ var _ = Describe("MultiClusterResourceClient e2e test", func() {
 		}
 		cfgSecret, err = secretconverter.KubeConfigToSecret(skKubeConfig)
 		Expect(err).NotTo(HaveOccurred())
-		_, err = localKubeClient.CoreV1().Secrets(namespace).Create(cfgSecret)
+		_, err = localKubeClient.CoreV1().Secrets(namespace).Create(ctx, cfgSecret, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		eventuallyClusterAvailable(anotherMockResourceClient, remoteCluster)
 

@@ -5,6 +5,7 @@
 package v2alpha1
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ import (
 )
 
 var _ = Describe("FrequentlyChangingAnnotationsResourceClient", func() {
+	var ctx context.Context
 	var (
 		namespace string
 	)
@@ -39,12 +41,13 @@ var _ = Describe("FrequentlyChangingAnnotationsResourceClient", func() {
 
 			BeforeEach(func() {
 				namespace = helpers.RandString(6)
-				factory := test.Setup(namespace)
-				client, err = NewFrequentlyChangingAnnotationsResourceClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, namespace)
+				client, err = NewFrequentlyChangingAnnotationsResourceClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				test.Teardown(namespace)
+				test.Teardown(ctx, namespace)
 			})
 			It("CRUDs FrequentlyChangingAnnotationsResources "+test.Description(), func() {
 				FrequentlyChangingAnnotationsResourceClientTest(namespace, client, name1, name2, name3)

@@ -3,6 +3,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type jobClient struct {
 	rc clients.ResourceClient
 }
 
-func NewJobClient(rcFactory factory.ResourceClientFactory) (JobClient, error) {
-	return NewJobClientWithToken(rcFactory, "")
+func NewJobClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (JobClient, error) {
+	return NewJobClientWithToken(ctx, rcFactory, "")
 }
 
-func NewJobClientWithToken(rcFactory factory.ResourceClientFactory, token string) (JobClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewJobClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (JobClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &Job{},
 		Token:        token,
 	})

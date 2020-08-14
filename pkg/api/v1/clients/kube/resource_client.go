@@ -166,7 +166,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	}
 
 	stats.Record(ctx, MInFlight.M(1))
-	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{})
+	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(ctx, name, metav1.GetOptions{})
 	stats.Record(ctx, MInFlight.M(-1))
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -198,7 +198,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	// mutate and return clone
 	clone := resources.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
-	resourceCrd := rc.crd.KubeResource(clone)
+	resourceCrd, err := rc.crd.KubeResource(clone)
+	if err != nil {
+		return nil, err
+	}
 
 	ctx := opts.Ctx
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName), tag.Insert(KeyOpKind, "write")); err == nil {
@@ -217,9 +220,9 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		}
 		stats.Record(ctx, MUpdates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, updateErr := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Update(resourceCrd); updateErr != nil {
+		if _, updateErr := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Update(ctx, resourceCrd, metav1.UpdateOptions{}); updateErr != nil {
 
-			original, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			original, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Get(ctx, meta.Name, metav1.GetOptions{})
 			if err == nil {
 				if apierrors.IsConflict(updateErr) {
 					return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, "", meta.ResourceVersion)
@@ -235,7 +238,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	} else {
 		stats.Record(ctx, MCreates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Create(resourceCrd); err != nil {
+		if _, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Create(ctx, resourceCrd, metav1.CreateOptions{}); err != nil {
 			if apierrors.IsAlreadyExists(err) {
 				return nil, errors.NewExistErr(meta)
 			}
@@ -271,7 +274,7 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 
 	stats.Record(ctx, MInFlight.M(1))
 	defer stats.Record(ctx, MInFlight.M(-1))
-	if err := rc.crdClientset.ResourcesV1().Resources(namespace).Delete(name, nil); err != nil {
+	if err := rc.crdClientset.ResourcesV1().Resources(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting resource %v", name)
 	}
 	return nil
@@ -414,7 +417,7 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 	stats.Record(ctx, MInFlight.M(1))
 	defer stats.Record(ctx, MInFlight.M(-1))
 
-	_, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(name, metav1.GetOptions{}) // TODO(yuval-k): check error for real
+	_, err := rc.crdClientset.ResourcesV1().Resources(namespace).Get(ctx, name, metav1.GetOptions{}) // TODO(yuval-k): check error for real
 	return err == nil
 
 }
@@ -422,14 +425,41 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resources.Resource, error) {
 	resource := rc.NewResource()
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
-	if withStatus, ok := resource.(resources.InputResource); ok {
-		resources.UpdateStatus(withStatus, func(status *core.Status) {
-			*status = resourceCrd.Status
-		})
-	}
-	if resourceCrd.Spec != nil {
-		if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
-			return nil, errors.Wrapf(err, "reading crd spec on resource %v in namespace %v into %v", resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
+
+	if customResource, ok := resource.(resources.CustomInputResource); ok {
+		// Handle custom spec/status unmarshalling
+
+		if resourceCrd.Spec != nil {
+			if err := customResource.UnmarshalSpec(*resourceCrd.Spec); err != nil {
+				return nil, errors.Wrapf(err, "unmarshalling crd spec on custom resource %v in namespace %v into %v",
+					resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
+			}
+		}
+		if err := customResource.UnmarshalStatus(resourceCrd.Status); err != nil {
+			return nil, errors.Wrapf(err, "unmarshalling crd status on custom resource %v in namespace %v into %v",
+				resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
+		}
+
+	} else {
+		// Default unmarshalling
+
+		if withStatus, ok := resource.(resources.InputResource); ok {
+			updateFunc := func(status *core.Status) error {
+				typedStatus := core.Status{}
+				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
+					return err
+				}
+				*status = typedStatus
+				return nil
+			}
+			if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
+				return nil, err
+			}
+		}
+		if resourceCrd.Spec != nil {
+			if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+				return nil, errors.Wrapf(err, "reading crd spec on resource %v in namespace %v into %v", resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
+			}
 		}
 	}
 	return resource, nil

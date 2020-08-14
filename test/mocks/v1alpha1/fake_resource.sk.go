@@ -41,13 +41,10 @@ func (r *FakeResource) GroupVersionKind() schema.GroupVersionKind {
 
 type FakeResourceList []*FakeResource
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list FakeResourceList) Find(namespace, name string) (*FakeResource, error) {
 	for _, fakeResource := range list {
-		if fakeResource.GetMetadata().Name == name {
-			if namespace == "" || fakeResource.GetMetadata().Namespace == namespace {
-				return fakeResource, nil
-			}
+		if fakeResource.GetMetadata().Name == name && fakeResource.GetMetadata().Namespace == namespace {
+			return fakeResource, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find fakeResource %v.%v", namespace, name)

@@ -1,0 +1,4 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: Update kubernetes libraries to 1.18.x
+  issueLink: https://github.com/solo-io/solo-kit/issues/371

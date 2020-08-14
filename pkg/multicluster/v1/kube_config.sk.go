@@ -73,13 +73,10 @@ func (r *KubeConfig) GroupVersionKind() schema.GroupVersionKind {
 
 type KubeConfigList []*KubeConfig
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list KubeConfigList) Find(namespace, name string) (*KubeConfig, error) {
 	for _, kubeConfig := range list {
-		if kubeConfig.GetMetadata().Name == name {
-			if namespace == "" || kubeConfig.GetMetadata().Namespace == namespace {
-				return kubeConfig, nil
-			}
+		if kubeConfig.GetMetadata().Name == name && kubeConfig.GetMetadata().Namespace == namespace {
+			return kubeConfig, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find kubeConfig %v.%v", namespace, name)

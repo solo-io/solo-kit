@@ -1,6 +1,7 @@
 package job
 
 import (
+	"context"
 	"sort"
 
 	kubejob "github.com/solo-io/solo-kit/api/external/kubernetes/job"
@@ -69,7 +70,7 @@ func (rc *jobResourceClient) Read(namespace, name string, opts clients.ReadOpts)
 	}
 	opts = opts.WithDefaults()
 
-	jobObj, err := rc.Kube.BatchV1().Jobs(namespace).Get(name, metav1.GetOptions{})
+	jobObj, err := rc.Kube.BatchV1().Jobs(namespace).Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -109,11 +110,11 @@ func (rc *jobResourceClient) Write(resource resources.Resource, opts clients.Wri
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.Kube.BatchV1().Jobs(meta.Namespace).Update(jobObj); err != nil {
+		if _, err := rc.Kube.BatchV1().Jobs(meta.Namespace).Update(opts.Ctx, jobObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube jobObj %v", jobObj.Name)
 		}
 	} else {
-		if _, err := rc.Kube.BatchV1().Jobs(meta.Namespace).Create(jobObj); err != nil {
+		if _, err := rc.Kube.BatchV1().Jobs(meta.Namespace).Create(opts.Ctx, jobObj, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube jobObj %v", jobObj.Name)
 		}
 	}
@@ -124,14 +125,14 @@ func (rc *jobResourceClient) Write(resource resources.Resource, opts clients.Wri
 
 func (rc *jobResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	if !rc.exist(namespace, name) {
+	if !rc.exist(opts.Ctx, namespace, name) {
 		if !opts.IgnoreNotExist {
 			return errors.NewNotExistErr("", name)
 		}
 		return nil
 	}
 
-	if err := rc.Kube.BatchV1().Jobs(namespace).Delete(name, nil); err != nil {
+	if err := rc.Kube.BatchV1().Jobs(namespace).Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting jobObj %v", name)
 	}
 	return nil
@@ -165,7 +166,7 @@ func (rc *jobResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-
 	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
-func (rc *jobResourceClient) exist(namespace, name string) bool {
-	_, err := rc.Kube.BatchV1().Jobs(namespace).Get(name, metav1.GetOptions{})
+func (rc *jobResourceClient) exist(ctx context.Context, namespace, name string) bool {
+	_, err := rc.Kube.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }

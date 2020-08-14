@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Change the type of the status field of the core `Resource` type to a generic `map[string]interface{}`
+      in order to be able to handle resources with any status format.

@@ -18,17 +18,19 @@ import (
 
 var _ = Describe("KubeconfigsEventLoop", func() {
 	var (
+		ctx       context.Context
 		namespace string
 		emitter   KubeconfigsEmitter
 		err       error
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 
 		kubeConfigClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		kubeConfigClient, err := NewKubeConfigClient(kubeConfigClientFactory)
+		kubeConfigClient, err := NewKubeConfigClient(ctx, kubeConfigClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)

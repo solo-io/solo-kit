@@ -1,6 +1,7 @@
 package deployment
 
 import (
+	"context"
 	"sort"
 
 	kubedeployment "github.com/solo-io/solo-kit/api/external/kubernetes/deployment"
@@ -69,7 +70,7 @@ func (rc *deploymentResourceClient) Read(namespace, name string, opts clients.Re
 	}
 	opts = opts.WithDefaults()
 
-	deploymentObj, err := rc.Kube.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	deploymentObj, err := rc.Kube.AppsV1().Deployments(namespace).Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -109,11 +110,11 @@ func (rc *deploymentResourceClient) Write(resource resources.Resource, opts clie
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.Kube.AppsV1().Deployments(meta.Namespace).Update(deploymentObj); err != nil {
+		if _, err := rc.Kube.AppsV1().Deployments(meta.Namespace).Update(opts.Ctx, deploymentObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube deploymentObj %v", deploymentObj.Name)
 		}
 	} else {
-		if _, err := rc.Kube.AppsV1().Deployments(meta.Namespace).Create(deploymentObj); err != nil {
+		if _, err := rc.Kube.AppsV1().Deployments(meta.Namespace).Create(opts.Ctx, deploymentObj, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube deploymentObj %v", deploymentObj.Name)
 		}
 	}
@@ -124,14 +125,14 @@ func (rc *deploymentResourceClient) Write(resource resources.Resource, opts clie
 
 func (rc *deploymentResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	if !rc.exist(namespace, name) {
+	if !rc.exist(opts.Ctx, namespace, name) {
 		if !opts.IgnoreNotExist {
 			return errors.NewNotExistErr("", name)
 		}
 		return nil
 	}
 
-	if err := rc.Kube.AppsV1().Deployments(namespace).Delete(name, nil); err != nil {
+	if err := rc.Kube.AppsV1().Deployments(namespace).Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting deploymentObj %v", name)
 	}
 	return nil
@@ -165,7 +166,7 @@ func (rc *deploymentResourceClient) Watch(namespace string, opts clients.WatchOp
 	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
-func (rc *deploymentResourceClient) exist(namespace, name string) bool {
-	_, err := rc.Kube.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
+func (rc *deploymentResourceClient) exist(ctx context.Context, namespace, name string) bool {
+	_, err := rc.Kube.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }

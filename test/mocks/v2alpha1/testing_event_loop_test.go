@@ -20,29 +20,31 @@ import (
 
 var _ = Describe("TestingEventLoop", func() {
 	var (
+		ctx       context.Context
 		namespace string
 		emitter   TestingEmitter
 		err       error
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 
 		mockResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		mockResourceClient, err := NewMockResourceClient(mockResourceClientFactory)
+		mockResourceClient, err := NewMockResourceClient(ctx, mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		frequentlyChangingAnnotationsResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		frequentlyChangingAnnotationsResourceClient, err := NewFrequentlyChangingAnnotationsResourceClient(frequentlyChangingAnnotationsResourceClientFactory)
+		frequentlyChangingAnnotationsResourceClient, err := NewFrequentlyChangingAnnotationsResourceClient(ctx, frequentlyChangingAnnotationsResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		fakeResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		fakeResourceClient, err := testing_solo_io.NewFakeResourceClient(fakeResourceClientFactory)
+		fakeResourceClient, err := testing_solo_io.NewFakeResourceClient(ctx, fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewTestingEmitter(mockResourceClient, frequentlyChangingAnnotationsResourceClient, fakeResourceClient)

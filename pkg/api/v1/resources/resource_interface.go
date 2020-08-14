@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"sort"
 
+	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/gogo/protobuf/proto"
@@ -44,6 +46,16 @@ type InputResource interface {
 	Resource
 	GetStatus() core.Status
 	SetStatus(status core.Status)
+}
+
+// Custom resources imported in a solo-kit project can implement this interface to control
+// how spec and status data is mapped to/from the generic `Resource` type.
+type CustomInputResource interface {
+	InputResource
+	UnmarshalSpec(spec v1.Spec) error
+	UnmarshalStatus(status v1.Status) error
+	MarshalSpec() (v1.Spec, error)
+	MarshalStatus() (v1.Status, error)
 }
 
 type ResourceList []Resource
@@ -436,10 +448,14 @@ func UpdateListMetadata(resources ResourceList, updateFunc func(meta *core.Metad
 	}
 }
 
-func UpdateStatus(resource InputResource, updateFunc func(status *core.Status)) {
+func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) error) error {
 	status := resource.GetStatus()
-	updateFunc(&status)
+	err := updateFunc(&status)
+	if err != nil {
+		return err
+	}
 	resource.SetStatus(status)
+	return nil
 }
 
 func Validate(resource Resource) error {

@@ -103,18 +103,25 @@ func (e ResourceReports) ValidateStrict() error {
 	return errs
 }
 
+// Minimal set of client operations required for reporters.
+type ReporterResourceClient interface {
+	Kind() string
+	Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error)
+	Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error)
+}
+
 type Reporter interface {
 	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status) error
 }
 
 type reporter struct {
-	clients clients.ResourceClients
+	clients map[string]ReporterResourceClient
 	ref     string
 }
 
-func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) Reporter {
-	clientsByKind := make(clients.ResourceClients)
-	for _, client := range resourceClients {
+func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) Reporter {
+	clientsByKind := make(map[string]ReporterResourceClient)
+	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
 	return &reporter{
@@ -123,13 +130,22 @@ func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) 
 	}
 }
 
+// ResourceReports may be modified, and end up with fewer resources than originally requested.
+// If resources referenced in the resourceErrs don't exist, they will be removed.
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
 	var merr *multierror.Error
 
+	// copy the map so we can iterate over the copy, deleting resources from
+	// the original map if they are not found/no longer exist.
+	resourceErrsCopy := make(ResourceReports, len(resourceErrs))
 	for resource, report := range resourceErrs {
+		resourceErrsCopy[resource] = report
+	}
+
+	for resource, report := range resourceErrsCopy {
 		kind := resources.Kind(resource)
 		client, ok := r.clients[kind]
 		if !ok {
@@ -155,21 +171,44 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			merr = multierror.Append(merr, err)
 			continue
 		}
-		resources.UpdateMetadata(resource, func(meta *core.Metadata) {
-			meta.ResourceVersion = updatedResource.GetMetadata().ResourceVersion
-		})
-
-		logger.Debugf("wrote report %v : %v", updatedResource.GetMetadata().Ref(), status)
+		if updatedResource != nil {
+			resources.UpdateMetadata(resource, func(meta *core.Metadata) {
+				meta.ResourceVersion = updatedResource.GetMetadata().ResourceVersion
+			})
+			logger.Debugf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
+		} else {
+			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
+			delete(resourceErrs, resource)
+		}
 	}
 	return merr.ErrorOrNil()
 }
 
-func attemptUpdateStatus(ctx context.Context, client clients.ResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+// Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
+//    to avoid confusion about whether this may update the resource rather than just its status.
+//    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
+func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+	var readErr error
+	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
+		return nil, resourceToWrite, nil
+	}
+	if readErr == nil {
+		// set resourceToWrite to the resource we read but with the new status
+		// Note: it's possible that this resourceFromRead is newer than the resourceToWrite and therefore the status will be out of sync.
+		//    If so, we will soon recalculate the status. The interim incorrect status is not dangerous since the status is informational only.
+		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
+		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
+		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
+			status := resourceToWrite.GetStatus()
+			resourceToWrite = inputResourceFromRead
+			resourceToWrite.SetStatus(status)
+		}
+	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
 		return updatedResource, resourceToWrite, nil
 	}
-	var readErr error
 	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil {
 		if errors.IsResourceVersion(writeErr) {

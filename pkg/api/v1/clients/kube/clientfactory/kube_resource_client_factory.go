@@ -1,6 +1,7 @@
 package clientfactory
 
 import (
+	"context"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -42,7 +43,7 @@ func NewKubeResourceClientFactory(
 	}
 }
 
-func (g *kubeResourceClientFactory) GetClient(cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
+func (g *kubeResourceClientFactory) GetClient(ctx context.Context, cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	kubeCache := g.cacheGetter.GetCache(cluster, restConfig)
 	typedCache, ok := kubeCache.(kube.SharedCache)
 	if !ok {
@@ -58,5 +59,5 @@ func (g *kubeResourceClientFactory) GetClient(cluster string, restConfig *rest.C
 		ResyncPeriod:       g.resyncPeriod,
 		Cluster:            cluster,
 	}
-	return f.NewResourceClient(g.params)
+	return f.NewResourceClient(ctx, g.params)
 }

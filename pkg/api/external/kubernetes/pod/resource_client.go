@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"context"
 	"sort"
 
 	kubepod "github.com/solo-io/solo-kit/api/external/kubernetes/pod"
@@ -69,7 +70,7 @@ func (rc *podResourceClient) Read(namespace, name string, opts clients.ReadOpts)
 	}
 	opts = opts.WithDefaults()
 
-	podObj, err := rc.Kube.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
+	podObj, err := rc.Kube.CoreV1().Pods(namespace).Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -109,11 +110,11 @@ func (rc *podResourceClient) Write(resource resources.Resource, opts clients.Wri
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.Kube.CoreV1().Pods(meta.Namespace).Update(podObj); err != nil {
+		if _, err := rc.Kube.CoreV1().Pods(meta.Namespace).Update(opts.Ctx, podObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube podObj %v", podObj.Name)
 		}
 	} else {
-		if _, err := rc.Kube.CoreV1().Pods(meta.Namespace).Create(podObj); err != nil {
+		if _, err := rc.Kube.CoreV1().Pods(meta.Namespace).Create(opts.Ctx, podObj, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube podObj %v", podObj.Name)
 		}
 	}
@@ -124,14 +125,14 @@ func (rc *podResourceClient) Write(resource resources.Resource, opts clients.Wri
 
 func (rc *podResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	if !rc.exist(namespace, name) {
+	if !rc.exist(opts.Ctx, namespace, name) {
 		if !opts.IgnoreNotExist {
 			return errors.NewNotExistErr("", name)
 		}
 		return nil
 	}
 
-	if err := rc.Kube.CoreV1().Pods(namespace).Delete(name, nil); err != nil {
+	if err := rc.Kube.CoreV1().Pods(namespace).Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting podObj %v", name)
 	}
 	return nil
@@ -168,7 +169,7 @@ func (rc *podResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-
 	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
-func (rc *podResourceClient) exist(namespace, name string) bool {
-	_, err := rc.Kube.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
+func (rc *podResourceClient) exist(ctx context.Context, namespace, name string) bool {
+	_, err := rc.Kube.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }

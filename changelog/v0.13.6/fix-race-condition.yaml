@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix race condition when attempting to update a resource status after that resource has been deleted.
+    issueLink: https://github.com/solo-io/gloo/issues/2900
+    resolvesIssue: false

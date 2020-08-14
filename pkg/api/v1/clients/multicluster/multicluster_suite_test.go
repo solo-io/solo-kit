@@ -1,6 +1,7 @@
 package multicluster
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -29,7 +30,7 @@ var (
 	err                   error
 
 	_ = SynchronizedBeforeSuite(func() []byte {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+		if !shouldRunMultiClusterTests() {
 			return nil
 		}
 
@@ -53,22 +54,22 @@ var (
 	}, func([]byte) {})
 
 	_ = SynchronizedAfterSuite(func() {}, func() {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+		if !shouldRunMultiClusterTests() {
 			return
 		}
-
+		ctx := context.Background()
 		// Delete CRDs
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		apiextsClientset, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		err = apiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
+		err = apiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "anothermockresources.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 		cfg, err = kubeutils.GetConfig("", os.Getenv("ALT_CLUSTER_KUBECONFIG"))
 		Expect(err).NotTo(HaveOccurred())
 		remoteApiextsClientset, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		err = remoteApiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("anothermockresources.testing.solo.io", &metav1.DeleteOptions{})
+		err = remoteApiextsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "anothermockresources.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 
 		// Release locks
@@ -84,4 +85,8 @@ func remoteKubeClient() kubernetes.Interface {
 	client, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 	return client
+}
+
+func shouldRunMultiClusterTests() bool {
+	return os.Getenv("RUN_KUBE_TESTS") == "1" && os.Getenv("RUN_MULTI_CLUSTER_TESTS") == "1"
 }

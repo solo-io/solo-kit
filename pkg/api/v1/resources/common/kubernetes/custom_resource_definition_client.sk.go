@@ -3,6 +3,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type customResourceDefinitionClient struct {
 	rc clients.ResourceClient
 }
 
-func NewCustomResourceDefinitionClient(rcFactory factory.ResourceClientFactory) (CustomResourceDefinitionClient, error) {
-	return NewCustomResourceDefinitionClientWithToken(rcFactory, "")
+func NewCustomResourceDefinitionClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (CustomResourceDefinitionClient, error) {
+	return NewCustomResourceDefinitionClientWithToken(ctx, rcFactory, "")
 }
 
-func NewCustomResourceDefinitionClientWithToken(rcFactory factory.ResourceClientFactory, token string) (CustomResourceDefinitionClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewCustomResourceDefinitionClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (CustomResourceDefinitionClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &CustomResourceDefinition{},
 		Token:        token,
 	})

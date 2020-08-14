@@ -23,6 +23,7 @@ var _ = Describe("PodBaseClient", func() {
 		return
 	}
 	var (
+		ctx       context.Context
 		namespace string
 		client    *podResourceClient
 		kube      kubernetes.Interface
@@ -30,21 +31,22 @@ var _ = Describe("PodBaseClient", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("converts a kubernetes pod to solo-kit resource", func() {
 
-		pod, err := kube.CoreV1().Pods(namespace).Create(&kubev1.Pod{
+		pod, err := kube.CoreV1().Pods(namespace).Create(ctx, &kubev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "happy",
 				Namespace: namespace,
@@ -57,7 +59,7 @@ var _ = Describe("PodBaseClient", func() {
 					},
 				},
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		var pods resources.ResourceList

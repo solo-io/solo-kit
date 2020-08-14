@@ -5,6 +5,7 @@
 package kubernetes
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ import (
 )
 
 var _ = Describe("KubeNamespaceClient", func() {
+	var ctx context.Context
 	for _, test := range []typed.ResourceClientTester{} {
 		Context("resource client backed by "+test.Description(), func() {
 			var (
@@ -27,8 +29,9 @@ var _ = Describe("KubeNamespaceClient", func() {
 			)
 
 			BeforeEach(func() {
-				factory := test.Setup("")
-				client, err = NewKubeNamespaceClient(factory)
+				ctx = context.Background()
+				factory := test.Setup(ctx, "")
+				client, err = NewKubeNamespaceClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {

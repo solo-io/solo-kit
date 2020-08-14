@@ -45,13 +45,10 @@ func (r *MockResource) GroupVersionKind() schema.GroupVersionKind {
 
 type MockResourceList []*MockResource
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list MockResourceList) Find(namespace, name string) (*MockResource, error) {
 	for _, mockResource := range list {
-		if mockResource.GetMetadata().Name == name {
-			if namespace == "" || mockResource.GetMetadata().Namespace == namespace {
-				return mockResource, nil
-			}
+		if mockResource.GetMetadata().Name == name && mockResource.GetMetadata().Namespace == namespace {
+			return mockResource, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find mockResource %v.%v", namespace, name)

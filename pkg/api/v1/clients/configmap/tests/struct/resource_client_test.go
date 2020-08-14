@@ -34,6 +34,7 @@ var _ = Describe("Base", func() {
 		return
 	}
 	var (
+		ctx            context.Context
 		ns1, ns2       string
 		kube           kubernetes.Interface
 		client         *ResourceClient
@@ -41,11 +42,12 @@ var _ = Describe("Base", func() {
 		localTestLabel string
 	)
 	BeforeEach(func() {
+		ctx = context.Background()
 		randomSeed, node := GinkgoRandomSeed(), GinkgoParallelNode()
 		ns1, ns2 = helpers.RandStringGinkgo(8, randomSeed, node), helpers.RandStringGinkgo(8, randomSeed, node)
 		localTestLabel = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, ns1, ns2)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
@@ -53,11 +55,11 @@ var _ = Describe("Base", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns1, ns2)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
 
-		kubehelpers.WaitForNamespaceTeardown(ns1)
-		kubehelpers.WaitForNamespaceTeardown(ns2)
+		kubehelpers.WaitForNamespaceTeardown(ctx, ns1)
+		kubehelpers.WaitForNamespaceTeardown(ctx, ns2)
 	})
 	It("CRUDs resources", func() {
 		selector := map[string]string{
@@ -83,7 +85,7 @@ var _ = Describe("Base", func() {
 		_, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(input.Metadata.Name, metav1.GetOptions{})
+		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(ctx, input.Metadata.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
 		Expect(cm.Data["data.json"]).To(ContainSubstring("'hello: goodbye'"))
@@ -96,7 +98,7 @@ var _ = Describe("Base", func() {
 		BeforeEach(func() {
 			ns3 = helpers.RandString(8)
 
-			err := kubeutils.CreateNamespacesInParallel(kube, ns3)
+			err := kubeutils.CreateNamespacesInParallel(ctx, kube, ns3)
 			Expect(err).NotTo(HaveOccurred())
 
 			kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
@@ -106,7 +108,7 @@ var _ = Describe("Base", func() {
 		})
 
 		AfterEach(func() {
-			err := kubeutils.DeleteNamespacesInParallelBlocking(kube, ns3)
+			err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, ns3)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("can watch resources across namespaces when using NamespaceAll", func() {

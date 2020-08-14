@@ -25,6 +25,7 @@ var _ = Describe("Configmap base client", func() {
 		return
 	}
 	var (
+		ctx       context.Context
 		namespace string
 		client    kubernetes2.ConfigMapClient
 		kube      kubernetes.Interface
@@ -33,23 +34,24 @@ var _ = Describe("Configmap base client", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(kube, namespace)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace)
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = NewConfigMapClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
-		cmObj, err = kube.CoreV1().ConfigMaps(namespace).Create(&kubev1.ConfigMap{
+		cmObj, err = kube.CoreV1().ConfigMaps(namespace).Create(ctx, &kubev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Name:      namespace,
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("converts a kubernetes pod to solo-kit resource", func() {

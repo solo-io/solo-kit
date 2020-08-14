@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"sort"
 
 	kubeservice "github.com/solo-io/solo-kit/api/external/kubernetes/service"
@@ -69,7 +70,7 @@ func (rc *serviceResourceClient) Read(namespace, name string, opts clients.ReadO
 	}
 	opts = opts.WithDefaults()
 
-	serviceObj, err := rc.Kube.CoreV1().Services(namespace).Get(name, metav1.GetOptions{})
+	serviceObj, err := rc.Kube.CoreV1().Services(namespace).Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -109,11 +110,11 @@ func (rc *serviceResourceClient) Write(resource resources.Resource, opts clients
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.Kube.CoreV1().Services(meta.Namespace).Update(serviceObj); err != nil {
+		if _, err := rc.Kube.CoreV1().Services(meta.Namespace).Update(opts.Ctx, serviceObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube serviceObj %v", serviceObj.Name)
 		}
 	} else {
-		if _, err := rc.Kube.CoreV1().Services(meta.Namespace).Create(serviceObj); err != nil {
+		if _, err := rc.Kube.CoreV1().Services(meta.Namespace).Create(opts.Ctx, serviceObj, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube serviceObj %v", serviceObj.Name)
 		}
 	}
@@ -124,14 +125,14 @@ func (rc *serviceResourceClient) Write(resource resources.Resource, opts clients
 
 func (rc *serviceResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
-	if !rc.exist(namespace, name) {
+	if !rc.exist(opts.Ctx, namespace, name) {
 		if !opts.IgnoreNotExist {
 			return errors.NewNotExistErr("", name)
 		}
 		return nil
 	}
 
-	if err := rc.Kube.CoreV1().Services(namespace).Delete(name, nil); err != nil {
+	if err := rc.Kube.CoreV1().Services(namespace).Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting serviceObj %v", name)
 	}
 	return nil
@@ -166,7 +167,7 @@ func (rc *serviceResourceClient) Watch(namespace string, opts clients.WatchOpts)
 	return common.KubeResourceWatch(rc.cache, rc.List, namespace, opts)
 }
 
-func (rc *serviceResourceClient) exist(namespace, name string) bool {
-	_, err := rc.Kube.CoreV1().Services(namespace).Get(name, metav1.GetOptions{})
+func (rc *serviceResourceClient) exist(ctx context.Context, namespace, name string) bool {
+	_, err := rc.Kube.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }
