@@ -320,31 +320,46 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				select {
 				case <-ctx.Done():
 					return
-				case mockResourceList := <-mockResourceNamespacesChan:
+				case mockResourceList, ok := <-mockResourceNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
 					case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
 					}
-				case fakeResourceList := <-fakeResourceNamespacesChan:
+				case fakeResourceList, ok := <-fakeResourceNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
 					case fakeResourceChan <- fakeResourceListWithNamespace{list: fakeResourceList, namespace: namespace}:
 					}
-				case anotherMockResourceList := <-anotherMockResourceNamespacesChan:
+				case anotherMockResourceList, ok := <-anotherMockResourceNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
 					case anotherMockResourceChan <- anotherMockResourceListWithNamespace{list: anotherMockResourceList, namespace: namespace}:
 					}
-				case mockCustomTypeList := <-mockCustomTypeNamespacesChan:
+				case mockCustomTypeList, ok := <-mockCustomTypeNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
 					case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
 					}
-				case podList := <-podNamespacesChan:
+				case podList, ok := <-podNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
@@ -418,19 +433,26 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 		for {
 			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }
+			defer func() {
+				close(snapshots)
+				// we must wait for done before closing the error chan,
+				// to avoid sending on close channel.
+				done.Wait()
+				close(errs)
+			}()
 
 			select {
 			case <-timer.C:
 				sync()
 			case <-ctx.Done():
-				close(snapshots)
-				done.Wait()
-				close(errs)
 				return
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
-			case mockResourceNamespacedList := <-mockResourceChan:
+			case mockResourceNamespacedList, ok := <-mockResourceChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := mockResourceNamespacedList.namespace
@@ -449,7 +471,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					mockResourceList = append(mockResourceList, mocks...)
 				}
 				currentSnapshot.Mocks = mockResourceList.Sort()
-			case fakeResourceNamespacedList := <-fakeResourceChan:
+			case fakeResourceNamespacedList, ok := <-fakeResourceChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := fakeResourceNamespacedList.namespace
@@ -468,7 +493,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					fakeResourceList = append(fakeResourceList, fakes...)
 				}
 				currentSnapshot.Fakes = fakeResourceList.Sort()
-			case anotherMockResourceNamespacedList := <-anotherMockResourceChan:
+			case anotherMockResourceNamespacedList, ok := <-anotherMockResourceChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := anotherMockResourceNamespacedList.namespace
@@ -487,7 +515,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					anotherMockResourceList = append(anotherMockResourceList, anothermockresources...)
 				}
 				currentSnapshot.Anothermockresources = anotherMockResourceList.Sort()
-			case clusterResourceList := <-clusterResourceChan:
+			case clusterResourceList, ok := <-clusterResourceChan:
+				if !ok {
+					return
+				}
 				record()
 
 				skstats.IncrementResourceCount(
@@ -498,7 +529,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				)
 
 				currentSnapshot.Clusterresources = clusterResourceList
-			case mockCustomTypeNamespacedList := <-mockCustomTypeChan:
+			case mockCustomTypeNamespacedList, ok := <-mockCustomTypeChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := mockCustomTypeNamespacedList.namespace
@@ -517,7 +551,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					mockCustomTypeList = append(mockCustomTypeList, mcts...)
 				}
 				currentSnapshot.Mcts = mockCustomTypeList.Sort()
-			case podNamespacedList := <-podChan:
+			case podNamespacedList, ok := <-podChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := podNamespacedList.namespace
