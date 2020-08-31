@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/3478
+  resolvedIssue: false 
+- type: FIX
+  description: When an event is safely dropped due to a pending event, the resulting log line will now be logged at "debug" level rather than "error" level.
+  issueLink: https://github.com/solo-io/gloo/issues/3504
