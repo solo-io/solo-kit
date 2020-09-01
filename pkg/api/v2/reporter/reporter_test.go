@@ -65,6 +65,60 @@ var _ = Describe("Reporter", func() {
 		}))
 	})
 
+	It("reports checks that status is updated in storage", func() {
+		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		// write a success
+		resourceErrs := rep.ResourceReports{
+			r1.(*v1.MockResource): rep.Report{},
+		}
+		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		// read from storage, and see that status was updated
+		r1, err = mockResourceClient.Read(r1.GetMetadata().Namespace, r1.GetMetadata().Name, clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(r1.(*v1.MockResource).GetStatus()).To(Equal(core.Status{
+			State:      1,
+			ReportedBy: "test",
+		}))
+		goodR1 := r1
+
+		// simulate a problem:
+		resourceErrs = rep.ResourceReports{
+			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("everyone makes mistakes")},
+		}
+		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		// make sure status was written to storage
+		r1, err = mockResourceClient.Read(r1.GetMetadata().Namespace, r1.GetMetadata().Name, clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(r1.(*v1.MockResource).GetStatus()).To(Equal(core.Status{
+			State:      2,
+			Reason:     "everyone makes mistakes",
+			ReportedBy: "test",
+		}))
+
+		// now make sure when a resource is given again with a valid status, it is written to storage
+		// change state to accepted locally, but not in storage
+		// use the goodR1, to simulate a snapshot that wasn't changed
+		resourceErrs = rep.ResourceReports{
+			goodR1.(*v1.MockResource): rep.Report{},
+		}
+
+		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		r1, err = mockResourceClient.Read(r1.GetMetadata().Namespace, r1.GetMetadata().Name, clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(r1.(*v1.MockResource).GetStatus()).To(Equal(core.Status{
+			State:      1,
+			ReportedBy: "test",
+		}))
+
+	})
+
 	It("handles conflict", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())

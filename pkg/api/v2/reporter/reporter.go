@@ -153,10 +153,6 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 		status := statusFromReport(r.ref, report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
-		if status.Equal(resource.GetStatus()) {
-			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
-			continue
-		}
 		resourceToWrite.SetStatus(status)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
@@ -197,6 +193,11 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
+			statusToWrite := resourceToWrite.GetStatus()
+			if statusToWrite.Equal(inputResourceFromRead.GetStatus()) {
+				contextutils.LoggerFrom(ctx).Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
+				return nil, resourceToWrite, nil
+			}
 			status := resourceToWrite.GetStatus()
 			resourceToWrite = inputResourceFromRead
 			resourceToWrite.SetStatus(status)

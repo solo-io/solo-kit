@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Make sure the reporter checks the status in storage before deciding not to report.
+  issueLink: https://github.com/solo-io/gloo/pull/3580
