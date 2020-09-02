@@ -113,13 +113,17 @@ type ReporterResourceClient interface {
 type Reporter interface {
 	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status) error
 }
+type StatusReporter interface {
+	Reporter
+	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) core.Status
+}
 
 type reporter struct {
 	clients map[string]ReporterResourceClient
 	ref     string
 }
 
-func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) Reporter {
+func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
