@@ -228,7 +228,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
-func (r *reporter) r.StatusFromReportsubresourceStatuses map[string]*core.Status) core.Status {
+func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) core.Status {
 
 	var warningReason string
 	if len(report.Warnings) > 0 {
