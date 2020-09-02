@@ -151,7 +151,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		if !ok {
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
-		status := statusFromReport(r.ref, report, subresourceStatuses)
+		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		if status.Equal(resource.GetStatus()) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
@@ -231,7 +231,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
-func statusFromReport(ref string, report Report, subresourceStatuses map[string]*core.Status) core.Status {
+func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) core.Status {
 
 	var warningReason string
 	if len(report.Warnings) > 0 {
@@ -246,7 +246,7 @@ func statusFromReport(ref string, report Report, subresourceStatuses map[string]
 		return core.Status{
 			State:               core.Status_Rejected,
 			Reason:              errorReason,
-			ReportedBy:          ref,
+			ReportedBy:          r.ref,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
@@ -255,14 +255,14 @@ func statusFromReport(ref string, report Report, subresourceStatuses map[string]
 		return core.Status{
 			State:               core.Status_Warning,
 			Reason:              warningReason,
-			ReportedBy:          ref,
+			ReportedBy:          r.ref,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
 
 	return core.Status{
 		State:               core.Status_Accepted,
-		ReportedBy:          ref,
+		ReportedBy:          r.ref,
 		SubresourceStatuses: subresourceStatuses,
 	}
 }
