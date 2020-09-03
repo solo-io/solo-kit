@@ -106,14 +106,18 @@ func (e ResourceReports) ValidateStrict() error {
 type Reporter interface {
 	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status) error
 }
+type StatusReporter interface {
+	Reporter
+	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) core.Status
+}
 
 type reporter struct {
 	clients clients.ResourceClients
 	ref     string
 }
 
-func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) Reporter {
-	clientsByKind := make(clients.ResourceClients)
+func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) StatusReporter {
+	clientsByKind := make(map[string]clients.ResourceClient)
 	for _, client := range resourceClients {
 		clientsByKind[client.Kind()] = client
 	}
