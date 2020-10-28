@@ -43,6 +43,8 @@ var (
 			KeyType,
 		},
 	}
+
+	VersionUpToDateError = errors.New("skip fetch: version up to date")
 )
 
 func init() {
@@ -321,7 +323,7 @@ func (cache *snapshotCache) Fetch(ctx context.Context, request Request) (*Respon
 		// It might be beneficial to hold the request since Envoy will re-attempt the refresh.
 		version := snapshot.GetResources(request.TypeUrl).Version
 		if request.VersionInfo == version {
-			return nil, errors.New("skip fetch: version up to date")
+			return nil, VersionUpToDateError
 		}
 
 		resources := snapshot.GetResources(request.TypeUrl).Items
