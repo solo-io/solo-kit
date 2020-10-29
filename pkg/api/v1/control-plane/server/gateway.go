@@ -97,7 +97,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		}
 		// Note that this is treated as internal error. We may want to use another code for
 		// the latest version fetch request.
-		http.Error(resp, "fetch error: "+err.Error(), http.StatusNotModified)
+		http.Error(resp, "fetch error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
