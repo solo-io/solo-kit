@@ -22,6 +22,7 @@ import (
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
 )
 
@@ -90,6 +91,10 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	res, err := h.Server.Fetch(req.Context(), out)
 	if err != nil {
 		h.Log.Debugf("fetch error: " + err.Error())
+		if err == cache.VersionUpToDateError {
+			http.Error(resp, "fetch error: "+err.Error(), http.StatusNotModified)
+			return
+		}
 		// Note that this is treated as internal error. We may want to use another code for
 		// the latest version fetch request.
 		http.Error(resp, "fetch error: "+err.Error(), http.StatusInternalServerError)
