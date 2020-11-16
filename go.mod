@@ -46,7 +46,7 @@ require (
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-utils v0.17.0
-	github.com/solo-io/protoc-gen-ext v0.0.7
+	github.com/solo-io/protoc-gen-ext v0.0.10-0.20200904232101-c8cfa2d72872
 	github.com/spf13/afero v1.3.4 // indirect
 	go.opencensus.io v0.22.1
 	go.uber.org/multierr v1.4.0
@@ -75,7 +75,7 @@ replace (
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 
 	// Breaking golang protobuf change
-	github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
+	//github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0

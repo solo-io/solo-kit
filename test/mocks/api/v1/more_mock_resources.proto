@@ -3,10 +3,10 @@ syntax = "proto3";
 package testing.solo.io;
 option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 
 import "solo-kit/api/v1/metadata.proto";
@@ -20,8 +20,8 @@ Description of the AnotherMockResource
 message AnotherMockResource {
     option (core.solo.io.resource).short_name = "amr";
     option (core.solo.io.resource).plural_name = "anothermockresources";
-    core.solo.io.Metadata metadata = 1 [(gogoproto.nullable) = false];
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (extproto.skip_hashing) = true];
+    core.solo.io.Metadata metadata = 1;
+    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
 
     // comments that go above the basic field in our docs
     string basic_field = 2;
@@ -32,8 +32,8 @@ message ClusterResource {
     option (core.solo.io.resource).short_name = "clr";
     option (core.solo.io.resource).plural_name = "clusterresources";
     option (core.solo.io.resource).cluster_scoped = true;
-    core.solo.io.Metadata metadata = 1 [(gogoproto.nullable) = false];
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (extproto.skip_hashing) = true];
+    core.solo.io.Metadata metadata = 1;
+    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
 
     // comments that go above the basic field in our docs
     string basic_field = 2;

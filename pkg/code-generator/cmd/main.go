@@ -178,7 +178,7 @@ func Generate(opts GenerateOptions) error {
 		if info.IsDir() {
 			return nil
 		}
-		if !(strings.HasSuffix(pbgoFile, ".pb.go") || strings.HasSuffix(pbgoFile, ".pb.hash.go")) {
+		if !(strings.HasSuffix(pbgoFile, ".pb.go") || strings.HasSuffix(pbgoFile, ".pb.hash.go") || strings.HasSuffix(pbgoFile, ".pb.equal.go")) {
 			return nil
 		}
 

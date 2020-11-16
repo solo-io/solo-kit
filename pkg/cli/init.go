@@ -123,8 +123,7 @@ const resource_proto = `syntax = "proto3";
 package {{ .ProjectName }}.api.v1;
 option go_package = "{{ .ProjectGopath }}/pkg/api/v1";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+
 
 import "solo-kit/api/v1/metadata.proto";
 import "solo-kit/api/v1/status.proto";
@@ -145,7 +144,7 @@ message {{ .ResourceName }} {
     core.solo.io.Status status = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
 
     // Metadata contains the object metadata for this resource
-    core.solo.io.Metadata metadata = 3 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 3;
 }
 
 // TODO: describe the {{ .ResourceName }}Spec

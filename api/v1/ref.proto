@@ -2,18 +2,12 @@ syntax = "proto3";
 package core.solo.io;
 option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
-
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // A way to reference resources across namespaces
 message ResourceRef {
-    option (gogoproto.goproto_sizecache) = false;
-    option (gogoproto.goproto_unkeyed) = false;
-    option (gogoproto.goproto_unrecognized) = false;
-
     string name = 1;
     string namespace = 2;
 }

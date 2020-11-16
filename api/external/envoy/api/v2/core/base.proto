@@ -15,11 +15,9 @@ import "envoy/api/v2/core/http_uri.proto";
 import "validate/validate.proto";
 import "envoy/type/percent.proto";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
-
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 import "solo-kit/api/v1/ref.proto";
 

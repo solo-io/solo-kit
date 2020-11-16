@@ -23,9 +23,9 @@ root level `generate.go` file.
 - api objects generated from messages defined in protobuf messages which have the following requirements fulfilled:
     *     option (core.solo.io.resource).short_name = "mk";
           option (core.solo.io.resource).plural_name = "mocks";
-          core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+          core.solo.io.Metadata metadata = 7;
           // Optional
-          core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (extproto.skip_hashing) = true];
+          core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
 - run `solo-kit-gen` recursively at the root of an `api` directory containing one or more `solo-kit.json` files
 - generated files have the `.sk.go` suffix (generated test files do not include this suffix)
 

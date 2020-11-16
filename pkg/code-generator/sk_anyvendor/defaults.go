@@ -31,17 +31,17 @@ var (
 	}
 
 	// matches gogo.proto, used for gogoproto code gen.
-	GogoProtoMatcher = &anyvendor.GoModImport{
-		Package:  "github.com/gogo/protobuf",
-		Patterns: []string{"gogoproto/*.proto"},
-	}
+	// GogoProtoMatcher = &anyvendor.GoModImport{
+	// 	Package:  "github.com/gogo/protobuf",
+	// 	Patterns: []string{"gogoproto/*.proto"},
+	// }
 
 	// default match options which should be used when creating a solo-kit project
 	DefaultExternalMatchOptions = map[string][]string{
 		ExtProtoMatcher.Package:           ExtProtoMatcher.Patterns,
 		EnvoyValidateProtoMatcher.Package: EnvoyValidateProtoMatcher.Patterns,
 		SoloKitProtoMatcher.Package:       SoloKitProtoMatcher.Patterns,
-		GogoProtoMatcher.Package:          GogoProtoMatcher.Patterns,
+		// GogoProtoMatcher.Package:          GogoProtoMatcher.Patterns,
 	}
 )
 

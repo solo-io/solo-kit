@@ -8,10 +8,10 @@ option java_package = "io.envoyproxy.envoy.type";
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/type";
 
 import "validate/validate.proto";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // [#protodoc-title: Percent]
 
