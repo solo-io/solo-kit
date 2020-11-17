@@ -210,16 +210,15 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			}
 		}
 		kubeconfigsByNamespace := make(map[string]KubeConfigList)
-
+		defer func() {
+			close(snapshots)
+			// we must wait for done before closing the error chan,
+			// to avoid sending on close channel.
+			done.Wait()
+			close(errs)
+		}()
 		for {
 			record := func() { stats.Record(ctx, mKubeconfigsSnapshotIn.M(1)) }
-			defer func() {
-				close(snapshots)
-				// we must wait for done before closing the error chan,
-				// to avoid sending on close channel.
-				done.Wait()
-				close(errs)
-			}()
 
 			select {
 			case <-timer.C:
