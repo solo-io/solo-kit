@@ -7,8 +7,8 @@ import (
 	fmt "fmt"
 	math "math"
 
-	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
+	proto "github.com/golang/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 )
 

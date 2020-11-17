@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 )
 

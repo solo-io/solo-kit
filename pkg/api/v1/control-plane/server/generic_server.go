@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	any "github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

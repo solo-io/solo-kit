@@ -22,8 +22,8 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 )
 

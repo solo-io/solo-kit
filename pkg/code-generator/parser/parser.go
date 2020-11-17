@@ -3,9 +3,9 @@ package parser
 import (
 	"strings"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	plugin_go "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
+	"github.com/golang/protobuf/proto"
 	"github.com/iancoleman/strcase"
 	"github.com/ilackarms/protokit"
 	"github.com/solo-io/go-utils/log"

@@ -1,8 +1,8 @@
 package protoutils_test
 
 import (
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 )
 
