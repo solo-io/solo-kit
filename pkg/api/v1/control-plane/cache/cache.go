@@ -18,11 +18,11 @@ package cache
 import (
 	"context"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 )
 
 // Request is an alias for the discovery request type.
-type Request = v2.DiscoveryRequest
+type Request = envoy_service_discovery_v3.DiscoveryRequest
 
 // ConfigWatcher requests watches for configuration resources by a node, last
 // applied version identifier, and resource names hint. The watch should send
@@ -59,7 +59,7 @@ type Cache interface {
 // Response is a pre-serialized xDS response.
 type Response struct {
 	// Request is the original request.
-	Request v2.DiscoveryRequest
+	Request envoy_service_discovery_v3.DiscoveryRequest
 
 	// Version of the resources as tracked by the cache for the given type.
 	// Proxy responds with this version as an acknowledgement.

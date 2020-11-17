@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
 	github.com/bugsnag/bugsnag-go v1.5.0
-	github.com/envoyproxy/go-control-plane v0.9.1
+	github.com/envoyproxy/go-control-plane v0.9.6
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/frankban/quicktest v1.4.1 // indirect
