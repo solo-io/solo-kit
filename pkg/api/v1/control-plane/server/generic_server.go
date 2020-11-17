@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 // Package server provides an implementation of a streaming xDS server.
-package server_v3
+package server
 
 import (
 	"context"

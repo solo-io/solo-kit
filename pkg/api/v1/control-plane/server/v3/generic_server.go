@@ -21,30 +21,29 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/gogo/protobuf/proto"
 	any "github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"google.golang.org/grpc"
 )
 
 type Stream interface {
-	Send(*v2.DiscoveryResponse) error
-	Recv() (*v2.DiscoveryRequest, error)
+	Send(response *envoy_service_discovery_v3.DiscoveryResponse) error
+	Recv() (*envoy_service_discovery_v3.DiscoveryRequest, error)
 	grpc.ServerStream
 }
 
 // Server is a collection of handlers for streaming discovery requests.
 type Server interface {
-	discovery.AggregatedDiscoveryServiceServer
+	envoy_service_discovery_v3.AggregatedDiscoveryServiceServer
 
 	// Fetch is the universal fetch method.
-	Fetch(context.Context, *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error)
+	Fetch(context.Context, *envoy_service_discovery_v3.DiscoveryRequest) (*envoy_service_discovery_v3.DiscoveryResponse, error)
 	Stream(stream Stream, typeURL string) error
 }
 
@@ -56,13 +55,13 @@ type Callbacks interface {
 	// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
 	OnStreamClosed(int64)
 	// OnStreamRequest is called once a request is received on a stream.
-	OnStreamRequest(int64, *v2.DiscoveryRequest)
+	OnStreamRequest(int64, *envoy_service_discovery_v3.DiscoveryRequest)
 	// OnStreamResponse is called immediately prior to sending a response on a stream.
-	OnStreamResponse(int64, *v2.DiscoveryRequest, *v2.DiscoveryResponse)
+	OnStreamResponse(int64, *envoy_service_discovery_v3.DiscoveryRequest, *envoy_service_discovery_v3.DiscoveryResponse)
 	// OnFetchRequest is called for each Fetch request
-	OnFetchRequest(*v2.DiscoveryRequest)
+	OnFetchRequest(*envoy_service_discovery_v3.DiscoveryRequest)
 	// OnFetchResponse is called immediately prior to sending a response.
-	OnFetchResponse(*v2.DiscoveryRequest, *v2.DiscoveryResponse)
+	OnFetchResponse(*envoy_service_discovery_v3.DiscoveryRequest, *envoy_service_discovery_v3.DiscoveryResponse)
 }
 
 // NewServer creates handlers from a config watcher and an optional logger.
@@ -70,11 +69,11 @@ func NewServer(config cache.Cache, callbacks Callbacks) Server {
 	return &server{cache: config, callbacks: callbacks}
 }
 
-func (s *server) StreamAggregatedResources(stream discovery.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
+func (s *server) StreamAggregatedResources(stream envoy_service_discovery_v3.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
 	return s.Stream(stream, cache.AnyType)
 }
 
-func (s *server) DeltaAggregatedResources(_ discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
+func (s *server) DeltaAggregatedResources(_ envoy_service_discovery_v3.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
 	return errors.New("not implemented")
 }
 
@@ -112,7 +111,7 @@ func (values *watches) Cancel() {
 	}
 }
 
-func createResponse(resp *cache.Response, typeURL string) (*v2.DiscoveryResponse, error) {
+func createResponse(resp *cache.Response, typeURL string) (*envoy_service_discovery_v3.DiscoveryResponse, error) {
 	if resp == nil {
 		return nil, errors.New("missing response")
 	}
@@ -127,7 +126,7 @@ func createResponse(resp *cache.Response, typeURL string) (*v2.DiscoveryResponse
 			Value:   data,
 		}
 	}
-	out := &v2.DiscoveryResponse{
+	out := &envoy_service_discovery_v3.DiscoveryResponse{
 		VersionInfo: resp.Version,
 		Resources:   resources,
 		TypeUrl:     typeURL,
@@ -141,7 +140,7 @@ type TypedResponse struct {
 }
 
 // process handles a bi-di stream request
-func (s *server) process(stream Stream, reqCh <-chan *v2.DiscoveryRequest, defaultTypeURL string) error {
+func (s *server) process(stream Stream, reqCh <-chan *envoy_service_discovery_v3.DiscoveryRequest, defaultTypeURL string) error {
 	// increment stream count
 	streamID := atomic.AddInt64(&s.streamCount, 1)
 
@@ -181,7 +180,7 @@ func (s *server) process(stream Stream, reqCh <-chan *v2.DiscoveryRequest, defau
 	responses := make(chan TypedResponse)
 
 	// node may only be set on the first discovery request
-	var node = &envoy_api_v2_core.Node{}
+	var node = &envoy_config_core_v3.Node{}
 	for {
 		select {
 		// config watcher can send the requested resources types in any order
@@ -299,7 +298,7 @@ func (s *server) createWatch(responses chan<- TypedResponse, req *cache.Request)
 // handler converts a blocking read call to channels and initiates stream processing
 func (s *server) Stream(stream Stream, typeURL string) error {
 	// a channel for receiving incoming requests
-	reqCh := make(chan *v2.DiscoveryRequest)
+	reqCh := make(chan *envoy_service_discovery_v3.DiscoveryRequest)
 	reqStop := int32(0)
 	go func() {
 		for {
@@ -325,7 +324,7 @@ func (s *server) Stream(stream Stream, typeURL string) error {
 }
 
 // Fetch is the universal fetch method.
-func (s *server) Fetch(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+func (s *server) Fetch(ctx context.Context, req *envoy_service_discovery_v3.DiscoveryRequest) (*envoy_service_discovery_v3.DiscoveryResponse, error) {
 	if s.callbacks != nil {
 		s.callbacks.OnFetchRequest(req)
 	}

@@ -24,6 +24,8 @@ import (
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
 	any "github.com/golang/protobuf/ptypes/any"
+	server_v3 "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server/v3"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -48,25 +50,8 @@ type Server interface {
 	Stream(stream Stream, typeURL string) error
 }
 
-// Callbacks is a collection of callbacks inserted into the server operation.
-// The callbacks are invoked synchronously.
-type Callbacks interface {
-	// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-	OnStreamOpen(int64, string)
-	// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-	OnStreamClosed(int64)
-	// OnStreamRequest is called once a request is received on a stream.
-	OnStreamRequest(int64, *v2.DiscoveryRequest)
-	// OnStreamResponse is called immediately prior to sending a response on a stream.
-	OnStreamResponse(int64, *v2.DiscoveryRequest, *v2.DiscoveryResponse)
-	// OnFetchRequest is called for each Fetch request
-	OnFetchRequest(*v2.DiscoveryRequest)
-	// OnFetchResponse is called immediately prior to sending a response.
-	OnFetchResponse(*v2.DiscoveryRequest, *v2.DiscoveryResponse)
-}
-
 // NewServer creates handlers from a config watcher and an optional logger.
-func NewServer(config cache.Cache, callbacks Callbacks) Server {
+func NewServer(config cache.Cache, callbacks server_v3.Callbacks) Server {
 	return &server{cache: config, callbacks: callbacks}
 }
 
@@ -80,7 +65,7 @@ func (s *server) DeltaAggregatedResources(_ discovery.AggregatedDiscoveryService
 
 type server struct {
 	cache     cache.Cache
-	callbacks Callbacks
+	callbacks server_v3.Callbacks
 
 	// streamCount for counting bi-di streams
 	streamCount int64
@@ -329,7 +314,8 @@ func (s *server) Fetch(ctx context.Context, req *v2.DiscoveryRequest) (*v2.Disco
 	if s.callbacks != nil {
 		s.callbacks.OnFetchRequest(req)
 	}
-	resp, err := s.cache.Fetch(ctx, *req)
+	upgradedReq := util.UpgradeDiscoveryRequest(req)
+	resp, err := s.cache.Fetch(ctx, *upgradedReq)
 	if err != nil {
 		return nil, err
 	}
