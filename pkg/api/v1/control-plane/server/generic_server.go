@@ -92,39 +92,6 @@ func NewServer(config cache.Cache, callbacks Callbacks) Server {
 	return &server{cache: config, callbacks: callbacks}
 }
 
-type v2StreamingServer struct {
-	srv *server
-}
-
-func (v *v2StreamingServer) StreamAggregatedResources(
-	stream envoy_service_discovery_v2.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
-) error {
-	return v.srv.StreamV2(stream, cache.AnyType)
-}
-
-func (v *v2StreamingServer) DeltaAggregatedResources(
-	envoy_service_discovery_v2.AggregatedDiscoveryService_DeltaAggregatedResourcesServer,
-) error {
-	return errors.New("not implemented")
-}
-
-// TODO: Add streaming for individual types
-type v3StreamingServer struct {
-	srv *server
-}
-
-func (v *v3StreamingServer) StreamAggregatedResources(
-	stream envoy_service_discovery_v3.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
-) error {
-	return v.srv.StreamV3(stream, cache.AnyType)
-}
-
-func (v *v3StreamingServer) DeltaAggregatedResources(
-	envoy_service_discovery_v3.AggregatedDiscoveryService_DeltaAggregatedResourcesServer,
-) error {
-	return errors.New("not implemented")
-}
-
 type server struct {
 	cache     cache.Cache
 	callbacks Callbacks
