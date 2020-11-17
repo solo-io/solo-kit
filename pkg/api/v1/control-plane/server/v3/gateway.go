@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"path"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
@@ -78,7 +78,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	// parse as JSON
-	out := &v2.DiscoveryRequest{}
+	out := &envoy_service_discovery_v3.DiscoveryRequest{}
 	err = jsonpb.UnmarshalString(string(body), out)
 	if err != nil {
 		h.Log.Debugf("cannot parse JSON body: " + err.Error())

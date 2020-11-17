@@ -1,7 +1,7 @@
 package util
 
 import (
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -9,7 +9,7 @@ import (
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 )
 
-func UpgradeDiscoveryRequest(req *v2.DiscoveryRequest) *envoy_service_discovery_v3.DiscoveryRequest {
+func UpgradeDiscoveryRequest(req *envoy_api_v2.DiscoveryRequest) *envoy_service_discovery_v3.DiscoveryRequest {
 	return &envoy_service_discovery_v3.DiscoveryRequest{
 		VersionInfo:   req.GetVersionInfo(),
 		Node:          UpgradeNode(req.GetNode()),

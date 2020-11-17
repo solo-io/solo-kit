@@ -13,7 +13,7 @@
 //   limitations under the License.
 
 // Package server provides an implementation of a streaming xDS server.
-package v2
+package server_v2
 
 import (
 	"context"
@@ -64,8 +64,9 @@ func (s *server) DeltaAggregatedResources(_ discovery.AggregatedDiscoveryService
 }
 
 type server struct {
-	cache     cache.Cache
-	callbacks server_v3.Callbacks
+	cache          cache.Cache
+	internalServer server_v3.Server
+	callbacks      server_v3.Callbacks
 
 	// streamCount for counting bi-di streams
 	streamCount int64
@@ -283,6 +284,7 @@ func (s *server) createWatch(responses chan<- TypedResponse, req *cache.Request)
 
 // handler converts a blocking read call to channels and initiates stream processing
 func (s *server) Stream(stream Stream, typeURL string) error {
+	// return s.internalServer.Stream(stream, typeURL)
 	// a channel for receiving incoming requests
 	reqCh := make(chan *v2.DiscoveryRequest)
 	reqStop := int32(0)
@@ -311,17 +313,8 @@ func (s *server) Stream(stream Stream, typeURL string) error {
 
 // Fetch is the universal fetch method.
 func (s *server) Fetch(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
-	if s.callbacks != nil {
-		s.callbacks.OnFetchRequest(req)
-	}
+
 	upgradedReq := util.UpgradeDiscoveryRequest(req)
-	resp, err := s.cache.Fetch(ctx, *upgradedReq)
-	if err != nil {
-		return nil, err
-	}
-	out, err := createResponse(resp, req.TypeUrl)
-	if s.callbacks != nil {
-		s.callbacks.OnFetchResponse(req, out)
-	}
-	return out, err
+	resp, err := s.internalServer.Fetch(ctx, upgradedReq)
+	return util.DowngradeDiscoveryResponse(resp), err
 }
