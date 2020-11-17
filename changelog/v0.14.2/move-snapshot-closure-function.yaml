@@ -1,0 +1,3 @@
+changelog:
+- type: FIX
+  description: Only run deferred function to close channel in the snapshot emitter once.
