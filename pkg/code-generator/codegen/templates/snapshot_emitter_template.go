@@ -287,16 +287,15 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
 		{{- end }}
 		{{- end }}
-
+		defer func() {
+			close(snapshots)
+			// we must wait for done before closing the error chan,
+			// to avoid sending on close channel.
+			done.Wait()
+			close(errs)
+		}()
 		for {
 			record := func(){stats.Record(ctx, m{{ $resource_group }}SnapshotIn.M(1))}
-			defer func() {
-				close(snapshots)
-				// we must wait for done before closing the error chan,
-				// to avoid sending on close channel.
-				done.Wait()
-				close(errs)
-			}()
 			
 			select {
 			case <-timer.C:
