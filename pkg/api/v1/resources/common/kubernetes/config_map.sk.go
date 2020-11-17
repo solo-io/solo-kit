@@ -20,7 +20,7 @@ import (
 
 func NewConfigMap(namespace, name string) *ConfigMap {
 	configmap := &ConfigMap{}
-	configmap.ConfigMap.SetMetadata(core.Metadata{
+	configmap.ConfigMap.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

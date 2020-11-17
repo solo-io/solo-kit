@@ -20,7 +20,7 @@ import (
 
 func NewService(namespace, name string) *Service {
 	service := &Service{}
-	service.Service.SetMetadata(core.Metadata{
+	service.Service.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

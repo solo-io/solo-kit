@@ -14,7 +14,6 @@ require (
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-test/deep v1.0.2 // indirect
-	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.2
@@ -33,7 +32,6 @@ require (
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/ilackarms/protoc-gen-doc v1.0.0
 	github.com/ilackarms/protokit v0.0.0-20181231193355-ee2393f3bbf0
-	github.com/lyft/protoc-gen-star v0.5.1 // indirect
 	github.com/mattn/go-zglob v0.0.3 // indirect
 	github.com/miekg/dns v1.1.15 // indirect
 	github.com/mitchellh/hashstructure v1.0.0

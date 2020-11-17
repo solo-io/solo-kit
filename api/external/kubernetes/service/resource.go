@@ -34,7 +34,7 @@ func (p *Service) Clone() *Service {
 	return &newP
 }
 
-func (p *Service) GetMetadata() core.Metadata {
+func (p *Service) GetMetadata() *core.Metadata {
 	if p.cachedMeta == nil {
 		meta := kubeutils.FromKubeMeta(p.ObjectMeta)
 		p.cachedMeta = &meta
@@ -42,7 +42,7 @@ func (p *Service) GetMetadata() core.Metadata {
 	return *p.cachedMeta
 }
 
-func (p *Service) SetMetadata(meta core.Metadata) {
+func (p *Service) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 	// copy so we own everything
 	meta = kubeutils.FromKubeMeta(p.ObjectMeta)

@@ -37,13 +37,13 @@ type mockResources struct {
 	Name string
 }
 
-func (m *mockResources) GetMetadata() core.Metadata {
+func (m *mockResources) GetMetadata() *core.Metadata {
 	return core.Metadata{
 		Name:      m.Name,
 		Namespace: m.Ns,
 	}
 }
-func (m *mockResources) SetMetadata(meta core.Metadata) {
+func (m *mockResources) SetMetadata(meta *core.Metadata) {
 	// Not need in this test
 }
 func (m *mockResources) Equal(that interface{}) bool {

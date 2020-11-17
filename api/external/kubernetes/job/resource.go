@@ -20,11 +20,11 @@ func (p *Job) Clone() *Job {
 	return &newP
 }
 
-func (p *Job) GetMetadata() core.Metadata {
+func (p *Job) GetMetadata() *core.Metadata {
 	return kubeutils.FromKubeMeta(p.ObjectMeta)
 }
 
-func (p *Job) SetMetadata(meta core.Metadata) {
+func (p *Job) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 }
 

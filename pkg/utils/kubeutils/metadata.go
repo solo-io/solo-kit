@@ -8,8 +8,8 @@ import (
 	kubetypes "k8s.io/apimachinery/pkg/types"
 )
 
-func FromKubeMeta(meta metav1.ObjectMeta) core.Metadata {
-	return core.Metadata{
+func FromKubeMeta(meta metav1.ObjectMeta) *core.Metadata {
+	return &core.Metadata{
 		Name:            meta.Name,
 		Namespace:       meta.Namespace,
 		ResourceVersion: meta.ResourceVersion,
@@ -20,13 +20,13 @@ func FromKubeMeta(meta metav1.ObjectMeta) core.Metadata {
 	}
 }
 
-func ToKubeMeta(meta core.Metadata) metav1.ObjectMeta {
+func ToKubeMeta(meta *core.Metadata) metav1.ObjectMeta {
 	skMeta := ToKubeMetaMaintainNamespace(meta)
 	skMeta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 	return skMeta
 }
 
-func ToKubeMetaMaintainNamespace(meta core.Metadata) metav1.ObjectMeta {
+func ToKubeMetaMaintainNamespace(meta *core.Metadata) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:            meta.Name,
 		Namespace:       meta.Namespace,

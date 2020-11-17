@@ -20,11 +20,11 @@ func (p *Pod) Clone() *Pod {
 	return &newP
 }
 
-func (p *Pod) GetMetadata() core.Metadata {
+func (p *Pod) GetMetadata() *core.Metadata {
 	return kubeutils.FromKubeMeta(p.ObjectMeta)
 }
 
-func (p *Pod) SetMetadata(meta core.Metadata) {
+func (p *Pod) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 }
 

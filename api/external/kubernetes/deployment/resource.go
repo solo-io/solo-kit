@@ -20,11 +20,11 @@ func (p *Deployment) Clone() *Deployment {
 	return &newP
 }
 
-func (p *Deployment) GetMetadata() core.Metadata {
+func (p *Deployment) GetMetadata() *core.Metadata {
 	return kubeutils.FromKubeMeta(p.ObjectMeta)
 }
 
-func (p *Deployment) SetMetadata(meta core.Metadata) {
+func (p *Deployment) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 }
 

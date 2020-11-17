@@ -20,11 +20,11 @@ type KubeConfig struct {
 	Cluster string
 }
 
-func (c *KubeConfig) GetMetadata() core.Metadata {
+func (c *KubeConfig) GetMetadata() *core.Metadata {
 	return c.Metadata
 }
 
-func (c *KubeConfig) SetMetadata(meta core.Metadata) {
+func (c *KubeConfig) SetMetadata(meta *core.Metadata) {
 	c.Metadata = meta
 }
 

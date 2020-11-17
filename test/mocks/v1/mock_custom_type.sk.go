@@ -20,7 +20,7 @@ import (
 
 func NewMockCustomType(namespace, name string) *MockCustomType {
 	mockcustomtype := &MockCustomType{}
-	mockcustomtype.MockCustomType.SetMetadata(core.Metadata{
+	mockcustomtype.MockCustomType.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
