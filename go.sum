@@ -424,10 +424,6 @@ github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334 h1:VHgatEHNcBFE
 github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334/go.mod h1:SK73tn/9oHe+/Y0h39VT4UCxmurVJkR5NA7kMEAOgSE=
 github.com/ilackarms/protoc-gen-doc v1.0.0 h1:An/dVVDzA6jSiLnsFB6l5kIoMwr5Z/C13s3OjsrVZGE=
 github.com/ilackarms/protoc-gen-doc v1.0.0/go.mod h1:Xg+QAXYbry+dRyOxs6nw1QpJb5I153zqbzKgN/X0SEs=
-github.com/pseudomuto/protokit v0.0.0-20181231193355-ee2393f3bbf0 h1:+egX7Zu/wBZypMEuLDNIJfixIvNGP27sC4SZuTQlNtU=
-github.com/pseudomuto/protokit v0.0.0-20181231193355-ee2393f3bbf0/go.mod h1:PTd832Hm2MUT53VrLoesXQvmaw7778dqw4Qu6TOpWDk=
-github.com/pseudomuto/protokit v0.1.0 h1:yf8FJll1+yb3ofFJNoh97wNtVfFPAQrMRgnv7mh5OCE=
-github.com/pseudomuto/protokit v0.1.0/go.mod h1:PTd832Hm2MUT53VrLoesXQvmaw7778dqw4Qu6TOpWDk=
 github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
 github.com/imdario/mergo v0.3.8 h1:CGgOkSJeqMRmt0D9XLWExdT4m4F1vd3FV3VPt+0VxkQ=
 github.com/imdario/mergo v0.3.8/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
