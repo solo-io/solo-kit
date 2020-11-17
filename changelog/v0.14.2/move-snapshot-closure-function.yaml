@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Only run deferred function to close channel in the snapshot emitter once.
+  issueLink: https://github.com/solo-io/solo-kit/issues/391  
