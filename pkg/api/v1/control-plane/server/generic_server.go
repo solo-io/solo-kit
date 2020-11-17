@@ -452,16 +452,6 @@ func (s *server) FetchV2(
 	req *envoy_api_v2.DiscoveryRequest,
 ) (*envoy_api_v2.DiscoveryResponse, error) {
 	upgradedReq := util.UpgradeDiscoveryRequest(req)
-	if s.callbacks != nil {
-		s.callbacks.OnFetchRequest(upgradedReq)
-	}
-	resp, err := s.cache.Fetch(ctx, *upgradedReq)
-	if err != nil {
-		return nil, err
-	}
-	out, err := createResponse(resp, req.GetTypeUrl())
-	if s.callbacks != nil {
-		s.callbacks.OnFetchResponse(upgradedReq, out)
-	}
+	out, err := s.FetchV3(ctx, upgradedReq)
 	return util.DowngradeDiscoveryResponse(out), err
 }
