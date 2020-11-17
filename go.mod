@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
 	github.com/bugsnag/bugsnag-go v1.5.0
-	github.com/envoyproxy/go-control-plane v0.9.6
+	github.com/envoyproxy/go-control-plane v0.9.5
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/frankban/quicktest v1.4.1 // indirect
@@ -57,6 +57,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6
 	google.golang.org/grpc v1.27.0
+	google.golang.org/protobuf v1.23.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver v0.18.6
