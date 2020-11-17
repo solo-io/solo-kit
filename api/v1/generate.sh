@@ -28,11 +28,10 @@ echo ">> Temporary output directory ${TEMP_DIR}"
 IMPORTS="\
     -I=${IN} \
     -I=${ROOT} \
-    -I=${VENDOR_ROOT}/gogo/protobuf \
     -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext"
 
-GOGO_FLAG="--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${TEMP_DIR}"
-HASH_FLAG="--ext_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:${TEMP_DIR}"
+GOGO_FLAG="--go_out=${TEMP_DIR}"
+HASH_FLAG="--ext_out=${TEMP_DIR}"
 
 INPUT_PROTOS="${IN}*.proto"
 

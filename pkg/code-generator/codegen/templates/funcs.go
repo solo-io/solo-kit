@@ -10,10 +10,10 @@ import (
 
 	htmltemplate "html/template"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
 	gendoc "github.com/ilackarms/protoc-gen-doc"
-	"github.com/ilackarms/protokit"
+	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/go-utils/stringutils"
 )
 

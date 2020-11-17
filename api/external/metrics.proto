@@ -21,6 +21,8 @@ import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 option (extproto.equal_all) = true;
 
+option go_package = "metricsproto";
+
 message LabelPair {
   optional string name  = 1;
   optional string value = 2;

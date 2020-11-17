@@ -424,8 +424,10 @@ github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334 h1:VHgatEHNcBFE
 github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334/go.mod h1:SK73tn/9oHe+/Y0h39VT4UCxmurVJkR5NA7kMEAOgSE=
 github.com/ilackarms/protoc-gen-doc v1.0.0 h1:An/dVVDzA6jSiLnsFB6l5kIoMwr5Z/C13s3OjsrVZGE=
 github.com/ilackarms/protoc-gen-doc v1.0.0/go.mod h1:Xg+QAXYbry+dRyOxs6nw1QpJb5I153zqbzKgN/X0SEs=
-github.com/ilackarms/protokit v0.0.0-20181231193355-ee2393f3bbf0 h1:+egX7Zu/wBZypMEuLDNIJfixIvNGP27sC4SZuTQlNtU=
-github.com/ilackarms/protokit v0.0.0-20181231193355-ee2393f3bbf0/go.mod h1:PTd832Hm2MUT53VrLoesXQvmaw7778dqw4Qu6TOpWDk=
+github.com/pseudomuto/protokit v0.0.0-20181231193355-ee2393f3bbf0 h1:+egX7Zu/wBZypMEuLDNIJfixIvNGP27sC4SZuTQlNtU=
+github.com/pseudomuto/protokit v0.0.0-20181231193355-ee2393f3bbf0/go.mod h1:PTd832Hm2MUT53VrLoesXQvmaw7778dqw4Qu6TOpWDk=
+github.com/pseudomuto/protokit v0.1.0 h1:yf8FJll1+yb3ofFJNoh97wNtVfFPAQrMRgnv7mh5OCE=
+github.com/pseudomuto/protokit v0.1.0/go.mod h1:PTd832Hm2MUT53VrLoesXQvmaw7778dqw4Qu6TOpWDk=
 github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
 github.com/imdario/mergo v0.3.8 h1:CGgOkSJeqMRmt0D9XLWExdT4m4F1vd3FV3VPt+0VxkQ=
 github.com/imdario/mergo v0.3.8/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
@@ -630,6 +632,8 @@ github.com/prometheus/procfs v0.0.11/go.mod h1:lV6e/gmhEcM9IjHGsFOCxxuZ+z1YqCvr4
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
 github.com/pseudomuto/protoc-gen-doc v1.0.0 h1:g4ld0LeJ2OO2FXhm1o7Arrv+W75sdEClxuvVUSN2RAE=
 github.com/pseudomuto/protoc-gen-doc v1.0.0/go.mod h1:fwtQAY9erXp3mC92O8OTECnDlJT2r0Ff4KSEKbGEmy0=
+github.com/pseudomuto/protokit v0.2.0 h1:hlnBDcy3YEDXH7kc9gV+NLaN0cDzhDvD1s7Y6FZ8RpM=
+github.com/pseudomuto/protokit v0.2.0/go.mod h1:2PdH30hxVHsup8KpBTOXTBeMVhJZVio3Q8ViKSAXT0Q=
 github.com/radovskyb/watcher v1.0.2 h1:9L5TsZUbo1nKhQEQPtICVc+x9UZQ6VPdBepLHyGw/bQ=
 github.com/radovskyb/watcher v1.0.2/go.mod h1:78okwvY5wPdzcb1UYnip1pvrZNIVEIh/Cm+ZuvsUYIg=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=

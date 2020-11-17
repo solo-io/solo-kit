@@ -3,8 +3,8 @@ package parser
 import (
 	"strings"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	"github.com/ilackarms/protokit"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
