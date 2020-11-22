@@ -27,6 +27,7 @@ import (
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -74,27 +75,31 @@ type Server interface {
 // The callbacks are invoked synchronously.
 type Callbacks interface {
 	// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-	OnStreamOpen(int64, string)
+	// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+	OnStreamOpen(context.Context, int64, string) error
 	// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
 	OnStreamClosed(int64)
 	// OnStreamRequest is called once a request is received on a stream.
-	OnStreamRequest(int64, *envoy_service_discovery_v3.DiscoveryRequest)
+	// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+	OnStreamRequest(int64, *envoy_service_discovery_v3.DiscoveryRequest) error
 	// OnStreamResponse is called immediately prior to sending a response on a stream.
 	OnStreamResponse(int64, *envoy_service_discovery_v3.DiscoveryRequest, *envoy_service_discovery_v3.DiscoveryResponse)
-	// OnFetchRequest is called for each Fetch request
-	OnFetchRequest(*envoy_service_discovery_v3.DiscoveryRequest)
+	// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
+	// request and respond with an error.
+	OnFetchRequest(context.Context, *envoy_service_discovery_v3.DiscoveryRequest) error
 	// OnFetchResponse is called immediately prior to sending a response.
 	OnFetchResponse(*envoy_service_discovery_v3.DiscoveryRequest, *envoy_service_discovery_v3.DiscoveryResponse)
 }
 
 // NewServer creates handlers from a config watcher and an optional logger.
-func NewServer(config cache.Cache, callbacks Callbacks) Server {
-	return &server{cache: config, callbacks: callbacks}
+func NewServer(ctx context.Context, config cache.Cache, callbacks Callbacks) Server {
+	return &server{ctx: ctx, cache: config, callbacks: callbacks}
 }
 
 type server struct {
 	cache     cache.Cache
 	callbacks Callbacks
+	ctx       context.Context
 
 	// streamCount for counting bi-di streams
 	streamCount int64
@@ -175,7 +180,7 @@ func (s *server) StreamV3(
 		}
 	}()
 
-	err := s.process(s.sendV3(stream), reqCh, defaultTypeURL)
+	err := s.process(stream.Context(), s.sendV3(stream), reqCh, defaultTypeURL)
 
 	// prevents writing to a closed channel if send failed on blocked recv
 	// TODO(kuat) figure out how to unblock recv through gRPC API
@@ -205,7 +210,7 @@ func (s *server) StreamV2(
 		}
 	}()
 
-	err := s.process(s.sendV2(stream), reqCh, defaultTypeURL)
+	err := s.process(stream.Context(), s.sendV2(stream), reqCh, defaultTypeURL)
 
 	// prevents writing to a closed channel if send failed on blocked recv
 	// TODO(kuat) figure out how to unblock recv through gRPC API
@@ -255,7 +260,12 @@ func (s *server) sendV3(
 }
 
 // process handles a bi-di stream request
-func (s *server) process(send sendFunc, reqCh <-chan *envoy_service_discovery_v3.DiscoveryRequest, defaultTypeURL string) error {
+func (s *server) process(
+	ctx context.Context,
+	send sendFunc,
+	reqCh <-chan *envoy_service_discovery_v3.DiscoveryRequest,
+	defaultTypeURL string,
+) error {
 	// increment stream count
 	streamID := atomic.AddInt64(&s.streamCount, 1)
 
@@ -273,7 +283,9 @@ func (s *server) process(send sendFunc, reqCh <-chan *envoy_service_discovery_v3
 	}()
 
 	if s.callbacks != nil {
-		s.callbacks.OnStreamOpen(streamID, defaultTypeURL)
+		if err := s.callbacks.OnStreamOpen(ctx, streamNonce, defaultTypeURL); err != nil {
+			return err
+		}
 	}
 
 	responses := make(chan TypedResponse)
@@ -282,6 +294,8 @@ func (s *server) process(send sendFunc, reqCh <-chan *envoy_service_discovery_v3
 	var node = &envoy_config_core_v3.Node{}
 	for {
 		select {
+		case <-s.ctx.Done():
+			return nil
 		// config watcher can send the requested resources types in any order
 		case resp, more := <-responses:
 			if !more {
@@ -318,7 +332,7 @@ func (s *server) process(send sendFunc, reqCh <-chan *envoy_service_discovery_v3
 			nonce := req.GetResponseNonce()
 
 			// type URL is required for ADS but is implicit for xDS
-			if defaultTypeURL == cache.AnyType {
+			if defaultTypeURL == resource.AnyType {
 				if req.TypeUrl == "" {
 					return status.Errorf(codes.InvalidArgument, "type URL is required for ADS")
 				}
@@ -327,7 +341,9 @@ func (s *server) process(send sendFunc, reqCh <-chan *envoy_service_discovery_v3
 			}
 
 			if s.callbacks != nil {
-				s.callbacks.OnStreamRequest(streamID, req)
+				if err := s.callbacks.OnStreamRequest(streamID, req); err != nil {
+					return err
+				}
 			}
 
 			// cancel existing watches to (re-)request a newer version
@@ -399,8 +415,13 @@ func (s *server) FetchV3(
 	ctx context.Context,
 	req *envoy_service_discovery_v3.DiscoveryRequest,
 ) (*envoy_service_discovery_v3.DiscoveryResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.Unavailable, "empty request")
+	}
 	if s.callbacks != nil {
-		s.callbacks.OnFetchRequest(req)
+		if err := s.callbacks.OnFetchRequest(ctx, req); err != nil {
+			return nil, err
+		}
 	}
 	resp, err := s.cache.Fetch(ctx, *req)
 	if err != nil {
