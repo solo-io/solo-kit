@@ -430,16 +430,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
 		mctsByNamespace := make(map[string]MockCustomTypeList)
 		podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
-
+		defer func() {
+			close(snapshots)
+			// we must wait for done before closing the error chan,
+			// to avoid sending on close channel.
+			done.Wait()
+			close(errs)
+		}()
 		for {
 			record := func() { stats.Record(ctx, mTestingSnapshotIn.M(1)) }
-			defer func() {
-				close(snapshots)
-				// we must wait for done before closing the error chan,
-				// to avoid sending on close channel.
-				done.Wait()
-				close(errs)
-			}()
 
 			select {
 			case <-timer.C:
