@@ -50,10 +50,10 @@ type Cache interface {
 	Fetch(context.Context, Request) (*Response, error)
 
 	// GetStatusInfo retrieves status information for a node ID.
-	// GetStatusInfo(string) StatusInfo
+	GetStatusInfo(string) StatusInfo
 	//
 	// // GetStatusKeys retrieves node IDs for all statuses.
-	// GetStatusKeys() []string
+	GetStatusKeys() []string
 }
 
 // Response is a pre-serialized xDS response.

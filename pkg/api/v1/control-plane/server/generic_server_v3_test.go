@@ -24,6 +24,14 @@ type mockConfigWatcherV3 struct {
 	closeWatch bool
 }
 
+func (config *mockConfigWatcherV3) GetStatusInfo(s string) cache.StatusInfo {
+	panic("implement me")
+}
+
+func (config *mockConfigWatcherV3) GetStatusKeys() []string {
+	panic("implement me")
+}
+
 func (config *mockConfigWatcherV3) CreateWatch(req discovery.DiscoveryRequest) (chan cache.Response, func()) {
 	config.counts[req.TypeUrl] = config.counts[req.TypeUrl] + 1
 	out := make(chan cache.Response, 1)
