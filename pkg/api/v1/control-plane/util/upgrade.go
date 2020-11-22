@@ -10,6 +10,10 @@ import (
 )
 
 func UpgradeDiscoveryRequest(req *envoy_api_v2.DiscoveryRequest) *envoy_service_discovery_v3.DiscoveryRequest {
+	if req == nil {
+		return nil
+	}
+
 	return &envoy_service_discovery_v3.DiscoveryRequest{
 		VersionInfo:   req.GetVersionInfo(),
 		Node:          UpgradeNode(req.GetNode()),
@@ -21,6 +25,10 @@ func UpgradeDiscoveryRequest(req *envoy_api_v2.DiscoveryRequest) *envoy_service_
 }
 
 func UpgradeNode(node *envoy_api_v2_core.Node) *envoy_config_core_v3.Node {
+	if node == nil {
+		return nil
+	}
+
 	upgradedNode := &envoy_config_core_v3.Node{
 		Id:                 node.GetId(),
 		Cluster:            node.GetCluster(),
@@ -57,6 +65,10 @@ func UpgradeNode(node *envoy_api_v2_core.Node) *envoy_config_core_v3.Node {
 }
 
 func UpgradeAddress(addr *envoy_api_v2_core.Address) *envoy_config_core_v3.Address {
+	if addr == nil {
+		return nil
+	}
+
 	switch typed := addr.GetAddress().(type) {
 	case *envoy_api_v2_core.Address_Pipe:
 		return &envoy_config_core_v3.Address{
@@ -96,6 +108,10 @@ func UpgradeAddress(addr *envoy_api_v2_core.Address) *envoy_config_core_v3.Addre
 }
 
 func UpradeExtension(ext *envoy_api_v2_core.Extension) *envoy_config_core_v3.Extension {
+	if ext == nil {
+		return nil
+	}
+
 	return &envoy_config_core_v3.Extension{
 		Name:           ext.GetName(),
 		Category:       ext.GetCategory(),
@@ -109,6 +125,10 @@ func UpradeExtension(ext *envoy_api_v2_core.Extension) *envoy_config_core_v3.Ext
 }
 
 func UpgradeSemanticVersion(smv *envoy_type.SemanticVersion) *envoy_type_v3.SemanticVersion {
+	if smv == nil {
+		return nil
+	}
+
 	return &envoy_type_v3.SemanticVersion{
 		MajorNumber: smv.GetMajorNumber(),
 		MinorNumber: smv.GetMinorNumber(),
@@ -117,6 +137,10 @@ func UpgradeSemanticVersion(smv *envoy_type.SemanticVersion) *envoy_type_v3.Sema
 }
 
 func UpgradeLocality(locality *envoy_api_v2_core.Locality) *envoy_config_core_v3.Locality {
+	if locality == nil {
+		return nil
+	}
+
 	return &envoy_config_core_v3.Locality{
 		Region:  locality.GetRegion(),
 		Zone:    locality.GetZone(),

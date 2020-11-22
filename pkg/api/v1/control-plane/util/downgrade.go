@@ -8,6 +8,9 @@ import (
 )
 
 func DowngradeDiscoveryResponse(resp *envoy_service_discovery_v3.DiscoveryResponse) *envoy_api_v2.DiscoveryResponse {
+	if resp == nil {
+		return nil
+	}
 	return &envoy_api_v2.DiscoveryResponse{
 		VersionInfo:  resp.GetVersionInfo(),
 		Resources:    resp.GetResources(),
@@ -19,6 +22,9 @@ func DowngradeDiscoveryResponse(resp *envoy_service_discovery_v3.DiscoveryRespon
 }
 
 func DowngradeControlPlane(cp *envoy_config_core_v3.ControlPlane) *envoy_api_v2_core.ControlPlane {
+	if cp == nil {
+		return nil
+	}
 	return &envoy_api_v2_core.ControlPlane{
 		Identifier: cp.GetIdentifier(),
 	}
