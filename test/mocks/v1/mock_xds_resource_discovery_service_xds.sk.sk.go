@@ -14,12 +14,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Type Definitions:
 
-const MockXdsResourceConfigType = cache.TypePrefix + "/testing.solo.io.MockXdsResourceConfig"
+const MockXdsResourceConfigType = resource.TypePrefix + "/testing.solo.io.MockXdsResourceConfig"
 
 /* Defined a resource - to be used by snapshot */
 type MockXdsResourceConfigXdsResourceWrapper struct {

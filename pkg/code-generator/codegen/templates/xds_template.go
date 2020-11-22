@@ -18,12 +18,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Type Definitions:
 
-const {{ upper_camel .MessageType }}Type = cache.TypePrefix + "/{{ .ProtoPackage }}.{{ upper_camel .MessageType }}"
+const {{ upper_camel .MessageType }}Type = resource.TypePrefix + "/{{ .ProtoPackage }}.{{ upper_camel .MessageType }}"
 
 /* Defined a resource - to be used by snapshot */
 type {{ upper_camel .MessageType }}XdsResourceWrapper struct {
