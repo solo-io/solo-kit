@@ -10,6 +10,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	hcm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
@@ -174,8 +175,8 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 			for _, filter := range chain.Filters {
 
 				{
-					config := &hcm_v3.HttpConnectionManager{}
-					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+					config := unmarshalHcmV3(filter.GetTypedConfig())
+					if config != nil {
 						if rDS := config.GetRds(); rDS != nil {
 							rr := cache.XdsResourceReference{
 								Type: RouteTypeV2,
@@ -188,8 +189,8 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 				}
 
 				{
-					config := &hcm_v2.HttpConnectionManager{}
-					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+					config := unmarshalHcmV2(filter.GetTypedConfig())
+					if config != nil {
 						if rDS := config.GetRds(); rDS != nil {
 							rr := cache.XdsResourceReference{
 								Type: RouteTypeV2,
@@ -200,7 +201,6 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 						continue
 					}
 				}
-			}
 
 		}
 
@@ -229,8 +229,8 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 			for _, filter := range chain.GetFilters() {
 
 				{
-					config := &hcm_v3.HttpConnectionManager{}
-					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+					config := unmarshalHcmV3(filter.GetTypedConfig())
+					if config != nil {
 						if rDS := config.GetRds(); rDS != nil {
 							rr := cache.XdsResourceReference{
 								Type: RouteTypeV3,
@@ -243,8 +243,8 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 				}
 
 				{
-					config := &hcm_v2.HttpConnectionManager{}
-					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+					config := unmarshalHcmV2(filter.GetTypedConfig())
+					if config != nil {
 						if rDS := config.GetRds(); rDS != nil {
 							rr := cache.XdsResourceReference{
 								Type: RouteTypeV3,
@@ -297,8 +297,8 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 				for _, filter := range chain.Filters {
 
 					{
-						config := &hcm_v3.HttpConnectionManager{}
-						if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+						config := unmarshalHcmV2(filter.GetTypedConfig())
+						if config != nil {
 							if rDS := config.GetRds(); rDS != nil {
 								out[rDS.GetRouteConfigName()] = true
 							}
@@ -307,8 +307,8 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 					}
 
 					{
-						config := &hcm_v2.HttpConnectionManager{}
-						if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+						config := unmarshalHcmV3(filter.GetTypedConfig())
+						if config != nil {
 							if rDS := config.GetRds(); rDS != nil {
 								out[rDS.GetRouteConfigName()] = true
 							}
@@ -340,8 +340,8 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 				for _, filter := range chain.GetFilters() {
 
 					{
-						config := &hcm_v3.HttpConnectionManager{}
-						if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+						config := unmarshalHcmV2(filter.GetTypedConfig())
+						if config != nil {
 							if rDS := config.GetRds(); rDS != nil {
 								out[rDS.GetRouteConfigName()] = true
 							}
@@ -350,8 +350,8 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 					}
 
 					{
-						config := &hcm_v2.HttpConnectionManager{}
-						if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+						config := unmarshalHcmV3(filter.GetTypedConfig())
+						if config != nil {
 							if rDS := config.GetRds(); rDS != nil {
 								out[rDS.GetRouteConfigName()] = true
 							}
@@ -364,6 +364,24 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 		}
 	}
 	return out
+}
+
+func unmarshalHcmV2(any *any.Any) *hcm_v2.HttpConnectionManager {
+	var result hcm_v2.HttpConnectionManager
+	if !ptypes.Is(any, &result) {
+		return nil
+	}
+	ptypes.UnmarshalAny(any, &result)
+	return &result
+}
+
+func unmarshalHcmV3(any *any.Any) *hcm_v3.HttpConnectionManager {
+	var result hcm_v3.HttpConnectionManager
+	if !ptypes.Is(any, &result) {
+		return nil
+	}
+	ptypes.UnmarshalAny(any, &result)
+	return &result
 }
 
 // GetResourceName returns the resource name for a valid xDS response type.
