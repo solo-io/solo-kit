@@ -19,7 +19,7 @@ var _ resources.Resource = new(Service)
 func NewService(kubeSvc kubev1.Service) *Service {
 	meta := kubeutils.FromKubeMeta(kubeSvc.ObjectMeta)
 	var s Service
-	s.cachedMeta = &meta
+	s.cachedMeta = meta
 	s.Service = kubeSvc
 	return &s
 }
@@ -37,16 +37,16 @@ func (p *Service) Clone() *Service {
 func (p *Service) GetMetadata() *core.Metadata {
 	if p.cachedMeta == nil {
 		meta := kubeutils.FromKubeMeta(p.ObjectMeta)
-		p.cachedMeta = &meta
+		p.cachedMeta = meta
 	}
-	return *p.cachedMeta
+	return p.cachedMeta
 }
 
 func (p *Service) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 	// copy so we own everything
 	meta = kubeutils.FromKubeMeta(p.ObjectMeta)
-	p.cachedMeta = &meta
+	p.cachedMeta = meta
 }
 
 func (p *Service) Equal(that interface{}) bool {

@@ -238,6 +238,9 @@ func (r *Runner) Run() error {
 
 	var customCompilePrefixes []string
 	for _, relativePath := range r.Opts.CustomCompileProtos {
+		if !strings.HasPrefix(relativePath, anyvendor.DefaultDepDir) {
+			relativePath = filepath.Join(anyvendor.DefaultDepDir, relativePath)
+		}
 		abs, err := filepath.Abs(relativePath)
 		if err != nil {
 			return err

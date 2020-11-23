@@ -257,7 +257,7 @@ var defaultGogoArgs = []string{
 	// "Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types",
 	// "Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types",
 	// "Mgoogle/rpc/status.proto=github.com/gogo/googleapis/google/rpc",
-	"Menvoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
+	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
 	// "gogoproto/gogo.proto=github.com/gogo/protobuf/gogoproto",
 }
 
@@ -273,6 +273,7 @@ func (c *collector) writeDescriptors(protoFile, toFile string, imports []string,
 		cmd.Args = append(cmd.Args,
 			"--go_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
 			"--ext_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
+			// "--go_opt=paths=source_relative",
 		)
 
 		for _, plugin := range c.customPlugins {

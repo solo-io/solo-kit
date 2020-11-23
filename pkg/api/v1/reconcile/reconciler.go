@@ -107,7 +107,7 @@ func updateDesiredResourceVersionAndStatus(desired, original resources.Resource)
 		meta.ResourceVersion = original.GetMetadata().ResourceVersion
 	})
 	if desiredInput, ok := desired.(resources.InputResource); ok {
-		desiredInput.SetStatus(core.Status{})
+		desiredInput.SetStatus(&core.Status{})
 	}
 	return desired
 }

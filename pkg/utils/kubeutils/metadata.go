@@ -1,7 +1,7 @@
 package kubeutils
 
 import (
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,12 +49,12 @@ func copyKubernetesOwnerReferences(references []metav1.OwnerReference) []*core.M
 			Uid:        string(ref.UID),
 		}
 		if ref.Controller != nil {
-			skRef.Controller = &types.BoolValue{
+			skRef.Controller = &wrappers.BoolValue{
 				Value: *ref.Controller,
 			}
 		}
 		if ref.BlockOwnerDeletion != nil {
-			skRef.BlockOwnerDeletion = &types.BoolValue{
+			skRef.BlockOwnerDeletion = &wrappers.BoolValue{
 				Value: *ref.BlockOwnerDeletion,
 			}
 		}

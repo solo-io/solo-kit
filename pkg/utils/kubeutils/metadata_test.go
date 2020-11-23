@@ -1,7 +1,7 @@
 package kubeutils
 
 import (
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -42,10 +42,10 @@ var _ = Describe("owner ref conversion", func() {
 			trueValue := true
 			ref.Controller = &falseValue
 			ref.BlockOwnerDeletion = &trueValue
-			skRef.BlockOwnerDeletion = &types.BoolValue{
+			skRef.BlockOwnerDeletion = &wrappers.BoolValue{
 				Value: true,
 			}
-			skRef.Controller = &types.BoolValue{
+			skRef.Controller = &wrappers.BoolValue{
 				Value: false,
 			}
 			skRefs := copyKubernetesOwnerReferences([]metav1.OwnerReference{ref})
@@ -66,10 +66,10 @@ var _ = Describe("owner ref conversion", func() {
 			trueValue := true
 			ref.Controller = &falseValue
 			ref.BlockOwnerDeletion = &trueValue
-			skRef.BlockOwnerDeletion = &types.BoolValue{
+			skRef.BlockOwnerDeletion = &wrappers.BoolValue{
 				Value: true,
 			}
-			skRef.Controller = &types.BoolValue{
+			skRef.Controller = &wrappers.BoolValue{
 				Value: false,
 			}
 			kubeRefs := copySoloKitOwnerReferences([]*core.Metadata_OwnerReference{skRef})

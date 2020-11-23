@@ -16,7 +16,7 @@ go_package Comments a
 */
 option go_package = "github.com/solo-io/solo-kit/test/mocks/v1alpha1";
 
-import "envoy/api/v2/discovery.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
 
 /*
@@ -28,9 +28,9 @@ import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 option (extproto.equal_all) = true;
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 
 /*

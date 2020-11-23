@@ -7,7 +7,7 @@ import (
 )
 
 type MockCustomType struct {
-	meta core.Metadata
+	meta *core.Metadata
 }
 
 func (m *MockCustomType) Clone() *MockCustomType {

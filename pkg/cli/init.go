@@ -125,8 +125,8 @@ option go_package = "{{ .ProjectGopath }}/pkg/api/v1";
 
 
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
 
 /*
 @solo-kit:resource
