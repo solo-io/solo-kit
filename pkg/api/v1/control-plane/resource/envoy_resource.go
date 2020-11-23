@@ -2,15 +2,13 @@ package resource
 
 import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	hcm_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	hcm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
@@ -41,7 +39,6 @@ const (
 	RouteTypeV3    = TypePrefix + "/envoy.config.route.v3.RouteConfiguration"
 	ListenerTypeV3 = TypePrefix + "/envoy.config.listener.v3.Listener"
 	SecretTypeV3   = TypePrefix + "/envoy.extensions.transport_sockets.tls.v3.Secret"
-	RuntimeTypeV3  = TypePrefix + "/envoy.service.runtime.v3.Runtime"
 )
 
 // Fetch urls in xDS v3.
@@ -51,7 +48,6 @@ const (
 	FetchListenersV3 = "/v3/discovery:listeners"
 	FetchRoutesV3    = "/v3/discovery:routes"
 	FetchSecretsV3   = "/v3/discovery:secrets"
-	FetchRuntimesV3  = "/v3/discovery:runtime"
 )
 
 // Resource types in xDS v2.
@@ -63,7 +59,6 @@ const (
 	RouteTypeV2         = apiTypePrefix + "RouteConfiguration"
 	ListenerTypeV2      = apiTypePrefix + "Listener"
 	SecretTypeV2        = apiTypePrefix + "auth.Secret"
-	RuntimeTypeV2       = discoveryTypePrefix + "Runtime"
 )
 
 // Fetch urls in xDS v2.
@@ -73,7 +68,6 @@ const (
 	FetchListenersV2 = "/v2/discovery:listeners"
 	FetchRoutesV2    = "/v2/discovery:routes"
 	FetchSecretsV2   = "/v2/discovery:secrets"
-	FetchRuntimesV2  = "/v2/discovery:runtime"
 )
 
 var (
@@ -178,32 +172,34 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 		// extract route configuration names from HTTP connection manager
 		for _, chain := range v.FilterChains {
 			for _, filter := range chain.Filters {
-				if filter.Name != wellknown.HTTPConnectionManager {
-					continue
-				}
 
-				config := &hcm.HttpConnectionManager{}
-
-				switch filterConfig := filter.ConfigType.(type) {
-				case *listener.Filter_Config:
-					if conversion.StructToMessage(filterConfig.Config, config) != nil {
-						continue
-
-					}
-				case *listener.Filter_TypedConfig:
-					if ptypes.UnmarshalAny(filterConfig.TypedConfig, config) != nil {
-						continue
+				{
+					config := &hcm_v3.HttpConnectionManager{}
+					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+						if rDS := config.GetRds(); rDS != nil {
+							rr := cache.XdsResourceReference{
+								Type: RouteTypeV2,
+								Name: rDS.GetRouteConfigName(),
+							}
+							out[rr] = true
+						}
 					}
 				}
 
-				if rds, ok := config.RouteSpecifier.(*hcm.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
-					rr := cache.XdsResourceReference{
-						Type: RouteTypeV2,
-						Name: rds.Rds.RouteConfigName,
+				{
+					config := &hcm_v2.HttpConnectionManager{}
+					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+						if rDS := config.GetRds(); rDS != nil {
+							rr := cache.XdsResourceReference{
+								Type: RouteTypeV2,
+								Name: rDS.GetRouteConfigName(),
+							}
+							out[rr] = true
+						}
 					}
-					out[rr] = true
 				}
 			}
+
 		}
 
 	case *envoy_config_endpoint_v3.ClusterLoadAssignment:
@@ -229,22 +225,33 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 		// extract route configuration names from HTTP connection manager
 		for _, chain := range v.GetFilterChains() {
 			for _, filter := range chain.GetFilters() {
-				if filter.Name != wellknown.HTTPConnectionManager {
-					continue
-				}
 
-				config := hcm.HttpConnectionManager{}
-				if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), &config); err != nil {
-					continue
-				}
-
-				if config.GetRds() != nil {
-					rr := cache.XdsResourceReference{
-						Type: RouteTypeV3,
-						Name: config.GetRds().GetRouteConfigName(),
+				{
+					config := &hcm_v3.HttpConnectionManager{}
+					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+						if rDS := config.GetRds(); rDS != nil {
+							rr := cache.XdsResourceReference{
+								Type: RouteTypeV3,
+								Name: rDS.GetRouteConfigName(),
+							}
+							out[rr] = true
+						}
 					}
-					out[rr] = true
 				}
+
+				{
+					config := &hcm_v2.HttpConnectionManager{}
+					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+						if rDS := config.GetRds(); rDS != nil {
+							rr := cache.XdsResourceReference{
+								Type: RouteTypeV3,
+								Name: rDS.GetRouteConfigName(),
+							}
+							out[rr] = true
+						}
+					}
+				}
+
 			}
 		}
 	}
@@ -284,26 +291,23 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 			// extract route configuration names from HTTP connection manager
 			for _, chain := range v.FilterChains {
 				for _, filter := range chain.Filters {
-					if filter.Name != wellknown.HTTPConnectionManager {
-						continue
-					}
 
-					config := &hcm.HttpConnectionManager{}
-
-					switch filterConfig := filter.ConfigType.(type) {
-					case *listener.Filter_Config:
-						if conversion.StructToMessage(filterConfig.Config, config) != nil {
-							continue
-
-						}
-					case *listener.Filter_TypedConfig:
-						if ptypes.UnmarshalAny(filterConfig.TypedConfig, config) != nil {
-							continue
+					{
+						config := &hcm_v3.HttpConnectionManager{}
+						if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+							if rDS := config.GetRds(); rDS != nil {
+								out[rDS.GetRouteConfigName()] = true
+							}
 						}
 					}
 
-					if rds, ok := config.RouteSpecifier.(*hcm.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
-						out[rds.Rds.GetRouteConfigName()] = true
+					{
+						config := &hcm_v2.HttpConnectionManager{}
+						if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+							if rDS := config.GetRds(); rDS != nil {
+								out[rDS.GetRouteConfigName()] = true
+							}
+						}
 					}
 
 				}
@@ -328,18 +332,25 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 			// extract route configuration names from HTTP connection manager
 			for _, chain := range v.GetFilterChains() {
 				for _, filter := range chain.GetFilters() {
-					if filter.Name != wellknown.HTTPConnectionManager {
-						continue
+
+					{
+						config := &hcm_v3.HttpConnectionManager{}
+						if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+							if rDS := config.GetRds(); rDS != nil {
+								out[rDS.GetRouteConfigName()] = true
+							}
+						}
 					}
 
-					config := hcm.HttpConnectionManager{}
-					if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), &config); err != nil {
-						continue
+					{
+						config := &hcm_v2.HttpConnectionManager{}
+						if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), config); err != nil {
+							if rDS := config.GetRds(); rDS != nil {
+								out[rDS.GetRouteConfigName()] = true
+							}
+						}
 					}
 
-					if config.GetRds() != nil {
-						out[config.GetRds().GetRouteConfigName()] = true
-					}
 				}
 			}
 		}
