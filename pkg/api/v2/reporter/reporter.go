@@ -95,7 +95,11 @@ func (e ResourceReports) ValidateStrict() error {
 	for res, rpt := range e {
 		if len(rpt.Warnings) > 0 {
 			if errs == nil {
-				errs = errors.Errorf("invalid resource %v.%v", res.GetMetadata().Namespace, res.GetMetadata().Name)
+				errs = errors.Errorf(
+					"invalid resource %v.%v",
+					res.GetMetadata().GetNamespace(),
+					res.GetMetadata().GetName(),
+				)
 			}
 			errs = multierror.Append(errs, errors.Errorf("WARN: \n  %v", rpt.Warnings))
 		}

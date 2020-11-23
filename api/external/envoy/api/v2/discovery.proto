@@ -31,7 +31,7 @@ message DiscoveryRequest {
   string version_info = 1;
 
   // The node making the request.
-  core.Node node = 2;
+  solo.io.envoy.api.v2.core.Node node = 2;
 
   // List of resources to subscribe to, e.g. list of cluster names or a route
   // configuration name. If this is empty, all resources for the API are
@@ -100,7 +100,7 @@ message DiscoveryResponse {
 
   // [#not-implemented-hide:]
   // The control plane instance that sent the response.
-  core.ControlPlane control_plane = 6;
+  solo.io.envoy.api.v2.core.ControlPlane control_plane = 6;
 }
 
 // DeltaDiscoveryRequest and DeltaDiscoveryResponse are used in a new gRPC
@@ -137,7 +137,7 @@ message DiscoveryResponse {
 // initial_resource_versions.
 message DeltaDiscoveryRequest {
   // The node making the request.
-  core.Node node = 1;
+  solo.io.envoy.api.v2.core.Node node = 1;
 
   // Type of the resource that is being requested, e.g.
   // "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment".

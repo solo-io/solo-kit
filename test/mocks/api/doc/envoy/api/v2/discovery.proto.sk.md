@@ -35,7 +35,7 @@ a given Envoy node on some API.
 
 ```yaml
 "versionInfo": string
-"node": .envoy.api.v2.core.Node
+"node": .solo.io.envoy.api.v2.core.Node
 "resourceNames": []string
 "typeUrl": string
 "responseNonce": string
@@ -46,7 +46,7 @@ a given Envoy node on some API.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `versionInfo` | `string` | The version_info provided in the request messages will be the version_info received with the most recent successfully processed response or empty on the first request. It is expected that no new request is sent after a response is received until the Envoy instance is ready to ACK/NACK the new configuration. ACK/NACK takes place by returning the new API config version as applied or the previous API config version respectively. Each type_url (see below) has an independent version associated with it. |  |
-| `node` | [.envoy.api.v2.core.Node](../core/base.proto.sk#node) | The node making the request. |  |
+| `node` | [.solo.io.envoy.api.v2.core.Node](../core/base.proto.sk#node) | The node making the request. |  |
 | `resourceNames` | `[]string` | List of resources to subscribe to, e.g. list of cluster names or a route configuration name. If this is empty, all resources for the API are returned. LDS/CDS expect empty resource_names, since this is global discovery for the Envoy instance. The LDS and CDS responses will then imply a number of resources that need to be fetched via EDS/RDS, which will be explicitly enumerated in resource_names. |  |
 | `typeUrl` | `string` | Type of the resource that is being requested, e.g. "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment". This is implicit in requests made via singleton xDS APIs such as CDS, LDS, etc. but is required for ADS. |  |
 | `responseNonce` | `string` | nonce corresponding to DiscoveryResponse being ACK/NACKed. See above discussion on version_info and the DiscoveryResponse nonce comment. This may be empty if no nonce is available, e.g. at startup or for non-stream xDS implementations. |  |
@@ -66,7 +66,7 @@ a given Envoy node on some API.
 "canary": bool
 "typeUrl": string
 "nonce": string
-"controlPlane": .envoy.api.v2.core.ControlPlane
+"controlPlane": .solo.io.envoy.api.v2.core.ControlPlane
 
 ```
 
@@ -77,7 +77,7 @@ a given Envoy node on some API.
 | `canary` | `bool` | [#not-implemented-hide:] Canary is used to support two Envoy command line flags: * --terminate-on-canary-transition-failure. When set, Envoy is able to terminate if it detects that configuration is stuck at canary. Consider this example sequence of updates: - Management server applies a canary config successfully. - Management server rolls back to a production config. - Envoy rejects the new production config. Since there is no sensible way to continue receiving configuration updates, Envoy will then terminate and apply production config from a clean slate. * --dry-run-canary. When set, a canary response will never be applied, only validated via a dry run. |  |
 | `typeUrl` | `string` | Type URL for resources. This must be consistent with the type_url in the Any messages for resources if resources is non-empty. This effectively identifies the xDS API when muxing over ADS. |  |
 | `nonce` | `string` | For gRPC based subscriptions, the nonce provides a way to explicitly ack a specific DiscoveryResponse in a following DiscoveryRequest. Additional messages may have been sent by Envoy to the management server for the previous version on the stream prior to this DiscoveryResponse, that were unprocessed at response send time. The nonce allows the management server to ignore any further DiscoveryRequests for the previous version until a DiscoveryRequest bearing the nonce. The nonce is optional and is not required for non-stream based xDS implementations. |  |
-| `controlPlane` | [.envoy.api.v2.core.ControlPlane](../core/base.proto.sk#controlplane) | [#not-implemented-hide:] The control plane instance that sent the response. |  |
+| `controlPlane` | [.solo.io.envoy.api.v2.core.ControlPlane](../core/base.proto.sk#controlplane) | [#not-implemented-hide:] The control plane instance that sent the response. |  |
 
 
 
@@ -113,7 +113,7 @@ DeltaDiscoveryRequest can be sent in 3 situations:
      resource_names set. In this case response_nonce must be omitted.
 
 ```yaml
-"node": .envoy.api.v2.core.Node
+"node": .solo.io.envoy.api.v2.core.Node
 "typeUrl": string
 "resourceNamesSubscribe": []string
 "resourceNamesUnsubscribe": []string
@@ -125,7 +125,7 @@ DeltaDiscoveryRequest can be sent in 3 situations:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `node` | [.envoy.api.v2.core.Node](../core/base.proto.sk#node) | The node making the request. |  |
+| `node` | [.solo.io.envoy.api.v2.core.Node](../core/base.proto.sk#node) | The node making the request. |  |
 | `typeUrl` | `string` | Type of the resource that is being requested, e.g. "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment". This is implicit in requests made via singleton xDS APIs such as CDS, LDS, etc. but is required for ADS. |  |
 | `resourceNamesSubscribe` | `[]string` | DeltaDiscoveryRequests allow the client to add or remove individual resources to the set of tracked resources in the context of a stream. All resource names in the resource_names_subscribe list are added to the set of tracked resources and all resource names in the resource_names_unsubscribe list are removed from the set of tracked resources. Unlike in state-of-the-world xDS, an empty resource_names_subscribe or resource_names_unsubscribe list simply means that no resources are to be added or removed to the resource list. The xDS server must send updates for all tracked resources but can also send updates for resources the client has not subscribed to. This behavior is similar to state-of-the-world xDS. These two fields can be set for all types of DeltaDiscoveryRequests (initial, ACK/NACK or spontaneous). A list of Resource names to add to the list of tracked resources. |  |
 | `resourceNamesUnsubscribe` | `[]string` | A list of Resource names to remove from the list of tracked resources. |  |
