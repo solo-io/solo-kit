@@ -18,12 +18,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Type Definitions:
 
-const {{ upper_camel .MessageType }}Type = cache.TypePrefix + "/{{ .ProtoPackage }}.{{ upper_camel .MessageType }}"
+const {{ upper_camel .MessageType }}Type = resource.TypePrefix + "/{{ .ProtoPackage }}.{{ upper_camel .MessageType }}"
 
 /* Defined a resource - to be used by snapshot */
 type {{ upper_camel .MessageType }}XdsResourceWrapper struct {
@@ -87,7 +88,7 @@ func New{{ upper_camel .Name }}Server(genericServer server.Server) {{ upper_came
 }
 
 func (s *{{ lower_camel .Name }}Server) Stream{{ upper_camel .MessageType }}(stream {{ upper_camel .Name }}_Stream{{ upper_camel .MessageType }}Server) error {
-	return s.Server.Stream(stream, {{ upper_camel .MessageType }}Type)
+	return s.Server.StreamV2(stream, {{ upper_camel .MessageType }}Type)
 }
 
 func (s *{{ lower_camel .Name }}Server) Fetch{{ upper_camel .MessageType }}(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -95,7 +96,7 @@ func (s *{{ lower_camel .Name }}Server) Fetch{{ upper_camel .MessageType }}(ctx 
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = {{ upper_camel .MessageType }}Type
-	return s.Server.Fetch(ctx, req)
+	return s.Server.FetchV2(ctx, req)
 }
 
 func (s *{{ lower_camel .Name }}Server) Delta{{ upper_camel .MessageType }}(_ {{ upper_camel .Name }}_Delta{{ upper_camel .MessageType }}Server) error {

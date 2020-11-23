@@ -1,0 +1,7 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: Support XDS V2/V3 APIs simultaneously from control-plane server.
+  issueLink: https://github.com/solo-io/gloo/issues/2815
+  resolvesIssue: false
+
+

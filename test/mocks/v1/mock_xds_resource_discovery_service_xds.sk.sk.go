@@ -14,12 +14,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Type Definitions:
 
-const MockXdsResourceConfigType = cache.TypePrefix + "/testing.solo.io.MockXdsResourceConfig"
+const MockXdsResourceConfigType = resource.TypePrefix + "/testing.solo.io.MockXdsResourceConfig"
 
 /* Defined a resource - to be used by snapshot */
 type MockXdsResourceConfigXdsResourceWrapper struct {
@@ -72,7 +73,7 @@ func NewMockXdsResourceDiscoveryServiceServer(genericServer server.Server) MockX
 }
 
 func (s *mockXdsResourceDiscoveryServiceServer) StreamMockXdsResourceConfig(stream MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigServer) error {
-	return s.Server.Stream(stream, MockXdsResourceConfigType)
+	return s.Server.StreamV2(stream, MockXdsResourceConfigType)
 }
 
 func (s *mockXdsResourceDiscoveryServiceServer) FetchMockXdsResourceConfig(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -80,7 +81,7 @@ func (s *mockXdsResourceDiscoveryServiceServer) FetchMockXdsResourceConfig(ctx c
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = MockXdsResourceConfigType
-	return s.Server.Fetch(ctx, req)
+	return s.Server.FetchV2(ctx, req)
 }
 
 func (s *mockXdsResourceDiscoveryServiceServer) DeltaMockXdsResourceConfig(_ MockXdsResourceDiscoveryService_DeltaMockXdsResourceConfigServer) error {
