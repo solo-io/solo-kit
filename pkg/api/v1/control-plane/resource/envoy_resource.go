@@ -183,6 +183,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 							}
 							out[rr] = true
 						}
+						continue
 					}
 				}
 
@@ -196,6 +197,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 							}
 							out[rr] = true
 						}
+						continue
 					}
 				}
 			}
@@ -236,6 +238,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 							}
 							out[rr] = true
 						}
+						continue
 					}
 				}
 
@@ -249,6 +252,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 							}
 							out[rr] = true
 						}
+						continue
 					}
 				}
 
@@ -298,6 +302,7 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 							if rDS := config.GetRds(); rDS != nil {
 								out[rDS.GetRouteConfigName()] = true
 							}
+							continue
 						}
 					}
 
@@ -307,6 +312,7 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 							if rDS := config.GetRds(); rDS != nil {
 								out[rDS.GetRouteConfigName()] = true
 							}
+							continue
 						}
 					}
 
@@ -339,6 +345,7 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 							if rDS := config.GetRds(); rDS != nil {
 								out[rDS.GetRouteConfigName()] = true
 							}
+							continue
 						}
 					}
 
@@ -348,6 +355,7 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 							if rDS := config.GetRds(); rDS != nil {
 								out[rDS.GetRouteConfigName()] = true
 							}
+							continue
 						}
 					}
 
