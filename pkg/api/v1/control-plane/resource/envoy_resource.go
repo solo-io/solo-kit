@@ -201,6 +201,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 						continue
 					}
 				}
+			}
 
 		}
 
