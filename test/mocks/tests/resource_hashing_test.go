@@ -54,7 +54,7 @@ func snapWithFields(hashSensitiveField, hashInsensitiveField string) *v1.Testing
 	return &v1.TestingSnapshot{
 		Mocks: v1.MockResourceList{
 			{
-				Metadata:      core.Metadata{Name: hashSensitiveField, Namespace: hashSensitiveField},
+				Metadata:      &core.Metadata{Name: hashSensitiveField, Namespace: hashSensitiveField},
 				Data:          hashSensitiveField,
 				SomeDumbField: hashInsensitiveField,
 				TestOneofFields: &v1.MockResource_OneofOne{
@@ -62,7 +62,7 @@ func snapWithFields(hashSensitiveField, hashInsensitiveField string) *v1.Testing
 				},
 			},
 			{
-				Metadata:      core.Metadata{Name: hashSensitiveField + "2", Namespace: hashSensitiveField},
+				Metadata:      &core.Metadata{Name: hashSensitiveField + "2", Namespace: hashSensitiveField},
 				Data:          hashSensitiveField,
 				SomeDumbField: hashInsensitiveField,
 				TestOneofFields: &v1.MockResource_OneofTwo{

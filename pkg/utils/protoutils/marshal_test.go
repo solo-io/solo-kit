@@ -1,8 +1,8 @@
 package protoutils_test
 
 import (
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/proto"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 )
 
@@ -28,20 +28,20 @@ var tests = []struct {
 				D: "d",
 			},
 		},
-		expected: &types.Struct{
-			Fields: map[string]*types.Value{
+		expected: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
 				"A": {
-					Kind: &types.Value_StringValue{StringValue: "a"},
+					Kind: &structpb.Value_StringValue{StringValue: "a"},
 				},
 				"B": {
-					Kind: &types.Value_StructValue{
-						StructValue: &types.Struct{
-							Fields: map[string]*types.Value{
+					Kind: &structpb.Value_StructValue{
+						StructValue: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
 								"C": {
-									Kind: &types.Value_StringValue{StringValue: "c"},
+									Kind: &structpb.Value_StringValue{StringValue: "c"},
 								},
 								"D": {
-									Kind: &types.Value_StringValue{StringValue: "d"},
+									Kind: &structpb.Value_StringValue{StringValue: "d"},
 								},
 							},
 						},
@@ -55,13 +55,13 @@ var tests = []struct {
 			"a": "b",
 			"c": "d",
 		},
-		expected: &types.Struct{
-			Fields: map[string]*types.Value{
+		expected: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
 				"a": {
-					Kind: &types.Value_StringValue{StringValue: "b"},
+					Kind: &structpb.Value_StringValue{StringValue: "b"},
 				},
 				"c": {
-					Kind: &types.Value_StringValue{StringValue: "d"},
+					Kind: &structpb.Value_StringValue{StringValue: "d"},
 				},
 			},
 		},
