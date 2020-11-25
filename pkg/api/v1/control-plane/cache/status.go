@@ -18,20 +18,20 @@ import (
 	"sync"
 	"time"
 
-	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 )
 
 // NodeHash computes string identifiers for Envoy nodes.
 type NodeHash interface {
 	// ID function defines a unique string identifier for the remote Envoy node.
-	ID(node *envoy_api_v2_core.Node) string
+	ID(node *envoy_config_core_v3.Node) string
 }
 
 // StatusInfo tracks the server state for the remote Envoy node.
 // Not all fields are used by all cache implementations.
 type StatusInfo interface {
 	// GetNode returns the node metadata.
-	GetNode() *envoy_api_v2_core.Node
+	GetNode() *envoy_config_core_v3.Node
 
 	// GetNumWatches returns the number of open watches.
 	GetNumWatches() int
@@ -42,7 +42,7 @@ type StatusInfo interface {
 
 type statusInfo struct {
 	// node is the constant Envoy node metadata.
-	node *envoy_api_v2_core.Node
+	node *envoy_config_core_v3.Node
 
 	// watches are indexed channels for the response watches and the original requests.
 	watches map[int64]ResponseWatch
@@ -65,7 +65,7 @@ type ResponseWatch struct {
 }
 
 // newStatusInfo initializes a status info data structure.
-func newStatusInfo(node *envoy_api_v2_core.Node) *statusInfo {
+func newStatusInfo(node *envoy_config_core_v3.Node) *statusInfo {
 	out := statusInfo{
 		node:    node,
 		watches: make(map[int64]ResponseWatch),
@@ -73,7 +73,7 @@ func newStatusInfo(node *envoy_api_v2_core.Node) *statusInfo {
 	return &out
 }
 
-func (info *statusInfo) GetNode() *envoy_api_v2_core.Node {
+func (info *statusInfo) GetNode() *envoy_config_core_v3.Node {
 	info.mu.RLock()
 	defer info.mu.RUnlock()
 	return info.node

@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"path"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
@@ -77,8 +77,9 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// TODO: Attempt to parse as V3, and then V2
 	// parse as JSON
-	out := &v2.DiscoveryRequest{}
+	out := &envoy_service_discovery_v3.DiscoveryRequest{}
 	err = jsonpb.UnmarshalString(string(body), out)
 	if err != nil {
 		h.Log.Debugf("cannot parse JSON body: " + err.Error())
@@ -88,7 +89,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	out.TypeUrl = typeURL
 
 	// fetch results
-	res, err := h.Server.Fetch(req.Context(), out)
+	res, err := h.Server.FetchV3(req.Context(), out)
 	if err != nil {
 		h.Log.Debugf("fetch error: " + err.Error())
 		if err == cache.VersionUpToDateError {

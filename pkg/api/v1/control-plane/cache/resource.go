@@ -37,9 +37,3 @@ type Resource interface {
 	ResourceProto() ResourceProto
 	References() []XdsResourceReference
 }
-
-// AnyType is used only by ADS
-const (
-	AnyType    = ""
-	TypePrefix = "type.googleapis.com"
-)

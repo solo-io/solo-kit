@@ -1,7 +1,7 @@
 package cache
 
 import (
-	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -10,7 +10,7 @@ import (
 type TestIDHash struct{}
 
 // ID uses the node ID field
-func (TestIDHash) ID(node *envoy_api_v2_core.Node) string {
+func (TestIDHash) ID(node *envoy_config_core_v3.Node) string {
 	if node == nil {
 		return ""
 	}
@@ -20,7 +20,7 @@ func (TestIDHash) ID(node *envoy_api_v2_core.Node) string {
 var _ = Describe("Control Plane Cache", func() {
 
 	It("returns sane values for NewStatusInfo", func() {
-		node := &envoy_api_v2_core.Node{Id: "test"}
+		node := &envoy_config_core_v3.Node{Id: "test"}
 		info := newStatusInfo(node)
 
 		Expect(info.GetNode()).To(Equal(node))
@@ -39,7 +39,7 @@ var _ = Describe("Control Plane Cache", func() {
 		cache.SetSnapshot("test", nil)
 		cache.CreateWatch(Request{
 			VersionInfo: "",
-			Node: &envoy_api_v2_core.Node{
+			Node: &envoy_config_core_v3.Node{
 				Id: "test",
 			},
 		})
