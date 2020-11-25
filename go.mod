@@ -16,7 +16,7 @@ require (
 	github.com/go-test/deep v1.0.2 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
 	github.com/hashicorp/consul/sdk v0.3.0 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-utils v0.17.0
-	github.com/solo-io/protoc-gen-ext v0.0.10-0.20200904232101-c8cfa2d72872
+	github.com/solo-io/protoc-gen-ext v0.0.10
 	github.com/spf13/afero v1.3.4 // indirect
 	go.opencensus.io v0.22.1
 	go.uber.org/multierr v1.4.0
