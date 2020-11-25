@@ -4,8 +4,6 @@
 package core
 
 import (
-	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"
@@ -18,11 +16,6 @@ import (
 var (
 	_ = errors.New("")
 	_ = fmt.Print
-	_ = binary.LittleEndian
-	_ = bytes.Compare
-	_ = strings.Compare
-	_ = equality.Equalizer(nil)
-	_ = proto.Message(nil)
 )
 
 // Equal function
