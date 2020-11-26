@@ -8,6 +8,7 @@ import (
 
 //go:generate go run generate.go
 //go:generate ./api/v1/generate.sh
+//go:generate ./pkg/api/v1/apiserver/generate.sh
 
 func main() {
 

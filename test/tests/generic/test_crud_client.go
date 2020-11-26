@@ -86,7 +86,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	boo := "boo"
 	input = &v1.MockResource{
 		Data: data,
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      boo,
 			Namespace: namespace2,
 			Labels:    selectors,
@@ -165,7 +165,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 
 		input = &v1.MockResource{
 			Data: data,
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "goo",
 				Namespace: namespace1,
 				Labels:    selectors,

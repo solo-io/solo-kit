@@ -27,6 +27,9 @@ func ToKubeMeta(meta *core.Metadata) metav1.ObjectMeta {
 }
 
 func ToKubeMetaMaintainNamespace(meta *core.Metadata) metav1.ObjectMeta {
+	if meta == nil {
+		return metav1.ObjectMeta{}
+	}
 	return metav1.ObjectMeta{
 		Name:            meta.Name,
 		Namespace:       meta.Namespace,
