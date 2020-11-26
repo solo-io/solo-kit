@@ -38,7 +38,7 @@ var _ = Describe("Base", func() {
 	})
 	It("should not return pointer to internal object", func() {
 		obj := &v1.MockResource{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: "ns",
 				Name:      "n",
 			},
@@ -68,7 +68,7 @@ var _ = Describe("Base", func() {
 
 			for i := 0; i < numobjs; i++ {
 				obj := &v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Namespace: "ns",
 						Name:      fmt.Sprintf("n-%v", numobjs-i),
 					},

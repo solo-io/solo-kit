@@ -38,7 +38,7 @@ type mockResources struct {
 }
 
 func (m *mockResources) GetMetadata() *core.Metadata {
-	return core.Metadata{
+	return &core.Metadata{
 		Name:      m.Name,
 		Namespace: m.Ns,
 	}
@@ -53,11 +53,11 @@ func (m *mockResources) Equal(that interface{}) bool {
 	return false
 }
 
-func (m *mockResources) GetStatus() core.Status {
+func (m *mockResources) GetStatus() *core.Status {
 	// Not need in this test
-	return core.Status{}
+	return &core.Status{}
 }
 
-func (m *mockResources) SetStatus(status core.Status) {
+func (m *mockResources) SetStatus(status *core.Status) {
 	// Not need in this test
 }

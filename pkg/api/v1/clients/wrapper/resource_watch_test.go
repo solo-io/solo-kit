@@ -56,9 +56,9 @@ var _ = Describe("ResourceWatch", func() {
 		list.Each(util.ZeroResourceVersion)
 
 		Expect(list).To(Equal(resources.ResourceList{
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "a"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "b", Name: "b"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "d", Name: "d"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "b", Name: "b"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "d", Name: "d"}},
 		}))
 	})
 })

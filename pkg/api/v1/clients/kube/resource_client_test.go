@@ -191,7 +191,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				}()
 				r1, err = client.Write(&v1.MockResource{
 					Data: data,
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      boo,
 						Namespace: ns1,
 						Labels:    selectors,
@@ -201,7 +201,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 				r2, err = client.Write(&v1.MockResource{
 					Data: data,
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      goo,
 						Namespace: ns2,
 						Labels:    selectors,
@@ -266,7 +266,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			})
 
 			It("call write", func() {
-				_, err := rc.Write(&v1.MockResource{Metadata: core.Metadata{Namespace: namespace2}}, clients.WriteOpts{})
+				_, err := rc.Write(&v1.MockResource{Metadata: &core.Metadata{Namespace: namespace2}}, clients.WriteOpts{})
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -377,7 +377,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clientset *fake.Clientset
 
 				resourceToCreate = &v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "to-create",
 						Namespace: namespace1,
 					},
@@ -385,7 +385,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					SomeDumbField: dumbValue,
 				}
 				resourceToUpdate = &v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "mock-1",
 						Namespace: namespace1,
 					},

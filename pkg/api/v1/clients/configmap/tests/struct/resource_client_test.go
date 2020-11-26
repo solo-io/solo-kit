@@ -133,7 +133,7 @@ var _ = Describe("Base", func() {
 				}()
 				r1, err = client.Write(&v1.MockResource{
 					Data: data,
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      boo,
 						Namespace: ns1,
 						Labels:    selectors,
@@ -143,7 +143,7 @@ var _ = Describe("Base", func() {
 
 				r2, err = client.Write(&v1.MockResource{
 					Data: data,
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      goo,
 						Namespace: ns3,
 						Labels:    selectors,

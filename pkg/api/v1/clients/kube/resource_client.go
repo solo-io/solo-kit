@@ -445,6 +445,9 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
 			updateFunc := func(status *core.Status) error {
+				if status == nil {
+					return nil
+				}
 				typedStatus := core.Status{}
 				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
 					return err
