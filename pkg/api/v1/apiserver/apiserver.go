@@ -8,7 +8,6 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -34,7 +33,7 @@ type ApiServer struct {
 }
 
 func TypeUrl(m resources.ProtoResource) string {
-	data, err := types.MarshalAny(m)
+	data, err := ptypes.MarshalAny(m)
 	if err != nil {
 		panic("failed to marshal resource " + err.Error())
 	}
