@@ -191,6 +191,9 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	if withStatus, ok := resource.(resources.InputResource); ok {
 
 		updateFunc := func(status *core.Status) error {
+			if status == nil {
+				return nil
+			}
 			typedStatus := core.Status{}
 			err := UnmarshalMapToProto(resourceCrd.Status, &typedStatus)
 			if err != nil {

@@ -30,7 +30,7 @@ IMPORTS="\
     -I=${ROOT} \
     -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext"
 
-GOGO_FLAG="--go_out=${TEMP_DIR}"
+GOGO_FLAG="--go_out=plugins=grpc:${TEMP_DIR}"
 HASH_FLAG="--ext_out=${TEMP_DIR}"
 
 INPUT_PROTOS="${IN}/*.proto"
