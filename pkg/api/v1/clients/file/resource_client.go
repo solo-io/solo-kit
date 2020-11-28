@@ -82,7 +82,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		if !opts.OverwriteExisting {
 			return nil, errors.NewExistErr(meta)
 		}
-		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
+		if meta.GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
 	}
