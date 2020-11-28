@@ -199,11 +199,11 @@ func makeChildStatusMap(children resources.ResourceList) (map[string]*core.Statu
 			return nil, errors.Errorf("internal error: %v.%v is not an input resource", childRes.GetMetadata().Namespace, childRes.GetMetadata().Name)
 		}
 		stat := child.GetStatus()
-		statuses[Key(child)] = &stat
+		statuses[Key(child)] = stat
 	}
 	return statuses, nil
 }
 
-func containsStatuses(parent core.Status, statuses map[string]*core.Status) bool {
+func containsStatuses(parent *core.Status, statuses map[string]*core.Status) bool {
 	return reflect.DeepEqual(parent.SubresourceStatuses, statuses)
 }
