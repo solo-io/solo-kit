@@ -97,7 +97,7 @@ func PodClientTest(namespace string, client PodClient, name1, name2, name3 strin
 	name = name2
 	input = &Pod{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -148,7 +148,7 @@ func PodClientTest(namespace string, client PodClient, name1, name2, name3 strin
 		name = name3
 		input = &Pod{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

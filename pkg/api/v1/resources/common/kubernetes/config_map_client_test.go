@@ -97,7 +97,7 @@ func ConfigMapClientTest(namespace string, client ConfigMapClient, name1, name2,
 	name = name2
 	input = &ConfigMap{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -148,7 +148,7 @@ func ConfigMapClientTest(namespace string, client ConfigMapClient, name1, name2,
 		name = name3
 		input = &ConfigMap{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

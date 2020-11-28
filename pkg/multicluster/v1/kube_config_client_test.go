@@ -97,7 +97,7 @@ func KubeConfigClientTest(namespace string, client KubeConfigClient, name1, name
 	name = name2
 	input = &KubeConfig{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -148,7 +148,7 @@ func KubeConfigClientTest(namespace string, client KubeConfigClient, name1, name
 		name = name3
 		input = &KubeConfig{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

@@ -84,7 +84,7 @@ func KubeNamespaceClientTest(client KubeNamespaceClient, name1, name2, name3 str
 	name = name2
 	input = &KubeNamespace{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name: name,
 	})
 
@@ -134,7 +134,7 @@ func KubeNamespaceClientTest(client KubeNamespaceClient, name1, name2, name3 str
 		name = name3
 		input = &KubeNamespace{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name: name,
 		})
 
