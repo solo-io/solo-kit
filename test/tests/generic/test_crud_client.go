@@ -3,17 +3,16 @@ package generic
 import (
 	"time"
 
-	"github.com/solo-io/solo-kit/test/helpers"
-	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/solo-kit/test/matchers"
+	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
 // Call within "It"
@@ -77,7 +76,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 
 	// it should update the resource version on the new write
 	Expect(read.GetMetadata().ResourceVersion).NotTo(Equal(oldRv))
-	Expect(read).To(Equal(r1))
+	Expect(read).To(matchers.MatchProto(r1.(resources.ProtoResource)))
 
 	_, err = client.Read("doesntexist", foo, clients.ReadOpts{})
 	Expect(err).To(HaveOccurred())
@@ -100,7 +99,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 		Selector: labels,
 	})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
+	Expect(list).To(matchers.ContainProto(r1.(resources.ProtoResource)))
 	postList(callbacks, list)
 	Expect(list).NotTo(ContainElement(r2))
 
@@ -109,7 +108,9 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 		Selector: selectors,
 	})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(And(ContainElement(r1), ContainElement(r2)))
+	Expect(list).To(And(
+		matchers.ContainProto(r1.(resources.ProtoResource)), matchers.ContainProto(r2.(resources.ProtoResource)),
+	))
 	postList(callbacks, list)
 
 	// test resource version locking works
@@ -137,7 +138,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 		})
 		Expect(err).NotTo(HaveOccurred())
 		return list
-	}, time.Second*10).Should(ContainElement(r1))
+	}, time.Second*10).Should(matchers.ContainProto(r1.(resources.ProtoResource)))
 	Eventually(func() resources.ResourceList {
 		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
@@ -210,7 +211,11 @@ Loop:
 
 	postList(callbacks, list)
 
-	Expect(list).To(ConsistOf(r1, r2, r3))
+	Expect(list).To(matchers.ConistOfProtos(
+		r1.(resources.ProtoResource),
+		r2.(resources.ProtoResource),
+		r3.(resources.ProtoResource)),
+	)
 }
 
 func postList(callbacks []Callback, list resources.ResourceList) {
