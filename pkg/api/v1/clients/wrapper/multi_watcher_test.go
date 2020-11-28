@@ -85,12 +85,12 @@ var _ = Describe("watchAggregator", func() {
 		list.Each(util.ZeroResourceVersion)
 
 		Expect(list).To(Equal(resources.ResourceList{
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr1"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr1"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr2"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr2"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr3"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr3"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr1"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr1"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr2"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr2"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr3"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr3"}},
 		}))
 
 		go func() {
@@ -121,11 +121,11 @@ var _ = Describe("watchAggregator", func() {
 		list.Each(util.ZeroResourceVersion)
 
 		Expect(list).To(Equal(resources.ResourceList{
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr1"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr1"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr2"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr2"}},
-			&v1.MockResource{Metadata: core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr4"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr1"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr1"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr2"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr2"}},
+			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr4"}},
 		}))
 
 	})
