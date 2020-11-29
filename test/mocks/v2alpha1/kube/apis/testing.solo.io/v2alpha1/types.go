@@ -55,6 +55,7 @@ func (o *FrequentlyChangingAnnotationsResource) UnmarshalJSON(data []byte) error
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = FrequentlyChangingAnnotationsResource{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
@@ -113,6 +114,7 @@ func (o *MockResource) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = MockResource{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
@@ -120,6 +122,7 @@ func (o *MockResource) UnmarshalJSON(data []byte) error {
 	}
 	if spec.Status != nil {
 		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 
 	return nil

@@ -3,7 +3,6 @@ package tests_test
 import (
 	"context"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/matchers"
 
 	. "github.com/onsi/ginkgo"
@@ -68,7 +67,7 @@ var _ = Describe("Generated Kube Code", func() {
 
 		out, err := testClient.MockResources(res.Namespace).Create(ctx, res, v1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		out.Spec.Metadata = &core.Metadata{}
+		// out.Spec.Metadata = &core.Metadata{}
 		Expect(&out.Spec).To(matchers.MatchProto(&res.Spec))
 
 		skOut, err := skClient.Read(res.Namespace, res.Name, clients.ReadOpts{})

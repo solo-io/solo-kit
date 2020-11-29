@@ -81,6 +81,7 @@ func (o *{{ .Name }}) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = {{ .Name }}{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
@@ -89,6 +90,7 @@ func (o *{{ .Name }}) UnmarshalJSON(data []byte) error {
 {{- if .HasStatus }}
 	if spec.Status != nil {
 		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 {{- end }}
 
