@@ -86,7 +86,7 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 	name = name2
 	input = &ClusterResource{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name: name,
 	})
 
@@ -136,7 +136,7 @@ func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3
 		name = name3
 		input = &ClusterResource{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name: name,
 		})
 
