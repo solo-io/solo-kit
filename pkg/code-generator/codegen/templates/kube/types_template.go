@@ -85,10 +85,12 @@ func (o *{{ .Name }}) UnmarshalJSON(data []byte) error {
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-{{- if .HasStatus }}
-	    Status:     spec.Status,
-{{- end }}
 	}
+{{- if .HasStatus }}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+	}
+{{- end }}
 
 	return nil
 }

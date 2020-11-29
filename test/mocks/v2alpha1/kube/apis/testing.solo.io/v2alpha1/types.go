@@ -117,7 +117,9 @@ func (o *MockResource) UnmarshalJSON(data []byte) error {
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-		Status:     spec.Status,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
 	}
 
 	return nil
