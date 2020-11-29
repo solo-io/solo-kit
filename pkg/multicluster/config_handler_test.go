@@ -101,7 +101,7 @@ func makeKubeConfigs(cluster, namespace, name string, length int) v1.KubeConfigL
 	for i := 0; i < length; i++ {
 		kubeCfgSecret, err := secretconverter.KubeConfigToSecret(&v1.KubeConfig{
 			KubeConfig: v12.KubeConfig{
-				Metadata: core.Metadata{Namespace: namespace, Name: name},
+				Metadata: &core.Metadata{Namespace: namespace, Name: name},
 				Config:   *kubeConfig,
 				Cluster:  fmt.Sprintf("%v-%v", cluster, i),
 			},
