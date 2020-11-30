@@ -675,8 +675,8 @@ github.com/solo-io/anyvendor v0.0.1 h1:csAXLNLkUQWlr/ll4tgmc+Id9kHw2ibncf35weg03
 github.com/solo-io/anyvendor v0.0.1/go.mod h1:SLucIeU8qBOYI82BveNVn2LzZFcMWJSCf8Kd1S4Jcr4=
 github.com/solo-io/go-utils v0.17.0 h1:PNz+DgR1bwajhls/TX6JJCPMlaSAGAFwn5YZOYna63E=
 github.com/solo-io/go-utils v0.17.0/go.mod h1:mGlBcOeSttKRVf4tiq0o8Ng/SRY851W8q0BxkOwacZI=
-github.com/solo-io/protoc-gen-ext v0.0.10 h1:wkXvpspDowZkgE6zxZlRifC7zIoqkX3iTy6SHFwyxcg=
-github.com/solo-io/protoc-gen-ext v0.0.10/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
+github.com/solo-io/protoc-gen-ext v0.0.11 h1:D1IUctahhcGObnoC+qXr6ayftjgBU0ex/eNmbm+WTN0=
+github.com/solo-io/protoc-gen-ext v0.0.11/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
 github.com/spf13/afero v1.2.2 h1:5jhuqJyZCZf2JRofRvN/nIFgIWNzPa3/Vz8mYylgbWc=
