@@ -72,9 +72,6 @@ replace (
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 
-	// Breaking golang protobuf change
-	//github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
-
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
 )

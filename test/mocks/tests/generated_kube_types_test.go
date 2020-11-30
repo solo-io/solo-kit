@@ -18,7 +18,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// //go:generate bash ../v2alpha1/kube/hack/update-codegen.sh
+//go:generate bash ../v2alpha1/kube/hack/update-codegen.sh
 
 var _ = Describe("Generated Kube Code", func() {
 	var (
@@ -67,7 +67,6 @@ var _ = Describe("Generated Kube Code", func() {
 
 		out, err := testClient.MockResources(res.Namespace).Create(ctx, res, v1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		// out.Spec.Metadata = &core.Metadata{}
 		Expect(&out.Spec).To(matchers.MatchProto(&res.Spec))
 
 		skOut, err := skClient.Read(res.Namespace, res.Name, clients.ReadOpts{})
