@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/versionutils/kubeapi"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

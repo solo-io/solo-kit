@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/errors"
