@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    ResourceReport's merge function now merges errors and warnings when
+    the same resource appears in both reports. This replaces the old
+    behavior of overwriting the existing resource with the passed resource.

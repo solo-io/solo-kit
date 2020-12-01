@@ -30,9 +30,71 @@ func (e ResourceReports) Accept(res ...resources.InputResource) ResourceReports 
 	return e
 }
 
+// Merge merges the given resourceReports into this resourceReports.
+// Any resources which appear in both resourceReports will
+// have their warnings and errors merged.
+// Errors appearing in both reports, as determined by the error strings,
+// will not be duplicated in the resulting merged report.
 func (e ResourceReports) Merge(resErrs ResourceReports) {
 	for k, v := range resErrs {
-		e[k] = v
+		if firstReport, exists := e[k]; exists {
+			// report already exists for this resource,
+			// merge new report into existing report:
+			secondReport := v
+
+			// Merge warnings lists
+			allWarnings := make(map[string]bool)
+			for _, warning := range firstReport.Warnings {
+				allWarnings[warning] = true
+			}
+			for _, warning := range secondReport.Warnings {
+				if _, found := allWarnings[warning]; !found {
+					firstReport.Warnings = append(firstReport.Warnings, warning)
+				}
+			}
+
+			if firstReport.Errors == nil {
+				// Only 2nd has errs
+				firstReport.Errors = secondReport.Errors
+				e[k] = firstReport
+				continue
+			} else if secondReport.Errors == nil {
+				// Only 1st has errs
+				e[k] = firstReport
+				continue
+			}
+
+			// Both first and second have errors for the same resource:
+			// Any errors which are identical won't be duplicated,
+			// Any errors which are unique will be added to the final list
+			errs1, isFirstMulti := firstReport.Errors.(*multierror.Error)
+			errs2, isSecondMulti := secondReport.Errors.(*multierror.Error)
+
+			// If the errors are not mutliErrs, wrap them in multiErrs:
+			if !isFirstMulti {
+				errs1 = &multierror.Error{Errors: []error{firstReport.Errors}}
+			}
+			if !isSecondMulti {
+				errs2 = &multierror.Error{Errors: []error{secondReport.Errors}}
+			}
+
+			allErrsMap := make(map[string]error)
+			for _, err := range errs1.Errors {
+				allErrsMap[err.Error()] = err
+			}
+			for _, err := range errs2.Errors {
+				if _, found := allErrsMap[err.Error()]; !found {
+					allErrsMap[err.Error()] = err
+					errs1.Errors = append(errs1.Errors, err)
+				}
+			}
+			firstReport.Errors = errs1
+
+			e[k] = firstReport
+		} else {
+			// Resource in 2nd report is not yet in 1st report
+			e[k] = v
+		}
 	}
 }
 
