@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	rep "github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -81,6 +82,103 @@ var _ = Describe("Reporter", func() {
 
 		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	Context("merge functionality", func() {
+
+		getResources := func() (resources.Resource, resources.Resource, resources.Resource) {
+			r1, err := mockResourceClient.Write(v1.NewMockResource("test-ns", "testres1"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			r2, err := mockResourceClient.Write(v1.NewMockResource("test-ns", "testres2"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			r3, err := mockResourceClient.Write(v1.NewMockResource("test-ns", "testres3"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(r1).NotTo(BeNil())
+			Expect(r2).NotTo(BeNil())
+			Expect(r3).NotTo(BeNil())
+			return r1, r2, r3
+		}
+
+		It("should handle a basic merge - no overlapping resources", func() {
+			r1, r2, _ := getResources()
+			reports1 := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("r1err1"), Warnings: []string{"r1warn1"}},
+			}
+			reports2 := rep.ResourceReports{
+				r2.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("r2err1"), Warnings: []string{"r2warn1"}},
+			}
+
+			reports1.Merge(reports2)
+
+			expectedReports := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("r1err1"), Warnings: []string{"r1warn1"}},
+				r2.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("r2err1"), Warnings: []string{"r2warn1"}},
+			}
+
+			Expect(expectedReports).To(Equal(reports1))
+		})
+
+		It("should merge a resource with no error report with one containing an error report", func() {
+			r1, _, _ := getResources()
+			reports1 := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("r1err1")},
+			}
+			reports2 := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{},
+			}
+
+			reports1.Merge(reports2)
+
+			expectedReports := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("r1err1")},
+			}
+
+			Expect(expectedReports).To(Equal(reports1))
+		})
+
+		It("should merge two reports with the same error on the same resource", func() {
+			r1, r2, r3 := getResources()
+			reports1 := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1")}}, Warnings: []string{"r1warn1"}},
+				r2.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r2err1")}}},
+				r3.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r3err1")}}},
+			}
+			reports2 := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1")}}, Warnings: []string{"r1warn1"}},
+			}
+
+			reports1.Merge(reports2)
+
+			expectedReports := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1")}}, Warnings: []string{"r1warn1"}},
+				r2.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r2err1")}}},
+				r3.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r3err1")}}},
+			}
+
+			Expect(expectedReports).To(Equal(reports1))
+		})
+
+		It("should merge two reports with different errors on the same resource", func() {
+			r1, r2, r3 := getResources()
+			reports1 := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1")}}, Warnings: []string{"r1warn1"}},
+				r2.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r2err1")}}},
+				r3.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r3err1")}}},
+			}
+			reports2 := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err2")}}, Warnings: []string{"r1warn2"}},
+			}
+
+			reports1.Merge(reports2)
+
+			expectedReports := rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1"), fmt.Errorf("r1err2")}}, Warnings: []string{"r1warn1", "r1warn2"}},
+				r2.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r2err1")}}},
+				r3.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r3err1")}}},
+			}
+
+			Expect(expectedReports).To(Equal(reports1))
+		})
 	})
 
 	Context("completely mocked resource client", func() {
