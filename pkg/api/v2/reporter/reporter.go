@@ -60,27 +60,35 @@ func (e ResourceReports) Merge(resErrs ResourceReports) {
 				continue
 			} else if secondReport.Errors == nil {
 				// Only 1st has errs
+				e[k] = firstReport
 				continue
 			}
 
 			// Both first and second have errors for the same resource:
-			if errs1, isMulti := firstReport.Errors.(*multierror.Error); isMulti {
-				if errs2, isMulti := secondReport.Errors.(*multierror.Error); isMulti {
-					// Any errors which are identical won't be duplicated,
-					// Any errors which are unique will be added to the final list
-					allErrsMap := make(map[string]error)
-					for _, err := range errs1.Errors {
-						allErrsMap[err.Error()] = err
-					}
-					for _, err := range errs2.Errors {
-						if _, found := allErrsMap[err.Error()]; !found {
-							allErrsMap[err.Error()] = err
-							errs1.Errors = append(errs1.Errors, err)
-						}
-					}
-				}
-				firstReport.Errors = errs1
+			// Any errors which are identical won't be duplicated,
+			// Any errors which are unique will be added to the final list
+			errs1, isFirstMulti := firstReport.Errors.(*multierror.Error)
+			errs2, isSecondMulti := secondReport.Errors.(*multierror.Error)
+
+			// If the errors are not mutliErrs, wrap them in multiErrs:
+			if !isFirstMulti {
+				errs1 = &multierror.Error{Errors: []error{firstReport.Errors}}
 			}
+			if !isSecondMulti {
+				errs2 = &multierror.Error{Errors: []error{secondReport.Errors}}
+			}
+
+			allErrsMap := make(map[string]error)
+			for _, err := range errs1.Errors {
+				allErrsMap[err.Error()] = err
+			}
+			for _, err := range errs2.Errors {
+				if _, found := allErrsMap[err.Error()]; !found {
+					allErrsMap[err.Error()] = err
+					errs1.Errors = append(errs1.Errors, err)
+				}
+			}
+			firstReport.Errors = errs1
 
 			e[k] = firstReport
 		} else {
