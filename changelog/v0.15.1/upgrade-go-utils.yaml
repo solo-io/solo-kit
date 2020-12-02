@@ -1,0 +1,3 @@
+changelog:
+  - type: UPGRADE
+    description: Upgrade go-utils to v0.20.0 and use k8s-utils.
