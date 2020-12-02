@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
+	kubehelpers "github.com/solo-io/k8s-utils/testutils/kube"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -14,7 +14,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"

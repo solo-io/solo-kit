@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/solo-io/go-utils/kubeutils"
-	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	kubehelpers "github.com/solo-io/k8s-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

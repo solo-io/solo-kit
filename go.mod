@@ -16,7 +16,7 @@ require (
 	github.com/go-test/deep v1.0.2 // indirect
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/mock v1.3.1
+	github.com/golang/mock v1.4.3
 	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
@@ -45,18 +45,19 @@ require (
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
-	github.com/solo-io/go-utils v0.17.0
+	github.com/solo-io/go-utils v0.20.0
+	github.com/solo-io/k8s-utils v0.0.1
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/spf13/afero v1.3.4 // indirect
-	go.opencensus.io v0.22.1
+	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/tools v0.0.0-20200811153730-74512f09e4b0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6
-	google.golang.org/grpc v1.27.0
+	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver v0.18.6
@@ -79,4 +80,5 @@ replace (
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
+	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
 )

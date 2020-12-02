@@ -17,7 +17,7 @@ import (
 
 	"context"
 
-	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 

@@ -8,7 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	v12 "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
