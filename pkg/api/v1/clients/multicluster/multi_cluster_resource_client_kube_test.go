@@ -8,8 +8,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/kubeutils"
-	kubehelpers "github.com/solo-io/go-utils/testutils/kube"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	kubehelpers "github.com/solo-io/k8s-utils/testutils/kube"
 	skapi "github.com/solo-io/solo-kit/api/multicluster/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"

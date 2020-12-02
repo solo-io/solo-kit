@@ -3,8 +3,8 @@ package testutils
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/testutils/clusterlock"
-	"github.com/solo-io/go-utils/testutils/kube"
+	"github.com/solo-io/k8s-utils/testutils/clusterlock"
+	"github.com/solo-io/k8s-utils/testutils/kube"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
