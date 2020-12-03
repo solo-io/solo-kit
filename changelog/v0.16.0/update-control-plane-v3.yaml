@@ -1,7 +1,0 @@
-changelog:
-- type: BREAKING_CHANGE
-  description: >
-    Update solo-kit go-control-plane to use envoy V3 Discovery API. This will cause the control-plane to stop functioning
-    with the old V2 API.
-  issueLink: https://github.com/solo-io/gloo/issues/2815
-  resolvesIssue: false
