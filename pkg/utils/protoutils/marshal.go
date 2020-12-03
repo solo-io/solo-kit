@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -138,18 +137,6 @@ func UnmarshalMapToProto(m map[string]interface{}, into proto.Message) error {
 		return err
 	}
 	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
-}
-
-func UnmarshalStruct(structuredData *structpb.Struct, into interface{}) error {
-	if structuredData == nil {
-		return eris.New("cannot unmarshal nil proto struct")
-	}
-	strData, err := jsonpbMarshaler.MarshalToString(structuredData)
-	if err != nil {
-		return err
-	}
-	data := []byte(strData)
-	return json.Unmarshal(data, into)
 }
 
 // ilackarms: help come up with a better name for this please
