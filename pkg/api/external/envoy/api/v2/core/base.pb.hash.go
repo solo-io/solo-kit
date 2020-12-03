@@ -34,7 +34,7 @@ func (m *Locality) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.Locality")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.Locality")); err != nil {
 		return 0, err
 	}
 
@@ -62,7 +62,7 @@ func (m *Node) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.Node")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.Node")); err != nil {
 		return 0, err
 	}
 
@@ -118,7 +118,7 @@ func (m *Metadata) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.Metadata")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.Metadata")); err != nil {
 		return 0, err
 	}
 
@@ -167,7 +167,7 @@ func (m *RuntimeUInt32) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.RuntimeUInt32")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.RuntimeUInt32")); err != nil {
 		return 0, err
 	}
 
@@ -192,7 +192,7 @@ func (m *RuntimeFeatureFlag) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.RuntimeFeatureFlag")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.RuntimeFeatureFlag")); err != nil {
 		return 0, err
 	}
 
@@ -226,7 +226,7 @@ func (m *HeaderValue) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderValue")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderValue")); err != nil {
 		return 0, err
 	}
 
@@ -250,7 +250,7 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderValueOption")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderValueOption")); err != nil {
 		return 0, err
 	}
 
@@ -316,7 +316,7 @@ func (m *HeaderMap) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderMap")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.HeaderMap")); err != nil {
 		return 0, err
 	}
 
@@ -350,7 +350,7 @@ func (m *DataSource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.DataSource")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.DataSource")); err != nil {
 		return 0, err
 	}
 
@@ -388,7 +388,7 @@ func (m *RemoteDataSource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.RemoteDataSource")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.RemoteDataSource")); err != nil {
 		return 0, err
 	}
 
@@ -422,7 +422,7 @@ func (m *AsyncDataSource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.AsyncDataSource")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.AsyncDataSource")); err != nil {
 		return 0, err
 	}
 
@@ -474,7 +474,7 @@ func (m *TransportSocket) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.TransportSocket")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.TransportSocket")); err != nil {
 		return 0, err
 	}
 
@@ -530,7 +530,7 @@ func (m *SocketOption) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.SocketOption")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.SocketOption")); err != nil {
 		return 0, err
 	}
 
@@ -582,7 +582,7 @@ func (m *RuntimeFractionalPercent) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.RuntimeFractionalPercent")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.RuntimeFractionalPercent")); err != nil {
 		return 0, err
 	}
 
@@ -616,7 +616,7 @@ func (m *ControlPlane) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.ControlPlane")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core.ControlPlane")); err != nil {
 		return 0, err
 	}
 

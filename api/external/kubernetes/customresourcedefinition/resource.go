@@ -20,11 +20,11 @@ func (p *CustomResourceDefinition) Clone() *CustomResourceDefinition {
 	return &newP
 }
 
-func (p *CustomResourceDefinition) GetMetadata() core.Metadata {
+func (p *CustomResourceDefinition) GetMetadata() *core.Metadata {
 	return kubeutils.FromKubeMeta(p.ObjectMeta)
 }
 
-func (p *CustomResourceDefinition) SetMetadata(meta core.Metadata) {
+func (p *CustomResourceDefinition) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 }
 

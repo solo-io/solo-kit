@@ -7,18 +7,18 @@ import (
 )
 
 type MockCustomType struct {
-	meta core.Metadata
+	meta *core.Metadata
 }
 
 func (m *MockCustomType) Clone() *MockCustomType {
 	return &MockCustomType{meta: m.meta}
 }
 
-func (m *MockCustomType) GetMetadata() core.Metadata {
+func (m *MockCustomType) GetMetadata() *core.Metadata {
 	return m.meta
 }
 
-func (m *MockCustomType) SetMetadata(meta core.Metadata) {
+func (m *MockCustomType) SetMetadata(meta *core.Metadata) {
 	m.meta = meta
 }
 

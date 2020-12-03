@@ -128,9 +128,9 @@ func (e ResourceReports) AddWarning(res resources.InputResource, warning string)
 	e[res] = rpt
 }
 
-func (e ResourceReports) Find(kind string, ref core.ResourceRef) (resources.InputResource, Report) {
+func (e ResourceReports) Find(kind string, ref *core.ResourceRef) (resources.InputResource, Report) {
 	for res, rpt := range e {
-		if resources.Kind(res) == kind && ref == res.GetMetadata().Ref() {
+		if resources.Kind(res) == kind && res.GetMetadata().Ref().Equal(ref) {
 			return res, rpt
 		}
 	}
@@ -157,7 +157,11 @@ func (e ResourceReports) ValidateStrict() error {
 	for res, rpt := range e {
 		if len(rpt.Warnings) > 0 {
 			if errs == nil {
-				errs = errors.Errorf("invalid resource %v.%v", res.GetMetadata().Namespace, res.GetMetadata().Name)
+				errs = errors.Errorf(
+					"invalid resource %v.%v",
+					res.GetMetadata().GetNamespace(),
+					res.GetMetadata().GetName(),
+				)
 			}
 			errs = multierror.Append(errs, errors.Errorf("WARN: \n  %v", rpt.Warnings))
 		}
@@ -177,7 +181,7 @@ type Reporter interface {
 }
 type StatusReporter interface {
 	Reporter
-	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) core.Status
+	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status
 }
 
 type reporter struct {
@@ -294,7 +298,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
-func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) core.Status {
+func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
 
 	var warningReason string
 	if len(report.Warnings) > 0 {
@@ -306,7 +310,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		if warningReason != "" {
 			errorReason += "\n" + warningReason
 		}
-		return core.Status{
+		return &core.Status{
 			State:               core.Status_Rejected,
 			Reason:              errorReason,
 			ReportedBy:          r.ref,
@@ -315,7 +319,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 	}
 
 	if warningReason != "" {
-		return core.Status{
+		return &core.Status{
 			State:               core.Status_Warning,
 			Reason:              warningReason,
 			ReportedBy:          r.ref,
@@ -323,7 +327,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		}
 	}
 
-	return core.Status{
+	return &core.Status{
 		State:               core.Status_Accepted,
 		ReportedBy:          r.ref,
 		SubresourceStatuses: subresourceStatuses,

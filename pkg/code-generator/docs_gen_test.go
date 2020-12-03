@@ -101,7 +101,6 @@ var _ = Describe("DocsGen", func() {
 				External: map[string][]string{
 					sk_anyvendor.ExtProtoMatcher.Package:           sk_anyvendor.ExtProtoMatcher.Patterns,
 					sk_anyvendor.EnvoyValidateProtoMatcher.Package: sk_anyvendor.EnvoyValidateProtoMatcher.Patterns,
-					sk_anyvendor.GogoProtoMatcher.Package:          sk_anyvendor.GogoProtoMatcher.Patterns,
 				},
 			},
 		}
@@ -179,18 +178,17 @@ syntax = "proto3";
 package testing.solo.io;
 option go_package = "{{.}}";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 message GenerateDocsForMe {
     option (core.solo.io.resource).short_name = "docs";
     option (core.solo.io.resource).plural_name = "generatedocsforme";
-    core.solo.io.Metadata metadata = 1 [(gogoproto.nullable) = false];
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 1;
+    core.solo.io.Status status = 6;
 
     // Some field
     string basic_field = 2;
@@ -208,19 +206,18 @@ syntax = "proto3";
 package testing.solo.io;
 option go_package = "{{.}}";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 message DoNotGenerateDocsForMe {
     option (core.solo.io.resource).short_name = "nodocs";
     option (core.solo.io.resource).plural_name = "donotgeneratedocsforme";
     option (core.solo.io.resource).skip_docs_gen = true;
-    core.solo.io.Metadata metadata = 1 [(gogoproto.nullable) = false];
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 1;
+    core.solo.io.Status status = 6;
 
     // Some field
     string basic_field = 2;

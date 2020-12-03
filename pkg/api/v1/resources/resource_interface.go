@@ -9,15 +9,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 type Resource interface {
-	GetMetadata() core.Metadata
-	SetMetadata(meta core.Metadata)
+	GetMetadata() *core.Metadata
+	SetMetadata(meta *core.Metadata)
 	Equal(that interface{}) bool
 }
 
@@ -44,8 +44,8 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 
 type InputResource interface {
 	Resource
-	GetStatus() core.Status
-	SetStatus(status core.Status)
+	GetStatus() *core.Status
+	SetStatus(status *core.Status)
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control
@@ -253,23 +253,23 @@ func (list ResourceList) AsInputResourceList() InputResourceList {
 	return inputs
 }
 
-func MetadataCompare(metai, metaj core.Metadata) int {
-	if metai.Cluster != metaj.Cluster {
-		if metai.Cluster < metaj.Cluster {
+func MetadataCompare(metai, metaj *core.Metadata) int {
+	if metai.GetCluster() != metaj.GetCluster() {
+		if metai.GetCluster() < metaj.GetCluster() {
 			return -1
 		}
 		return 1
 	}
 
-	if metai.Namespace != metaj.Namespace {
-		if metai.Namespace < metaj.Namespace {
+	if metai.GetNamespace() != metaj.GetNamespace() {
+		if metai.GetNamespace() < metaj.GetNamespace() {
 			return -1
 		}
 		return 1
 	}
 
-	if metai.Name != metaj.Name {
-		if metai.Name < metaj.Name {
+	if metai.GetName() != metaj.GetName() {
+		if metai.GetName() < metaj.GetName() {
 			return -1
 		}
 		return 1
@@ -435,14 +435,14 @@ func Kind(resource Resource) string {
 
 func UpdateMetadata(resource Resource, updateFunc func(meta *core.Metadata)) {
 	meta := resource.GetMetadata()
-	updateFunc(&meta)
+	updateFunc(meta)
 	resource.SetMetadata(meta)
 }
 
 func UpdateListMetadata(resources ResourceList, updateFunc func(meta *core.Metadata)) {
 	for i, resource := range resources {
 		meta := resource.GetMetadata()
-		updateFunc(&meta)
+		updateFunc(meta)
 		resource.SetMetadata(meta)
 		resources[i] = resource
 	}
@@ -450,7 +450,7 @@ func UpdateListMetadata(resources ResourceList, updateFunc func(meta *core.Metad
 
 func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) error) error {
 	status := resource.GetStatus()
-	err := updateFunc(&status)
+	err := updateFunc(status)
 	if err != nil {
 		return err
 	}

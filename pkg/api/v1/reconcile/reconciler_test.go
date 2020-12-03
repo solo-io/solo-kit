@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/solo-kit/test/matchers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
@@ -43,7 +44,7 @@ var _ = Describe("Reconciler", func() {
 			resources.UpdateMetadata(mockList[i], func(meta *core.Metadata) {
 				meta.ResourceVersion = ""
 			})
-			Expect(mockList[i]).To(Equal(desiredMockResources[i]))
+			Expect(mockList[i]).To(matchers.MatchProto(desiredMockResources[i].(resources.ProtoResource)))
 		}
 
 		// updates
@@ -63,7 +64,7 @@ var _ = Describe("Reconciler", func() {
 			resources.UpdateMetadata(desiredMockResources[i], func(meta *core.Metadata) {
 				meta.ResourceVersion = ""
 			})
-			Expect(mockList[i]).To(Equal(desiredMockResources[i]))
+			Expect(mockList[i]).To(matchers.MatchProto(desiredMockResources[i].(resources.ProtoResource)))
 		}
 
 		// updates with transition function
@@ -87,7 +88,7 @@ var _ = Describe("Reconciler", func() {
 			resources.UpdateMetadata(desiredMockResources[i], func(meta *core.Metadata) {
 				meta.ResourceVersion = ""
 			})
-			Expect(mockList[i]).To(Equal(desiredMockResources[i]))
+			Expect(mockList[i]).To(matchers.MatchProto(desiredMockResources[i].(resources.ProtoResource)))
 			Expect(mockList[i].(*v1.MockResource).Data).To(ContainSubstring("some_"))
 		}
 

@@ -97,7 +97,7 @@ func DeploymentClientTest(namespace string, client DeploymentClient, name1, name
 	name = name2
 	input = &Deployment{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -148,7 +148,7 @@ func DeploymentClientTest(namespace string, client DeploymentClient, name1, name
 		name = name3
 		input = &Deployment{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

@@ -10,7 +10,7 @@ import (
 	"text/template"
 
 	"github.com/iancoleman/strcase"
-	"github.com/ilackarms/protokit"
+	"github.com/pseudomuto/protokit"
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	md "github.com/solo-io/solo-kit/pkg/code-generator/docgen/templates/markdown"

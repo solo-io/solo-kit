@@ -2,9 +2,7 @@ syntax = "proto3";
 package apiserver.api.v1;
 option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/apiserver";
 
-import "gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
-option (gogoproto.equal_all) = true;
 
 /*
 GRPC stuff

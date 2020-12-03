@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
@@ -249,16 +249,7 @@ func (c *collector) findImportRelativeToRoot(absoluteRoot, importedProtoFile str
 
 var defaultGogoArgs = []string{
 	"plugins=grpc",
-	"Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
-	"Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types",
-	"Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types",
-	"Mgoogle/protobuf/empty.proto=github.com/gogo/protobuf/types",
-	"Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types",
-	"Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types",
-	"Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types",
-	"Mgoogle/rpc/status.proto=github.com/gogo/googleapis/google/rpc",
-	"Menvoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
-	"gogoproto/gogo.proto=github.com/gogo/protobuf/gogoproto",
+	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
 }
 
 func (c *collector) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
@@ -271,7 +262,7 @@ func (c *collector) writeDescriptors(protoFile, toFile string, imports []string,
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--gogo_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
+			"--go_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
 			"--ext_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
 		)
 

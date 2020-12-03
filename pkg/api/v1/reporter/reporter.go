@@ -121,16 +121,16 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 	return merr.ErrorOrNil()
 }
 
-func statusFromError(ref string, err error, subresourceStatuses map[string]*core.Status) core.Status {
+func statusFromError(ref string, err error, subresourceStatuses map[string]*core.Status) *core.Status {
 	if err != nil {
-		return core.Status{
+		return &core.Status{
 			State:               core.Status_Rejected,
 			Reason:              err.Error(),
 			ReportedBy:          ref,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
-	return core.Status{
+	return &core.Status{
 		State:               core.Status_Accepted,
 		ReportedBy:          ref,
 		SubresourceStatuses: subresourceStatuses,

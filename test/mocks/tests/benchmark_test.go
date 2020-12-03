@@ -20,7 +20,7 @@ var _ = Describe("hashing", func() {
 		for i := 0; i < 10000; i++ {
 			titleInt := strconv.Itoa(i)
 			allResources = append(allResources, &v1.MockResource{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:            titleInt,
 					Namespace:       titleInt,
 					Cluster:         titleInt,

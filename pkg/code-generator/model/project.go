@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	plugin_go "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
-	"github.com/ilackarms/protokit"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	plugin_go "github.com/golang/protobuf/protoc-gen-go/plugin"
+	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 

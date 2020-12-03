@@ -20,7 +20,7 @@ import (
 
 func NewJob(namespace, name string) *Job {
 	job := &Job{}
-	job.Job.SetMetadata(core.Metadata{
+	job.Job.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

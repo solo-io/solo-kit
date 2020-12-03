@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/apiserver"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -70,7 +70,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 		return nil, err
 	}
 
-	if err := types.UnmarshalAny(resp.Resource, protoResource); err != nil {
+	if err := ptypes.UnmarshalAny(resp.Resource, protoResource); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 	}
 	return resource, nil
@@ -87,7 +87,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	if err != nil {
 		return nil, err
 	}
-	data, err := types.MarshalAny(protoResource)
+	data, err := ptypes.MarshalAny(protoResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal resource")
 	}
@@ -109,7 +109,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, err
 	}
 
-	if err := types.UnmarshalAny(resp.Resource, protoResource); err != nil {
+	if err := ptypes.UnmarshalAny(resp.Resource, protoResource); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 	}
 	return written, nil
@@ -151,7 +151,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 		if err != nil {
 			return nil, err
 		}
-		if err := types.UnmarshalAny(resourceData, protoResource); err != nil {
+		if err := ptypes.UnmarshalAny(resourceData, protoResource); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 		}
 		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
@@ -216,7 +216,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 						errs <- err
 						continue
 					}
-					if err := types.UnmarshalAny(resourceData, protoResource); err != nil {
+					if err := ptypes.UnmarshalAny(resourceData, protoResource); err != nil {
 						errs <- errors.Wrapf(err, "failed to unmarshal resource %v", rc.Kind())
 						continue
 					}

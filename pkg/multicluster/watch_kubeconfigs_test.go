@@ -48,7 +48,7 @@ var _ = Describe("WatchKubeconfigs", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kubeCfgSecret1, err := secretconverter.KubeConfigToSecret(&v1.KubeConfig{
 			KubeConfig: v12.KubeConfig{
-				Metadata: core.Metadata{Namespace: namespace, Name: "kubeconfig1"},
+				Metadata: &core.Metadata{Namespace: namespace, Name: "kubeconfig1"},
 				Config:   *kubeConfig,
 				Cluster:  "remotecluster1",
 			},
@@ -61,7 +61,7 @@ var _ = Describe("WatchKubeconfigs", func() {
 
 		kubeCfgSecret2, err := secretconverter.KubeConfigToSecret(&v1.KubeConfig{
 			KubeConfig: v12.KubeConfig{
-				Metadata: core.Metadata{Namespace: namespace, Name: "kubeconfig2"},
+				Metadata: &core.Metadata{Namespace: namespace, Name: "kubeconfig2"},
 				Config:   *kubeConfig,
 				Cluster:  "remotecluster2",
 			},

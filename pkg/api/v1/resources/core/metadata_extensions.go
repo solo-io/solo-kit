@@ -1,19 +1,19 @@
 package core
 
-func (m Metadata) Less(m2 Metadata) bool {
-	if m.Namespace == m2.Namespace {
-		return m.Name < m2.Name
+func (m *Metadata) Less(m2 *Metadata) bool {
+	if m.GetNamespace() == m2.GetNamespace() {
+		return m.GetName() < m2.GetName()
 	}
-	return m.Namespace < m2.Namespace
+	return m.GetNamespace() < m2.GetNamespace()
 }
 
-func (m Metadata) Ref() ResourceRef {
-	return ResourceRef{
-		Namespace: m.Namespace,
-		Name:      m.Name,
+func (m *Metadata) Ref() *ResourceRef {
+	return &ResourceRef{
+		Namespace: m.GetNamespace(),
+		Name:      m.GetName(),
 	}
 }
 
-func (m Metadata) Match(ref ResourceRef) bool {
-	return m.Namespace == ref.Namespace && m.Name == ref.Name
+func (m *Metadata) Match(ref *ResourceRef) bool {
+	return m.GetNamespace() == ref.GetNamespace() && m.GetName() == ref.GetName()
 }

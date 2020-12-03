@@ -24,14 +24,14 @@ func Errors(msgs []string) error {
 }
 
 type existErr struct {
-	meta core.Metadata
+	meta *core.Metadata
 }
 
 func (err *existErr) Error() string {
 	return fmt.Sprintf("%v exists", err.meta)
 }
 
-func NewExistErr(meta core.Metadata) *existErr {
+func NewExistErr(meta *core.Metadata) *existErr {
 	return &existErr{meta: meta}
 }
 

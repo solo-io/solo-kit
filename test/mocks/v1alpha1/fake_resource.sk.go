@@ -16,14 +16,14 @@ import (
 
 func NewFakeResource(namespace, name string) *FakeResource {
 	fakeresource := &FakeResource{}
-	fakeresource.SetMetadata(core.Metadata{
+	fakeresource.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return fakeresource
 }
 
-func (r *FakeResource) SetMetadata(meta core.Metadata) {
+func (r *FakeResource) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 

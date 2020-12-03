@@ -98,7 +98,7 @@ func MockResourceClientTest(namespace string, client MockResourceClient, name1, 
 	name = name2
 	input = &MockResource{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -149,7 +149,7 @@ func MockResourceClientTest(namespace string, client MockResourceClient, name1, 
 		name = name3
 		input = &MockResource{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

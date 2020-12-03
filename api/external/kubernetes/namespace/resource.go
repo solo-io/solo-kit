@@ -17,11 +17,11 @@ func (p *KubeNamespace) Clone() *KubeNamespace {
 	return &newP
 }
 
-func (p *KubeNamespace) GetMetadata() core.Metadata {
+func (p *KubeNamespace) GetMetadata() *core.Metadata {
 	return kubeutils.FromKubeMeta(p.ObjectMeta)
 }
 
-func (p *KubeNamespace) SetMetadata(meta core.Metadata) {
+func (p *KubeNamespace) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 }
 

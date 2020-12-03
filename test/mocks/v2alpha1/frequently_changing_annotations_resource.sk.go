@@ -16,14 +16,14 @@ import (
 
 func NewFrequentlyChangingAnnotationsResource(namespace, name string) *FrequentlyChangingAnnotationsResource {
 	frequentlychangingannotationsresource := &FrequentlyChangingAnnotationsResource{}
-	frequentlychangingannotationsresource.SetMetadata(core.Metadata{
+	frequentlychangingannotationsresource.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return frequentlychangingannotationsresource
 }
 
-func (r *FrequentlyChangingAnnotationsResource) SetMetadata(meta core.Metadata) {
+func (r *FrequentlyChangingAnnotationsResource) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 

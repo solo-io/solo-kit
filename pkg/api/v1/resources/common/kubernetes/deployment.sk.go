@@ -20,7 +20,7 @@ import (
 
 func NewDeployment(namespace, name string) *Deployment {
 	deployment := &Deployment{}
-	deployment.Deployment.SetMetadata(core.Metadata{
+	deployment.Deployment.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

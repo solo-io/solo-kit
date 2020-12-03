@@ -7,19 +7,15 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 	"github.com/rotisserie/eris"
-
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-
 	"sigs.k8s.io/yaml"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 )
 
 var jsonpbMarshaler = &jsonpb.Marshaler{OrigName: false}
@@ -182,6 +178,9 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	if withStatus, ok := resource.(resources.InputResource); ok {
 
 		updateFunc := func(status *core.Status) error {
+			if status == nil {
+				return nil
+			}
 			typedStatus := core.Status{}
 			err := UnmarshalMapToProto(resourceCrd.Status, &typedStatus)
 			if err != nil {

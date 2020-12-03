@@ -2,11 +2,9 @@ syntax = "proto3";
 package core.solo.io;
 option go_package = "github.com/solo-io/solo-kit/pkg/api/v1/resources/core";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
-
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 import "google/protobuf/wrappers.proto";
 
@@ -33,7 +31,7 @@ message Metadata {
 
     // An opaque value that represents the internal version of this object that can
     // be used by clients to determine when objects have changed.
-    string resource_version = 4 [(gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
+    string resource_version = 4 [(extproto.skip_hashing) = true];
 
     // Map of string keys and values that can be used to organize and categorize
     // (scope and select) objects. Some resources contain `selectors` which

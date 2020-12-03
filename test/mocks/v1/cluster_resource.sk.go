@@ -16,18 +16,18 @@ import (
 
 func NewClusterResource(namespace, name string) *ClusterResource {
 	clusterresource := &ClusterResource{}
-	clusterresource.SetMetadata(core.Metadata{
+	clusterresource.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return clusterresource
 }
 
-func (r *ClusterResource) SetMetadata(meta core.Metadata) {
+func (r *ClusterResource) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *ClusterResource) SetStatus(status core.Status) {
+func (r *ClusterResource) SetStatus(status *core.Status) {
 	r.Status = status
 }
 

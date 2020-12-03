@@ -39,12 +39,10 @@ update-deps: mod-download
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
 	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
-	GOBIN=$(DEPSGOBIN) go install github.com/gogo/protobuf/protoc-gen-gogo
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
 	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
-	GOBIN=$(DEPSGOBIN) go install github.com/gogo/protobuf/gogoproto
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
 	# clone solo's fork of code-generator, required for tests & kube type gen

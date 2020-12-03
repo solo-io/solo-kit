@@ -73,27 +73,30 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	if err := resources.Validate(resource); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}
-	meta := resource.GetMetadata()
 
-	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{
+	original, err := rc.Read(resource.GetMetadata().GetNamespace(), resource.GetMetadata().GetName(), clients.ReadOpts{
 		Ctx: opts.Ctx,
 	})
 	if original != nil && err == nil {
 		if !opts.OverwriteExisting {
-			return nil, errors.NewExistErr(meta)
+			return nil, errors.NewExistErr(resource.GetMetadata())
 		}
-		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
-			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
+		if resource.GetMetadata().GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
+			return nil, errors.NewResourceVersionErr(
+				resource.GetMetadata().GetNamespace(),
+				resource.GetMetadata().GetName(),
+				resource.GetMetadata().GetResourceVersion(),
+				original.GetMetadata().GetResourceVersion(),
+			)
 		}
 	}
 
 	// mutate and return clone
 	clone := resources.Clone(resource)
 	// initialize or increment resource version
-	meta.ResourceVersion = newOrIncrementResourceVer(meta.ResourceVersion)
-	clone.SetMetadata(meta)
+	clone.GetMetadata().ResourceVersion = newOrIncrementResourceVer(clone.GetMetadata().GetResourceVersion())
 
-	path := rc.filename(meta.Namespace, meta.Name)
+	path := rc.filename(clone.GetMetadata().GetNamespace(), clone.GetMetadata().GetName())
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil && !os.IsExist(err) {
 		return nil, errors.Wrapf(err, "creating directory")
 	}
@@ -173,7 +176,7 @@ func (rc *ResourceClient) listSingleNamespace(namespace string, opts clients.Lis
 		if err := fileutils.ReadFileInto(path, resource); err != nil {
 			return nil, errors.Wrapf(err, "reading file into %v", rc.Kind())
 		}
-		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
+		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().GetLabels())) {
 			resourceList = append(resourceList, resource)
 		}
 	}

@@ -16,21 +16,21 @@ go_package Comments a
 */
 option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
-import "envoy/api/v2/discovery.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
 
 /*
 go_package Comments
 go_package Comments a
 */
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 
 /*
@@ -46,10 +46,10 @@ message MockResource {
     option (core.solo.io.resource).short_name = "mk";
     option (core.solo.io.resource).plural_name = "mocks";
 
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (extproto.skip_hashing) = true];
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+    core.solo.io.Metadata metadata = 7;
 
-    string data = 1 [json_name="data.json", (gogoproto.jsontag) = "data.json"];
+    string data = 1 [json_name="data.json"];
     string some_dumb_field = 100 [(extproto.skip_hashing) = true];
 
     oneof test_oneof_fields {
@@ -64,7 +64,7 @@ message FakeResource {
     option (core.solo.io.resource).plural_name = "fakes";
 
     uint32 count = 1;
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 7;
 }
 
 /*

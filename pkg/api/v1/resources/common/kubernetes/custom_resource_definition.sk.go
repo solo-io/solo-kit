@@ -20,7 +20,7 @@ import (
 
 func NewCustomResourceDefinition(namespace, name string) *CustomResourceDefinition {
 	customresourcedefinition := &CustomResourceDefinition{}
-	customresourcedefinition.CustomResourceDefinition.SetMetadata(core.Metadata{
+	customresourcedefinition.CustomResourceDefinition.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

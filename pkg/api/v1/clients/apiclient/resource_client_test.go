@@ -2,30 +2,25 @@ package apiclient_test
 
 import (
 	"context"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/test/helpers"
-	"google.golang.org/grpc"
-
 	"fmt"
 	"net"
+	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"time"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/apiserver"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/apiclient"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/test/helpers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
-	"go.uber.org/zap"
-
-	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/apiclient"
 	"github.com/solo-io/solo-kit/test/tests/generic"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 var _ = Describe("Apiclient", func() {

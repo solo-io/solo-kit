@@ -20,7 +20,7 @@ import (
 
 func NewPod(namespace, name string) *Pod {
 	pod := &Pod{}
-	pod.Pod.SetMetadata(core.Metadata{
+	pod.Pod.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

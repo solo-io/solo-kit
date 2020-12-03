@@ -97,7 +97,7 @@ func MockCustomTypeClientTest(namespace string, client MockCustomTypeClient, nam
 	name = name2
 	input = &MockCustomType{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -148,7 +148,7 @@ func MockCustomTypeClientTest(namespace string, client MockCustomTypeClient, nam
 		name = name3
 		input = &MockCustomType{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

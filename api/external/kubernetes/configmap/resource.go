@@ -20,11 +20,11 @@ func (p *ConfigMap) Clone() *ConfigMap {
 	return &newP
 }
 
-func (p *ConfigMap) GetMetadata() core.Metadata {
+func (p *ConfigMap) GetMetadata() *core.Metadata {
 	return kubeutils.FromKubeMeta(p.ObjectMeta)
 }
 
-func (p *ConfigMap) SetMetadata(meta core.Metadata) {
+func (p *ConfigMap) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 }
 

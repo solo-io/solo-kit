@@ -97,7 +97,7 @@ func JobClientTest(namespace string, client JobClient, name1, name2, name3 strin
 	name = name2
 	input = &Job{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -148,7 +148,7 @@ func JobClientTest(namespace string, client JobClient, name1, name2, name3 strin
 		name = name3
 		input = &Job{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

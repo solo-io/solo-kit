@@ -98,7 +98,7 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 	name = name2
 	input = &FakeResource{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -149,7 +149,7 @@ func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, 
 		name = name3
 		input = &FakeResource{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

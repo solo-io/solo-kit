@@ -20,7 +20,7 @@ import (
 
 func NewKubeNamespace(namespace, name string) *KubeNamespace {
 	kubenamespace := &KubeNamespace{}
-	kubenamespace.KubeNamespace.SetMetadata(core.Metadata{
+	kubenamespace.KubeNamespace.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

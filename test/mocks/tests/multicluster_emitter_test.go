@@ -97,35 +97,35 @@ var _ = Describe("SimpleEmitter", func() {
 		}, time.Second*2).Should(Equal(&v1.TestingSnapshot{
 			Mocks: v1.MockResourceList{
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "a",
 						Namespace: "a",
 						Cluster:   "clustr1",
 					},
 				},
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "b",
 						Namespace: "a",
 						Cluster:   "clustr1",
 					},
 				},
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "a",
 						Namespace: "a",
 						Cluster:   "clustr2",
 					},
 				},
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "b",
 						Namespace: "a",
 						Cluster:   "clustr2",
 					},
 				},
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "just-me",
 						Namespace: "c",
 						Cluster:   "clustr2",
@@ -135,7 +135,7 @@ var _ = Describe("SimpleEmitter", func() {
 			Fakes: v1.FakeResourceList{
 				&v1.FakeResource{
 					Count: 0x00000000,
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "a",
 						Namespace: "a",
 						Cluster:   "clustr3",
@@ -143,7 +143,7 @@ var _ = Describe("SimpleEmitter", func() {
 				},
 				&v1.FakeResource{
 					Count: 0x00000000,
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "b",
 						Namespace: "a",
 						Cluster:   "clustr3",
@@ -178,35 +178,35 @@ var _ = Describe("SimpleEmitter", func() {
 		}, time.Second*4).Should(Equal(&v1.TestingSnapshot{
 			Mocks: v1.MockResourceList{
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "a",
 						Namespace: "a",
 						Cluster:   "clustr1",
 					},
 				},
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "b",
 						Namespace: "a",
 						Cluster:   "clustr1",
 					},
 				},
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "a",
 						Namespace: "a",
 						Cluster:   "clustr2",
 					},
 				},
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "b",
 						Namespace: "a",
 						Cluster:   "clustr2",
 					},
 				},
 				&v1.MockResource{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "just-me",
 						Namespace: "c",
 						Cluster:   "clustr2",
@@ -216,7 +216,7 @@ var _ = Describe("SimpleEmitter", func() {
 			Fakes: v1.FakeResourceList{
 				&v1.FakeResource{
 					Count: 0x00000000,
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "b",
 						Namespace: "a",
 						Cluster:   "clustr4",

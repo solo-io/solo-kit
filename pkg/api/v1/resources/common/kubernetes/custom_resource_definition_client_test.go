@@ -84,7 +84,7 @@ func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, n
 	name = name2
 	input = &CustomResourceDefinition{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name: name,
 	})
 
@@ -134,7 +134,7 @@ func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, n
 		name = name3
 		input = &CustomResourceDefinition{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name: name,
 		})
 

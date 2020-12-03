@@ -146,29 +146,36 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	if err := resources.Validate(resource); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}
-	meta := resource.GetMetadata()
 
-	key := rc.key(meta.Namespace, meta.Name)
+	key := rc.key(resource.GetMetadata().GetNamespace(), resource.GetMetadata().GetName())
 
-	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{})
+	original, err := rc.Read(
+		resource.GetMetadata().GetNamespace(),
+		resource.GetMetadata().GetName(),
+		clients.ReadOpts{},
+	)
 	if original != nil && err == nil {
 		if !opts.OverwriteExisting {
-			return nil, errors.NewExistErr(meta)
+			return nil, errors.NewExistErr(resource.GetMetadata())
 		}
-		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
-			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
+		if resource.GetMetadata().GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
+			return nil, errors.NewResourceVersionErr(
+				resource.GetMetadata().GetNamespace(),
+				resource.GetMetadata().GetName(),
+				resource.GetMetadata().GetResourceVersion(),
+				original.GetMetadata().GetResourceVersion(),
+			)
 		}
 	}
 
 	// mutate and return clone
-	resource = resources.Clone(resource)
+	newResource := resources.Clone(resource)
 	// initialize or increment resource version
-	meta.ResourceVersion = newOrIncrementResourceVer(meta.ResourceVersion)
-	resource.SetMetadata(meta)
+	newResource.GetMetadata().ResourceVersion = newOrIncrementResourceVer(resource.GetMetadata().GetResourceVersion())
 
-	rc.cache.Set(key, resource)
+	rc.cache.Set(key, newResource)
 
-	return resources.Clone(resource), nil
+	return resources.Clone(newResource), nil
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

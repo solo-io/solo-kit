@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/anyvendor/pkg/manager"
@@ -178,7 +178,7 @@ func Generate(opts GenerateOptions) error {
 		if info.IsDir() {
 			return nil
 		}
-		if !(strings.HasSuffix(pbgoFile, ".pb.go") || strings.HasSuffix(pbgoFile, ".pb.hash.go")) {
+		if !(strings.HasSuffix(pbgoFile, ".pb.go") || strings.HasSuffix(pbgoFile, ".pb.hash.go") || strings.HasSuffix(pbgoFile, ".pb.equal.go")) {
 			return nil
 		}
 
@@ -238,6 +238,9 @@ func (r *Runner) Run() error {
 
 	var customCompilePrefixes []string
 	for _, relativePath := range r.Opts.CustomCompileProtos {
+		if !strings.HasPrefix(relativePath, anyvendor.DefaultDepDir) {
+			relativePath = filepath.Join(anyvendor.DefaultDepDir, relativePath)
+		}
 		abs, err := filepath.Abs(relativePath)
 		if err != nil {
 			return err

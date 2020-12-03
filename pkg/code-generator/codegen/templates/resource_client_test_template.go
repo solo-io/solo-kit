@@ -158,7 +158,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 	name = name2
 	input = &{{ .Name }}{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 {{- if (not .ClusterScoped) }}
 		Namespace: namespace,
@@ -248,7 +248,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 		name = name3
 		input = &{{ .Name }}{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 {{- if (not .ClusterScoped) }}
 			Namespace: namespace,

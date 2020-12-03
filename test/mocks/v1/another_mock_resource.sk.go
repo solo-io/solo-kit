@@ -16,18 +16,18 @@ import (
 
 func NewAnotherMockResource(namespace, name string) *AnotherMockResource {
 	anothermockresource := &AnotherMockResource{}
-	anothermockresource.SetMetadata(core.Metadata{
+	anothermockresource.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return anothermockresource
 }
 
-func (r *AnotherMockResource) SetMetadata(meta core.Metadata) {
+func (r *AnotherMockResource) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *AnotherMockResource) SetStatus(status core.Status) {
+func (r *AnotherMockResource) SetStatus(status *core.Status) {
 	r.Status = status
 }
 

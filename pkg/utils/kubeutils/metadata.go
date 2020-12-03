@@ -1,15 +1,15 @@
 package kubeutils
 
 import (
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubetypes "k8s.io/apimachinery/pkg/types"
 )
 
-func FromKubeMeta(meta metav1.ObjectMeta) core.Metadata {
-	return core.Metadata{
+func FromKubeMeta(meta metav1.ObjectMeta) *core.Metadata {
+	return &core.Metadata{
 		Name:            meta.Name,
 		Namespace:       meta.Namespace,
 		ResourceVersion: meta.ResourceVersion,
@@ -20,13 +20,16 @@ func FromKubeMeta(meta metav1.ObjectMeta) core.Metadata {
 	}
 }
 
-func ToKubeMeta(meta core.Metadata) metav1.ObjectMeta {
+func ToKubeMeta(meta *core.Metadata) metav1.ObjectMeta {
 	skMeta := ToKubeMetaMaintainNamespace(meta)
 	skMeta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 	return skMeta
 }
 
-func ToKubeMetaMaintainNamespace(meta core.Metadata) metav1.ObjectMeta {
+func ToKubeMetaMaintainNamespace(meta *core.Metadata) metav1.ObjectMeta {
+	if meta == nil {
+		return metav1.ObjectMeta{}
+	}
 	return metav1.ObjectMeta{
 		Name:            meta.Name,
 		Namespace:       meta.Namespace,
@@ -49,12 +52,12 @@ func copyKubernetesOwnerReferences(references []metav1.OwnerReference) []*core.M
 			Uid:        string(ref.UID),
 		}
 		if ref.Controller != nil {
-			skRef.Controller = &types.BoolValue{
+			skRef.Controller = &wrappers.BoolValue{
 				Value: *ref.Controller,
 			}
 		}
 		if ref.BlockOwnerDeletion != nil {
-			skRef.BlockOwnerDeletion = &types.BoolValue{
+			skRef.BlockOwnerDeletion = &wrappers.BoolValue{
 				Value: *ref.BlockOwnerDeletion,
 			}
 		}

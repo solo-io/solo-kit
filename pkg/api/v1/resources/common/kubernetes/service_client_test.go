@@ -97,7 +97,7 @@ func ServiceClientTest(namespace string, client ServiceClient, name1, name2, nam
 	name = name2
 	input = &Service{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -148,7 +148,7 @@ func ServiceClientTest(namespace string, client ServiceClient, name1, name2, nam
 		name = name3
 		input = &Service{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

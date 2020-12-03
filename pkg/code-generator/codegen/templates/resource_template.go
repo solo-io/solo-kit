@@ -31,9 +31,9 @@ import (
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {
 	{{ lowercase .Name }} := &{{ .Name }}{}
 {{- if $.IsCustom }}
-	{{ lowercase .Name }}.{{ $.Name }}.SetMetadata(core.Metadata{
+	{{ lowercase .Name }}.{{ $.Name }}.SetMetadata(&core.Metadata{
 {{- else }}
-	{{ lowercase .Name }}.SetMetadata(core.Metadata{
+	{{ lowercase .Name }}.SetMetadata(&core.Metadata{
 {{- end }}
 		Name:      name,
 		Namespace: namespace,
@@ -80,13 +80,13 @@ func (r *{{ .Name }}) Hash(hasher hash.Hash64) (uint64, error) {
 
 {{- else }}
 
-func (r *{{ .Name }}) SetMetadata(meta core.Metadata) {
+func (r *{{ .Name }}) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
 {{- if $.HasStatus }}
 
-func (r *{{ .Name }}) SetStatus(status core.Status) {
+func (r *{{ .Name }}) SetStatus(status *core.Status) {
 	r.Status = status
 }
 {{- end }}

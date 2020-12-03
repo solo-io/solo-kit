@@ -3,11 +3,11 @@ package parser
 import (
 	"strings"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	plugin_go "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	plugin_go "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/iancoleman/strcase"
-	"github.com/ilackarms/protokit"
+	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )

@@ -98,7 +98,7 @@ func FrequentlyChangingAnnotationsResourceClientTest(namespace string, client Fr
 	name = name2
 	input = &FrequentlyChangingAnnotationsResource{}
 
-	input.SetMetadata(core.Metadata{
+	input.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
@@ -149,7 +149,7 @@ func FrequentlyChangingAnnotationsResourceClientTest(namespace string, client Fr
 		name = name3
 		input = &FrequentlyChangingAnnotationsResource{}
 		Expect(err).NotTo(HaveOccurred())
-		input.SetMetadata(core.Metadata{
+		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})

@@ -32,8 +32,6 @@ var _ = Describe("Messages", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(string(b)).To(Equal(`data.json: hi
-metadata: {}
-status: {}
 `))
 
 		var output v1.MockResource

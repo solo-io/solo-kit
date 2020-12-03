@@ -1,6 +1,7 @@
 package plain_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -28,7 +29,7 @@ var (
 		kubeClient := helpers.MustKubeClient()
 		var err error
 		lock, err = clusterlock.NewKubeClusterLocker(kubeClient, clusterlock.Options{
-			IdPrefix: string(GinkgoRandomSeed()),
+			IdPrefix: fmt.Sprintf("%d", GinkgoRandomSeed()),
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(lock.AcquireLock()).NotTo(HaveOccurred())

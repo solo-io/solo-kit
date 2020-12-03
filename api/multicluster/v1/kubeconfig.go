@@ -3,7 +3,7 @@ package v1
 import (
 	"reflect"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
@@ -12,7 +12,7 @@ import (
 // multicluster RestConfigs are a custom solo-kit resource
 // which are parsed from kubernetes secrets
 type KubeConfig struct {
-	Metadata core.Metadata
+	Metadata *core.Metadata
 	// the actual kubeconfig
 	Config api.Config
 	// expected to be used as an identifier string for a cluster
@@ -20,11 +20,11 @@ type KubeConfig struct {
 	Cluster string
 }
 
-func (c *KubeConfig) GetMetadata() core.Metadata {
+func (c *KubeConfig) GetMetadata() *core.Metadata {
 	return c.Metadata
 }
 
-func (c *KubeConfig) SetMetadata(meta core.Metadata) {
+func (c *KubeConfig) SetMetadata(meta *core.Metadata) {
 	c.Metadata = meta
 }
 
@@ -33,8 +33,8 @@ func (c *KubeConfig) Equal(that interface{}) bool {
 }
 
 func (c *KubeConfig) Clone() *KubeConfig {
-	meta := proto.Clone(&c.Metadata).(*core.Metadata)
+	meta := proto.Clone(c.Metadata).(*core.Metadata)
 	innerClone := c.Config.DeepCopy()
-	clone := KubeConfig{Metadata: *meta, Config: *innerClone, Cluster: c.Cluster}
+	clone := KubeConfig{Metadata: meta, Config: *innerClone, Cluster: c.Cluster}
 	return &clone
 }

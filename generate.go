@@ -8,6 +8,7 @@ import (
 
 //go:generate go run generate.go
 //go:generate ./api/v1/generate.sh
+//go:generate ./pkg/api/v1/apiserver/generate.sh
 
 func main() {
 
@@ -22,7 +23,6 @@ func main() {
 			External: map[string][]string{
 				sk_anyvendor.ExtProtoMatcher.Package:           sk_anyvendor.ExtProtoMatcher.Patterns,
 				sk_anyvendor.EnvoyValidateProtoMatcher.Package: sk_anyvendor.EnvoyValidateProtoMatcher.Patterns,
-				sk_anyvendor.GogoProtoMatcher.Package:          sk_anyvendor.GogoProtoMatcher.Patterns,
 			},
 		},
 	}); err != nil {
