@@ -14,8 +14,11 @@ var (
 
 	// matches ext.proto for solo hash gen
 	ExtProtoMatcher = &anyvendor.GoModImport{
-		Package:  "github.com/solo-io/protoc-gen-ext",
-		Patterns: []string{"extproto/*.proto"},
+		Package: "github.com/solo-io/protoc-gen-ext",
+		Patterns: []string{
+			"extproto/*.proto",
+			"external/google/**/*.proto",
+		},
 	}
 
 	// matches validate.proto which is needed by envoy protos
