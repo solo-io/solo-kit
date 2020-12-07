@@ -44,7 +44,7 @@ require (
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-utils v0.20.0
 	github.com/solo-io/k8s-utils v0.0.1
-	github.com/solo-io/protoc-gen-ext v0.0.12
+	github.com/solo-io/protoc-gen-ext v0.0.13
 	github.com/spf13/afero v1.3.4 // indirect
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
