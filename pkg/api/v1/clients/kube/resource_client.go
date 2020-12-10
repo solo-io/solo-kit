@@ -444,6 +444,8 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 		// Default unmarshalling
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
+			// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
+			withStatus.SetStatus(&core.Status{})
 			updateFunc := func(status *core.Status) error {
 				if status == nil {
 					return nil
