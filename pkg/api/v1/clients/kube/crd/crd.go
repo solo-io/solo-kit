@@ -122,6 +122,12 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 		}
 	}
 
+	// Since v1.Status is a map, it can be nil when sent to kube api server.
+	// In order to avoid this scenario, make sure to set it in the case that it is nil
+	if status == nil {
+		status = v1.Status{}
+	}
+
 	return &v1.Resource{
 		TypeMeta:   d.TypeMeta(),
 		ObjectMeta: kubeutils.ToKubeMetaMaintainNamespace(resource.GetMetadata()),
