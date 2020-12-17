@@ -70,7 +70,7 @@ func (p *protoMatcherImpl) NegatedFailureMessage(actual interface{}) (message st
 // Use this in an Expect call e.g.
 // Expect(result).To(MatchProto(expected))
 // especially when the `expected` type is an skv2 type with no String() function implemented.
-func MatchesPublicFields(actual interface{}) types.GomegaMatcher {
+func MatchPublicFields(actual interface{}) types.GomegaMatcher {
 	return &publicFieldMatcher{actual: actual}
 }
 
