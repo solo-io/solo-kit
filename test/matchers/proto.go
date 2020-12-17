@@ -2,6 +2,8 @@ package matchers
 
 import (
 	"reflect"
+	"fmt"
+	"strings"
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
@@ -30,7 +32,7 @@ func (p *gomockProtoMatcher) Matches(actual interface{}) bool {
 }
 
 func (p *gomockProtoMatcher) String() string {
-	return "equals proto " + p.actual.(proto.Message).String()
+	return fmt.Sprintf("equals proto %v", p.actual)
 }
 
 // Use this in an Expect call e.g.
@@ -63,6 +65,32 @@ func (p *protoMatcherImpl) FailureMessage(actual interface{}) (message string) {
 
 func (p *protoMatcherImpl) NegatedFailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, "Not to be identical to", p.msg)
+}
+
+// Use this in an Expect call e.g.
+// Expect(result).To(MatchProto(expected))
+// especially when the `expected` type is an skv2 type with no String() function implemented.
+func MatchesPublicFields(actual interface{}) types.GomegaMatcher {
+	return &publicFieldMatcher{actual: actual}
+}
+
+type publicFieldMatcher struct {
+	actual interface{}
+	diff   []string
+}
+
+func (p *publicFieldMatcher) Match(actual interface{}) (success bool, err error) {
+	diff := deep.Equal(p.actual, actual)
+	p.diff = diff
+	return len(diff) == 0, nil
+}
+
+func (p *publicFieldMatcher) FailureMessage(actual interface{}) (message string) {
+	return strings.Join(p.diff, " ")
+}
+
+func (p *publicFieldMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+	return "not equal"
 }
 
 func ContainProto(msg proto.Message) types.GomegaMatcher {
