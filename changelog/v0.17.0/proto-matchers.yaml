@@ -3,3 +3,5 @@ changelog:
   description: >
     Add the GomockMatchProto gomock.Matcher and the MatchesPublicFields gomega Matcher.
     Fix 'ConistOfProtos' to 'ConsistOfProtos'.
+  issueLink: https://github.com/solo-io/gloo/issues/3926
+  resolvesIssue: false
