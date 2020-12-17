@@ -2,12 +2,40 @@ package matchers
 
 import (
 	"reflect"
+	"strings"
 
+	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 )
 
+// Use this in a gomock EXPECT call e.g.
+// `client.EXPECT().Update(ctx, GomockMatchProto(expected)).Return(nil)`
+func GomockMatchProto(actual interface{}) gomock.Matcher {
+	return &gomockProtoMatcher{
+		actual: actual,
+	}
+}
+
+type gomockProtoMatcher struct {
+	actual interface{}
+	diff   []string
+}
+
+func (p *gomockProtoMatcher) Matches(actual interface{}) bool {
+	diff := deep.Equal(p.actual, actual)
+	p.diff = diff
+	return len(diff) == 0
+}
+
+func (p *gomockProtoMatcher) String() string {
+	return "equals proto " + p.actual.(proto.Message).String()
+}
+
+// Use this in an Expect call e.g.
+// Expect(result).To(MatchProto(expected))
 func MatchProto(msg proto.Message) types.GomegaMatcher {
 	return &protoMatcherImpl{
 		msg: msg,
@@ -79,7 +107,7 @@ func (p *protoContainImpl) NegatedFailureMessage(actual interface{}) (message st
 	return format.Message(protoList, "Not to contain ", p.msg.String())
 }
 
-func ConistOfProtos(msgs ...proto.Message) types.GomegaMatcher {
+func ConsistOfProtos(msgs ...proto.Message) types.GomegaMatcher {
 	return &protoConsist{
 		msgs: msgs,
 	}

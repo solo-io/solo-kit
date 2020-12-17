@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Set status to empty in kube unmarshal to mimic non-pointer reference from previous solo-kit.
+
