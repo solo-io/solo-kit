@@ -106,7 +106,12 @@ func (client *clusterResourceClient) Watch(opts clients.WatchOpts) (<-chan Clust
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				clusterresourcesChan <- convertToClusterResource(resourceList)
+				select {
+				case clusterresourcesChan <- convertToClusterResource(resourceList):
+				case <-opts.Ctx.Done():
+					close(clusterresourcesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(clusterresourcesChan)
 				return

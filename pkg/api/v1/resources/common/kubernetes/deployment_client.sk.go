@@ -106,7 +106,12 @@ func (client *deploymentClient) Watch(namespace string, opts clients.WatchOpts) 
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				deploymentsChan <- convertToDeployment(resourceList)
+				select {
+				case deploymentsChan <- convertToDeployment(resourceList):
+				case <-opts.Ctx.Done():
+					close(deploymentsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(deploymentsChan)
 				return

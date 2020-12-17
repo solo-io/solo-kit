@@ -106,7 +106,12 @@ func (client *mockCustomTypeClient) Watch(namespace string, opts clients.WatchOp
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				mctsChan <- convertToMockCustomType(resourceList)
+				select {
+				case mctsChan <- convertToMockCustomType(resourceList):
+				case <-opts.Ctx.Done():
+					close(mctsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(mctsChan)
 				return

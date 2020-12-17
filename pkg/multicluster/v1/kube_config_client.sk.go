@@ -106,7 +106,12 @@ func (client *kubeConfigClient) Watch(namespace string, opts clients.WatchOpts) 
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				kubeconfigsChan <- convertToKubeConfig(resourceList)
+				select {
+				case kubeconfigsChan <- convertToKubeConfig(resourceList):
+				case <-opts.Ctx.Done():
+					close(kubeconfigsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(kubeconfigsChan)
 				return
