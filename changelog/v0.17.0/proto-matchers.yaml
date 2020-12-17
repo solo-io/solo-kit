@@ -1,4 +1,5 @@
 changelog:
-- type: NON_USER_FACING
-  description: Set status to empty in kube unmarshal to mimic non-pointer reference from previous solo-kit.
-
+- type: BREAKING_CHANGE
+  description: >
+    Add the GomockMatchProto gomock.Matcher and the MatchesPublicFields gomega Matcher.
+    Fix 'ConistOfProtos' to 'ConsistOfProtos'.
