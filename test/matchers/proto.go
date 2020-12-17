@@ -2,7 +2,6 @@ package matchers
 
 import (
 	"reflect"
-	"strings"
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
