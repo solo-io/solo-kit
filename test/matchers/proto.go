@@ -1,8 +1,8 @@
 package matchers
 
 import (
-	"reflect"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/go-test/deep"
