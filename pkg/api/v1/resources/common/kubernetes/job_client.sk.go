@@ -106,7 +106,12 @@ func (client *jobClient) Watch(namespace string, opts clients.WatchOpts) (<-chan
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				jobsChan <- convertToJob(resourceList)
+				select {
+				case jobsChan <- convertToJob(resourceList):
+				case <-opts.Ctx.Done():
+					close(jobsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(jobsChan)
 				return

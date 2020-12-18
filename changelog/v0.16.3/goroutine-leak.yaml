@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  description: Fix resource client watch function to exit when context is cancelled.
+  issueLink: https://github.com/solo-io/gloo/issues/4001
+  resolvesIssue: false

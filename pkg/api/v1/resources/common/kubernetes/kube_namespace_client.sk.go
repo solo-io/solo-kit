@@ -106,7 +106,12 @@ func (client *kubeNamespaceClient) Watch(opts clients.WatchOpts) (<-chan KubeNam
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				kubenamespacesChan <- convertToKubeNamespace(resourceList)
+				select {
+				case kubenamespacesChan <- convertToKubeNamespace(resourceList):
+				case <-opts.Ctx.Done():
+					close(kubenamespacesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(kubenamespacesChan)
 				return

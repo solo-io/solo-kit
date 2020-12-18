@@ -106,7 +106,12 @@ func (client *frequentlyChangingAnnotationsResourceClient) Watch(namespace strin
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				fcarsChan <- convertToFrequentlyChangingAnnotationsResource(resourceList)
+				select {
+				case fcarsChan <- convertToFrequentlyChangingAnnotationsResource(resourceList):
+				case <-opts.Ctx.Done():
+					close(fcarsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(fcarsChan)
 				return

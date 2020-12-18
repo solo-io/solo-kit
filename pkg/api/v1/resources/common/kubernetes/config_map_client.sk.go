@@ -106,7 +106,12 @@ func (client *configMapClient) Watch(namespace string, opts clients.WatchOpts) (
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				configmapsChan <- convertToConfigMap(resourceList)
+				select {
+				case configmapsChan <- convertToConfigMap(resourceList):
+				case <-opts.Ctx.Done():
+					close(configmapsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(configmapsChan)
 				return

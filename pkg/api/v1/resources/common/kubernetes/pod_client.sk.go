@@ -106,7 +106,12 @@ func (client *podClient) Watch(namespace string, opts clients.WatchOpts) (<-chan
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				podsChan <- convertToPod(resourceList)
+				select {
+				case podsChan <- convertToPod(resourceList):
+				case <-opts.Ctx.Done():
+					close(podsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(podsChan)
 				return
