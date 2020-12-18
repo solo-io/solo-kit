@@ -152,7 +152,12 @@ func (client *{{ lower_camel .Name }}Client) Watch(namespace string, opts client
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				{{ lower_camel .PluralName }}Chan <- convertTo{{ .Name }}(resourceList)
+				select {
+					case {{ lower_camel .PluralName }}Chan <- convertTo{{ .Name }}(resourceList):
+					case <-opts.Ctx.Done():
+						close({{ lower_camel .PluralName }}Chan)
+						return
+				}
 			case <-opts.Ctx.Done():
 				close({{ lower_camel .PluralName }}Chan)
 				return

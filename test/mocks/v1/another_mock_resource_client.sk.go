@@ -106,7 +106,12 @@ func (client *anotherMockResourceClient) Watch(namespace string, opts clients.Wa
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				anothermockresourcesChan <- convertToAnotherMockResource(resourceList)
+				select {
+				case anothermockresourcesChan <- convertToAnotherMockResource(resourceList):
+				case <-opts.Ctx.Done():
+					close(anothermockresourcesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(anothermockresourcesChan)
 				return

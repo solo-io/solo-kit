@@ -106,7 +106,12 @@ func (client *serviceClient) Watch(namespace string, opts clients.WatchOpts) (<-
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				servicesChan <- convertToService(resourceList)
+				select {
+				case servicesChan <- convertToService(resourceList):
+				case <-opts.Ctx.Done():
+					close(servicesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(servicesChan)
 				return

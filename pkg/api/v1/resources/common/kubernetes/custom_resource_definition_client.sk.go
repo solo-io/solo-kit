@@ -106,7 +106,12 @@ func (client *customResourceDefinitionClient) Watch(opts clients.WatchOpts) (<-c
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				customresourcedefinitionChan <- convertToCustomResourceDefinition(resourceList)
+				select {
+				case customresourcedefinitionChan <- convertToCustomResourceDefinition(resourceList):
+				case <-opts.Ctx.Done():
+					close(customresourcedefinitionChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(customresourcedefinitionChan)
 				return
