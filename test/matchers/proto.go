@@ -86,11 +86,11 @@ func (p *publicFieldMatcher) Match(actual interface{}) (success bool, err error)
 }
 
 func (p *publicFieldMatcher) FailureMessage(actual interface{}) (message string) {
-	return strings.Join(p.diff, " ")
+	return "To have no differing fields, found: " + strings.Join(p.diff, " ")
 }
 
 func (p *publicFieldMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return "not equal"
+	return fmt.Sprintf("To not be equal to %v", p.actual)
 }
 
 func ContainProto(msg proto.Message) types.GomegaMatcher {
