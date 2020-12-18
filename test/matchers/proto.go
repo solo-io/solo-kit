@@ -13,25 +13,25 @@ import (
 )
 
 // Use this in a gomock EXPECT call e.g.
-// `client.EXPECT().Update(ctx, GomockMatchProto(expected)).Return(nil)`
-func GomockMatchProto(actual interface{}) gomock.Matcher {
-	return &gomockProtoMatcher{
+// `client.EXPECT().Update(ctx, GomockMatchPublicFields(expected)).Return(nil)`
+func GomockMatchPublicFields(actual interface{}) gomock.Matcher {
+	return &gomockPublicFieldMatcher{
 		actual: actual,
 	}
 }
 
-type gomockProtoMatcher struct {
+type gomockPublicFieldMatcher struct {
 	actual interface{}
 	diff   []string
 }
 
-func (p *gomockProtoMatcher) Matches(actual interface{}) bool {
+func (p *gomockPublicFieldMatcher) Matches(actual interface{}) bool {
 	diff := deep.Equal(p.actual, actual)
 	p.diff = diff
 	return len(diff) == 0
 }
 
-func (p *gomockProtoMatcher) String() string {
+func (p *gomockPublicFieldMatcher) String() string {
 	return fmt.Sprintf("equals proto %v", p.actual)
 }
 
