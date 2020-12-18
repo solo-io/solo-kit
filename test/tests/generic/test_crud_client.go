@@ -211,7 +211,7 @@ Loop:
 
 	postList(callbacks, list)
 
-	Expect(list).To(matchers.ConistOfProtos(
+	Expect(list).To(matchers.ConsistOfProtos(
 		r1.(resources.ProtoResource),
 		r2.(resources.ProtoResource),
 		r3.(resources.ProtoResource)),

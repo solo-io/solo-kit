@@ -1,13 +1,42 @@
 package matchers
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 
+	"github.com/go-test/deep"
+	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 )
 
+// Use this in a gomock EXPECT call e.g.
+// `client.EXPECT().Update(ctx, GomockMatchPublicFields(expected)).Return(nil)`
+func GomockMatchPublicFields(actual interface{}) gomock.Matcher {
+	return &gomockPublicFieldMatcher{
+		actual: actual,
+	}
+}
+
+type gomockPublicFieldMatcher struct {
+	actual interface{}
+	diff   []string
+}
+
+func (p *gomockPublicFieldMatcher) Matches(actual interface{}) bool {
+	diff := deep.Equal(p.actual, actual)
+	p.diff = diff
+	return len(diff) == 0
+}
+
+func (p *gomockPublicFieldMatcher) String() string {
+	return fmt.Sprintf("equals proto %v", p.actual)
+}
+
+// Use this in an Expect call e.g.
+// Expect(result).To(MatchProto(expected))
 func MatchProto(msg proto.Message) types.GomegaMatcher {
 	return &protoMatcherImpl{
 		msg: msg,
@@ -36,6 +65,32 @@ func (p *protoMatcherImpl) FailureMessage(actual interface{}) (message string) {
 
 func (p *protoMatcherImpl) NegatedFailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, "Not to be identical to", p.msg)
+}
+
+// Use this in an Expect call e.g.
+// Expect(result).To(MatchProto(expected))
+// especially when the `expected` type is an skv2 type with no String() function implemented.
+func MatchPublicFields(actual interface{}) types.GomegaMatcher {
+	return &publicFieldMatcher{actual: actual}
+}
+
+type publicFieldMatcher struct {
+	actual interface{}
+	diff   []string
+}
+
+func (p *publicFieldMatcher) Match(actual interface{}) (success bool, err error) {
+	diff := deep.Equal(p.actual, actual)
+	p.diff = diff
+	return len(diff) == 0, nil
+}
+
+func (p *publicFieldMatcher) FailureMessage(actual interface{}) (message string) {
+	return "To have no differing fields, found: " + strings.Join(p.diff, " ")
+}
+
+func (p *publicFieldMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+	return fmt.Sprintf("To not be equal to %v", p.actual)
 }
 
 func ContainProto(msg proto.Message) types.GomegaMatcher {
@@ -79,7 +134,7 @@ func (p *protoContainImpl) NegatedFailureMessage(actual interface{}) (message st
 	return format.Message(protoList, "Not to contain ", p.msg.String())
 }
 
-func ConistOfProtos(msgs ...proto.Message) types.GomegaMatcher {
+func ConsistOfProtos(msgs ...proto.Message) types.GomegaMatcher {
 	return &protoConsist{
 		msgs: msgs,
 	}
