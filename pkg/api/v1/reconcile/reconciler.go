@@ -37,15 +37,17 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 	if err != nil {
 		return err
 	}
+	originalResourcesMap := resourceListToResourceMap(originalResources)
 	for _, desired := range desiredResources {
-		if err := r.syncResource(opts.Ctx, desired, originalResources, transition); err != nil {
+		if err := r.syncResource(opts.Ctx, desired, originalResourcesMap, transition); err != nil {
 			return errors.Wrapf(err, "reconciling resource %v", desired.GetMetadata().Name)
 		}
 	}
 	// delete unused
+	desiredResourcesMap := resourceListToResourceMap(desiredResources)
 	for _, original := range originalResources {
-		unused := findResource(original.GetMetadata().Namespace, original.GetMetadata().Name, desiredResources) == nil
-		if unused {
+		_, ok := desiredResourcesMap[original.GetMetadata().Ref().Key()]
+		if !ok {
 			if err := deleteStaleResource(opts.Ctx, r.rc, original); err != nil {
 				return errors.Wrapf(err, "deleting stale resource %v", original.GetMetadata().Name)
 			}
@@ -55,8 +57,8 @@ func (r *reconciler) Reconcile(namespace string, desiredResources resources.Reso
 	return nil
 }
 
-func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResources resources.ResourceList, transition TransitionResourcesFunc) error {
-	original := findResource(desired.GetMetadata().Namespace, desired.GetMetadata().Name, originalResources)
+func (r *reconciler) syncResource(ctx context.Context, desired resources.Resource, originalResourcesMap map[string]resources.Resource, transition TransitionResourcesFunc) error {
+	original, _ := originalResourcesMap[desired.GetMetadata().Ref().Key()]
 	return errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 		var err error
 		original, err = attemptSyncResource(ctx, desired, original, r.rc, transition)
@@ -139,11 +141,10 @@ func deleteStaleResource(ctx context.Context, rc clients.ResourceClient, origina
 	})
 }
 
-func findResource(namespace, name string, rss resources.ResourceList) resources.Resource {
+func resourceListToResourceMap(rss resources.ResourceList) map[string]resources.Resource {
+	resourceMap := map[string]resources.Resource{}
 	for _, resource := range rss {
-		if resource.GetMetadata().Namespace == namespace && resource.GetMetadata().Name == name {
-			return resource
-		}
+		resourceMap[resource.GetMetadata().Ref().Key()] = resource
 	}
-	return nil
+	return resourceMap
 }
