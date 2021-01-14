@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Fixes proto conflicts caused by discovery.proto in downstream projects.
+    issueLink: https://github.com/solo-io/gloo/issues/4068
+    resolvesIssue: false
