@@ -78,7 +78,7 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: $(OUTPUT_DIR)/.generated-code update-licenses
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
@@ -120,3 +120,13 @@ solo-kit-gen:
 solo-kit-cli:
 	$(GO_BUILD_FLAGS) go build -o $@ cmd/cli/*.go
 
+#----------------------------------------------------------------------------------
+# Update third party licenses and check for GPL Licenses
+#----------------------------------------------------------------------------------
+
+update-licenses:
+	# check for GPL licenses, if there are any, this will fail
+	cd ci/oss_compliance; GO111MODULE=on go run oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
+
+	cd ci/oss_compliance; GO111MODULE=on go run oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> osa_provided.md
+	cd ci/oss_compliance; GO111MODULE=on go run oss_compliance.go osagen -i "Mozilla Public License 2.0"> osa_included.md
