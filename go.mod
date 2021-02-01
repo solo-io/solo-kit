@@ -3,8 +3,6 @@ module github.com/solo-io/solo-kit
 go 1.13
 
 require (
-	contrib.go.opencensus.io/exporter/jaeger v0.2.1 // indirect
-	contrib.go.opencensus.io/exporter/zipkin v0.1.2 // indirect
 	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
@@ -37,7 +35,6 @@ require (
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
-	github.com/openzipkin/zipkin-go v0.2.5 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
@@ -45,7 +42,7 @@ require (
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
-	github.com/solo-io/go-list-licenses v0.0.4 // indirect
+	github.com/solo-io/go-list-licenses v0.0.4
 	github.com/solo-io/go-utils v0.20.2
 	github.com/solo-io/k8s-utils v0.0.1
 	github.com/solo-io/protoc-gen-ext v0.0.13
