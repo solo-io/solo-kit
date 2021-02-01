@@ -17,6 +17,7 @@ func main() {
 	macOnlyDependencies := []string{
 		"github.com/mitchellh/go-homedir",
 		"github.com/containerd/continuity",
+		"golang.org/x/sys/unix",
 	}
 
 	app := license.Cli(glooPackages, macOnlyDependencies)
