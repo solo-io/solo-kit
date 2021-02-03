@@ -46,10 +46,9 @@ var _ = Describe("Generated Kube Code", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		skClient, err = skv1alpha2.NewMockResourceClient(ctx, &factory.KubeResourceClientFactory{
-			Crd:             skv1alpha2.MockResourceCrd,
-			Cfg:             cfg,
-			SharedCache:     kube.NewKubeCache(context.TODO()),
-			SkipCrdCreation: true,
+			Crd:         skv1alpha2.MockResourceCrd,
+			Cfg:         cfg,
+			SharedCache: kube.NewKubeCache(context.TODO()),
 		})
 
 	})

@@ -142,16 +142,12 @@ type ResourceClientFactory interface {
 	NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error)
 }
 
-// If SkipCrdCreation is set to 'true', the clients built with this factory will not attempt to create the given CRD
-// during registration. This allows us to create and register resource clients in cases where the given configuration
-// contains a token associated with a user that is not authorized to create CRDs.
 // Clients built with this factory will be able to access only resources the given namespace list. If no value is provided,
 // clients will be able to access resources in all namespaces.
 type KubeResourceClientFactory struct {
 	Crd                crd.Crd
 	Cfg                *rest.Config
 	SharedCache        kube.SharedCache
-	SkipCrdCreation    bool
 	NamespaceWhitelist []string
 	ResyncPeriod       time.Duration
 	// the cluster that these resources belong to
