@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/go-utils/stringutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/consul"
@@ -25,7 +24,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/wrapper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -69,20 +67,6 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 		if len(namespaceWhitelist) > 1 && stringutils.ContainsString(metav1.NamespaceAll, namespaceWhitelist) {
 			return nil, fmt.Errorf("the kube resource client namespace list must contain either "+
 				"the empty string (all namespaces) or multiple non-empty strings. Found both: %v", namespaceWhitelist)
-		}
-
-		// If the flag is false, call the k8s apiext API to create the given CRD.
-		if !opts.SkipCrdCreation {
-			apiExts, err := clientset.NewForConfig(kubeCfg)
-			if err != nil {
-				return nil, errors.Wrapf(err, "creating api extensions client")
-			}
-			if err := opts.Crd.Register(ctx, apiExts); err != nil {
-				return nil, err
-			}
-			if err := kubeutils.WaitForCrdActive(ctx, apiExts, opts.Crd.FullName()); err != nil {
-				return nil, err
-			}
 		}
 
 		// Create clientset for crd

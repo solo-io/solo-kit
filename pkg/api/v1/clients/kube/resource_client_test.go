@@ -57,16 +57,17 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	kubeClient, err := kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	lock, err = clusterlock.NewTestClusterLocker(kubeClient, clusterlock.Options{
+	lock, err = clusterlock.NewKubeClusterLocker(kubeClient, clusterlock.Options{
 		IdPrefix: "solo-kit-crd-client-test-",
 	})
+	Expect(err).NotTo(HaveOccurred())
 	Expect(lock.AcquireLock()).NotTo(HaveOccurred())
 
 	// Create the CRD in the cluster
 	apiExts, err := apiext.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = v1.MockResourceCrd.Register(ctx, apiExts)
+	err = helpers.RegisterCrd(ctx, v1.MockResourceCrd, apiExts)
 	Expect(err).NotTo(HaveOccurred())
 	return nil
 }, func(data []byte) {

@@ -1,10 +1,12 @@
-package crd
+package helpers
 
 import (
 	"context"
 	"fmt"
 	"sort"
 	"sync"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/versionutils/kubeapi"
@@ -16,8 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// The CRDRegistry is designed to be used only by tests
+// We have moved CRD registration responsibilities outside of this repository.
+// However, this is still useful as a testing utility
 type crdRegistry struct {
-	crds []MultiVersionCrd
+	crds []crd.MultiVersionCrd
 	mu   sync.RWMutex
 }
 
@@ -45,11 +50,31 @@ func getRegistry() *crdRegistry {
 	return registry
 }
 
-func AddCrd(resource Crd) error {
+func AddCrd(resource crd.Crd) error {
 	return getRegistry().addCrd(resource)
 }
 
-func (r *crdRegistry) addCrd(resource Crd) error {
+func RegisterCrd(ctx context.Context, crd crd.Crd, apiexts apiexts.Interface) error {
+	return getRegistry().registerCrd(ctx, crd.GroupVersionKind(), apiexts)
+}
+
+func GetCrds() []crd.MultiVersionCrd {
+	return getRegistry().crds
+}
+
+func GetCrd(gvk schema.GroupVersionKind) (crd.Crd, error) {
+	return getRegistry().getCrd(gvk)
+}
+
+func GetMultiVersionCrd(gk schema.GroupKind) (crd.MultiVersionCrd, error) {
+	return getRegistry().getMultiVersionCrd(gk)
+}
+
+func GetKubeCrd(crd crd.MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {
+	return getRegistry().getKubeCrd(crd, gvk)
+}
+
+func (r *crdRegistry) addCrd(resource crd.Crd) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for i, crd := range r.crds {
@@ -63,32 +88,32 @@ func (r *crdRegistry) addCrd(resource Crd) error {
 			return nil
 		}
 	}
-	r.crds = append(r.crds, MultiVersionCrd{
-		Versions: []Version{resource.Version},
+	r.crds = append(r.crds, crd.MultiVersionCrd{
+		Versions: []crd.Version{resource.Version},
 		CrdMeta:  resource.CrdMeta,
 	})
 	return nil
 }
 
-func (r *crdRegistry) getCrd(gvk schema.GroupVersionKind) (Crd, error) {
+func (r *crdRegistry) getCrd(gvk schema.GroupVersionKind) (crd.Crd, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	combined, err := r.getMultiVersionCrd(gvk.GroupKind())
 	if err != nil {
-		return Crd{}, err
+		return crd.Crd{}, err
 	}
 	for _, version := range combined.Versions {
 		if version.Version == gvk.Version {
-			return Crd{
+			return crd.Crd{
 				CrdMeta: combined.CrdMeta,
 				Version: version,
 			}, nil
 		}
 	}
-	return Crd{}, NotFoundError(gvk.String())
+	return crd.Crd{}, NotFoundError(gvk.String())
 }
 
-func (r *crdRegistry) getMultiVersionCrd(gk schema.GroupKind) (MultiVersionCrd, error) {
+func (r *crdRegistry) getMultiVersionCrd(gk schema.GroupKind) (crd.MultiVersionCrd, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	for _, crd := range r.crds {
@@ -96,7 +121,7 @@ func (r *crdRegistry) getMultiVersionCrd(gk schema.GroupKind) (MultiVersionCrd, 
 			return crd, nil
 		}
 	}
-	return MultiVersionCrd{}, NotFoundError(gk.String())
+	return crd.MultiVersionCrd{}, NotFoundError(gk.String())
 }
 
 func (r *crdRegistry) registerCrd(ctx context.Context, gvk schema.GroupVersionKind, clientset apiexts.Interface) error {
@@ -117,7 +142,7 @@ func (r *crdRegistry) registerCrd(ctx context.Context, gvk schema.GroupVersionKi
 	return kubeutils.WaitForCrdActive(ctx, clientset, toRegister.Name)
 }
 
-func (r crdRegistry) getKubeCrd(crd MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {
+func (r *crdRegistry) getKubeCrd(crd crd.MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {
 	scope := v1beta1.NamespaceScoped
 	if crd.ClusterScoped {
 		scope = v1beta1.ClusterScoped
