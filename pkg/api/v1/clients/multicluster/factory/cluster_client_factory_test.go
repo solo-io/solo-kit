@@ -116,7 +116,6 @@ var _ = Describe("ClusterClientFactory", func() {
 				kubefactory.NewKubeResourceClientFactory(
 					cacheGetter,
 					v1.MockResourceCrd,
-					false,
 					nil,
 					0,
 					client_factory.NewResourceClientParams{
@@ -129,7 +128,6 @@ var _ = Describe("ClusterClientFactory", func() {
 				kubefactory.NewKubeResourceClientFactory(
 					awfulCacheGetter,
 					v1.MockResourceCrd,
-					true,
 					nil,
 					0,
 					client_factory.NewResourceClientParams{

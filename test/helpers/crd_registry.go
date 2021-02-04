@@ -50,28 +50,12 @@ func getRegistry() *crdRegistry {
 	return registry
 }
 
-func AddCrd(resource crd.Crd) error {
-	return getRegistry().addCrd(resource)
+func AddCrd(crd crd.Crd) error {
+	return getRegistry().addCrd(crd)
 }
 
 func RegisterCrd(ctx context.Context, crd crd.Crd, apiexts apiexts.Interface) error {
 	return getRegistry().registerCrd(ctx, crd.GroupVersionKind(), apiexts)
-}
-
-func GetCrds() []crd.MultiVersionCrd {
-	return getRegistry().crds
-}
-
-func GetCrd(gvk schema.GroupVersionKind) (crd.Crd, error) {
-	return getRegistry().getCrd(gvk)
-}
-
-func GetMultiVersionCrd(gk schema.GroupKind) (crd.MultiVersionCrd, error) {
-	return getRegistry().getMultiVersionCrd(gk)
-}
-
-func GetKubeCrd(crd crd.MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {
-	return getRegistry().getKubeCrd(crd, gvk)
 }
 
 func (r *crdRegistry) addCrd(resource crd.Crd) error {
