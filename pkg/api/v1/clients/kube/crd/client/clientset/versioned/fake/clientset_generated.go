@@ -19,7 +19,9 @@ limitations under the License.
 package fake
 
 import (
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	clientset "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
+	realregisterfile "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
 	resourcesv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/typed/solo.io/v1"
 	fakeresourcesv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/typed/solo.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,8 +35,21 @@ import (
 // It's backed by a very simple object tracker that processes creates, updates and deletions as-is,
 // without applying any validations and/or defaults. It shouldn't be considered a replacement
 // for a real clientset and is mostly useful in simple unit tests.
-func NewSimpleClientset(objects ...runtime.Object) *Clientset {
-	o := testing.NewObjectTracker(scheme, codecs.UniversalDecoder())
+func NewSimpleClientset(crd crd.Crd, objects ...runtime.Object) *Clientset { // NOTE(marco): this line was updated
+
+	// ###############################################################################################
+	// ###############################################################################################
+	// NOTE(marco): the following line was updated to reference the scheme our CRD objects register
+	// with. Originally, this pointed to the scheme in the register.go file in the same package.
+	//
+	// The generated code expected pkg/api/v1/clients/kube/crd/solo.io/v1 to export a function named
+	// "AddToScheme" that would be called from both fake/register.go and scheme/register.go to add
+	// the custom types to the respective schemes. We moved the same logic to the "NewCrd" function
+	// in pkg/api/v1/clients/kube/crd/crd.go, but it always writes to the scheme in scheme/register.go,
+	// so we reference it here.
+	// ###############################################################################################
+	// ###############################################################################################
+	o := testing.NewObjectTracker(realregisterfile.Scheme, codecs.UniversalDecoder())
 	for _, obj := range objects {
 		if err := o.Add(obj); err != nil {
 			panic(err)
@@ -54,6 +69,8 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 		return true, watch, nil
 	})
 
+	cs.crd = crd // NOTE(marco): this line was added
+
 	return cs
 }
 
@@ -63,6 +80,7 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 type Clientset struct {
 	testing.Fake
 	discovery *fakediscovery.FakeDiscovery
+	crd       crd.Crd // NOTE(marco): this line was added
 	tracker   testing.ObjectTracker
 }
 
@@ -78,5 +96,5 @@ var _ clientset.Interface = &Clientset{}
 
 // ResourcesV1 retrieves the ResourcesV1Client
 func (c *Clientset) ResourcesV1() resourcesv1.ResourcesV1Interface {
-	return &fakeresourcesv1.FakeResourcesV1{Fake: &c.Fake}
+	return &fakeresourcesv1.FakeResourcesV1{Fake: &c.Fake, Crd: c.crd} // NOTE(marco): this line was updated
 }

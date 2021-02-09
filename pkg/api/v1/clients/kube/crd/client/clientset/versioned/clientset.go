@@ -21,6 +21,7 @@ package versioned
 import (
 	"fmt"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	resourcesv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/typed/solo.io/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -55,17 +56,17 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 // NewForConfig creates a new Clientset for the given config.
 // If config's RateLimiter is not set and QPS and Burst are acceptable,
 // NewForConfig will generate a rate-limiter in configShallowCopy.
-func NewForConfig(c *rest.Config) (*Clientset, error) {
+func NewForConfig(c *rest.Config, def crd.Crd) (*Clientset, error) {
 	configShallowCopy := *c
 	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
 		if configShallowCopy.Burst <= 0 {
-			return nil, fmt.Errorf("burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
+			return nil, fmt.Errorf("Burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
 		}
 		configShallowCopy.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(configShallowCopy.QPS, configShallowCopy.Burst)
 	}
 	var cs Clientset
 	var err error
-	cs.resourcesV1, err = resourcesv1.NewForConfig(&configShallowCopy)
+	cs.resourcesV1, err = resourcesv1.NewForConfig(&configShallowCopy, def)
 	if err != nil {
 		return nil, err
 	}
@@ -79,18 +80,18 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 
 // NewForConfigOrDie creates a new Clientset for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *Clientset {
+func NewForConfigOrDie(c *rest.Config, def crd.Crd) *Clientset {
 	var cs Clientset
-	cs.resourcesV1 = resourcesv1.NewForConfigOrDie(c)
+	cs.resourcesV1 = resourcesv1.NewForConfigOrDie(c, def)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
 }
 
 // New creates a new Clientset for the given RESTClient.
-func New(c rest.Interface) *Clientset {
+func New(c rest.Interface, def crd.Crd) *Clientset {
 	var cs Clientset
-	cs.resourcesV1 = resourcesv1.New(c)
+	cs.resourcesV1 = resourcesv1.New(c, def)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
