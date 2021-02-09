@@ -57,7 +57,14 @@ func AddAndRegisterCrd(ctx context.Context, crd crd.Crd, apiexts apiexts.Interfa
 		return err
 	}
 
-	return registry.registerCrd(ctx, crd.GroupVersionKind(), apiexts)
+	if err := registry.registerCrd(ctx, crd.GroupVersionKind(), apiexts); err != nil {
+		return err
+	}
+
+	if err := kubeutils.WaitForCrdActive(ctx, apiexts, crd.FullName()); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *crdRegistry) addCrd(resource crd.Crd) error {
