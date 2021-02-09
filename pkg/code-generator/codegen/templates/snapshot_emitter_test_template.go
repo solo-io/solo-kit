@@ -93,6 +93,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		}
 {{- end }}
 
+		apiExts, err := apiext.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = helpers.AddAndRegisterCrd(ctx, {{ .ImportPrefix }}{{ .Name }}Crd, apiExts)
+		Expect(err).NotTo(HaveOccurred())
+
 		{{ lower_camel .Name }}Client, err = {{ .ImportPrefix }}New{{ .Name }}Client(ctx, {{ lower_camel .Name }}ClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 {{- end}}
