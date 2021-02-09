@@ -50,12 +50,14 @@ func getRegistry() *crdRegistry {
 	return registry
 }
 
-func AddCrd(crd crd.Crd) error {
-	return getRegistry().addCrd(crd)
-}
+func AddAndRegisterCrd(ctx context.Context, crd crd.Crd, apiexts apiexts.Interface) error {
+	registry := getRegistry()
 
-func RegisterCrd(ctx context.Context, crd crd.Crd, apiexts apiexts.Interface) error {
-	return getRegistry().registerCrd(ctx, crd.GroupVersionKind(), apiexts)
+	if err := registry.addCrd(crd); err != nil {
+		return err
+	}
+
+	return registry.registerCrd(ctx, crd.GroupVersionKind(), apiexts)
 }
 
 func (r *crdRegistry) addCrd(resource crd.Crd) error {

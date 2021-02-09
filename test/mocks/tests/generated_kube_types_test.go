@@ -38,10 +38,7 @@ var _ = Describe("Generated Kube Code", func() {
 		apiExts, err = apiext.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = helpers.AddCrd(skv1alpha2.MockResourceCrd)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = helpers.RegisterCrd(ctx, skv1alpha2.MockResourceCrd, apiExts)
+		err = helpers.AddAndRegisterCrd(ctx, skv1alpha2.MockResourceCrd, apiExts)
 		Expect(err).NotTo(HaveOccurred())
 
 		testClient, err = v2alpha1client.NewForConfig(cfg)

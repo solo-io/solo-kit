@@ -67,9 +67,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	apiExts, err := apiext.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = helpers.AddCrd(v1.MockResourceCrd)
-	Expect(err).NotTo(HaveOccurred())
-	err = helpers.RegisterCrd(ctx, v1.MockResourceCrd, apiExts)
+	err = helpers.AddAndRegisterCrd(ctx, v1.MockResourceCrd, apiExts)
 	Expect(err).NotTo(HaveOccurred())
 	return nil
 }, func(data []byte) {
