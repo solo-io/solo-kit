@@ -38,6 +38,7 @@ import (
 	"github.com/solo-io/solo-kit/test/util"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"k8s.io/client-go/rest"
+	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	// Needed to run tests in GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -58,6 +59,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		name1, name2        = "angela"+helpers.RandString(3), "bob"+helpers.RandString(3)
 {{- if $need_kube_config }}
 		cfg                *rest.Config
+		clientset		   *apiext.Clientset
 {{- end}}
 		kube                      kubernetes.Interface
 		emitter            {{ .GoName }}Emitter
@@ -76,6 +78,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- if $need_kube_config }}
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
+
+		clientset, err = apiext.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
 {{- end}}
 
 {{- range .Resources }}
@@ -87,17 +92,15 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Cfg: cfg,
 		    SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
+
+		err = helpers.AddAndRegisterCrd(ctx, {{ .ImportPrefix }}{{ .Name }}Crd, clientset)
+		Expect(err).NotTo(HaveOccurred())
+
 {{- else }}
 		{{ lower_camel .Name }}ClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 {{- end }}
-
-		apiExts, err := apiext.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = helpers.AddAndRegisterCrd(ctx, {{ .ImportPrefix }}{{ .Name }}Crd, apiExts)
-		Expect(err).NotTo(HaveOccurred())
 
 		{{ lower_camel .Name }}Client, err = {{ .ImportPrefix }}New{{ .Name }}Client(ctx, {{ lower_camel .Name }}ClientFactory)
 		Expect(err).NotTo(HaveOccurred())
