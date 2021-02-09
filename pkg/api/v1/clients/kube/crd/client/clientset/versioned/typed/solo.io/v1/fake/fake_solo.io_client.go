@@ -19,7 +19,6 @@ limitations under the License.
 package fake
 
 import (
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/typed/solo.io/v1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
@@ -27,7 +26,6 @@ import (
 
 type FakeResourcesV1 struct {
 	*testing.Fake
-	crd.Crd // NOTE(marco): this line was added
 }
 
 func (c *FakeResourcesV1) Resources(namespace string) v1.ResourceInterface {

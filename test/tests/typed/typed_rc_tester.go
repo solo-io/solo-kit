@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/test/helpers"
 
@@ -67,11 +69,18 @@ func (rct *KubeRcTester) Setup(ctx context.Context, namespace string) factory.Re
 	}
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
-	return &factory.KubeResourceClientFactory{
+	factory := &factory.KubeResourceClientFactory{
 		Crd:         rct.Crd,
 		Cfg:         cfg,
 		SharedCache: kube.NewKubeCache(context.TODO()),
 	}
+
+	apiextsClient, err := apiexts.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	err = helpers.AddAndRegisterCrd(ctx, rct.Crd, apiextsClient)
+	Expect(err).NotTo(HaveOccurred())
+
+	return factory
 }
 
 func (rct *KubeRcTester) Teardown(ctx context.Context, namespace string) {

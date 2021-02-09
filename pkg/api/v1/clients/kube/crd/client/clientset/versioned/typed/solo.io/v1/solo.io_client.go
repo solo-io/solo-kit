@@ -19,8 +19,8 @@ limitations under the License.
 package v1
 
 import (
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme"
+	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -32,30 +32,29 @@ type ResourcesV1Interface interface {
 // ResourcesV1Client is used to interact with features provided by the resources.solo.io group.
 type ResourcesV1Client struct {
 	restClient rest.Interface
-	def        crd.Crd
 }
 
 func (c *ResourcesV1Client) Resources(namespace string) ResourceInterface {
-	return newResources(c, namespace, c.def)
+	return newResources(c, namespace)
 }
 
 // NewForConfig creates a new ResourcesV1Client for the given config.
-func NewForConfig(c *rest.Config, def crd.Crd) (*ResourcesV1Client, error) {
+func NewForConfig(c *rest.Config) (*ResourcesV1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config, def); err != nil {
+	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
 	}
 	client, err := rest.RESTClientFor(&config)
 	if err != nil {
 		return nil, err
 	}
-	return &ResourcesV1Client{restClient: client, def: def}, nil
+	return &ResourcesV1Client{client}, nil
 }
 
 // NewForConfigOrDie creates a new ResourcesV1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config, def crd.Crd) *ResourcesV1Client {
-	client, err := NewForConfig(c, def)
+func NewForConfigOrDie(c *rest.Config) *ResourcesV1Client {
+	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
 	}
@@ -63,12 +62,12 @@ func NewForConfigOrDie(c *rest.Config, def crd.Crd) *ResourcesV1Client {
 }
 
 // New creates a new ResourcesV1Client for the given RESTClient.
-func New(c rest.Interface, def crd.Crd) *ResourcesV1Client {
-	return &ResourcesV1Client{restClient: c, def: def}
+func New(c rest.Interface) *ResourcesV1Client {
+	return &ResourcesV1Client{c}
 }
 
-func setConfigDefaults(config *rest.Config, def crd.Crd) error {
-	gv := def.GroupVersion()
+func setConfigDefaults(config *rest.Config) error {
+	gv := v1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
 	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
