@@ -148,12 +148,6 @@ var (
 		&MockResource{})
 )
 
-func init() {
-	if err := crd.AddCrd(MockResourceCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	MockResourceGVK = schema.GroupVersionKind{
 		Version: "v2alpha1",

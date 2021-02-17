@@ -9,8 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/solo-io/go-utils/log"
-	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -82,36 +80,6 @@ var _ = Describe("ResourceClientFactory", func() {
 				return err != nil && errors.IsNotFound(err)
 			}, time.Minute, time.Second*5).Should(BeTrue())
 
-		})
-
-		Context("and SkipCrdCreation=true", func() {
-
-			It("returns a CrdNotRegistered error", func() {
-				factory := KubeResourceClientFactory{
-					Crd:             v1.MockResourceCrd,
-					Cfg:             cfg,
-					SharedCache:     kube.NewKubeCache(context.TODO()),
-					SkipCrdCreation: true,
-				}
-				_, err := factory.NewResourceClient(ctx, NewResourceClientParams{
-					ResourceType: &v1.MockResource{},
-				})
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("list check failed: the server could not find the requested resource (get %s)", v1.MockResourceCrd.FullName())))
-			})
-		})
-		Context("and SkipCrdCreation=false", func() {
-			It("does not error", func() {
-				factory := KubeResourceClientFactory{
-					Crd:         v1.MockResourceCrd,
-					Cfg:         cfg,
-					SharedCache: kube.NewKubeCache(context.TODO()),
-				}
-				_, err := factory.NewResourceClient(ctx, NewResourceClientParams{
-					ResourceType: &v1.MockResource{},
-				})
-				Expect(err).NotTo(HaveOccurred())
-			})
 		})
 	})
 })

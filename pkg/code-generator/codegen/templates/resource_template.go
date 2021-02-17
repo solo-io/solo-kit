@@ -219,12 +219,6 @@ var (
 		&{{ .Name }}{})
 )
 
-func init() {
-	if err := crd.AddCrd({{ .Name }}Crd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 {{- end}}
 
 var (

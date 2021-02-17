@@ -136,12 +136,6 @@ var (
 		&FrequentlyChangingAnnotationsResource{})
 )
 
-func init() {
-	if err := crd.AddCrd(FrequentlyChangingAnnotationsResourceCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	FrequentlyChangingAnnotationsResourceGVK = schema.GroupVersionKind{
 		Version: "v2alpha1",

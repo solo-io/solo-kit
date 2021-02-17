@@ -49,7 +49,7 @@ var _ = Describe("Clientset", func() {
 	It("registers, creates, deletes resource implementations", func() {
 		apiextsClient, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		err = mocksv1.MockResourceCrd.Register(ctx, apiextsClient)
+		err = helpers.AddAndRegisterCrd(ctx, mocksv1.MockResourceCrd, apiextsClient)
 		Expect(err).NotTo(HaveOccurred())
 
 		c, err := apiextsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(ctx, v1.ListOptions{})

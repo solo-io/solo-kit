@@ -148,12 +148,6 @@ var (
 		&ClusterResource{})
 )
 
-func init() {
-	if err := crd.AddCrd(ClusterResourceCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	ClusterResourceGVK = schema.GroupVersionKind{
 		Version: "v1",

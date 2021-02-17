@@ -17,7 +17,6 @@ import (
 type kubeResourceClientFactory struct {
 	cacheGetter        clustercache.CacheGetter
 	crd                crd.Crd
-	skipCrdCreation    bool
 	namespaceWhitelist []string
 	resyncPeriod       time.Duration
 	params             factory.NewResourceClientParams
@@ -28,7 +27,6 @@ var _ multicluster_factory.ClusterClientFactory = &kubeResourceClientFactory{}
 func NewKubeResourceClientFactory(
 	cacheGetter clustercache.CacheGetter,
 	crd crd.Crd,
-	skipCrdCreation bool,
 	namespaceWhitelist []string,
 	resyncPeriod time.Duration,
 	params factory.NewResourceClientParams) *kubeResourceClientFactory {
@@ -36,7 +34,6 @@ func NewKubeResourceClientFactory(
 	return &kubeResourceClientFactory{
 		cacheGetter:        cacheGetter,
 		crd:                crd,
-		skipCrdCreation:    skipCrdCreation,
 		namespaceWhitelist: namespaceWhitelist,
 		resyncPeriod:       resyncPeriod,
 		params:             params,
@@ -54,7 +51,6 @@ func (g *kubeResourceClientFactory) GetClient(ctx context.Context, cluster strin
 		Crd:                g.crd,
 		Cfg:                restConfig,
 		SharedCache:        typedCache,
-		SkipCrdCreation:    g.skipCrdCreation,
 		NamespaceWhitelist: g.namespaceWhitelist,
 		ResyncPeriod:       g.resyncPeriod,
 		Cluster:            cluster,

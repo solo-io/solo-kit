@@ -1,7 +1,6 @@
 package crd
 
 import (
-	"context"
 	"log"
 	"sync"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -75,10 +73,6 @@ func NewCrd(
 		log.Panicf("error while adding [%v] CRD to scheme: %v", c.FullName(), err)
 	}
 	return c
-}
-
-func (d Crd) Register(ctx context.Context, apiexts apiexts.Interface) error {
-	return getRegistry().registerCrd(ctx, d.GroupVersionKind(), apiexts)
 }
 
 func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error) {

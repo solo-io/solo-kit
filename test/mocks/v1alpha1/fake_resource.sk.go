@@ -136,12 +136,6 @@ var (
 		&FakeResource{})
 )
 
-func init() {
-	if err := crd.AddCrd(FakeResourceCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	FakeResourceGVK = schema.GroupVersionKind{
 		Version: "v1alpha1",

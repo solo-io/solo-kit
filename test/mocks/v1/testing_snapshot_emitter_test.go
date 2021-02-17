@@ -20,6 +20,7 @@ import (
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/test/helpers"
+	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -41,6 +42,7 @@ var _ = Describe("V1Emitter", func() {
 		namespace2                string
 		name1, name2              = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg                       *rest.Config
+		clientset                 *apiext.Clientset
 		kube                      kubernetes.Interface
 		emitter                   TestingEmitter
 		mockResourceClient        MockResourceClient
@@ -60,12 +62,18 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
+
+		clientset, err = apiext.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
 		// MockResource Constructor
 		mockResourceClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         MockResourceCrd,
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
+
+		err = helpers.AddAndRegisterCrd(ctx, MockResourceCrd, clientset)
+		Expect(err).NotTo(HaveOccurred())
 
 		mockResourceClient, err = NewMockResourceClient(ctx, mockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -83,6 +91,9 @@ var _ = Describe("V1Emitter", func() {
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
+		err = helpers.AddAndRegisterCrd(ctx, AnotherMockResourceCrd, clientset)
+		Expect(err).NotTo(HaveOccurred())
+
 		anotherMockResourceClient, err = NewAnotherMockResourceClient(ctx, anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// ClusterResource Constructor
@@ -91,6 +102,9 @@ var _ = Describe("V1Emitter", func() {
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
+
+		err = helpers.AddAndRegisterCrd(ctx, ClusterResourceCrd, clientset)
+		Expect(err).NotTo(HaveOccurred())
 
 		clusterResourceClient, err = NewClusterResourceClient(ctx, clusterResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())

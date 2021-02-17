@@ -3,6 +3,7 @@ package tests_test
 import (
 	"context"
 
+	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/matchers"
 
 	. "github.com/onsi/ginkgo"
@@ -37,17 +38,16 @@ var _ = Describe("Generated Kube Code", func() {
 		apiExts, err = apiext.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = skv1alpha2.MockResourceCrd.Register(ctx, apiExts)
+		err = helpers.AddAndRegisterCrd(ctx, skv1alpha2.MockResourceCrd, apiExts)
 		Expect(err).NotTo(HaveOccurred())
 
 		testClient, err = v2alpha1client.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		skClient, err = skv1alpha2.NewMockResourceClient(ctx, &factory.KubeResourceClientFactory{
-			Crd:             skv1alpha2.MockResourceCrd,
-			Cfg:             cfg,
-			SharedCache:     kube.NewKubeCache(context.TODO()),
-			SkipCrdCreation: true,
+			Crd:         skv1alpha2.MockResourceCrd,
+			Cfg:         cfg,
+			SharedCache: kube.NewKubeCache(context.TODO()),
 		})
 
 	})

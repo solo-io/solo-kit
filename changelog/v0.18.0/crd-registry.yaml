@@ -1,0 +1,6 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Stop allowing resource factories to register CRDs
+    issueLink: https://github.com/solo-io/gloo/issues/2108
+    resolvesIssue: false
