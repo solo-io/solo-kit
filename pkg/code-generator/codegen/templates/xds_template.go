@@ -11,8 +11,8 @@ import (
 	"errors"
 	"fmt"
 
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	discovery "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+    discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -88,7 +88,7 @@ func New{{ upper_camel .Name }}Server(genericServer server.Server) {{ upper_came
 }
 
 func (s *{{ lower_camel .Name }}Server) Stream{{ upper_camel .MessageType }}(stream {{ upper_camel .Name }}_Stream{{ upper_camel .MessageType }}Server) error {
-	return s.Server.StreamV2(stream, {{ upper_camel .MessageType }}Type)
+	return s.Server.StreamV3(stream, {{ upper_camel .MessageType }}Type)
 }
 
 func (s *{{ lower_camel .Name }}Server) Fetch{{ upper_camel .MessageType }}(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -96,7 +96,7 @@ func (s *{{ lower_camel .Name }}Server) Fetch{{ upper_camel .MessageType }}(ctx 
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = {{ upper_camel .MessageType }}Type
-	return s.Server.FetchV2(ctx, req)
+	return s.Server.FetchV3(ctx, req)
 }
 
 func (s *{{ lower_camel .Name }}Server) Delta{{ upper_camel .MessageType }}(_ {{ upper_camel .Name }}_Delta{{ upper_camel .MessageType }}Server) error {

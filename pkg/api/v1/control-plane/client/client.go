@@ -17,14 +17,14 @@ package client
 import (
 	"context"
 
-	status "google.golang.org/genproto/googleapis/rpc/status"
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+
+	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
 	"github.com/golang/protobuf/proto"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	envoy_api_v3_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
 	"google.golang.org/grpc"
@@ -69,32 +69,30 @@ type Client interface {
 }
 
 type client struct {
-	nodeinfo *envoy_api_v2_core.Node
+	nodeinfo *envoy_api_v3_core.Node
 	rtype    TypeRecord
 	apply    func(cache.Resources) error
 }
 
-func NewClient(nodeinfo *envoy_api_v2_core.Node, rtype TypeRecord, apply func(cache.Resources) error) Client {
+func NewClient(nodeinfo *envoy_api_v3_core.Node, rtype TypeRecord, apply func(cache.Resources) error) Client {
 	return &client{
 		nodeinfo: nodeinfo,
 		rtype:    rtype,
 		apply:    apply,
 	}
-
 }
 
 /**
  * Start a client. this function is blocking.
  */
-
 func (c *client) Start(ctx context.Context, cc *grpc.ClientConn) error {
-	client := discovery.NewAggregatedDiscoveryServiceClient(cc)
+	client := envoy_service_discovery_v3.NewAggregatedDiscoveryServiceClient(cc)
 	resourceclient, err := client.StreamAggregatedResources(ctx)
 	if err != nil {
 		return err
 	}
 	// get a request going
-	dr := &v2.DiscoveryRequest{
+	dr := &envoy_service_discovery_v3.DiscoveryRequest{
 		VersionInfo:   "",
 		Node:          c.nodeinfo,
 		ResourceNames: []string{},
