@@ -97,7 +97,7 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 func generateFilesForXdsResource(resource *model.XDSResource) (code_generator.Files, error) {
 	var v code_generator.Files
 	for suffix, tmpl := range map[string]*template.Template{
-		"_xds.sk.sk.go": templates.XdsTemplate,
+		"_xds.sk.go": templates.XdsTemplate,
 	} {
 		content, err := generateXdsResourceFile(resource, tmpl)
 		if err != nil {
