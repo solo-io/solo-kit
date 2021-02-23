@@ -5,10 +5,15 @@ package solo.io.envoy.type.v3;
 import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 
+option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/type/v3";
 option java_package = "io.envoyproxy.solo.io.envoy.type.v3";
 option java_outer_classname = "SemanticVersionProto";
 option java_multiple_files = true;
 option (udpa.annotations.file_status).package_version_status = ACTIVE;
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // [#protodoc-title: Semantic Version]
 

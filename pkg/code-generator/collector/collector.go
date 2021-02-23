@@ -250,6 +250,7 @@ func (c *collector) findImportRelativeToRoot(absoluteRoot, importedProtoFile str
 var defaultGogoArgs = []string{
 	"plugins=grpc",
 	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
+	"Mgithub.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3",
 }
 
 func (c *collector) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {

@@ -19,14 +19,18 @@ import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: Common types]
 
 
 // Identifies location of where either Envoy runs or where upstream hosts run.
 message Locality {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Locality";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Locality";
 
   // Region this :ref:`zone <envoy_api_field_config.core.v3.Locality.zone>` belongs to.
   string region = 1;
@@ -50,10 +54,10 @@ message Locality {
 // BuildVersion combines SemVer version of extension with free-form build information
 // (i.e. 'alpha', 'private-build') as a set of strings.
 message BuildVersion {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.BuildVersion";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.BuildVersion";
 
   // SemVer version of extension.
-  type.v3.SemanticVersion version = 1;
+  solo.io.envoy.type.v3.SemanticVersion version = 1;
 
   // Free-form build information.
   // Envoy defines several well known keys in the source/common/version/version.h file
@@ -63,7 +67,7 @@ message BuildVersion {
 // Version and identification for an Envoy extension.
 // [#next-free-field: 6]
 message Extension {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Extension";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Extension";
 
   // This is the name of the Envoy filter as specified in the Envoy
   // configuration, e.g. envoy.filters.http.router, com.acme.widget.
@@ -95,7 +99,7 @@ message Extension {
 // configuration for serving.
 // [#next-free-field: 12]
 message Node {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Node";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Node";
 
   reserved 5;
 
@@ -157,13 +161,13 @@ message Node {
   // for filtering :ref:`listeners <config_listeners>` to be returned. For example,
   // if there is a listener bound to port 80, the list can optionally contain the
   // SocketAddress `(0.0.0.0,80)`. The field is optional and just a hint.
-  repeated Address listening_addresses = 11 [deprecated = true];
+  repeated solo.io.envoy.config.core.v3.Address listening_addresses = 11 [deprecated = true];
 }
 
 
 // Runtime derived uint32 with a default when not specified.
 message RuntimeUInt32 {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.RuntimeUInt32";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.RuntimeUInt32";
 
   // Default value if runtime value is not available.
   uint32 default_value = 2;
@@ -175,7 +179,7 @@ message RuntimeUInt32 {
 
 // Identifies a specific ControlPlane instance that Envoy is connected to.
 message ControlPlane {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.ControlPlane";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.ControlPlane";
 
   // An opaque control plane identifier that uniquely identifies an instance
   // of control plane. This can be used to identify which control plane instance,

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package solo.io.envoy.service.discovery.v3;
+package envoy.service.discovery.v3;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto";
 
@@ -11,10 +11,15 @@ import "google/rpc/status.proto";
 import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 
-option java_package = "io.envoyproxy.solo.io.envoy.service.discovery.v3";
+option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/service/discovery/v3";
+option java_package = "io.envoyproxy.envoy.service.discovery.v3";
 option java_outer_classname = "DiscoveryProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // [#protodoc-title: Common discovery API components]
 
@@ -22,7 +27,7 @@ option (udpa.annotations.file_status).package_version_status = ACTIVE;
 // a given Envoy node on some API.
 // [#next-free-field: 7]
 message DiscoveryRequest {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.DiscoveryRequest";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.DiscoveryRequest";
 
   // The version_info provided in the request messages will be the version_info
   // received with the most recent successfully processed response or empty on
@@ -34,7 +39,7 @@ message DiscoveryRequest {
   string version_info = 1;
 
   // The node making the request.
-  config.core.v3.Node node = 2;
+  solo.io.envoy.config.core.v3.Node node = 2;
 
   // List of resources to subscribe to, e.g. list of cluster names or a route
   // configuration name. If this is empty, all resources for the API are
@@ -66,7 +71,7 @@ message DiscoveryRequest {
 
 // [#next-free-field: 7]
 message DiscoveryResponse {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.DiscoveryResponse";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.DiscoveryResponse";
 
   // The version of the response data.
   string version_info = 1;
@@ -105,7 +110,7 @@ message DiscoveryResponse {
   string nonce = 5;
 
   // The control plane instance that sent the response.
-  config.core.v3.ControlPlane control_plane = 6;
+  solo.io.envoy.config.core.v3.ControlPlane control_plane = 6;
 }
 
 // DeltaDiscoveryRequest and DeltaDiscoveryResponse are used in a new gRPC
@@ -142,10 +147,10 @@ message DiscoveryResponse {
 // initial_resource_versions.
 // [#next-free-field: 8]
 message DeltaDiscoveryRequest {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.DeltaDiscoveryRequest";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.DeltaDiscoveryRequest";
 
   // The node making the request.
-  config.core.v3.Node node = 1;
+  solo.io.envoy.config.core.v3.Node node = 1;
 
   // Type of the resource that is being requested, e.g.
   // "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment". This does not need to be set if
@@ -203,7 +208,7 @@ message DeltaDiscoveryRequest {
 
 // [#next-free-field: 8]
 message DeltaDiscoveryResponse {
-  option (udpa.annotations.versioning).previous_message_type =
+  option (solo.io.udpa.annotations.versioning).previous_message_type =
       "envoy.api.v2.DeltaDiscoveryResponse";
 
   // The version of the response data (used for debugging).
@@ -229,12 +234,12 @@ message DeltaDiscoveryResponse {
 
   // [#not-implemented-hide:]
   // The control plane instance that sent the response.
-  config.core.v3.ControlPlane control_plane = 7;
+  solo.io.envoy.config.core.v3.ControlPlane control_plane = 7;
 }
 
 // [#next-free-field: 8]
 message Resource {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.Resource";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.Resource";
 
   // Cache control properties for the resource.
   // [#not-implemented-hide:]

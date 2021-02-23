@@ -16,7 +16,7 @@ go_package Comments a
 */
 option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
-import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto";
 import "google/api/annotations.proto";
 
 /*
@@ -80,16 +80,16 @@ message MockXdsResourceConfig {
 @solo-kit:resource.xds-enabled
 */
 service MockXdsResourceDiscoveryService {
-    rpc StreamMockXdsResourceConfig(stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+    rpc StreamMockXdsResourceConfig(stream envoy.service.discovery.v3.DiscoveryRequest) returns (stream  envoy.service.discovery.v3.DiscoveryResponse) {
     }
 
-    rpc DeltaMockXdsResourceConfig(stream envoy.api.v2.DeltaDiscoveryRequest)
-        returns (stream envoy.api.v2.DeltaDiscoveryResponse) {
+    rpc DeltaMockXdsResourceConfig(stream  envoy.service.discovery.v3.DeltaDiscoveryRequest)
+        returns ( envoy.service.discovery.v3.DeltaDiscoveryResponse) {
     }
 
-    rpc FetchMockXdsResourceConfig(envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
+    rpc FetchMockXdsResourceConfig( envoy.service.discovery.v3.DiscoveryRequest) returns ( envoy.service.discovery.v3.DiscoveryResponse) {
         option (google.api.http) = {
-        post: "/v2/discovery:mockxdsresourceconfig"
+        post: "/v3/discovery:mockxdsresourceconfig"
         body: "*"
         };
     }
