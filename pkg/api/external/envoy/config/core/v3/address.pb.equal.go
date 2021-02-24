@@ -58,40 +58,6 @@ func (m *Pipe) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *EnvoyInternalAddress) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*EnvoyInternalAddress)
-	if !ok {
-		that2, ok := that.(EnvoyInternalAddress)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	switch m.AddressNameSpecifier.(type) {
-
-	case *EnvoyInternalAddress_ServerListenerName:
-
-		if strings.Compare(m.GetServerListenerName(), target.GetServerListenerName()) != 0 {
-			return false
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
 func (m *SocketAddress) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -148,6 +114,121 @@ func (m *SocketAddress) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *TcpKeepalive) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*TcpKeepalive)
+	if !ok {
+		that2, ok := that.(TcpKeepalive)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetKeepaliveProbes()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetKeepaliveProbes()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetKeepaliveProbes(), target.GetKeepaliveProbes()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetKeepaliveTime()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetKeepaliveTime()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetKeepaliveTime(), target.GetKeepaliveTime()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetKeepaliveInterval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetKeepaliveInterval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetKeepaliveInterval(), target.GetKeepaliveInterval()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *BindConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*BindConfig)
+	if !ok {
+		that2, ok := that.(BindConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetSourceAddress()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSourceAddress()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSourceAddress(), target.GetSourceAddress()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetFreebind()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFreebind()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFreebind(), target.GetFreebind()) {
+			return false
+		}
+	}
+
+	if len(m.GetSocketOptions()) != len(target.GetSocketOptions()) {
+		return false
+	}
+	for idx, v := range m.GetSocketOptions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSocketOptions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSocketOptions()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Address) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -194,18 +275,44 @@ func (m *Address) Equal(that interface{}) bool {
 			}
 		}
 
-	case *Address_EnvoyInternalAddress:
+	}
 
-		if h, ok := interface{}(m.GetEnvoyInternalAddress()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetEnvoyInternalAddress()) {
-				return false
-			}
+	return true
+}
+
+// Equal function
+func (m *CidrRange) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*CidrRange)
+	if !ok {
+		that2, ok := that.(CidrRange)
+		if ok {
+			target = &that2
 		} else {
-			if !proto.Equal(m.GetEnvoyInternalAddress(), target.GetEnvoyInternalAddress()) {
-				return false
-			}
+			return false
 		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
 
+	if strings.Compare(m.GetAddressPrefix(), target.GetAddressPrefix()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPrefixLen()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPrefixLen()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPrefixLen(), target.GetPrefixLen()) {
+			return false
+		}
 	}
 
 	return true

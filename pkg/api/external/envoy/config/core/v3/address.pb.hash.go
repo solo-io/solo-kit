@@ -51,32 +51,6 @@ func (m *Pipe) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *EnvoyInternalAddress) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/solo-kit/pkg/api/external/envoy/config/core/v3.EnvoyInternalAddress")); err != nil {
-		return 0, err
-	}
-
-	switch m.AddressNameSpecifier.(type) {
-
-	case *EnvoyInternalAddress_ServerListenerName:
-
-		if _, err = hasher.Write([]byte(m.GetServerListenerName())); err != nil {
-			return 0, err
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
 func (m *SocketAddress) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -120,6 +94,126 @@ func (m *SocketAddress) Hash(hasher hash.Hash64) (uint64, error) {
 
 		if _, err = hasher.Write([]byte(m.GetNamedPort())); err != nil {
 			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *TcpKeepalive) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/solo-kit/pkg/api/external/envoy/config/core/v3.TcpKeepalive")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetKeepaliveProbes()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetKeepaliveProbes(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetKeepaliveTime()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetKeepaliveTime(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetKeepaliveInterval()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetKeepaliveInterval(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *BindConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/solo-kit/pkg/api/external/envoy/config/core/v3.BindConfig")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetSourceAddress()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetSourceAddress(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetFreebind()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetFreebind(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, v := range m.GetSocketOptions() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
 		}
 
 	}
@@ -174,22 +268,40 @@ func (m *Address) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *Address_EnvoyInternalAddress:
+	}
 
-		if h, ok := interface{}(m.GetEnvoyInternalAddress()).(safe_hasher.SafeHasher); ok {
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *CidrRange) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/solo-kit/pkg/api/external/envoy/config/core/v3.CidrRange")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAddressPrefix())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetPrefixLen()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetPrefixLen(), nil); err != nil {
+			return 0, err
 		} else {
-			if val, err := hashstructure.Hash(m.GetEnvoyInternalAddress(), nil); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
-			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-					return 0, err
-				}
 			}
 		}
-
 	}
 
 	return hasher.Sum64(), nil
