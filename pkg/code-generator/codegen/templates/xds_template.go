@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-    discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 

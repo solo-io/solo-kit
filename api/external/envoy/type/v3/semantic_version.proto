@@ -9,7 +9,7 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/type/v3"
 option java_package = "io.envoyproxy.solo.io.envoy.type.v3";
 option java_outer_classname = "SemanticVersionProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
@@ -21,7 +21,7 @@ option (extproto.equal_all) = true;
 // expected behaviors and APIs, the patch version field is used only
 // for security fixes and can be generally ignored.
 message SemanticVersion {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.type.SemanticVersion";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.type.SemanticVersion";
 
   uint32 major_number = 1;
 
