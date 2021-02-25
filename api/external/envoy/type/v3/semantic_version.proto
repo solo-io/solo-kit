@@ -11,6 +11,8 @@ option java_outer_classname = "SemanticVersionProto";
 option java_multiple_files = true;
 option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
+import "validate/validate.proto";
+
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 option (extproto.equal_all) = true;
