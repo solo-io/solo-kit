@@ -1,0 +1,6 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Introduce envoy discovery v3 clients.
+    issueLink: https://github.com/solo-io/gloo/issues/4320
+    resolvesIssue: false
