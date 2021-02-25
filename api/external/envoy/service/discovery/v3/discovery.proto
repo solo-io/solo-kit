@@ -39,7 +39,7 @@ message DiscoveryRequest {
   string version_info = 1;
 
   // The node making the request.
-  solo.io.envoy.config.core.v3.Node node = 2;
+  solo.io.kit.envoy.config.core.v3.Node node = 2;
 
   // List of resources to subscribe to, e.g. list of cluster names or a route
   // configuration name. If this is empty, all resources for the API are
@@ -110,7 +110,7 @@ message DiscoveryResponse {
   string nonce = 5;
 
   // The control plane instance that sent the response.
-  solo.io.envoy.config.core.v3.ControlPlane control_plane = 6;
+  solo.io.kit.envoy.config.core.v3.ControlPlane control_plane = 6;
 }
 
 // DeltaDiscoveryRequest and DeltaDiscoveryResponse are used in a new gRPC
@@ -150,7 +150,7 @@ message DeltaDiscoveryRequest {
   option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.DeltaDiscoveryRequest";
 
   // The node making the request.
-  solo.io.envoy.config.core.v3.Node node = 1;
+  solo.io.kit.envoy.config.core.v3.Node node = 1;
 
   // Type of the resource that is being requested, e.g.
   // "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment". This does not need to be set if
@@ -234,7 +234,7 @@ message DeltaDiscoveryResponse {
 
   // [#not-implemented-hide:]
   // The control plane instance that sent the response.
-  solo.io.envoy.config.core.v3.ControlPlane control_plane = 7;
+  solo.io.kit.envoy.config.core.v3.ControlPlane control_plane = 7;
 }
 
 // [#next-free-field: 8]

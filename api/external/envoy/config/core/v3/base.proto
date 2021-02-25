@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package solo.io.envoy.config.core.v3;
+package solo.io.kit.envoy.config.core.v3;
 
 option java_outer_classname = "BaseProto";
 option java_multiple_files = true;
@@ -57,7 +57,7 @@ message BuildVersion {
   option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.BuildVersion";
 
   // SemVer version of extension.
-  solo.io.envoy.type.v3.SemanticVersion version = 1;
+  solo.io.kit.envoy.type.v3.SemanticVersion version = 1;
 
   // Free-form build information.
   // Envoy defines several well known keys in the source/common/version/version.h file
@@ -161,7 +161,7 @@ message Node {
   // for filtering :ref:`listeners <config_listeners>` to be returned. For example,
   // if there is a listener bound to port 80, the list can optionally contain the
   // SocketAddress `(0.0.0.0,80)`. The field is optional and just a hint.
-  repeated solo.io.envoy.config.core.v3.Address listening_addresses = 11 [deprecated = true];
+  repeated solo.io.kit.envoy.config.core.v3.Address listening_addresses = 11 [deprecated = true];
 }
 
 

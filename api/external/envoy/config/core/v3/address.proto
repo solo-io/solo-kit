@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package solo.io.envoy.config.core.v3;
+package solo.io.kit.envoy.config.core.v3;
 
 import "google/protobuf/wrappers.proto";
 
