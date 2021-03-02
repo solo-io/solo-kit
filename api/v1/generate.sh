@@ -30,13 +30,13 @@ IMPORTS="\
     -I=${ROOT} \
     -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext"
 
-GOGO_FLAG="--go_out=${TEMP_DIR}"
+GO_FLAG="--go_out=${TEMP_DIR}"
 HASH_FLAG="--ext_out=${TEMP_DIR}"
 
 INPUT_PROTOS="${IN}*.proto"
 
 protoc ${IMPORTS} \
-    ${GOGO_FLAG} \
+    ${GO_FLAG} \
     ${HASH_FLAG} \
     ${INPUT_PROTOS}
 

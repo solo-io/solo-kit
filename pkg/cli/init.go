@@ -104,17 +104,16 @@ const generate_go = `package v1
 
 const generate_sh = `#!/usr/bin/env bash
 
-GOGO_OUT_FLAG="--gogo_out=${GOPATH}/src/"
+GO_OUT_FLAG="--go_out=${GOPATH}/src/"
 SOLO_KIT_FLAG="--plugin=protoc-gen-solo-kit=${GOPATH}/bin/protoc-gen-solo-kit --solo-kit_out"
 
 ROOT=${GOPATH}/src/{{ .ProjectGopath }}
 
 OUT=${ROOT}/pkg/api/v1/
 protoc -I=./ \
-    -I=${GOPATH}/src/github.com/gogo/protobuf/ \
     -I=${ROOT} \
     -I=${GOPATH}/src \
-    ${GOGO_OUT_FLAG} \
+    ${GO_OUT_FLAG} \
     ${SOLO_KIT_FLAG}=${OUT} \
     *.proto
 `
