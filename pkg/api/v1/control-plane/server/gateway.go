@@ -15,15 +15,16 @@
 package server
 
 import (
-	"bytes"
 	"io/ioutil"
 	"net/http"
 	"path"
 
+	"github.com/golang/protobuf/proto"
+
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
 )
 
 // HTTPGateway is a custom implementation of [gRPC gateway](https://github.com/grpc-ecosystem/grpc-gateway)
@@ -49,6 +50,7 @@ func NewHTTPGateway(log log.Logger, srv Server, urlToType ...map[string]string) 
 }
 
 func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+
 	p := path.Clean(req.URL.Path)
 
 	typeURL, ok := h.UrlToType[p]
@@ -80,7 +82,9 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	// TODO: Attempt to parse as V3, and then V2
 	// parse as JSON
 	out := &envoy_service_discovery_v3.DiscoveryRequest{}
-	err = jsonpb.UnmarshalString(string(body), out)
+	outV2 := proto.MessageV2(out) // convert to proto v2 since newer unmarshal is faster
+	err = jsonpb.Unmarshal(body, outV2)
+
 	if err != nil {
 		h.Log.Debugf("cannot parse JSON body: " + err.Error())
 		http.Error(resp, "cannot parse JSON body: "+err.Error(), http.StatusBadRequest)
@@ -102,13 +106,14 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	buf := &bytes.Buffer{}
-	if err := (&jsonpb.Marshaler{OrigName: true}).Marshal(buf, res); err != nil {
+	resV2 := proto.MessageV2(res) // convert to proto v2 since newer marshal is faster
+	bytes, err := jsonpb.Marshal(resV2)
+	if err != nil {
 		h.Log.Debugf("marshal error: " + err.Error())
 		http.Error(resp, "marshal error: "+err.Error(), http.StatusInternalServerError)
 	}
 
-	if _, err = resp.Write(buf.Bytes()); err != nil && h.Log != nil {
+	if _, err = resp.Write(bytes); err != nil && h.Log != nil {
 		h.Log.Errorf("gateway error: %v", err)
 	}
 }
