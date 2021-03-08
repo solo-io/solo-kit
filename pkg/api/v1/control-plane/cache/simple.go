@@ -139,10 +139,15 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
 				if cache.log != nil {
 					cache.log.Infof("respond open watch %d%v with new version %q", id, watch.Request.ResourceNames, version)
 				}
-				cache.respond(watch.Request, watch.Response, snapshot.GetResources(watch.Request.TypeUrl).Items, version)
 
-				// discard the watch
-				delete(info.watches, id)
+				resources := snapshot.GetResources(watch.Request.TypeUrl).Items
+				if resources != nil {
+					// snapshot has been initialized and exists
+					cache.respond(watch.Request, watch.Response, resources, version)
+
+					// discard the watch
+					delete(info.watches, id)
+				}
 			}
 		}
 		info.mu.Unlock()
@@ -201,7 +206,7 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 
 	info, ok := cache.status[nodeID]
 	if !ok {
-		info = newStatusInfo(request.Node)
+		info = NewStatusInfo(request.Node)
 		cache.status[nodeID] = info
 	}
 
