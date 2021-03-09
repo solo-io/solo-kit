@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Set snapshot will send a response for a resource only if that snapshot resource has been set.
+    issueLink: https://github.com/solo-io/gloo/issues/4084
+    resolvesIssue: false
