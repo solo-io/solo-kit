@@ -2,6 +2,9 @@ package cache_test
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v32 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -14,8 +17,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
-	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
