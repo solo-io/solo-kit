@@ -141,6 +141,9 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
 				}
 
 				resources := snapshot.GetResources(watch.Request.TypeUrl).Items
+				// Before sending a response, need to be able to differentiate between a resource in the snapshot that does not exist vs. should be empty
+				// nil resource - not set in the snapshot and should not be updated
+				// empty resource - intended behavior is for the resources to be cleared
 				if resources != nil {
 					// snapshot has been initialized and exists
 					cache.respond(watch.Request, watch.Response, resources, version)

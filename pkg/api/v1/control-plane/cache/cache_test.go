@@ -2,7 +2,6 @@ package cache_test
 
 import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	rsrc "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -59,19 +58,17 @@ var _ = Describe("Control Plane Cache", func() {
 
 	It("Setting snapshot correctly updates the version", func() {
 		names := map[string][]string{
-			rsrc.EndpointType: {clusterName},
-			rsrc.ClusterType:  nil,
-			rsrc.RouteType:    {routeName},
-			rsrc.ListenerType: nil,
-			rsrc.RuntimeType:  nil,
+			resource.EndpointTypeV3: {clusterName},
+			resource.ClusterTypeV3:  nil,
+			resource.RouteTypeV3:    {routeName},
+			resource.ListenerTypeV3: nil,
 		}
 
 		testTypes := []string{
-			rsrc.EndpointType,
-			rsrc.ClusterType,
-			rsrc.RouteType,
-			rsrc.ListenerType,
-			rsrc.RuntimeType,
+			resource.EndpointTypeV3,
+			resource.ClusterTypeV3,
+			resource.RouteTypeV3,
+			resource.ListenerTypeV3,
 		}
 
 		c := cache.NewSnapshotCache(true, TestIDHash{}, nil)
@@ -112,11 +109,11 @@ var _ = Describe("Control Plane Cache", func() {
 		snap, err := c.GetSnapshot(key)
 		Expect(err).ToNot(HaveOccurred())
 		// check versions for resources
-		Expect(snap.GetResources(rsrc.ListenerType).Version).To(Equal(version))
-		Expect(snap.GetResources(rsrc.ClusterType).Version).To(Equal(version))
-		Expect(snap.GetResources(rsrc.RouteType).Version).To(Equal(version))
+		Expect(snap.GetResources(resource.ListenerTypeV3).Version).To(Equal(version))
+		Expect(snap.GetResources(resource.ClusterTypeV3).Version).To(Equal(version))
+		Expect(snap.GetResources(resource.RouteTypeV3).Version).To(Equal(version))
 		// endpoint resource was not set in snapshot
-		Expect(snap.GetResources(rsrc.EndpointType).Version).To(Equal(""))
+		Expect(snap.GetResources(resource.EndpointTypeV3).Version).To(Equal(""))
 
 		newName := "test2"
 		snapshot2 := &TestSnapshot{
@@ -136,11 +133,11 @@ var _ = Describe("Control Plane Cache", func() {
 		snap2, err := c.GetSnapshot(key)
 		Expect(err).ToNot(HaveOccurred())
 		// update to version y
-		Expect(snap2.GetResources(rsrc.EndpointType).Version).To(Equal(version2))
-		Expect(snap2.GetResources(rsrc.ClusterType).Version).To(Equal(version2))
+		Expect(snap2.GetResources(resource.EndpointTypeV3).Version).To(Equal(version2))
+		Expect(snap2.GetResources(resource.ClusterTypeV3).Version).To(Equal(version2))
 		// the cache will reset to empty version for missing resources
-		Expect(snap2.GetResources(rsrc.ListenerType).Version).To(Equal(""))
-		Expect(snap2.GetResources(rsrc.RouteType).Version).To(Equal(""))
+		Expect(snap2.GetResources(resource.ListenerTypeV3).Version).To(Equal(""))
+		Expect(snap2.GetResources(resource.RouteTypeV3).Version).To(Equal(""))
 	})
 
 })
