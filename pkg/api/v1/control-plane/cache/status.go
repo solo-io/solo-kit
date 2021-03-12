@@ -64,8 +64,8 @@ type ResponseWatch struct {
 	Response chan Response
 }
 
-// newStatusInfo initializes a status info data structure.
-func newStatusInfo(node *envoy_config_core_v3.Node) *statusInfo {
+// NewStatusInfo initializes a status info data structure.
+func NewStatusInfo(node *envoy_config_core_v3.Node) *statusInfo {
 	out := statusInfo{
 		node:    node,
 		watches: make(map[int64]ResponseWatch),
