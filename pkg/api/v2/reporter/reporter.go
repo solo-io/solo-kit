@@ -137,7 +137,7 @@ func (e ResourceReports) Find(kind string, ref *core.ResourceRef) (resources.Inp
 	return nil, Report{}
 }
 
-func (e ResourceReports) FilterByKind(kind string) map[resources.InputResource]Report {
+func (e ResourceReports) FilterByKind(kind string) ResourceReports {
 	reports := make(map[resources.InputResource]Report)
 	for res, rpt := range e {
 		if resources.Kind(res) == kind {
