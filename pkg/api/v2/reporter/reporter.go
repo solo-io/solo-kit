@@ -137,6 +137,16 @@ func (e ResourceReports) Find(kind string, ref *core.ResourceRef) (resources.Inp
 	return nil, Report{}
 }
 
+func (e ResourceReports) FilterByKind(kind string) ResourceReports {
+	reports := make(map[resources.InputResource]Report)
+	for res, rpt := range e {
+		if resources.Kind(res) == kind {
+			reports[res] = rpt
+		}
+	}
+	return reports
+}
+
 // ignores warnings
 func (e ResourceReports) Validate() error {
 	var errs error
