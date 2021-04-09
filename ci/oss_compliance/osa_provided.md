@@ -4,6 +4,7 @@ Name|Version|License
 [Masterminds/semver](https://github.com/Masterminds/semver)|v1.4.2|MIT License
 [Masterminds/sprig](https://github.com/Masterminds/sprig)|v2.20.0+incompatible|MIT License
 [protoc-gen-validate/validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.4.0|Apache License 2.0
+[ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.1|BSD 3-clause "New" or "Revised" License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.4.3|BSD 3-clause "New" or "Revised" License
 [google/gofuzz](https://github.com/google/gofuzz)|v1.1.0|Apache License 2.0
@@ -32,10 +33,13 @@ Name|Version|License
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
 [gopkg.in/inf.v0](https://gopkg.in/inf.v0)|v0.9.1|BSD 3-clause "New" or "Revised" License
 [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)|v2.3.0|Apache License 2.0
+[apiextensions/v1beta1](https://k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1)|v0.18.6|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.18.6|Apache License 2.0
 [util/retry](https://k8s.io/client-go/util/retry)|v0.18.6|Apache License 2.0
 [k8s.io/klog](https://k8s.io/klog)|v1.0.0|Apache License 2.0
+[utils/pointer](https://k8s.io/utils/pointer)|v0.0.0-20200603063816-c1c6865ac451|Apache License 2.0
 [v3/value](https://sigs.k8s.io/structured-merge-diff/v3/value)|v3.0.0|Apache License 2.0
+[sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.2.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License
 [envoyproxy/envoy](https://github.com/envoyproxy/envoy)|latest|Apache License 2.0

@@ -12,6 +12,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
+
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/anyvendor/anyvendor"
@@ -82,6 +84,8 @@ type GenerateOptions struct {
 
 	// config for anyvendor
 	ExternalImports *sk_anyvendor.Imports
+
+	ValidationSchemaOpts *schemagen.ValidationSchemaOptions
 }
 
 type Runner struct {
@@ -313,6 +317,11 @@ func (r *Runner) Run() error {
 		}
 
 		if err := docgen.WritePerProjectsDocs(project, r.Opts.GenDocs, workingRootAbsolute); err != nil {
+			return err
+		}
+
+		// Generate validation schema
+		if err := schemagen.GenerateProjectValidationSchema(project, r.Opts.ValidationSchemaOpts); err != nil {
 			return err
 		}
 

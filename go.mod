@@ -50,6 +50,7 @@ require (
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
+	golang.org/x/mod v0.3.1-0.20200828183125-ce943fd02449 // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/tools v0.0.0-20200811153730-74512f09e4b0 // indirect

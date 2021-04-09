@@ -52,8 +52,8 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 			return nil, err
 		}
 		files = append(files, fs...)
-
 	}
+
 	for _, grp := range project.ResourceGroups {
 		if skipOutOfPackageFiles && !(strings.HasSuffix(grp.Name, "."+project.ProtoPackage) || grp.Name == project.ProtoPackage) {
 			continue
