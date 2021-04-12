@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	kubeschema "k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin_go "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pseudomuto/protokit"
@@ -224,4 +226,18 @@ func detectGoPackageForProject(projectFile string) (string, error) {
 type DescriptorWithPath struct {
 	*descriptor.FileDescriptorProto
 	ProtoFilePath string
+}
+
+func GetGVKForResource(resource Resource) kubeschema.GroupVersionKind {
+	crdGroupName := resource.Project.ProtoPackage
+	crdGroupNameOverride := resource.Project.ProjectConfig.CrdGroupOverride
+	if crdGroupNameOverride != "" {
+		crdGroupName = crdGroupNameOverride
+	}
+
+	return kubeschema.GroupVersionKind{
+		Group:   crdGroupName,
+		Version: resource.Project.ProjectConfig.Version,
+		Kind:    resource.Name,
+	}
 }

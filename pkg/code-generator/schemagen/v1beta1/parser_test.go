@@ -65,9 +65,9 @@ var _ = Describe("Parser", func() {
 })
 
 func getPathToSourceCrdFile(fileName string) string {
-	return fmt.Sprintf("test_utils/source/%s", fileName)
+	return fmt.Sprintf("fixtures/source/%s", fileName)
 }
 
 func getPathToGeneratedCrdFile(fileName string) string {
-	return fmt.Sprintf("test_utils/generated/%s", fileName)
+	return fmt.Sprintf("fixtures/generated/%s", fileName)
 }

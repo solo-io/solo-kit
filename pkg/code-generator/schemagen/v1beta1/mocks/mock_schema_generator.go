@@ -13,7 +13,7 @@ import (
 	v1beta10 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
-// MockSchemaGenerator is a mock of SchemaGenerator interface
+// MockSchemaGenerator is a mock of ValidationSchemaGenerator interface
 type MockSchemaGenerator struct {
 	ctrl     *gomock.Controller
 	recorder *MockSchemaGeneratorMockRecorder
@@ -37,7 +37,7 @@ func (m *MockSchemaGenerator) EXPECT() *MockSchemaGeneratorMockRecorder {
 }
 
 // ApplyValidationSchema mocks base method
-func (m *MockSchemaGenerator) ApplyValidationSchema(resource *model.Resource, options v1beta1.SchemaOptions) (v1beta10.CustomResourceDefinition, error) {
+func (m *MockSchemaGenerator) ApplyValidationSchema(resource *model.Resource, options *v1beta1.SchemaOptions) (v1beta10.CustomResourceDefinition, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ApplyValidationSchema", resource, options)
 	ret0, _ := ret[0].(v1beta10.CustomResourceDefinition)

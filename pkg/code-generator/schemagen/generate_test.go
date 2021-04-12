@@ -8,9 +8,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen/v1beta1"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen/v1beta1/mocks"
+	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
-var _ = Describe("SchemaGenerator", func() {
+var _ = Describe("ValidationSchemaGenerator", func() {
 
 	var (
 		controller *gomock.Controller
@@ -29,8 +30,8 @@ var _ = Describe("SchemaGenerator", func() {
 
 	JustBeforeEach(func() {
 		schemaGenerator = schemagen.SchemaGenerator{
-			Options:                  options,
-			VersionedSchemaGenerator: mockVersionedSchemaGenerator,
+			Options:                   options,
+			ValidationSchemaGenerator: mockVersionedSchemaGenerator,
 		}
 	})
 
@@ -50,7 +51,7 @@ var _ = Describe("SchemaGenerator", func() {
 	When("no CRDs are provided", func() {
 		BeforeEach(func() {
 			options = &schemagen.ValidationSchemaOptions{
-				SchemaOptionsByName: make(map[string]v1beta1.SchemaOptions),
+				SchemaOptionsByName: make(map[string]*v1beta1.SchemaOptions),
 			}
 		})
 
@@ -62,10 +63,45 @@ var _ = Describe("SchemaGenerator", func() {
 		})
 	})
 
-	When("resource does not match CRDs", func() {
+	FWhen("valid CRDs are provided", func() {
 
-		It("does not generate schema for resource", func() {
-			// TODO
+		var (
+			customConfigSchemaCompleted = false
+		)
+
+		BeforeEach(func() {
+			customConfigCRD, err := v1beta1.GetCRDFromFile("v1beta1/fixtures/source/cc.yaml")
+			Expect(err).NotTo(HaveOccurred())
+
+			options = &schemagen.ValidationSchemaOptions{
+				SchemaOptionsByName: map[string]*v1beta1.SchemaOptions{
+					"customconfigs.test.gloo.solo.io": {
+						OriginalCrd: customConfigCRD,
+						OnSchemaComplete: func(crdWithSchema apiextv1beta1.CustomResourceDefinition) error {
+							customConfigSchemaCompleted = true
+							return nil
+						},
+					},
+				},
+			}
+		})
+
+		It("does not call GenerateValidationSchema for resources that do not match any CRDs", func() {
+			err := schemaGenerator.GenerateSchemasForResources([]*model.Resource{{
+				Name: "test-resource",
+			}})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(customConfigSchemaCompleted).To(BeFalse())
+		})
+
+		It("does call GenerateValidationSchema for resources that do match a CRD", func() {
+			mockVersionedSchemaGenerator.EXPECT().ApplyValidationSchema(gomock.Any(), options.SchemaOptionsByName["customconfigs.test.gloo.solo.io"])
+
+			err := schemaGenerator.GenerateSchemasForResources([]*model.Resource{{
+				Name: "customconfigs.test.gloo.solo.io",
+			}})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(customConfigSchemaCompleted).To(BeTrue())
 		})
 
 	})
