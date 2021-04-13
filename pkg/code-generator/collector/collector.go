@@ -24,13 +24,13 @@ type Collector interface {
 	CollectDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error)
 }
 
-func NewCollector(customImports, commonImports, customGogoArgs, customPlugins []string,
+func NewCollector(customImports, commonImports, customGoArgs, customPlugins []string,
 	descriptorOutDir string, wantCompile func(string) bool) *collector {
 	return &collector{
 		descriptorOutDir: descriptorOutDir,
 		customImports:    customImports,
 		commonImports:    commonImports,
-		customGogoArgs:   customGogoArgs,
+		customGoArgs:     customGoArgs,
 		wantCompile:      wantCompile,
 		customPlugins:    customPlugins,
 	}
@@ -40,7 +40,7 @@ type collector struct {
 	descriptorOutDir string
 	customImports    []string
 	commonImports    []string
-	customGogoArgs   []string
+	customGoArgs     []string
 	wantCompile      func(string) bool
 	customPlugins    []string
 }
@@ -247,7 +247,7 @@ func (c *collector) findImportRelativeToRoot(absoluteRoot, importedProtoFile str
 
 }
 
-var defaultGogoArgs = []string{
+var defaultGoArgs = []string{
 	"plugins=grpc",
 	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
 }
@@ -258,17 +258,17 @@ func (c *collector) writeDescriptors(protoFile, toFile string, imports []string,
 		imports[i] = "-I" + imports[i]
 	}
 	cmd.Args = append(cmd.Args, imports...)
-	gogoArgs := append(defaultGogoArgs, c.customGogoArgs...)
+	goArgs := append(defaultGoArgs, c.customGoArgs...)
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--go_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
-			"--ext_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
+			"--go_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
+			"--ext_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
 		)
 
 		for _, plugin := range c.customPlugins {
 			cmd.Args = append(cmd.Args,
-				"--"+plugin+"_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
+				"--"+plugin+"_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
 			)
 		}
 	}

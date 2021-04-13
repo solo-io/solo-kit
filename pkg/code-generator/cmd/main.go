@@ -65,8 +65,8 @@ type GenerateOptions struct {
 	GenDocs       *DocsOptions
 	CustomImports []string
 	SkipDirs      []string
-	// arguments for gogo_out=
-	CustomGogoOutArgs []string
+	// arguments for go_out=
+	CustomGoOutArgs []string
 	// skip generated mocks
 	SkipGenMocks bool
 	// skip generated tests
@@ -248,7 +248,7 @@ func (r *Runner) Run() error {
 		customCompilePrefixes = append(customCompilePrefixes, abs)
 	}
 
-	// whether or not to do a regular gogo-proto generate while collecting descriptors
+	// whether or not to do a regular go-proto generate while collecting descriptors
 	compileProto := func(protoFile string) bool {
 		for _, customCompilePrefix := range customCompilePrefixes {
 			if strings.HasPrefix(protoFile, customCompilePrefix) {
@@ -267,7 +267,7 @@ func (r *Runner) Run() error {
 	}
 
 	descriptorCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports,
-		r.Opts.CustomGogoOutArgs, r.Opts.CustomPlugins, r.DescriptorOutDir, compileProto)
+		r.Opts.CustomGoOutArgs, r.Opts.CustomPlugins, r.DescriptorOutDir, compileProto)
 
 	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
