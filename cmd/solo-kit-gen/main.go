@@ -24,7 +24,7 @@ func (i *arrayFlags) Set(value string) error {
 
 func main() {
 	relativeRoot := flag.String("r", "", "path to project absoluteRoot")
-	compileProtos := flag.Bool("gogo", true, "compile normal gogo protos")
+	compileProtos := flag.Bool("go", true, "compile normal go protos")
 	genDocs := flag.Bool("docs", true, "generate docs as well")
 	var customImports, skipDirs arrayFlags
 	flag.Var(&customImports, "i", "import additional directories as proto roots "+

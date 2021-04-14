@@ -24,14 +24,14 @@ type ProtoCompiler interface {
 
 func NewProtoCompiler(
 	collector Collector,
-	customImports, commonImports, customGogoArgs, customPlugins []string,
+	customImports, commonImports, customGoArgs, customPlugins []string,
 	descriptorOutDir string, wantCompile func(string) bool) *protoCompiler {
 	return &protoCompiler{
 		collector:        collector,
 		descriptorOutDir: descriptorOutDir,
 		customImports:    customImports,
 		commonImports:    commonImports,
-		customGogoArgs:   customGogoArgs,
+		customGoArgs:     customGoArgs,
 		wantCompile:      wantCompile,
 		customPlugins:    customPlugins,
 	}
@@ -42,7 +42,7 @@ type protoCompiler struct {
 	descriptorOutDir string
 	customImports    []string
 	commonImports    []string
-	customGogoArgs   []string
+	customGoArgs     []string
 	wantCompile      func(string) bool
 	customPlugins    []string
 }
@@ -168,7 +168,7 @@ func (c *protoCompiler) detectImportsForFile(file string) ([]string, error) {
 	return protoImports, nil
 }
 
-var defaultGogoArgs = []string{
+var defaultGoArgs = []string{
 	"plugins=grpc",
 	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
 }
@@ -179,7 +179,7 @@ func (c *protoCompiler) writeDescriptors(protoFile, toFile string, imports []str
 		imports[i] = "-I" + imports[i]
 	}
 	cmd.Args = append(cmd.Args, imports...)
-	gogoArgs := append(defaultGogoArgs, c.customGogoArgs...)
+	gogoArgs := append(defaultGoArgs, c.customGoArgs...)
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
