@@ -3,6 +3,9 @@ package schemagen
 import (
 	"log"
 
+	"github.com/solo-io/go-utils/stringutils"
+	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
+
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/openapi"
 	"cuelang.org/go/encoding/protobuf"
@@ -32,28 +35,46 @@ type cueGenerator struct {
 }
 
 func (c *cueGenerator) GetOpenApiSchemas(project model.Project, protoDir string) (OpenApiSchemas, error) {
+	oapiSchemas := OpenApiSchemas{}
+
 	if protoDir == "" {
 		protoDir = anyvendor.DefaultDepDir
 	}
+
+	// Collect all protobuf definitions including transitive dependencies.
+	var imports []string
+	coll := collector.NewCollector([]string{protoDir}, nil)
+	for _, fileDescriptor := range project.DescriptorsWithPath {
+		importsForFileDescriptor, err := coll.CollectImportsForFile(protoDir, fileDescriptor.ProtoFilePath)
+		if err != nil {
+			return nil, err
+		}
+		imports = append(imports, importsForFileDescriptor...)
+	}
+	imports = stringutils.Unique(imports)
 
 	// Parse protobuf into cuelang
 	cfg := &protobuf.Config{
 		Root:   protoDir,
 		Module: project.ProjectConfig.GoPackage,
-		Paths:  project.ProjectConfig.ProjectProtos,
+		Paths:  imports,
 	}
 
 	ext := protobuf.NewExtractor(cfg)
-	/**
-	  for _, fileDescriptor := range project.Descriptors {
-	      if err := ext.AddFile(fileDescriptor.ProtoFilePath, nil); err != nil {
-	          return nil, err
-	      }
-	  }
-	*/
+	for _, fileDescriptor := range project.DescriptorsWithPath {
+		if err := ext.AddFile(fileDescriptor.ProtoFilePath, nil); err != nil {
+			// TODO - I'm currently getting a `name "Any" not found` error
+			// https://github.com/cuelang/cue/blob/3bdfa5d10b6bc232241eb84d7a0b7761b806bac1/encoding/protobuf/parse.go#L295
+			return nil, err
+		}
+	}
+
 	instances, err := ext.Instances()
 	if err != nil {
 		return nil, err
+	}
+	if len(instances) == 0 {
+		return oapiSchemas, nil
 	}
 
 	// Convert cuelang to openapi
@@ -86,7 +107,6 @@ func (c *cueGenerator) GetOpenApiSchemas(project model.Project, protoDir string)
 		}
 
 		// Iterate openapi objects to construct mapping from proto message name to openapi schema
-		oapiSchemas := OpenApiSchemas{}
 		for _, kv := range schemas.Pairs() {
 			oapiSchemas[kv.Key] = kv.Value.(*openapi.OrderedMap)
 		}

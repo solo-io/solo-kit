@@ -1,6 +1,8 @@
 package schemagen
 
 import (
+	"log"
+
 	"github.com/solo-io/anyvendor/anyvendor"
 	"k8s.io/utils/pointer"
 
@@ -12,33 +14,62 @@ import (
 )
 
 type ValidationSchemaOptions struct {
-	SchemaOptionsByGVK map[kubeschema.GroupVersionKind]*v1beta1.SchemaOptions
+	SchemaOptions []*v1beta1.SchemaOptions
 }
 
 func GenerateProjectValidationSchema(project *model.Project, options *ValidationSchemaOptions) error {
+	// Attempt to short circuit if we do not need to generate schemas
+	if shouldSkipSchemaGetForProject(project, options) {
+		log.Printf("Skipping schemagen for project: %v", model.GetGVForProject(project))
+		return nil
+	}
+
+	log.Printf("Running schemagen for project: %v", model.GetGVForProject(project))
+
+	// Map the schema options by the GVK of the CRD
+	// This is the key we will use to associate resources with CRDs
+	schemaOptionsByGVK := make(map[kubeschema.GroupVersionKind]*v1beta1.SchemaOptions, len(options.SchemaOptions))
+	for _, crdSchemaOptions := range options.SchemaOptions {
+		schemaOptionsByGVK[crdSchemaOptions.OriginalCrd.GroupVersionKind()] = crdSchemaOptions
+	}
+
 	p := &SchemaGenerator{
-		Options:                   options,
+		SchemaOptionsByGVK:        schemaOptionsByGVK,
 		OpenApiSchemaGenerator:    NewCueOpenApiSchemaGenerator(),
 		ValidationSchemaGenerator: v1beta1.NewValidationSchemaGenerator(),
 	}
 	return p.GenerateSchemasForProject(project)
 }
 
+func shouldSkipSchemaGetForProject(project *model.Project, options *ValidationSchemaOptions) bool {
+	if options == nil {
+		return true
+	}
+
+	if len(options.SchemaOptions) == 0 {
+		return true
+	}
+
+	// TODO - more checks and set to false by default
+	// for now just never run
+	return false
+}
+
 type SchemaGenerator struct {
-	Options                   *ValidationSchemaOptions
+	SchemaOptionsByGVK        map[kubeschema.GroupVersionKind]*v1beta1.SchemaOptions
 	OpenApiSchemaGenerator    OpenApiSchemaGenerator
 	ValidationSchemaGenerator v1beta1.ValidationSchemaGenerator
 }
 
 func (p *SchemaGenerator) GenerateSchemasForProject(project *model.Project) error {
-	if p.shouldSkipSchemaGetForProject(project) {
-		return nil
-	}
-
 	// Step 1. Generate the open api schemas for the project
 	openApiSchemas, err := p.OpenApiSchemaGenerator.GetOpenApiSchemas(*project, anyvendor.DefaultDepDir)
 	if err != nil {
 		return err
+	}
+	if len(openApiSchemas) == 0 {
+		// There were no open api schemas generated for this project, skip it
+		return nil
 	}
 
 	// Step 2. Generate the schemas for the CRDs
@@ -46,7 +77,7 @@ func (p *SchemaGenerator) GenerateSchemasForProject(project *model.Project) erro
 	for _, res := range project.Resources {
 
 		// Try to associate the resource with a CRD
-		schemaOptions, ok := p.Options.SchemaOptionsByGVK[model.GetGVKForResource(*res)]
+		schemaOptions, ok := p.SchemaOptionsByGVK[model.GetGVKForResource(*res)]
 		if ok {
 			// TODO - get proper schema
 			specSchema := openApiSchemas[res.Original.GetName()]
@@ -84,18 +115,4 @@ func (p *SchemaGenerator) GenerateSchemasForProject(project *model.Project) erro
 	}
 
 	return multiErr
-}
-
-func (p *SchemaGenerator) shouldSkipSchemaGetForProject(project *model.Project) bool {
-	if p.Options == nil {
-		return true
-	}
-
-	if len(p.Options.SchemaOptionsByGVK) == 0 {
-		return true
-	}
-
-	// TODO - more checks and set to false by default
-	// for now just never run
-	return true
 }

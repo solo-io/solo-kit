@@ -14,7 +14,6 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/anyvendor/pkg/manager"
@@ -270,10 +269,21 @@ func (r *Runner) Run() error {
 		return false
 	}
 
-	descriptorCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports,
-		r.Opts.CustomGogoOutArgs, r.Opts.CustomPlugins, r.DescriptorOutDir, compileProto)
+	coll := collector.NewCollector(
+		r.Opts.CustomImports,
+		r.CommonImports,
+	)
 
-	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
+	descriptorCollector := collector.NewProtoCompiler(
+		coll,
+		r.Opts.CustomImports,
+		r.CommonImports,
+		r.Opts.CustomGogoOutArgs,
+		r.Opts.CustomPlugins,
+		r.DescriptorOutDir,
+		compileProto)
+
+	descriptors, err := descriptorCollector.CompileDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
 		return err
 	}
@@ -288,7 +298,6 @@ func (r *Runner) Run() error {
 		return names
 	}())
 
-	var protoDescriptors []*descriptor.FileDescriptorProto
 	for _, projectConfig := range projectConfigs {
 		importedResources, err := r.importCustomResources(projectConfig.Imports)
 		if err != nil {
@@ -301,11 +310,10 @@ func (r *Runner) Run() error {
 			if filepath.Dir(desc.ProtoFilePath) == filepath.Dir(projectConfig.ProjectFile) {
 				projectConfig.ProjectProtos = append(projectConfig.ProjectProtos, desc.GetName())
 			}
-			protoDescriptors = append(protoDescriptors, desc.FileDescriptorProto)
 		}
 	}
 
-	projectMap, err := parser.ProcessDescriptorsFromConfigs(projectConfigs, protoDescriptors)
+	projectMap, err := parser.ProcessDescriptorsFromConfigs(projectConfigs, descriptors)
 	if err != nil {
 		return err
 	}
