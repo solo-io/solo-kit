@@ -245,7 +245,7 @@ func GetGVForProject(project *Project) kubeschema.GroupVersion {
 	}
 }
 
-func GetGVKForResource(resource Resource) kubeschema.GroupVersionKind {
+func GetGVKForResource(resource *Resource) kubeschema.GroupVersionKind {
 	projectGV := GetGVForProject(resource.Project)
 	return kubeschema.GroupVersionKind{
 		Group:   projectGV.Group,

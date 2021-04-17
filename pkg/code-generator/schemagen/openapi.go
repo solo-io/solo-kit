@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-// TODO: CUE deprecates OrderedMap. We should start using ast.File and other APIs in the
+// TODO (sam-heilbron): CUE deprecates OrderedMap. We should start using ast.File and other APIs in the
 // ast package to manipulate the schemas. This requires some more support from ast package
 // thus leaving this as a TODO.
 
@@ -22,29 +22,41 @@ import (
 type OpenApiSchemas map[string]*openapi.OrderedMap
 
 type OpenApiSchemaGenerator interface {
-	GetOpenApiSchemas(project model.Project, protoDir, absoluteRoot string) (OpenApiSchemas, error)
+	GetOpenApiSchemas(project *model.Project) (OpenApiSchemas, error)
 }
 
-func NewCueOpenApiSchemaGenerator(importsCollector collector.Collector) OpenApiSchemaGenerator {
+func NewCueOpenApiSchemaGenerator(importsCollector collector.Collector, protoDir, absoluteRoot string) OpenApiSchemaGenerator {
 	return &cueGenerator{
 		importsCollector: importsCollector,
+		protoDir:         protoDir,
+		absoluteRoot:     absoluteRoot,
 	}
 }
 
 type cueGenerator struct {
 	importsCollector collector.Collector
+	protoDir         string
+	absoluteRoot     string
 }
 
-func (c *cueGenerator) GetOpenApiSchemas(project model.Project, protoDir, absoluteRoot string) (OpenApiSchemas, error) {
+func (c *cueGenerator) GetOpenApiSchemas(project *model.Project) (OpenApiSchemas, error) {
+	/**
+	TODO (sam-heilbron)
+		- Don't short circuit projects that are not 'gateway.solo.io'. This is to speed up debugging
+			the gateway project which isn't compiling properly
+		- At the moment we parse projectProtos. Should we also be parsing additional imports (non-project protos)?
+	*/
 	oapiSchemas := OpenApiSchemas{}
 
-	// TODO - at the moment we parse projectProtos, should we also be parsing the additional imports (ie non-project protos)
+	if project.ProtoPackage != "gateway.solo.io" {
+		return oapiSchemas, nil
+	}
 
 	// Collect all protobuf definitions including transitive dependencies.
 	var imports []string
 	for _, projectProto := range project.ProjectConfig.ProjectProtos {
-		absoluteProjectProtoPath := filepath.Join(absoluteRoot, protoDir, projectProto)
-		importsForResource, err := c.importsCollector.CollectImportsForFile(protoDir, absoluteProjectProtoPath)
+		absoluteProjectProtoPath := filepath.Join(c.absoluteRoot, c.protoDir, projectProto)
+		importsForResource, err := c.importsCollector.CollectImportsForFile(c.protoDir, absoluteProjectProtoPath)
 		if err != nil {
 			return nil, err
 		}
@@ -54,8 +66,8 @@ func (c *cueGenerator) GetOpenApiSchemas(project model.Project, protoDir, absolu
 
 	// Parse protobuf into cuelang
 	protobufExtractor := protobuf.NewExtractor(&protobuf.Config{
-		Root:   protoDir,
-		Module: project.ProjectConfig.GoPackage,
+		Root:   c.protoDir,
+		Module: c.absoluteRoot, // TODO - project.ProjectConfig.GoPackage?,
 		Paths:  imports,
 	})
 

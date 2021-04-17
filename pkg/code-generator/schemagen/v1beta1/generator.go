@@ -19,7 +19,7 @@ type SchemaOptions struct {
 }
 
 type ValidationSchemaGenerator interface {
-	GetValidationSchema(resource model.Resource, specSchema *openapi.OrderedMap) (*apiextv1beta1.CustomResourceValidation, error)
+	GetValidationSchema(resource *model.Resource, specSchema *openapi.OrderedMap) (*apiextv1beta1.CustomResourceValidation, error)
 }
 
 func NewValidationSchemaGenerator() ValidationSchemaGenerator {
@@ -29,7 +29,7 @@ func NewValidationSchemaGenerator() ValidationSchemaGenerator {
 type validationSchemaGenerator struct {
 }
 
-func (g *validationSchemaGenerator) GetValidationSchema(resource model.Resource, specSchema *openapi.OrderedMap) (*apiextv1beta1.CustomResourceValidation, error) {
+func (g *validationSchemaGenerator) GetValidationSchema(resource *model.Resource, specSchema *openapi.OrderedMap) (*apiextv1beta1.CustomResourceValidation, error) {
 	validationSchema := &apiextv1beta1.CustomResourceValidation{
 		OpenAPIV3Schema: &apiextv1beta1.JSONSchemaProps{
 			Type:       "object",
@@ -47,18 +47,31 @@ func (g *validationSchemaGenerator) GetValidationSchema(resource model.Resource,
 	return validationSchema, nil
 }
 
-func getJsonSchema(resource model.Resource, schema *openapi.OrderedMap) (*apiextv1beta1.JSONSchemaProps, error) {
+func getJsonSchema(resource *model.Resource, schema *openapi.OrderedMap) (*apiextv1beta1.JSONSchemaProps, error) {
 	if schema == nil {
 		return nil, eris.Errorf("no open api schema for %s", resource.Name)
 	}
 
-	byt, err := schema.MarshalJSON()
+	oApiJson, err := schema.MarshalJSON()
 	if err != nil {
 		return nil, eris.Errorf("Cannot marshal OpenAPI schema for %v: %v", resource.Name, err)
 	}
 
+	var obj map[string]interface{}
+	if err = json.Unmarshal(oApiJson, &obj); err != nil {
+		return nil, err
+	}
+
+	// remove 'properties' and 'required' fields to prevent validating proto.Any fields
+	removeProtoAnyValidation(obj)
+
+	bytes, err := json.Marshal(obj)
+	if err != nil {
+		return nil, err
+	}
+
 	jsonSchema := &apiextv1beta1.JSONSchemaProps{}
-	if err = json.Unmarshal(byt, jsonSchema); err != nil {
+	if err = json.Unmarshal(bytes, jsonSchema); err != nil {
 		return nil, eris.Errorf("Cannot unmarshal raw OpenAPI schema to JSONSchemaProps for %v: %v", resource.Name, err)
 	}
 
@@ -67,6 +80,30 @@ func getJsonSchema(resource model.Resource, schema *openapi.OrderedMap) (*apiext
 	}
 
 	return jsonSchema, nil
+}
+
+// prevent k8s from validating proto.Any fields (since it's unstructured)
+func removeProtoAnyValidation(d map[string]interface{}) {
+	for _, v := range d {
+		values, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		desc, ok := values["properties"]
+		properties, isObj := desc.(map[string]interface{})
+		// detect proto.Any field from presence of "@type" as field under "properties"
+		if !ok || !isObj || properties["@type"] == nil {
+			removeProtoAnyValidation(values)
+			continue
+		}
+		// remove "properties" value
+		delete(values, "properties")
+		// remove "required" value
+		delete(values, "required")
+		// x-kubernetes-preserve-unknown-fields allows for unknown fields from a particular node
+		// see https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema
+		values["x-kubernetes-preserve-unknown-fields"] = true
+	}
 }
 
 // Lifted from https://github.com/istio/tools/blob/477454adf7995dd3070129998495cdc8aaec5aff/cmd/cue-gen/crd.go#L108

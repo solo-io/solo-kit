@@ -2,6 +2,9 @@ package schemagen
 
 import (
 	"log"
+	"time"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 
@@ -24,6 +27,7 @@ func GenerateProjectValidationSchema(
 	options *ValidationSchemaOptions,
 	absoluteRoot string,
 	importsCollector collector.Collector) error {
+	defer metrics.MeasureProjectElapsed(project, "schema-gen", time.Now())
 
 	log.Printf("Running schemagen for project: %v", model.GetGVForProject(project))
 
@@ -34,8 +38,8 @@ func GenerateProjectValidationSchema(
 	}
 
 	// Step 1. Generate the open api schemas for the project
-	openApiGenerator := NewCueOpenApiSchemaGenerator(importsCollector)
-	openApiSchemas, err := openApiGenerator.GetOpenApiSchemas(*project, anyvendor.DefaultDepDir, absoluteRoot)
+	openApiGenerator := NewCueOpenApiSchemaGenerator(importsCollector, anyvendor.DefaultDepDir, absoluteRoot)
+	openApiSchemas, err := openApiGenerator.GetOpenApiSchemas(project)
 	if err != nil {
 		return err
 	}
@@ -68,15 +72,17 @@ func getSchemaOptionsByGVKForProject(project *model.Project, options *Validation
 	}
 
 	// Use the project Group to match with the CRD Group
-	projectGV := model.GetGVForProject(project)
+	//projectGV := model.GetGVForProject(project)
+
+	// TODO (sam-heilbron) - use the project.Group to match the CRDs
 
 	for _, crdSchemaOptions := range options.SchemaOptions {
 		crdGVK := crdSchemaOptions.OriginalCrd.GroupVersionKind()
 
 		// If the group matches, this project is responsible for building the schema of this CRD
-		if crdGVK.Group == projectGV.Group {
-			schemaOptionsByGVK[crdGVK] = crdSchemaOptions
-		}
+		//if crdGVK.Group == projectGV.Group {
+		schemaOptionsByGVK[crdGVK] = crdSchemaOptions
+		//}
 	}
 	return schemaOptionsByGVK
 }
@@ -91,13 +97,12 @@ func (p *SchemaGenerator) GenerateSchemasForProject(project *model.Project, sche
 	for _, res := range project.Resources {
 
 		// Try to associate the resource with a CRD
-		schemaOptions, ok := p.SchemaOptionsByGVK[model.GetGVKForResource(*res)]
+		schemaOptions, ok := p.SchemaOptionsByGVK[model.GetGVKForResource(res)]
 		if ok {
-			// TODO - get proper schema
 			specSchema := schemas[res.Original.GetName()]
 
 			// Build the CustomResourceValidation for the CRD
-			validationSchema, err := p.ValidationSchemaGenerator.GetValidationSchema(*res, specSchema)
+			validationSchema, err := p.ValidationSchemaGenerator.GetValidationSchema(res, specSchema)
 			if err != nil {
 				return err
 			}

@@ -5,6 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 
@@ -22,6 +25,8 @@ func WriteCrossProjectDocs(
 	absoluteRoot string,
 	projectMap parser.ProjectMap,
 ) error {
+	defer metrics.MeasureElapsed("cross-project-docs", time.Now())
+
 	if genDocs == nil {
 		return nil
 	}

@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/iancoleman/strcase"
 	"github.com/pseudomuto/protokit"
@@ -33,6 +36,8 @@ var ignoredFiles = []string{
 
 // write docs that are produced from the content of a single project
 func WritePerProjectsDocs(project *model.Project, genDocs *options.DocsOptions, absoluteRoot string) error {
+	defer metrics.MeasureProjectElapsed(project, "docs", time.Now())
+
 	if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
 		docs, err := GenerateFiles(project, genDocs)
 		if err != nil {

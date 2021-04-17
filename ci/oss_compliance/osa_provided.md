@@ -20,7 +20,6 @@ Name|Version|License
 [google/uuid](https://github.com/google/uuid)|v1.1.1|BSD 3-clause "New" or "Revised" License
 [huandu/xstrings](https://github.com/huandu/xstrings)|v1.3.1|MIT License
 [iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.0.0-20191112232945-16388991a334|MIT License
-[ilackarms/protoc-gen-doc](https://github.com/ilackarms/protoc-gen-doc)|v1.0.0|MIT License
 [imdario/mergo](https://github.com/imdario/mergo)|v0.3.9|BSD 3-clause "New" or "Revised" License
 [json-iterator/go](https://github.com/json-iterator/go)|v1.1.10|MIT License
 [k0kubun/pp](https://github.com/k0kubun/pp)|latest|MIT License
@@ -33,7 +32,7 @@ Name|Version|License
 [modern-go/reflect2](https://github.com/modern-go/reflect2)|v1.0.1|Apache License 2.0
 [mpvl/unique](https://github.com/mpvl/unique)|v0.0.0-20150818121801-cbe035fff7de|MIT License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
-[protoc-gen-doc/parser](https://github.com/pseudomuto/protoc-gen-doc)|v1.0.0|MIT License
+[protoc-gen-doc/extensions](https://github.com/pseudomuto/protoc-gen-doc)|v1.4.1|MIT License
 [pseudomuto/protokit](https://github.com/pseudomuto/protokit)|v0.2.0|MIT License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.1.1|MIT License
 [afero/mem](https://github.com/spf13/afero)|v1.3.4|Apache License 2.0

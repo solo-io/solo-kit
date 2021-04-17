@@ -11,6 +11,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 
@@ -100,6 +103,7 @@ type Runner struct {
 }
 
 func Generate(opts GenerateOptions) error {
+	metrics.NewAggregator()
 
 	// opts.SkipDirs = append(opts.SkipDirs, "vendor/")
 	workingRootRelative := opts.RelativeRoot
@@ -211,10 +215,12 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 
-	return nil
+	return metrics.Flush(os.Stdout)
 }
 
 func (r *Runner) Run() error {
+	defer metrics.MeasureElapsed("code-generator-runner", time.Now())
+
 	workingRootAbsolute, err := filepath.Abs(r.RelativeRoot)
 	if err != nil {
 		return err
@@ -291,6 +297,7 @@ func (r *Runner) Run() error {
 	log.Printf("collected descriptors: %v", func() []string {
 		var names []string
 		for _, desc := range descriptors {
+			metrics.IncrementFrequency("descriptors-found")
 			names = append(names, desc.GetName())
 		}
 		names = stringutils.Unique(names)
@@ -408,7 +415,6 @@ func genMocks(code code_generator.Files, outDir, absoluteRoot string) error {
 		if out, err := genMockForFile(file, outDir, absoluteRoot); err != nil {
 			return eris.Wrapf(err, "mockgen failed: %s", out)
 		}
-
 	}
 	return nil
 }

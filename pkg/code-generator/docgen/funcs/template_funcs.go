@@ -19,7 +19,7 @@ import (
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
-	gendoc "github.com/ilackarms/protoc-gen-doc"
+	gendoc "github.com/pseudomuto/protoc-gen-doc"
 	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
