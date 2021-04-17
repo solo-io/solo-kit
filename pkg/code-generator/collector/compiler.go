@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -148,26 +149,6 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 	return &desc, nil
 }
 
-func (c *protoCompiler) detectImportsForFile(file string) ([]string, error) {
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-	lines := strings.Split(string(content), "\n")
-	var protoImports []string
-	for _, line := range lines {
-		importStatement := protoImportStatementRegex.FindStringSubmatch(line)
-		if len(importStatement) == 0 {
-			continue
-		}
-		if len(importStatement) != 2 {
-			return nil, errors.Errorf("parsing import line error: from %v found %v", line, importStatement)
-		}
-		protoImports = append(protoImports, importStatement[1])
-	}
-	return protoImports, nil
-}
-
 var defaultGoArgs = []string{
 	"plugins=grpc",
 	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
@@ -175,26 +156,31 @@ var defaultGoArgs = []string{
 
 func (c *protoCompiler) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
 	cmd := exec.Command("protoc")
-	for i := range imports {
-		imports[i] = "-I" + imports[i]
+	var cmdImports []string
+	for _, i := range imports {
+		cmdImports = append(cmdImports, fmt.Sprintf("-I%s", i))
 	}
-	cmd.Args = append(cmd.Args, imports...)
-	gogoArgs := append(defaultGoArgs, c.customGoArgs...)
+	cmd.Args = append(cmd.Args, cmdImports...)
+	goArgs := append(defaultGoArgs, c.customGoArgs...)
 
 	if compileProtos {
 		cmd.Args = append(cmd.Args,
-			"--go_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
-			"--ext_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
+			"--go_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
+			"--ext_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
 		)
 
 		for _, plugin := range c.customPlugins {
 			cmd.Args = append(cmd.Args,
-				"--"+plugin+"_out="+strings.Join(gogoArgs, ",")+":"+c.descriptorOutDir,
+				"--"+plugin+"_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
 			)
 		}
 	}
 
-	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",
+	cmd.Args = append(
+		cmd.Args,
+		"-o", toFile,
+		"--include_imports",
+		"--include_source_info",
 		protoFile)
 
 	out, err := cmd.CombinedOutput()

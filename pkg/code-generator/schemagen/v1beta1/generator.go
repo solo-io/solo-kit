@@ -13,8 +13,6 @@ import (
 	structuralschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 )
 
-//go:generate mockgen -destination mocks/mock_validation_schema_generator.go -package mocks -source generator.go ValidationSchemaGenerator
-
 type SchemaOptions struct {
 	OriginalCrd      apiextv1beta1.CustomResourceDefinition
 	OnSchemaComplete func(crdWithSchema apiextv1beta1.CustomResourceDefinition) error

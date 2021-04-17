@@ -269,13 +269,13 @@ func (r *Runner) Run() error {
 		return false
 	}
 
-	coll := collector.NewCollector(
+	importsCollector := collector.NewCollector(
 		r.Opts.CustomImports,
 		r.CommonImports,
 	)
 
 	descriptorCollector := collector.NewProtoCompiler(
-		coll,
+		importsCollector,
 		r.Opts.CustomImports,
 		r.CommonImports,
 		r.Opts.CustomGoOutArgs,
@@ -329,7 +329,12 @@ func (r *Runner) Run() error {
 		}
 
 		// Generate validation schema
-		if err := schemagen.GenerateProjectValidationSchema(project, r.Opts.ValidationSchemaOpts); err != nil {
+		err = schemagen.GenerateProjectValidationSchema(
+			project,
+			r.Opts.ValidationSchemaOpts,
+			workingRootAbsolute,
+			importsCollector)
+		if err != nil {
 			return err
 		}
 

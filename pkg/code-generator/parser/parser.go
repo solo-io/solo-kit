@@ -71,11 +71,11 @@ func parseRequest(projectConfig *model.ProjectConfig, allProjectConfigs []*model
 	}
 
 	project := &model.Project{
-		ProjectConfig:       *projectConfig,
-		ProtoPackage:        projectConfig.Name,
-		Request:             req,
-		Descriptors:         descriptors,
-		DescriptorsWithPath: protoDescriptorsWithPath,
+		ProjectConfig:      *projectConfig,
+		ProtoPackage:       projectConfig.Name,
+		Request:            req,
+		Descriptors:        descriptors,
+		ProjectDescriptors: protoDescriptorsWithPath,
 	}
 	resources, resourceGroups, err := getResources(project, allProjectConfigs, messages)
 	if err != nil {
