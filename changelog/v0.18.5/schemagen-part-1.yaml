@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/2108
+    resolvesIssue: false
+    description: |
+      schemagen is a new tool used to generate validation schema (https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema)
+      for custom resource definitions. Introduce this tool but leave the implemenation details to be added later.
