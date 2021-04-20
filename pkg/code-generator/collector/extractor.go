@@ -21,16 +21,6 @@ type ImportsExtractor interface {
 //	2. If imports for a file are unknown, and simultaneous go routines attempt to load
 //		the imports, only 1 will execute and the other will block, waiting for the result.
 //		This reduces the number of times we open and parse files.
-//
-// Below are some statistics comparing this cache implementation versus
-// our previous model of never caching. These statistics were gathered by running
-// codegen for Gloo (which contains a deep tree of dependencies) and tracking the compiler
-// step (which walks the tree and grabs all file descriptors). The statistics are recorded as:
-//	[measurement]: [using synchronized implementation] ([using primitive implementation])
-//
-//	Elapsed Time		: 8.41s (23.12s)
-//	Opened Files		: 135	(16,116)
-//	Descriptors Found	: 135 	(136)
 type synchronizedImportsExtractor struct {
 	// cachedImports contains a map of fileImports, each indexed by their file name
 	cachedImports sync.Map

@@ -6,8 +6,6 @@ import (
 	"io"
 	"sync"
 	"time"
-
-	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
 var (
@@ -22,17 +20,8 @@ func MeasureElapsed(key string, startTime time.Time) {
 	aggregator.setDurationMetric(keyWithGlobalNamespace(key), time.Since(startTime).String())
 }
 
-func MeasureProjectElapsed(project *model.Project, key string, startTime time.Time) {
-	aggregator.setDurationMetric(keyWithProjectNamespace(project, key), time.Since(startTime).String())
-}
-
 func IncrementFrequency(key string) {
 	aggregator.incrementFrequencyMetric(keyWithGlobalNamespace(key))
-}
-
-func keyWithProjectNamespace(project *model.Project, key string) string {
-	// ensure project keys are grouped together
-	return fmt.Sprintf("%s/%s", project.ProtoPackage, key)
 }
 
 func keyWithGlobalNamespace(key string) string {

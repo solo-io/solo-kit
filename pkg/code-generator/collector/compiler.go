@@ -161,6 +161,7 @@ var defaultGoArgs = []string{
 
 func (c *protoCompiler) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
 	cmd := exec.Command("protoc")
+
 	var cmdImports []string
 	for _, i := range imports {
 		cmdImports = append(cmdImports, fmt.Sprintf("-I%s", i))
