@@ -266,10 +266,10 @@ func (r *Runner) Run() error {
 		return false
 	}
 
-	descriptorCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports,
+	descriptorCollector := collector.NewProtoCompiler(r.Opts.CustomImports, r.CommonImports,
 		r.Opts.CustomGoOutArgs, r.Opts.CustomPlugins, r.DescriptorOutDir, compileProto)
 
-	descriptors, err := descriptorCollector.CollectDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
+	descriptors, err := descriptorCollector.CompileDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
 		return err
 	}

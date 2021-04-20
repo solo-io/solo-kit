@@ -20,13 +20,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type Collector interface {
-	CollectDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error)
+type ProtoCompiler interface {
+	CompileDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error)
 }
 
-func NewCollector(customImports, commonImports, customGoArgs, customPlugins []string,
-	descriptorOutDir string, wantCompile func(string) bool) *collector {
-	return &collector{
+func NewProtoCompiler(customImports, commonImports, customGoArgs, customPlugins []string,
+	descriptorOutDir string, wantCompile func(string) bool) *protoCompiler {
+	return &protoCompiler{
 		descriptorOutDir: descriptorOutDir,
 		customImports:    customImports,
 		commonImports:    commonImports,
@@ -36,7 +36,7 @@ func NewCollector(customImports, commonImports, customGoArgs, customPlugins []st
 	}
 }
 
-type collector struct {
+type protoCompiler struct {
 	descriptorOutDir string
 	customImports    []string
 	commonImports    []string
@@ -45,7 +45,7 @@ type collector struct {
 	customPlugins    []string
 }
 
-func (c *collector) CollectDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error) {
+func (p *protoCompiler) CompileDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error) {
 	var descriptors []*model.DescriptorWithPath
 	var mutex sync.Mutex
 	addDescriptor := func(f model.DescriptorWithPath) {
@@ -73,7 +73,7 @@ func (c *collector) CollectDescriptorsFromRoot(root string, skipDirs []string) (
 
 			// parallelize parsing the descriptors as each one requires file i/o and is slow
 			g.Go(func() error {
-				return c.addDescriptorsForFile(addDescriptor, absoluteDir, protoFile)
+				return p.addDescriptorsForFile(addDescriptor, absoluteDir, protoFile)
 			})
 			return nil
 		})
@@ -94,16 +94,16 @@ func (c *collector) CollectDescriptorsFromRoot(root string, skipDirs []string) (
 	// with different import paths
 	return parser.FilterDuplicateDescriptors(descriptors), nil
 }
-func (c *collector) addDescriptorsForFile(addDescriptor func(f model.DescriptorWithPath), root, protoFile string) error {
+func (p *protoCompiler) addDescriptorsForFile(addDescriptor func(f model.DescriptorWithPath), root, protoFile string) error {
 	log.Printf("processing proto file input %v", protoFile)
-	imports, err := c.importsForProtoFile(root, protoFile, c.customImports)
+	imports, err := p.importsForProtoFile(root, protoFile, p.customImports)
 	if err != nil {
 		return errors.Wrapf(err, "reading imports for proto file")
 	}
 	imports = stringutils.Unique(imports)
 
 	// don't generate protos for non-project files
-	compile := c.wantCompile(protoFile)
+	compile := p.wantCompile(protoFile)
 
 	// use a temp file to store the output from protoc, then parse it right back in
 	// this is how we "wrap" protoc
@@ -116,7 +116,7 @@ func (c *collector) addDescriptorsForFile(addDescriptor func(f model.DescriptorW
 	}
 	defer os.Remove(tmpFile.Name())
 
-	if err := c.writeDescriptors(protoFile, tmpFile.Name(), imports, compile); err != nil {
+	if err := p.writeDescriptors(protoFile, tmpFile.Name(), imports, compile); err != nil {
 		return errors.Wrapf(err, "writing descriptors")
 	}
 	desc, err := readDescriptors(tmpFile.Name())
@@ -149,7 +149,7 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 
 var protoImportStatementRegex = regexp.MustCompile(`.*import "(.*)";.*`)
 
-func (c *collector) detectImportsForFile(file string) ([]string, error) {
+func (c *protoCompiler) detectImportsForFile(file string) ([]string, error) {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (c *collector) detectImportsForFile(file string) ([]string, error) {
 	return protoImports, nil
 }
 
-func (c *collector) importsForProtoFile(absoluteRoot, protoFile string, customImports []string) ([]string, error) {
+func (c *protoCompiler) importsForProtoFile(absoluteRoot, protoFile string, customImports []string) ([]string, error) {
 	importStatements, err := c.detectImportsForFile(protoFile)
 	if err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ func (c *collector) importsForProtoFile(absoluteRoot, protoFile string, customIm
 	return importsForProto, nil
 }
 
-func (c *collector) findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImports, existingImports []string) (string, error) {
+func (c *protoCompiler) findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImports, existingImports []string) (string, error) {
 	// if the file is already imported, point to that import
 	for _, importPath := range existingImports {
 		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
@@ -252,7 +252,7 @@ var defaultGoArgs = []string{
 	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
 }
 
-func (c *collector) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
+func (c *protoCompiler) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
 	cmd := exec.Command("protoc")
 	for i := range imports {
 		imports[i] = "-I" + imports[i]
