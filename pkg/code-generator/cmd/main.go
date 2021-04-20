@@ -11,6 +11,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/rotisserie/eris"
@@ -97,6 +100,7 @@ type Runner struct {
 }
 
 func Generate(opts GenerateOptions) error {
+	metrics.NewAggregator()
 
 	// opts.SkipDirs = append(opts.SkipDirs, "vendor/")
 	workingRootRelative := opts.RelativeRoot
@@ -208,10 +212,12 @@ func Generate(opts GenerateOptions) error {
 		return err
 	}
 
-	return nil
+	return metrics.Flush(os.Stdout)
 }
 
 func (r *Runner) Run() error {
+	defer metrics.MeasureElapsed("code-generator-runner", time.Now())
+
 	workingRootAbsolute, err := filepath.Abs(r.RelativeRoot)
 	if err != nil {
 		return err
@@ -266,8 +272,19 @@ func (r *Runner) Run() error {
 		return false
 	}
 
-	descriptorCollector := collector.NewProtoCompiler(r.Opts.CustomImports, r.CommonImports,
-		r.Opts.CustomGoOutArgs, r.Opts.CustomPlugins, r.DescriptorOutDir, compileProto)
+	importsCollector := collector.NewCollector(
+		r.Opts.CustomImports,
+		r.CommonImports,
+	)
+
+	descriptorCollector := collector.NewProtoCompiler(
+		importsCollector,
+		r.Opts.CustomImports,
+		r.CommonImports,
+		r.Opts.CustomGoOutArgs,
+		r.Opts.CustomPlugins,
+		r.DescriptorOutDir,
+		compileProto)
 
 	descriptors, err := descriptorCollector.CompileDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
