@@ -8,6 +8,9 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -48,6 +51,8 @@ type protoCompiler struct {
 }
 
 func (c *protoCompiler) CompileDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error) {
+	defer metrics.MeasureElapsed("proto-compiler", time.Now())
+
 	var descriptors []*model.DescriptorWithPath
 	var mutex sync.Mutex
 	addDescriptor := func(f model.DescriptorWithPath) {
