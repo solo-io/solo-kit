@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+
 	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
@@ -305,6 +307,7 @@ func (r *Runner) Run() error {
 		return names
 	}())
 
+	var protoDescriptors []*descriptor.FileDescriptorProto
 	for _, projectConfig := range projectConfigs {
 		importedResources, err := r.importCustomResources(projectConfig.Imports)
 		if err != nil {
@@ -317,10 +320,11 @@ func (r *Runner) Run() error {
 			if filepath.Dir(desc.ProtoFilePath) == filepath.Dir(projectConfig.ProjectFile) {
 				projectConfig.ProjectProtos = append(projectConfig.ProjectProtos, desc.GetName())
 			}
+			protoDescriptors = append(protoDescriptors, desc.FileDescriptorProto)
 		}
 	}
 
-	projectMap, err := parser.ProcessDescriptorsFromConfigs(projectConfigs, descriptors)
+	projectMap, err := parser.ProcessDescriptorsFromConfigs(projectConfigs, protoDescriptors)
 	if err != nil {
 		return err
 	}
