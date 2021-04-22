@@ -43,10 +43,6 @@ func GenerateProjectValidationSchema(
 	if err != nil {
 		return err
 	}
-	if len(openApiSchemas) == 0 {
-		// There were no open api schemas generated for this project, skip it
-		return nil
-	}
 
 	// Step 2. Convert the open api schemas into validation schemas
 	p := &SchemaGenerator{
@@ -71,18 +67,21 @@ func getSchemaOptionsByGVKForProject(project *model.Project, options *Validation
 		return schemaOptionsByGVK
 	}
 
-	// Use the project Group to match with the CRD Group
-	//projectGV := model.GetGVForProject(project)
-
-	// TODO (sam-heilbron) - use the project.Group to match the CRDs
+	// Use the project Group to match with the CRD Group,Version
+	projectGV := model.GetGVForProject(project)
 
 	for _, crdSchemaOptions := range options.SchemaOptions {
-		crdGVK := crdSchemaOptions.OriginalCrd.GroupVersionKind()
+		crdSpec := crdSchemaOptions.OriginalCrd.Spec
+		crdGVK := kubeschema.GroupVersionKind{
+			Group:   crdSpec.Group,
+			Version: crdSpec.Version,
+			Kind:    crdSpec.Names.Kind,
+		}
 
 		// If the group matches, this project is responsible for building the schema of this CRD
-		//if crdGVK.Group == projectGV.Group {
-		schemaOptionsByGVK[crdGVK] = crdSchemaOptions
-		//}
+		if crdGVK.Group == projectGV.Group {
+			schemaOptionsByGVK[crdGVK] = crdSchemaOptions
+		}
 	}
 	return schemaOptionsByGVK
 }

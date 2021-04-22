@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
+
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
@@ -355,14 +357,19 @@ func (r *Runner) Run() error {
 		}
 		outDir := split[filepathValidLength-1]
 
+		fileWriter := &writer.DefaultFileWriter{
+			// TODO (sam-heilbron)
+			// At the moment, Headers are added to the file content.
+			// We should remove that logic and rely on the fileWriter to add the header
+			Header: "",
+			Root:   outDir,
+		}
+
 		for _, file := range code {
+			if err := fileWriter.WriteFile(file); err != nil {
+				return err
+			}
 			path := filepath.Join(outDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-				return err
-			}
-			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-				return err
-			}
 
 			switch {
 			case strings.HasSuffix(file.Filename, ".sh"):

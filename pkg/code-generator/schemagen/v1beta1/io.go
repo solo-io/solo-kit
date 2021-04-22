@@ -3,19 +3,15 @@ package v1beta1
 import (
 	"bufio"
 	"bytes"
-	"io/ioutil"
-	"os"
-	"strings"
-
 	"github.com/ghodss/yaml"
 	"github.com/rotisserie/eris"
 	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	kubeyaml "k8s.io/apimachinery/pkg/util/yaml"
+	"os"
 )
 
 const (
-	apiVersion      = "apiextensions.k8s.io/v1beta1"
-	filePermissions = 0644
+	apiVersion = "apiextensions.k8s.io/v1beta1"
 )
 
 var (
@@ -50,33 +46,4 @@ func GetCRDFromFile(pathToFile string) (apiextv1beta1.CustomResourceDefinition, 
 	}
 
 	return crd, err
-}
-
-func WriteCRDSpecToFile(crd apiextv1beta1.CustomResourceDefinition, pathToFile string) error {
-	// marshal to an empty field in the output
-	crd.Status = apiextv1beta1.CustomResourceDefinitionStatus{}
-
-	fileBytes, err := yaml.Marshal(crd)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(pathToFile, fileBytes, filePermissions)
-}
-
-func WriteCRDListToFile(crdList []apiextv1beta1.CustomResourceDefinition, pathToFile string) error {
-	var manifests []string
-
-	for _, crd := range crdList {
-		// marshal to an empty field in the output
-		crd.Status = apiextv1beta1.CustomResourceDefinitionStatus{}
-		crdBytes, err := yaml.Marshal(crd)
-		if err != nil {
-			return err
-		}
-		manifests = append(manifests, string(crdBytes))
-	}
-
-	fileOutput := strings.Join(manifests, "---\n")
-
-	return ioutil.WriteFile(pathToFile, []byte(fileOutput), filePermissions)
 }

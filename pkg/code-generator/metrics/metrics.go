@@ -6,6 +6,8 @@ import (
 	"io"
 	"sync"
 	"time"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
 var (
@@ -20,6 +22,10 @@ func MeasureElapsed(key string, startTime time.Time) {
 	aggregator.setDurationMetric(keyWithGlobalNamespace(key), time.Since(startTime).String())
 }
 
+func MeasureProjectElapsed(project *model.Project, key string, startTime time.Time) {
+	aggregator.setDurationMetric(keyWithProjectNamespace(project, key), time.Since(startTime).String())
+}
+
 func IncrementFrequency(key string) {
 	aggregator.incrementFrequencyMetric(keyWithGlobalNamespace(key))
 }
@@ -27,6 +33,11 @@ func IncrementFrequency(key string) {
 func keyWithGlobalNamespace(key string) string {
 	// ensure global keys are grouped together, and listed first in the map
 	return fmt.Sprintf("%s/%s", "@code-generator", key)
+}
+
+func keyWithProjectNamespace(project *model.Project, key string) string {
+	// ensure project keys are grouped together
+	return fmt.Sprintf("%s/%s", project.ProtoPackage, key)
 }
 
 func Flush(writer io.Writer) error {

@@ -65,6 +65,9 @@ func getJsonSchema(resource *model.Resource, schema *openapi.OrderedMap) (*apiex
 	// remove 'properties' and 'required' fields to prevent validating proto.Any fields
 	removeProtoAnyValidation(obj)
 
+	// TODO (sam-heilbron) - Determine the proper way to do this
+	removeProtoMetadataValidation(obj)
+
 	bytes, err := json.Marshal(obj)
 	if err != nil {
 		return nil, err
@@ -75,11 +78,31 @@ func getJsonSchema(resource *model.Resource, schema *openapi.OrderedMap) (*apiex
 		return nil, eris.Errorf("Cannot unmarshal raw OpenAPI schema to JSONSchemaProps for %v: %v", resource.Name, err)
 	}
 
+	// TODO - validateStructural
+	// this is failing due to the metadata
 	if err = validateStructural(jsonSchema); err != nil {
 		return nil, err
 	}
 
 	return jsonSchema, nil
+}
+
+// prevent k8s from validating metadata field
+// TODO - add details for why
+func removeProtoMetadataValidation(d map[string]interface{}) {
+	for _, v := range d {
+		values, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		_, hasProperties := values["properties"]
+		_, hasMetadata := values["metadata"]
+
+		if hasMetadata && !hasProperties {
+			delete(values, "metadata")
+		}
+	}
 }
 
 // prevent k8s from validating proto.Any fields (since it's unstructured)

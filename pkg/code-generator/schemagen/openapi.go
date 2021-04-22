@@ -3,6 +3,7 @@ package schemagen
 import (
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
@@ -33,6 +34,11 @@ func NewCueOpenApiSchemaGenerator(importsCollector collector.Collector, protoDir
 	}
 }
 
+// OpenApi schema generation should not take longer than `projectTimeout`.
+// Cue can enter an infinite loop if we define recursive protos. To protect ourselves
+// from entering this loop, we set an upper limit for how long schema gen should take.
+const projectCycleTimeout = time.Second * 60 // TODO (sam-heilbron) for debuggigng its so high
+
 type cueGenerator struct {
 	importsCollector collector.Collector
 	protoDir         string
@@ -40,21 +46,45 @@ type cueGenerator struct {
 }
 
 func (c *cueGenerator) GetOpenApiSchemas(project *model.Project) (OpenApiSchemas, error) {
+	resultChannel := make(chan struct {
+		OpenApiSchemas
+		error
+	}, 1)
+
+	go func() {
+		schemas, err := c.getOpenApiSchemas(project)
+		resultChannel <- struct {
+			OpenApiSchemas
+			error
+		}{OpenApiSchemas: schemas, error: err}
+	}()
+
+	select {
+	case result := <-resultChannel:
+		return result.OpenApiSchemas, result.error
+	case <-time.After(projectCycleTimeout):
+		return nil, eris.New("Timed out while generating open api schemas for project. This likely means you have created a recursive proto definition.")
+	}
+}
+
+func (c *cueGenerator) getOpenApiSchemas(project *model.Project) (OpenApiSchemas, error) {
 	/**
 	TODO (sam-heilbron)
-		- Don't short circuit projects that are not 'gateway.solo.io'. This is to speed up debugging
-			the gateway project which isn't compiling properly
 		- At the moment we parse projectProtos. Should we also be parsing additional imports (non-project protos)?
 	*/
 	oapiSchemas := OpenApiSchemas{}
 
-	if project.ProtoPackage != "gateway.solo.io" {
-		return oapiSchemas, nil
+	relevantProjectProtos := append([]string{}, project.ProjectConfig.ProjectProtos...)
+	relevantProjectProtos = append(relevantProjectProtos, project.ProjectConfig.Imports...)
+
+	// TEMP - for debugging
+	relevantProjectProtos = []string{
+		"github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto",
 	}
 
 	// Collect all protobuf definitions including transitive dependencies.
 	var imports []string
-	for _, projectProto := range project.ProjectConfig.ProjectProtos {
+	for _, projectProto := range relevantProjectProtos {
 		absoluteProjectProtoPath := filepath.Join(c.absoluteRoot, c.protoDir, projectProto)
 		importsForResource, err := c.importsCollector.CollectImportsForFile(c.protoDir, absoluteProjectProtoPath)
 		if err != nil {
@@ -67,11 +97,11 @@ func (c *cueGenerator) GetOpenApiSchemas(project *model.Project) (OpenApiSchemas
 	// Parse protobuf into cuelang
 	protobufExtractor := protobuf.NewExtractor(&protobuf.Config{
 		Root:   c.protoDir,
-		Module: c.absoluteRoot, // TODO - project.ProjectConfig.GoPackage?,
+		Module: "github.com/solo-io/gloo", // c.absoluteRoot, // TODO - project.ProjectConfig.GoPackage?,
 		Paths:  imports,
 	})
 
-	for _, projectProto := range project.ProjectConfig.ProjectProtos {
+	for _, projectProto := range relevantProjectProtos {
 		if err := protobufExtractor.AddFile(projectProto, nil); err != nil {
 			return nil, err
 		}
@@ -112,6 +142,6 @@ func (c *cueGenerator) GetOpenApiSchemas(project *model.Project) (OpenApiSchemas
 
 		return oapiSchemas, err
 	}
-	return oapiSchemas, nil
 
+	return oapiSchemas, nil
 }
