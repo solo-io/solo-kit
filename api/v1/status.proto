@@ -25,14 +25,27 @@ message Status {
         // Resources with Warnings may be partially accepted by a controller, depending on the implementation
         Warning = 3;
     }
+
     // State is the enum indicating the state of the resource
     State state = 1;
     // Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty
     string reason = 2;
     // Reference to the reporter who wrote this status
     string reported_by = 3;
+
+    message SubStatus {
+        // State is the enum indicating the state of the resource
+        State state = 1;
+        // Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty
+        string reason = 2;
+        // Reference to the reporter who wrote this status
+        string reported_by = 3;
+        // Opaque details about status results
+        google.protobuf.Struct details = 4;
+    }
+
     // Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource
-    map<string, Status> subresource_statuses = 4;
+    map<string, SubStatus> subresource_statuses = 4;
 
     // Opaque details about status results
     google.protobuf.Struct details = 5;

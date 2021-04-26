@@ -87,3 +87,49 @@ func (m *Status) Equal(that interface{}) bool {
 
 	return true
 }
+
+// Equal function
+func (m *Status_SubStatus) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Status_SubStatus)
+	if !ok {
+		that2, ok := that.(Status_SubStatus)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetState() != target.GetState() {
+		return false
+	}
+
+	if strings.Compare(m.GetReason(), target.GetReason()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetReportedBy(), target.GetReportedBy()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetDetails()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDetails()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDetails(), target.GetDetails()) {
+			return false
+		}
+	}
+
+	return true
+}

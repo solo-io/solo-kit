@@ -23,7 +23,7 @@ import (
 type OpenApiSchemas map[string]*openapi.OrderedMap
 
 type OpenApiSchemaGenerator interface {
-	GetOpenApiSchemas(project *model.Project) (OpenApiSchemas, error)
+	GetOpenApiSchemas(project *model.Project, timeout time.Duration) (OpenApiSchemas, error)
 }
 
 func NewCueOpenApiSchemaGenerator(importsCollector collector.Collector, protoDir, absoluteRoot string) OpenApiSchemaGenerator {
@@ -34,18 +34,13 @@ func NewCueOpenApiSchemaGenerator(importsCollector collector.Collector, protoDir
 	}
 }
 
-// OpenApi schema generation should not take longer than `projectTimeout`.
-// Cue can enter an infinite loop if we define recursive protos. To protect ourselves
-// from entering this loop, we set an upper limit for how long schema gen should take.
-const projectCycleTimeout = time.Second * 60 // TODO (sam-heilbron) for debuggigng its so high
-
 type cueGenerator struct {
 	importsCollector collector.Collector
 	protoDir         string
 	absoluteRoot     string
 }
 
-func (c *cueGenerator) GetOpenApiSchemas(project *model.Project) (OpenApiSchemas, error) {
+func (c *cueGenerator) GetOpenApiSchemas(project *model.Project, timeout time.Duration) (OpenApiSchemas, error) {
 	resultChannel := make(chan struct {
 		OpenApiSchemas
 		error
@@ -62,29 +57,21 @@ func (c *cueGenerator) GetOpenApiSchemas(project *model.Project) (OpenApiSchemas
 	select {
 	case result := <-resultChannel:
 		return result.OpenApiSchemas, result.error
-	case <-time.After(projectCycleTimeout):
-		return nil, eris.New("Timed out while generating open api schemas for project. This likely means you have created a recursive proto definition.")
+	case <-time.After(timeout):
+		// OpenApi schema generation should not take longer than the configured timeout.
+		// Cue can enter an infinite loop if we define recursive protos. Also some schemas
+		// take a while to generate. To protect ourselves from entering increasing schema generation
+		// time, we allow a configurable upper limit.
+		return nil, eris.New("Timed out while generating open api schemas for project.")
 	}
 }
 
 func (c *cueGenerator) getOpenApiSchemas(project *model.Project) (OpenApiSchemas, error) {
-	/**
-	TODO (sam-heilbron)
-		- At the moment we parse projectProtos. Should we also be parsing additional imports (non-project protos)?
-	*/
 	oapiSchemas := OpenApiSchemas{}
-
-	relevantProjectProtos := append([]string{}, project.ProjectConfig.ProjectProtos...)
-	relevantProjectProtos = append(relevantProjectProtos, project.ProjectConfig.Imports...)
-
-	// TEMP - for debugging
-	relevantProjectProtos = []string{
-		"github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto",
-	}
 
 	// Collect all protobuf definitions including transitive dependencies.
 	var imports []string
-	for _, projectProto := range relevantProjectProtos {
+	for _, projectProto := range project.ProjectConfig.ProjectProtos {
 		absoluteProjectProtoPath := filepath.Join(c.absoluteRoot, c.protoDir, projectProto)
 		importsForResource, err := c.importsCollector.CollectImportsForFile(c.protoDir, absoluteProjectProtoPath)
 		if err != nil {
@@ -97,11 +84,11 @@ func (c *cueGenerator) getOpenApiSchemas(project *model.Project) (OpenApiSchemas
 	// Parse protobuf into cuelang
 	protobufExtractor := protobuf.NewExtractor(&protobuf.Config{
 		Root:   c.protoDir,
-		Module: "github.com/solo-io/gloo", // c.absoluteRoot, // TODO - project.ProjectConfig.GoPackage?,
+		Module: project.ProjectConfig.GoPackage,
 		Paths:  imports,
 	})
 
-	for _, projectProto := range relevantProjectProtos {
+	for _, projectProto := range project.ProjectConfig.ProjectProtos {
 		if err := protobufExtractor.AddFile(projectProto, nil); err != nil {
 			return nil, err
 		}
@@ -109,6 +96,9 @@ func (c *cueGenerator) getOpenApiSchemas(project *model.Project) (OpenApiSchemas
 	instances, err := protobufExtractor.Instances()
 	if err != nil {
 		return nil, err
+	}
+	if len(instances) == 0 {
+		return oapiSchemas, nil
 	}
 
 	// Convert cuelang to openapi
@@ -128,11 +118,11 @@ func (c *cueGenerator) getOpenApiSchemas(project *model.Project) (OpenApiSchemas
 			return nil, err
 		}
 		if err = builtInstance.Value().Validate(); err != nil {
-			return nil, eris.Errorf("Cue instance validation failed for %s: %+v", project.ProjectConfig.GoPackage, err)
+			return nil, eris.Errorf("Cue instance validation failed for %s: %+v", project.ProtoPackage, err)
 		}
 		schemas, err := openApiGenerator.Schemas(builtInstance)
 		if err != nil {
-			return nil, eris.Errorf("Cue openapi generation failed for %s: %+v", project.ProjectConfig.GoPackage, err)
+			return nil, eris.Errorf("Cue openapi generation failed for %s: %+v", project.ProtoPackage, err)
 		}
 
 		// Iterate openapi objects to construct mapping from proto message name to openapi schema

@@ -187,11 +187,11 @@ type ReporterResourceClient interface {
 }
 
 type Reporter interface {
-	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status) error
+	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status_SubStatus) error
 }
 type StatusReporter interface {
 	Reporter
-	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status
+	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status_SubStatus) *core.Status
 }
 
 type reporter struct {
@@ -212,7 +212,7 @@ func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) 
 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
-func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
+func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status_SubStatus) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -308,7 +308,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
-func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
+func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status_SubStatus) *core.Status {
 
 	var warningReason string
 	if len(report.Warnings) > 0 {

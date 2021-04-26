@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package testing.solo.io;
+option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+
+
+/*
+A ComplicatedMockResource is used to validate our schemagen tool, which converts
+protos to OpenApi schemas with structural constraints.
+*/
+message ComplicatedMockResource {
+
+    option (core.solo.io.resource).short_name = "cmr";
+    option (core.solo.io.resource).plural_name = "complicatedmockresources";
+
+    core.solo.io.Status status = 1 [(extproto.skip_hashing) = true];
+    core.solo.io.Metadata metadata = 2;
+
+    // comment
+    NestedOneOf nested_one_of = 3;
+
+    string name = 4;
+
+    LocalSslConfig ssl_config = 5;
+}
+
+// message comment
+message NestedOneOf {
+    // oneof comment
+    oneof option {
+        string option_a = 1;
+        string option_b = 2;
+    }
+
+    string field = 3;
+
+    repeated string multiple_a = 4;
+    repeated string multiple_b = 5;
+    repeated string multiple_c = 6;
+
+    bool choice = 7;
+}
+
+message LocalSslConfig {
+    // with comments
+    oneof ssl_config_options {
+        string a = 1;
+        string b = 2;
+    }
+
+    // optional. the SNI domains that should be considered for TLS connections
+    repeated string sni_domains = 3;
+
+    // Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
+    // note that a root_ca must be provided if this option is used.
+    repeated string verify_subject_alt_name = 5;
+
+    // Set Application Level Protocol Negotiation
+    // If empty, defaults to ["h2", "http/1.1"].
+    repeated string alpn_protocols = 7;
+
+    // If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
+    // Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
+    // Defaults to false.
+    bool one_way_tls = 8;
+}

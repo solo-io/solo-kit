@@ -18,8 +18,15 @@ import (
 	kubeschema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+type ProjectValidationSchemaOptions struct {
+	SkipGeneration          bool
+	GenerationTimeout       time.Duration
+	SchemaGenerationOptions []*v1beta1.SchemaOptions
+}
+
 type ValidationSchemaOptions struct {
-	SchemaOptions []*v1beta1.SchemaOptions
+	// SchemaOptions per Project, indexed by the Project Group (ie. gloo.solo.io)
+	ProjectSchemaOptions map[string]*ProjectValidationSchemaOptions
 }
 
 func GenerateProjectValidationSchema(
@@ -27,19 +34,49 @@ func GenerateProjectValidationSchema(
 	options *ValidationSchemaOptions,
 	absoluteRoot string,
 	importsCollector collector.Collector) error {
-	defer metrics.MeasureProjectElapsed(project, "schema-gen", time.Now())
+	projectGV := model.GetGVForProject(project)
 
-	log.Printf("Running schemagen for project: %v", model.GetGVForProject(project))
-
-	schemaOptionsByGVK := getSchemaOptionsByGVKForProject(project, options)
-	if len(schemaOptionsByGVK) == 0 {
-		log.Printf("Skipping schemagen for project: %v. No CRDs found matching Project.Group", model.GetGVForProject(project))
+	if options == nil || len(options.ProjectSchemaOptions) == 0 {
+		// No schemagen was configured
 		return nil
 	}
 
+	projectSchemaOptions, ok := options.ProjectSchemaOptions[projectGV.Group]
+	if !ok {
+		// No schemagen was configured for this project
+		return nil
+	}
+
+	if projectSchemaOptions.SkipGeneration {
+		// Project configured to skip schemagen
+		return nil
+	}
+
+	schemaOptionsByGVK := map[kubeschema.GroupVersionKind]*v1beta1.SchemaOptions{}
+	for _, crdSchemaOptions := range projectSchemaOptions.SchemaGenerationOptions {
+		crdSpec := crdSchemaOptions.OriginalCrd.Spec
+		crdGVK := kubeschema.GroupVersionKind{
+			Group:   crdSpec.Group,
+			Version: crdSpec.Version,
+			Kind:    crdSpec.Names.Kind,
+		}
+		schemaOptionsByGVK[crdGVK] = crdSchemaOptions
+	}
+	if len(schemaOptionsByGVK) == 0 {
+		// No options defined for project
+		return nil
+	}
+
+	log.Printf("Running schemagen for project: %v", projectGV)
+	defer metrics.MeasureProjectElapsed(project, "schema-gen", time.Now())
+
 	// Step 1. Generate the open api schemas for the project
 	openApiGenerator := NewCueOpenApiSchemaGenerator(importsCollector, anyvendor.DefaultDepDir, absoluteRoot)
-	openApiSchemas, err := openApiGenerator.GetOpenApiSchemas(project)
+	timeout := projectSchemaOptions.GenerationTimeout
+	if timeout == 0 {
+		timeout = time.Second * 60
+	}
+	openApiSchemas, err := openApiGenerator.GetOpenApiSchemas(project, projectSchemaOptions.GenerationTimeout)
 	if err != nil {
 		return err
 	}
@@ -50,40 +87,6 @@ func GenerateProjectValidationSchema(
 		ValidationSchemaGenerator: v1beta1.NewValidationSchemaGenerator(),
 	}
 	return p.GenerateSchemasForProject(project, openApiSchemas)
-}
-
-func getSchemaOptionsByGVKForProject(project *model.Project, options *ValidationSchemaOptions) map[kubeschema.GroupVersionKind]*v1beta1.SchemaOptions {
-	// Map the schema options by the GVK of the CRD
-	// This is the key we will use to associate resources with CRDs
-	schemaOptionsByGVK := map[kubeschema.GroupVersionKind]*v1beta1.SchemaOptions{}
-
-	if options == nil || len(options.SchemaOptions) == 0 {
-		// No schemagen was configured
-		return schemaOptionsByGVK
-	}
-
-	if len(project.ProjectConfig.ProjectProtos) == 0 {
-		// project has no protos, these are used to generate the schemas
-		return schemaOptionsByGVK
-	}
-
-	// Use the project Group to match with the CRD Group,Version
-	projectGV := model.GetGVForProject(project)
-
-	for _, crdSchemaOptions := range options.SchemaOptions {
-		crdSpec := crdSchemaOptions.OriginalCrd.Spec
-		crdGVK := kubeschema.GroupVersionKind{
-			Group:   crdSpec.Group,
-			Version: crdSpec.Version,
-			Kind:    crdSpec.Names.Kind,
-		}
-
-		// If the group matches, this project is responsible for building the schema of this CRD
-		if crdGVK.Group == projectGV.Group {
-			schemaOptionsByGVK[crdGVK] = crdSchemaOptions
-		}
-	}
-	return schemaOptionsByGVK
 }
 
 type SchemaGenerator struct {

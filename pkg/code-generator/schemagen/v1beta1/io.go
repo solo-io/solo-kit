@@ -3,11 +3,12 @@ package v1beta1
 import (
 	"bufio"
 	"bytes"
+	"os"
+
 	"github.com/ghodss/yaml"
 	"github.com/rotisserie/eris"
 	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	kubeyaml "k8s.io/apimachinery/pkg/util/yaml"
-	"os"
 )
 
 const (
