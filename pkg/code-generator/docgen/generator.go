@@ -3,11 +3,12 @@ package docgen
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
 
 	"github.com/iancoleman/strcase"
 	"github.com/pseudomuto/protokit"
@@ -21,6 +22,7 @@ import (
 type DocsGen struct {
 	DocsOptions options.DocsOptions
 	Project     *model.Project
+	DocsDir     string
 }
 
 // must ignore validate.proto from lyft
@@ -32,26 +34,26 @@ var ignoredFiles = []string{
 }
 
 // write docs that are produced from the content of a single project
-func WritePerProjectsDocs(project *model.Project, genDocs *options.DocsOptions, absoluteRoot string) error {
-	if project.ProjectConfig.DocsDir != "" && (genDocs != nil) {
-		docs, err := GenerateFiles(project, genDocs)
-		if err != nil {
-			return err
+func WritePerProjectsDocs(project *model.Project, docsOptions *options.DocsOptions, absoluteRoot string) error {
+	if project.ProjectConfig.DocsDir != "" && docsOptions != nil {
+
+		if docsOptions.Output == "" {
+			docsOptions.Output = options.Markdown
 		}
 
-		for _, file := range docs {
-			path := filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-				return err
-			}
-			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-				return err
-			}
+		docGenerator := &DocsGen{
+			DocsOptions: *docsOptions,
+			Project:     project,
+			DocsDir:     filepath.Join(absoluteRoot, project.ProjectConfig.DocsDir),
 		}
+
+		return GenerateAndWriteFiles(docGenerator)
 	}
 	return nil
 }
 
+// DEPRECATED
+// prefer GenerateAndWriteFiles
 func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (code_generator.Files, error) {
 	if docsOptions == nil {
 		docsOptions = &options.DocsOptions{}
@@ -70,6 +72,7 @@ func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (co
 	if err != nil {
 		return nil, err
 	}
+
 	messageFiles, err := docGenerator.GenerateFilesForProtoFiles(project.Descriptors)
 	if err != nil {
 		return nil, err
@@ -80,6 +83,25 @@ func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (co
 		files[i].Content = docGenerator.FileHeader(files[i].Filename) + files[i].Content
 	}
 	return files, nil
+}
+
+func GenerateAndWriteFiles(docGenerator *DocsGen) error {
+	if docGenerator == nil {
+		return eris.New("doc generator is nil")
+	}
+
+	files, err := docGenerator.GenerateFilesForProject()
+	if err != nil {
+		return err
+	}
+
+	messageFiles, err := docGenerator.GenerateFilesForProtoFiles(docGenerator.Project.Descriptors)
+	if err != nil {
+		return err
+	}
+	files = append(files, messageFiles...)
+
+	return docGenerator.WriteFiles(files)
 }
 
 func (d *DocsGen) protoSuffix() string {
@@ -134,13 +156,23 @@ func (d *DocsGen) GenerateFilesForProtoFiles(protoFiles []*protokit.FileDescript
 			}
 			fileName := protoFile.GetName() + suffix
 			v = append(v, code_generator.File{
-				Filename: fileName,
-				Content:  content,
+				Filename:   fileName,
+				Content:    content,
+				Permission: 0644,
 			})
 		}
 	}
 
 	return v, nil
+}
+
+func (d *DocsGen) WriteFiles(files code_generator.Files) error {
+	fileWriter := &writer.DefaultFileWriter{
+		Root:               d.DocsDir,
+		HeaderFromFilename: d.FileHeader,
+	}
+
+	return fileWriter.WriteFiles(files)
 }
 
 func (d *DocsGen) FileHeader(filename string) string {

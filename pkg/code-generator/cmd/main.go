@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
+
 	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -324,12 +326,10 @@ func (r *Runner) Run() error {
 	}
 
 	for _, project := range projectMap {
-		code, err := codegen.GenerateFiles(project, true, r.Opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
-		if err != nil {
-			return err
-		}
 
-		if err := docgen.WritePerProjectsDocs(project, r.Opts.GenDocs, workingRootAbsolute); err != nil {
+		// Generate Files
+		generatedFiles, err := codegen.GenerateFiles(project, true, r.Opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
+		if err != nil {
 			return err
 		}
 
@@ -339,14 +339,21 @@ func (r *Runner) Run() error {
 		}
 		outDir := split[filepathValidLength-1]
 
-		for _, file := range code {
+		fileWriter := &writer.DefaultFileWriter{
+			Root: outDir,
+			HeaderFromFilename: func(filename string) string {
+				if strings.HasSuffix(filename, ".go") {
+					return fmt.Sprintf("// %s\n\n", writer.DefaultFileHeader)
+				}
+				return writer.NoFileHeader
+			},
+		}
+
+		for _, file := range generatedFiles {
+			if err := fileWriter.WriteFile(file); err != nil {
+				return err
+			}
 			path := filepath.Join(outDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-				return err
-			}
-			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-				return err
-			}
 
 			switch {
 			case strings.HasSuffix(file.Filename, ".sh"):
@@ -365,15 +372,21 @@ func (r *Runner) Run() error {
 			}
 		}
 
-		// Generate mocks
+		// Generate Docs
+		if err := docgen.WritePerProjectsDocs(project, r.Opts.GenDocs, workingRootAbsolute); err != nil {
+			return err
+		}
+
+		// Generate Mocks
 		// need to run after to make sure all resources have already been written
 		// Set this env var during tests so that mocks are not generated
 		if !r.Opts.SkipGenMocks {
-			if err := genMocks(code, outDir, workingRootAbsolute); err != nil {
+			if err := genMocks(generatedFiles, outDir, workingRootAbsolute); err != nil {
 				return err
 			}
 		}
 	}
+
 	if err := docgen.WriteCrossProjectDocs(r.Opts.GenDocs, workingRootAbsolute, projectMap); err != nil {
 		return err
 	}

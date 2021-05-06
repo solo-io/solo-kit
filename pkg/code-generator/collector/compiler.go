@@ -154,61 +154,6 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 	return &desc, nil
 }
 
-func (c *protoCompiler) findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImports, existingImports []string) (string, error) {
-	// if the file is already imported, point to that import
-	for _, importPath := range existingImports {
-		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
-			return importPath, nil
-		}
-	}
-	rootsToTry := []string{absoluteRoot}
-
-	for _, customImport := range customImports {
-		absoluteCustomImport, err := filepath.Abs(customImport)
-		if err != nil {
-			return "", err
-		}
-		// Try the more specific custom imports first, rather than trying all of vendor
-		rootsToTry = append([]string{absoluteCustomImport}, rootsToTry...)
-	}
-
-	// Sort by length, so longer (more specific paths are attempted first)
-	sort.Slice(rootsToTry, func(i, j int) bool {
-		elementsJ := strings.Split(rootsToTry[j], string(os.PathSeparator))
-		elementsI := strings.Split(rootsToTry[i], string(os.PathSeparator))
-		return len(elementsI) > len(elementsJ)
-	})
-
-	var possibleImportPaths []string
-	for _, root := range rootsToTry {
-		if err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-			if strings.HasSuffix(path, importedProtoFile) {
-				importPath := strings.TrimSuffix(path, importedProtoFile)
-				possibleImportPaths = append(possibleImportPaths, importPath)
-
-			}
-			return nil
-		}); err != nil {
-			return "", err
-		}
-		// if found break
-		if len(possibleImportPaths) > 0 {
-			break
-		}
-	}
-	if len(possibleImportPaths) == 0 {
-		return "", errors.Errorf("found no possible import paths in root directory %v for import %v",
-			absoluteRoot, importedProtoFile)
-	}
-	if len(possibleImportPaths) != 1 {
-		log.Warnf("found more than one possible import path in root directory for "+
-			"import %v: %v",
-			importedProtoFile, possibleImportPaths)
-	}
-	return possibleImportPaths[0], nil
-
-}
-
 var defaultGoArgs = []string{
 	"plugins=grpc",
 	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",

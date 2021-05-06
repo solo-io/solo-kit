@@ -11,7 +11,7 @@ import (
 
 	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/datafile"
-	sk_anyvendor "github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
+	"github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 	"gopkg.in/yaml.v2"
 
