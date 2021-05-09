@@ -40,5 +40,6 @@
         "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
       }
     ]
-  }
+  },
+  "gen_kube_validation_schemas": true
 }

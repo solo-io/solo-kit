@@ -2,9 +2,10 @@ package writer
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/solo-io/go-utils/log"
 
 	codegenerator "github.com/solo-io/solo-kit/pkg/code-generator"
 )
@@ -45,8 +46,6 @@ func (w *DefaultFileWriter) WriteFile(file codegenerator.File) error {
 		perm = 0644
 	}
 
-	log.Printf("Writing %v", name)
-
 	if w.HeaderFromFilename != nil {
 		header := w.HeaderFromFilename(file.Filename)
 		if header != NoFileHeader {
@@ -54,5 +53,6 @@ func (w *DefaultFileWriter) WriteFile(file codegenerator.File) error {
 		}
 	}
 
+	log.Debugf("Writing %v", name)
 	return ioutil.WriteFile(name, []byte(content), perm)
 }

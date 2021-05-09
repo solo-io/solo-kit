@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
+
 	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
@@ -64,8 +66,8 @@ type GenerateOptions struct {
 	CustomCompileProtos []string
 
 	// custom plugins
-	// each will append a <plugin>_out= directive to protoc command
-	CustomPlugins []string
+	// each will append a <plugin_key>_out=<plugin_value> directive to protoc command
+	CustomPlugins map[string]string
 
 	GenDocs       *DocsOptions
 	CustomImports []string
@@ -177,6 +179,7 @@ func Generate(opts GenerateOptions) error {
 		return nil
 	}
 
+	log.Printf("Copying relevant files from tmp directory: %s", descriptorOutDir)
 	if err := filepath.Walk(outPath, func(pbgoFile string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -184,6 +187,7 @@ func Generate(opts GenerateOptions) error {
 		if info.IsDir() {
 			return nil
 		}
+
 		if !(strings.HasSuffix(pbgoFile, ".pb.go") || strings.HasSuffix(pbgoFile, ".pb.hash.go") || strings.HasSuffix(pbgoFile, ".pb.equal.go")) {
 			return nil
 		}
@@ -206,7 +210,7 @@ func Generate(opts GenerateOptions) error {
 		}
 		defer dstFile.Close()
 
-		log.Printf("copying %v -> %v", pbgoFile, dest)
+		log.Debugf("copying %v -> %v", pbgoFile, dest)
 		_, err = io.Copy(dstFile, srcFile)
 		return err
 
@@ -274,26 +278,21 @@ func (r *Runner) Run() error {
 		return false
 	}
 
-	importsCollector := collector.NewCollector(
-		r.Opts.CustomImports,
-		r.CommonImports,
-	)
+	importsCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports)
+	protocExecutor := &collector.DefaultProtocExecutor{
+		OutputDir:         r.DescriptorOutDir,
+		ShouldCompileFile: compileProto,
+		CustomGoArgs:      r.Opts.CustomGoOutArgs,
+		CustomPlugins:     r.Opts.CustomPlugins,
+	}
 
-	descriptorCollector := collector.NewProtoCompiler(
-		importsCollector,
-		r.Opts.CustomImports,
-		r.CommonImports,
-		r.Opts.CustomGoOutArgs,
-		r.Opts.CustomPlugins,
-		r.DescriptorOutDir,
-		compileProto)
-
+	descriptorCollector := collector.NewProtoCompiler(importsCollector, protocExecutor)
 	descriptors, err := descriptorCollector.CompileDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("collected descriptors: %v", func() []string {
+	log.Debugf("collected descriptors: %v", func() []string {
 		var names []string
 		for _, desc := range descriptors {
 			names = append(names, desc.GetName())
@@ -326,6 +325,7 @@ func (r *Runner) Run() error {
 	}
 
 	for _, project := range projectMap {
+		log.Printf("Generating files for project: %s", project.String())
 
 		// Generate Files
 		generatedFiles, err := codegen.GenerateFiles(project, true, r.Opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
@@ -384,6 +384,11 @@ func (r *Runner) Run() error {
 			if err := genMocks(generatedFiles, outDir, workingRootAbsolute); err != nil {
 				return err
 			}
+		}
+
+		// Generate OpenApi validation schemas
+		if err := schemagen.GenerateOpenApiValidationSchemas(project, importsCollector); err != nil {
+			return err
 		}
 	}
 

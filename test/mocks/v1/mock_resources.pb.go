@@ -49,6 +49,7 @@ type MockResource struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The status field comment
 	Status        *core.Status   `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"`
 	Metadata      *core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	Data          string         `protobuf:"bytes,1,opt,name=data,json=data.json,proto3" json:"data,omitempty"`

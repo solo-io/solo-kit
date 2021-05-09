@@ -137,7 +137,7 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 			resourcesForGroup = append(resourcesForGroup, resource)
 		}
 
-		log.Printf("creating resource group: %v", groupName)
+		log.Debugf("creating resource group: %v", groupName)
 		rg := &model.ResourceGroup{
 			Name:      groupName,
 			GoName:    goName(groupName),

@@ -32,12 +32,12 @@ func GenerateFiles(project *model.Project, skipOutOfPackageFiles, skipGeneratedT
 	for _, res := range project.Resources {
 		// only generate files for the resources in our group, otherwise we import
 		if !project.ProjectConfig.IsOurProto(res.Filename) && !res.IsCustom {
-			log.Printf("not generating solo-kit "+
+			log.Debugf("not generating solo-kit "+
 				"clients for resource %v.%v, "+
 				"resource proto package must match project proto package %v", res.ProtoPackage, res.Name, project.ProtoPackage)
 			continue
 		} else if res.IsCustom && res.CustomResource.Imported {
-			log.Printf("not generating solo-kit "+
+			log.Debugf("not generating solo-kit "+
 				"clients for resource %v.%v, "+
 				"custom resources from a different project (%v) are not generated", res.GoPackage, res.Name, project.ProjectConfig.GoPackage)
 			continue
