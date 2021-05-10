@@ -102,7 +102,7 @@ func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports
 	_ = os.Mkdir(directoryPath, os.ModePerm)
 
 	cmd.Args = append(cmd.Args,
-		fmt.Sprintf("--openapi_out=yaml=true:%s", directoryPath),
+		fmt.Sprintf("--openapi_out=yaml=true,single_file=false:%s", directoryPath),
 	)
 
 	cmd.Args = append(cmd.Args,
