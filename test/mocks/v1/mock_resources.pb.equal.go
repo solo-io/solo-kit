@@ -74,6 +74,16 @@ func (m *MockResource) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetAny()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAny()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAny(), target.GetAny()) {
+			return false
+		}
+	}
+
 	switch m.TestOneofFields.(type) {
 
 	case *MockResource_OneofOne:

@@ -1,34 +1,140 @@
 package schemagen
 
 import (
-	"io/ioutil"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	structuralschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
-func GenerateOpenApiValidationSchemas(project *model.Project, importsCollector collector.Collector) error {
-	if !project.ProjectConfig.GenKubeValidationSchemas {
-		log.Printf("Project %s not configured to generate validation schema", project.String())
+type ValidationSchemaOptions struct {
+	// Path to the directory where CRDs will be read from and written to
+	CrdDirectory string
+}
+
+func GenerateOpenApiValidationSchemas(project *model.Project, importsCollector collector.Collector, options *ValidationSchemaOptions) error {
+	if options == nil || options.CrdDirectory == "" {
+		log.Debugf("No CRDDirectory provided, skipping schema-gen")
 		return nil
 	}
 
-	// Use a tmp directory as the output of schemas
-	// The schemas will then be matched with the appropriate CRD
-	tmpOutputDir, err := ioutil.TempDir("", "")
+	if !project.ProjectConfig.GenKubeValidationSchemas {
+		log.Debugf("Project %s not configured to generate validation schema", project.String())
+		return nil
+	}
+
+	// Extract the CRDs from the directory
+	crds, err := getCRDsInDirectory(options.CrdDirectory)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpOutputDir)
 
-	// Use a directory that is specific to this project
-	// This ensures that when we traverse the outputDir, we only traverse project specific schemas
-	projectOutputDir := filepath.Join(tmpOutputDir, project.String())
-	_ = os.MkdirAll(projectOutputDir, os.ModePerm)
+	if len(crds) == 0 {
+		log.Debugf("Found 0 CRDs in directory: %s, skipping schema-gen", options.CrdDirectory)
+		return nil
+	}
 
-	generator := NewProtocGenerator(project, importsCollector, projectOutputDir)
-	return generator.Generate()
+	// Build the JsonSchemas for the project
+	jsonSchemasByGVK, err := getJsonSchemasByGVK(project, importsCollector)
+	if err != nil {
+		return err
+	}
+
+	crdWriter := NewCrdWriter(options.CrdDirectory)
+
+	// For each matching CRD, apply the JSON schema to that CRD
+	// Use Group.Version.Kind to match CRDs and Schemas
+	for _, crd := range crds {
+		crdGVK := schema.GroupVersionKind{
+			Group:   crd.Spec.Group,
+			Version: crd.Spec.Version,
+			Kind:    crd.Spec.Names.Kind,
+		}
+
+		specJsonSchema, ok := jsonSchemasByGVK[crdGVK]
+		if !ok {
+			continue
+		}
+
+		if err := validateStructural(specJsonSchema); err != nil {
+			return err
+		}
+
+		validationSchema := &v1beta1.CustomResourceValidation{
+			OpenAPIV3Schema: &v1beta1.JSONSchemaProps{
+				Type:       "object",
+				Properties: map[string]v1beta1.JSONSchemaProps{},
+			},
+		}
+		validationSchema.OpenAPIV3Schema.Properties["spec"] = *specJsonSchema
+
+		if err = crdWriter.ApplyValidationSchemaToCRD(crd, validationSchema); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getCRDsInDirectory(crdDirectory string) ([]v1beta1.CustomResourceDefinition, error) {
+	var crds []v1beta1.CustomResourceDefinition
+
+	err := filepath.Walk(crdDirectory, func(crdFile string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		if !strings.HasSuffix(crdFile, ".yaml") {
+			return nil
+		}
+
+		crdFromFile, err := GetCRDFromFile(crdFile)
+		if err != nil {
+			log.Fatalf("failed to get crd from file: %v", err)
+			return err
+		}
+		crds = append(crds, crdFromFile)
+
+		// Continue traversing the output directory
+		return nil
+	})
+	return crds, err
+}
+
+func getJsonSchemasByGVK(project *model.Project, importsCollector collector.Collector) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error) {
+	// TODO (sam-heilbron)
+	// We are still in the process of generating JSON Schemas. For now, just return an empty map
+	// so that no validation schemas are generated and applied to CRDs
+	return map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps{}, nil
+}
+
+// Lifted from https://github.com/istio/tools/blob/477454adf7995dd3070129998495cdc8aaec5aff/cmd/cue-gen/crd.go#L108
+func validateStructural(s *v1beta1.JSONSchemaProps) error {
+	out := &apiext.JSONSchemaProps{}
+	if err := v1beta1.Convert_v1beta1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(s, out, nil); err != nil {
+		return fmt.Errorf("cannot convert v1beta1 JSONSchemaProps to JSONSchemaProps: %v", err)
+	}
+
+	r, err := structuralschema.NewStructural(out)
+	if err != nil {
+		return fmt.Errorf("cannot convert to a structural schema: %v", err)
+	}
+
+	if errs := structuralschema.ValidateStructural(nil, r); len(errs) != 0 {
+		return fmt.Errorf("schema is not structural: %v", errs.ToAggregate().Error())
+	}
+
+	return nil
 }

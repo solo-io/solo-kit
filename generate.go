@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
+	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
 )
 
@@ -11,7 +12,6 @@ import (
 //go:generate ./pkg/api/v1/apiserver/generate.sh
 
 func main() {
-
 	log.Printf("starting generate")
 	if err := cmd.Generate(cmd.GenerateOptions{
 		RelativeRoot:       ".",
@@ -24,6 +24,10 @@ func main() {
 				sk_anyvendor.ExtProtoMatcher.Package:           sk_anyvendor.ExtProtoMatcher.Patterns,
 				sk_anyvendor.EnvoyValidateProtoMatcher.Package: sk_anyvendor.EnvoyValidateProtoMatcher.Patterns,
 			},
+		},
+		ValidationSchemaOptions: &schemagen.ValidationSchemaOptions{
+			// Path to where test CRDs are stored
+			CrdDirectory: "test/mocks/crds",
 		},
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)

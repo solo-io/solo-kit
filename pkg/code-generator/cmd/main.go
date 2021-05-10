@@ -89,6 +89,8 @@ type GenerateOptions struct {
 
 	// config for anyvendor
 	ExternalImports *sk_anyvendor.Imports
+
+	ValidationSchemaOptions *schemagen.ValidationSchemaOptions
 }
 
 type Runner struct {
@@ -387,7 +389,7 @@ func (r *Runner) Run() error {
 		}
 
 		// Generate OpenApi validation schemas
-		if err := schemagen.GenerateOpenApiValidationSchemas(project, importsCollector); err != nil {
+		if err := schemagen.GenerateOpenApiValidationSchemas(project, importsCollector, r.Opts.ValidationSchemaOptions); err != nil {
 			return err
 		}
 	}

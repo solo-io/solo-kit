@@ -18,6 +18,7 @@ option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
 
 /*
 go_package Comments
@@ -57,6 +58,9 @@ message MockResource {
         string oneof_one = 3;
         bool oneof_two = 2;
     };
+
+    // Any field should include `x-kubernetes-preserve-unknown-fields`
+    .google.protobuf.Any any = 10;
 }
 
 message FakeResource {
