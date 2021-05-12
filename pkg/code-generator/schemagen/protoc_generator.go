@@ -22,64 +22,62 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-// TODO (sam-heilbron)
-// This is failing on validateStructural. Use this once it is fixed
-func GenerateJsonSchemasUsingProtoc(project *model.Project, importsCollector collector.Collector) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error) {
+type protocGenerator struct {
+	// The Collector used to extract imports for proto files
+	importsCollector collector.Collector
+}
+
+func NewProtocGenerator(importsCollector collector.Collector) *protocGenerator {
+	return &protocGenerator{
+		importsCollector: importsCollector,
+	}
+}
+
+func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error) {
+	// Create a tmp directory to write schemas to
+	schemaOutputDir, err := p.getSchemaOutputDir(project)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(schemaOutputDir)
+
+	// The Executor used to compile protos
+	protocExecutor := &collector.OpenApiProtocExecutor{
+		OutputDir: schemaOutputDir,
+	}
+
+	// 1. Generate the openApiSchemas for the project, writing them to a temp directory (schemaOutputDir)
+	absoluteRoot, err := filepath.Abs(anyvendor.DefaultDepDir)
+	if err != nil {
+		return nil, err
+	}
+	for _, projectProto := range project.ProjectConfig.ProjectProtos {
+		if err := p.generateSchemasForProjectProto(absoluteRoot, projectProto, protocExecutor); err != nil {
+			return nil, err
+		}
+	}
+
+	// 2. Walk the schemaOutputDir and convert the open api schemas into JSONSchemaProps
+	return p.processGeneratedSchemas(project, schemaOutputDir)
+}
+
+func (p *protocGenerator) getSchemaOutputDir(project *model.Project) (string, error) {
 	// Use a tmp directory as the output of schemas
 	// The schemas will then be matched with the appropriate CRD
 	tmpOutputDir, err := ioutil.TempDir("", "")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	defer os.Remove(tmpOutputDir)
 
 	// Use a directory that is specific to this project
 	// This ensures that when we traverse the outputDir, we only traverse project specific schemas
 	projectOutputDir := filepath.Join(tmpOutputDir, project.String())
 	_ = os.MkdirAll(projectOutputDir, os.ModePerm)
 
-	// Generate the validation schemas
-	generator := &protocGenerator{
-		tmpSchemaOutputDir: tmpOutputDir,
-		project:            project,
-		importsCollector:   importsCollector,
-		protocExecutor: &collector.OpenApiProtocExecutor{
-			OutputDir: tmpOutputDir,
-			Project:   project,
-		},
-	}
-	return generator.Generate()
+	return projectOutputDir, nil
 }
 
-type protocGenerator struct {
-	// The path to the tmp directory used to write schemas to
-	tmpSchemaOutputDir string
-	// The project to create schemas for
-	project *model.Project
-	// The Collector used to extract imports for proto files
-	importsCollector collector.Collector
-	// The Executor used to compile protos
-	protocExecutor collector.ProtocExecutor
-}
-
-func (p *protocGenerator) Generate() (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error) {
-	absoluteRoot, err := filepath.Abs(anyvendor.DefaultDepDir)
-	if err != nil {
-		return nil, err
-	}
-
-	// 1. Generate the openApiSchemas for the project, writing them to a temp directory (tmpSchemaOutputDir)
-	for _, projectProto := range p.project.ProjectConfig.ProjectProtos {
-		if err := p.generateSchemasForProjectProto(absoluteRoot, projectProto); err != nil {
-			return nil, err
-		}
-	}
-
-	// 2. Walk the tmpSchemaOutputDir and convert the open api schemas into JSONSchemaProps
-	return p.processGeneratedSchemas()
-}
-
-func (p *protocGenerator) generateSchemasForProjectProto(root, projectProtoFile string) error {
+func (p *protocGenerator) generateSchemasForProjectProto(root, projectProtoFile string, protocExecutor collector.ProtocExecutor) error {
 	imports, err := p.importsCollector.CollectImportsForFile(root, filepath.Join(root, projectProtoFile))
 	if err != nil {
 		return errors.Wrapf(err, "collecting imports for proto file")
@@ -95,12 +93,12 @@ func (p *protocGenerator) generateSchemasForProjectProto(root, projectProtoFile 
 	}
 	defer os.Remove(tmpFile.Name())
 
-	return p.protocExecutor.Execute(projectProtoFile, tmpFile.Name(), imports)
+	return protocExecutor.Execute(projectProtoFile, tmpFile.Name(), imports)
 }
 
-func (p *protocGenerator) processGeneratedSchemas() (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error) {
+func (p *protocGenerator) processGeneratedSchemas(project *model.Project, schemaOutputDir string) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error) {
 	jsonSchemasByGVK := make(map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps)
-	err := filepath.Walk(p.tmpSchemaOutputDir, func(schemaFile string, info os.FileInfo, err error) error {
+	err := filepath.Walk(schemaOutputDir, func(schemaFile string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -126,7 +124,7 @@ func (p *protocGenerator) processGeneratedSchemas() (map[schema.GroupVersionKind
 		}
 
 		for schemaKey, schemaValue := range schemas {
-			schemaGVK := p.getGVKForSchemaKey(schemaKey)
+			schemaGVK := p.getGVKForSchemaKey(project, schemaKey)
 
 			// Spec validation schema
 			specJsonSchema, err := getJsonSchema(schemaKey, schemaValue)
@@ -155,13 +153,13 @@ func (p *protocGenerator) readOpenApiDocumentFromFile(file string) (*openapi3.Sw
 	return openApiDocument, nil
 }
 
-func (p *protocGenerator) getGVKForSchemaKey(schemaKey string) schema.GroupVersionKind {
+func (p *protocGenerator) getGVKForSchemaKey(project *model.Project, schemaKey string) schema.GroupVersionKind {
 	// The generated keys look like testing.solo.io.MockResource
 	// The kind is the `MockResource` portion
 	ss := strings.Split(schemaKey, ".")
 	kind := ss[len(ss)-1]
 
-	projectGV := model.GetGVForProject(p.project)
+	projectGV := model.GetGVForProject(project)
 
 	return schema.GroupVersionKind{
 		Group:   projectGV.Group,
@@ -185,11 +183,7 @@ func getJsonSchema(schemaKey string, schema *openapi3.SchemaRef) (*v1beta1.JSONS
 		return nil, err
 	}
 
-	// remove 'properties' and 'required' fields to prevent validating proto.Any fields
 	removeProtoAnyValidation(obj)
-
-	// TODO (sam-heilbron) - Determine the proper way to do this
-	removeProtoMetadataValidation(obj)
 
 	bytes, err := json.Marshal(obj)
 	if err != nil {
@@ -204,24 +198,6 @@ func getJsonSchema(schemaKey string, schema *openapi3.SchemaRef) (*v1beta1.JSONS
 	return jsonSchema, nil
 }
 
-// prevent k8s from validating metadata field
-// TODO - add details for why
-func removeProtoMetadataValidation(d map[string]interface{}) {
-	for _, v := range d {
-		values, ok := v.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		_, hasProperties := values["properties"]
-		_, hasMetadata := values["metadata"]
-
-		if hasMetadata && !hasProperties {
-			delete(values, "metadata")
-		}
-	}
-}
-
 // prevent k8s from validating proto.Any fields (since it's unstructured)
 func removeProtoAnyValidation(d map[string]interface{}) {
 	for _, v := range d {
@@ -231,7 +207,7 @@ func removeProtoAnyValidation(d map[string]interface{}) {
 		}
 		desc, ok := values["properties"]
 		properties, isObj := desc.(map[string]interface{})
-		// detect proto.Any field from presence of "@type" as field under "properties"
+		// detect proto.Any field from presence of "type_url" as field under "properties"
 		if !ok || !isObj || properties["type_url"] == nil {
 			removeProtoAnyValidation(values)
 			continue

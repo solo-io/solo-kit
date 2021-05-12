@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/rotisserie/eris"
 
@@ -61,6 +64,34 @@ func (c *CrdWriter) ApplyValidationSchemaToCRD(crd v1beta1.CustomResourceDefinit
 
 func (c *CrdWriter) getFilenameForCRD(crd v1beta1.CustomResourceDefinition) string {
 	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Version, crd.Spec.Names.Kind)
+}
+
+func GetCRDsFromDirectory(crdDirectory string) ([]v1beta1.CustomResourceDefinition, error) {
+	var crds []v1beta1.CustomResourceDefinition
+
+	err := filepath.Walk(crdDirectory, func(crdFile string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		if !strings.HasSuffix(crdFile, ".yaml") {
+			return nil
+		}
+
+		crdFromFile, err := GetCRDFromFile(crdFile)
+		if err != nil {
+			log.Fatalf("failed to get crd from file: %v", err)
+			return err
+		}
+		crds = append(crds, crdFromFile)
+
+		// Continue traversing the output directory
+		return nil
+	})
+	return crds, err
 }
 
 func GetCRDFromFile(pathToFile string) (v1beta1.CustomResourceDefinition, error) {

@@ -389,7 +389,8 @@ func (r *Runner) Run() error {
 		}
 
 		// Generate OpenApi validation schemas
-		if err := schemagen.GenerateOpenApiValidationSchemas(project, importsCollector, r.Opts.ValidationSchemaOptions); err != nil {
+		jsonSchemaGenerator := schemagen.NewProtocGenerator(importsCollector)
+		if err := schemagen.GenerateOpenApiValidationSchemas(project, r.Opts.ValidationSchemaOptions, jsonSchemaGenerator); err != nil {
 			return err
 		}
 	}

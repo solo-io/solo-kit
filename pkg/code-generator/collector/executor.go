@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -69,17 +68,10 @@ func (d *DefaultProtocExecutor) Execute(protoFile string, toFile string, imports
 
 type OpenApiProtocExecutor struct {
 	OutputDir string
-	Project   *model.Project
 }
 
 func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports []string) error {
 	cmd := exec.Command("protoc")
-
-	if !o.Project.ProjectConfig.IsOurProto(protoFile) {
-		// We only run open api generation for project protos that describe CRDs
-		// If it is not a relevant proto, do nothing
-		return nil
-	}
 
 	for _, i := range imports {
 		cmd.Args = append(cmd.Args, fmt.Sprintf("-I%s", i))

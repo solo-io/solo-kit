@@ -16,6 +16,10 @@
   "resource_groups": {
     "testing.solo.io": [
       {
+        "name": "SimpleMockResource",
+        "package": "testing.solo.io"
+      },
+      {
         "name": "MockResource",
         "package": "testing.solo.io"
       },

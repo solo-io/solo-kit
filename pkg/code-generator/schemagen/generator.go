@@ -2,9 +2,6 @@ package schemagen
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -12,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
@@ -21,7 +17,11 @@ type ValidationSchemaOptions struct {
 	CrdDirectory string
 }
 
-func GenerateOpenApiValidationSchemas(project *model.Project, importsCollector collector.Collector, options *ValidationSchemaOptions) error {
+type JsonSchemaGenerator interface {
+	GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error)
+}
+
+func GenerateOpenApiValidationSchemas(project *model.Project, options *ValidationSchemaOptions, jsonSchemaGenerator JsonSchemaGenerator) error {
 	if options == nil || options.CrdDirectory == "" {
 		log.Debugf("No CRDDirectory provided, skipping schema-gen")
 		return nil
@@ -33,7 +33,7 @@ func GenerateOpenApiValidationSchemas(project *model.Project, importsCollector c
 	}
 
 	// Extract the CRDs from the directory
-	crds, err := getCRDsInDirectory(options.CrdDirectory)
+	crds, err := GetCRDsFromDirectory(options.CrdDirectory)
 	if err != nil {
 		return err
 	}
@@ -44,15 +44,14 @@ func GenerateOpenApiValidationSchemas(project *model.Project, importsCollector c
 	}
 
 	// Build the JsonSchemas for the project
-	jsonSchemasByGVK, err := getJsonSchemasByGVK(project, importsCollector)
+	jsonSchemasByGVK, err := jsonSchemaGenerator.GetJsonSchemaForProject(project)
 	if err != nil {
 		return err
 	}
 
-	crdWriter := NewCrdWriter(options.CrdDirectory)
-
 	// For each matching CRD, apply the JSON schema to that CRD
 	// Use Group.Version.Kind to match CRDs and Schemas
+	crdWriter := NewCrdWriter(options.CrdDirectory)
 	for _, crd := range crds {
 		crdGVK := schema.GroupVersionKind{
 			Group:   crd.Spec.Group,
@@ -83,41 +82,6 @@ func GenerateOpenApiValidationSchemas(project *model.Project, importsCollector c
 	}
 
 	return nil
-}
-
-func getCRDsInDirectory(crdDirectory string) ([]v1beta1.CustomResourceDefinition, error) {
-	var crds []v1beta1.CustomResourceDefinition
-
-	err := filepath.Walk(crdDirectory, func(crdFile string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-
-		if !strings.HasSuffix(crdFile, ".yaml") {
-			return nil
-		}
-
-		crdFromFile, err := GetCRDFromFile(crdFile)
-		if err != nil {
-			log.Fatalf("failed to get crd from file: %v", err)
-			return err
-		}
-		crds = append(crds, crdFromFile)
-
-		// Continue traversing the output directory
-		return nil
-	})
-	return crds, err
-}
-
-func getJsonSchemasByGVK(project *model.Project, importsCollector collector.Collector) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error) {
-	// TODO (sam-heilbron)
-	// We are still in the process of generating JSON Schemas. For now, just return an empty map
-	// so that no validation schemas are generated and applied to CRDs
-	return map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps{}, nil
 }
 
 // Lifted from https://github.com/istio/tools/blob/477454adf7995dd3070129998495cdc8aaec5aff/cmd/cue-gen/crd.go#L108

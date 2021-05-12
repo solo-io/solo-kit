@@ -26,6 +26,68 @@ var (
 )
 
 // Equal function
+func (m *SimpleMockResource) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SimpleMockResource)
+	if !ok {
+		that2, ok := that.(SimpleMockResource)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetStatus()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetStatus()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetStatus(), target.GetStatus()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetData(), target.GetData()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetSomeDumbField(), target.GetSomeDumbField()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetAny()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAny()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAny(), target.GetAny()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *MockResource) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
