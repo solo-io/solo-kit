@@ -7,7 +7,7 @@ Name|Version|License
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.1|BSD 3-clause "New" or "Revised" License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.4.3|BSD 3-clause "New" or "Revised" License
 [google/gofuzz](https://github.com/google/gofuzz)|v1.1.0|Apache License 2.0
-[google/uuid](https://github.com/google/uuid)|v1.1.1|BSD 3-clause "New" or "Revised" License
+[google/uuid](https://github.com/google/uuid)|v1.1.2|BSD 3-clause "New" or "Revised" License
 [huandu/xstrings](https://github.com/huandu/xstrings)|v1.3.1|MIT License
 [iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.0.0-20191112232945-16388991a334|MIT License
 [ilackarms/protoc-gen-doc](https://github.com/ilackarms/protoc-gen-doc)|v1.0.0|MIT License
@@ -26,7 +26,7 @@ Name|Version|License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.1.1|MIT License
 [afero/mem](https://github.com/spf13/afero)|v1.3.4|Apache License 2.0
 [x/crypto](https://golang.org/x/crypto)|v0.0.0-20200622213623-75b288015ac9|BSD 3-clause "New" or "Revised" License
-[x/net](https://golang.org/x/net)|v0.0.0-20200707034311-ab3426394381|BSD 3-clause "New" or "Revised" License
+[x/net](https://golang.org/x/net)|v0.0.0-20200822124328-c89045814202|BSD 3-clause "New" or "Revised" License
 [sync/errgroup](https://golang.org/x/sync/errgroup)|v0.0.0-20200625203802-6e8e738ad208|BSD 3-clause "New" or "Revised" License
 [x/text](https://golang.org/x/text)|v0.3.3|BSD 3-clause "New" or "Revised" License
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
