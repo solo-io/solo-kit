@@ -18,7 +18,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// go:generate bash ../v2alpha1/kube/hack/update-codegen.sh
+//go:generate bash ../v2alpha1/kube/hack/update-codegen.sh
 
 var _ = Describe("Generated Kube Code", func() {
 	var (
