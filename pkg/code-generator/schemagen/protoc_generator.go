@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rotisserie/eris"
-
 	"github.com/getkin/kin-openapi/openapi3"
+
+	"github.com/rotisserie/eris"
 
 	"github.com/ghodss/yaml"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
