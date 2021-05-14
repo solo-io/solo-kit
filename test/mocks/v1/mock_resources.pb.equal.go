@@ -74,14 +74,15 @@ func (m *SimpleMockResource) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetAny()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAny()) {
+	if len(m.GetMappedData()) != len(target.GetMappedData()) {
+		return false
+	}
+	for k, v := range m.GetMappedData() {
+
+		if strings.Compare(v, target.GetMappedData()[k]) != 0 {
 			return false
 		}
-	} else {
-		if !proto.Equal(m.GetAny(), target.GetAny()) {
-			return false
-		}
+
 	}
 
 	return true
@@ -146,18 +147,114 @@ func (m *MockResource) Equal(that interface{}) bool {
 		}
 	}
 
-	switch m.TestOneofFields.(type) {
+	switch m.NestedOneofOptions.(type) {
 
-	case *MockResource_OneofOne:
+	case *MockResource_OneofNestedoneof:
 
-		if strings.Compare(m.GetOneofOne(), target.GetOneofOne()) != 0 {
+		if h, ok := interface{}(m.GetOneofNestedoneof()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOneofNestedoneof()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOneofNestedoneof(), target.GetOneofNestedoneof()) {
+				return false
+			}
+		}
+
+	case *MockResource_OneofString:
+
+		if strings.Compare(m.GetOneofString(), target.GetOneofString()) != 0 {
 			return false
 		}
 
-	case *MockResource_OneofTwo:
+	case *MockResource_OneofBool:
 
-		if m.GetOneofTwo() != target.GetOneofTwo() {
+		if m.GetOneofBool() != target.GetOneofBool() {
 			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *NestedOneOf) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*NestedOneOf)
+	if !ok {
+		that2, ok := that.(NestedOneOf)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Option.(type) {
+
+	case *NestedOneOf_OptionA:
+
+		if strings.Compare(m.GetOptionA(), target.GetOptionA()) != 0 {
+			return false
+		}
+
+	case *NestedOneOf_OptionB:
+
+		if strings.Compare(m.GetOptionB(), target.GetOptionB()) != 0 {
+			return false
+		}
+
+	}
+
+	switch m.AnotherOption.(type) {
+
+	case *NestedOneOf_AnotherOptionA:
+
+		if strings.Compare(m.GetAnotherOptionA(), target.GetAnotherOptionA()) != 0 {
+			return false
+		}
+
+	case *NestedOneOf_AnotherOptionB:
+
+		if strings.Compare(m.GetAnotherOptionB(), target.GetAnotherOptionB()) != 0 {
+			return false
+		}
+
+	}
+
+	switch m.NestedOneof.(type) {
+
+	case *NestedOneOf_AnotherNestedOneofOne:
+
+		if h, ok := interface{}(m.GetAnotherNestedOneofOne()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAnotherNestedOneofOne()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAnotherNestedOneofOne(), target.GetAnotherNestedOneofOne()) {
+				return false
+			}
+		}
+
+	case *NestedOneOf_AnotherNestedOneofTwo:
+
+		if h, ok := interface{}(m.GetAnotherNestedOneofTwo()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAnotherNestedOneofTwo()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAnotherNestedOneofTwo(), target.GetAnotherNestedOneofTwo()) {
+				return false
+			}
 		}
 
 	}
@@ -226,6 +323,46 @@ func (m *MockXdsResourceConfig) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetDomain(), target.GetDomain()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *NestedOneOf_InternalOneOf) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*NestedOneOf_InternalOneOf)
+	if !ok {
+		that2, ok := that.(NestedOneOf_InternalOneOf)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Option.(type) {
+
+	case *NestedOneOf_InternalOneOf_OptionA:
+
+		if strings.Compare(m.GetOptionA(), target.GetOptionA()) != 0 {
+			return false
+		}
+
+	case *NestedOneOf_InternalOneOf_OptionB:
+
+		if strings.Compare(m.GetOptionB(), target.GetOptionB()) != 0 {
+			return false
+		}
+
 	}
 
 	return true

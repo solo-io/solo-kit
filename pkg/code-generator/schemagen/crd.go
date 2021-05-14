@@ -63,7 +63,7 @@ func (c *CrdWriter) ApplyValidationSchemaToCRD(crd v1beta1.CustomResourceDefinit
 }
 
 func (c *CrdWriter) getFilenameForCRD(crd v1beta1.CustomResourceDefinition) string {
-	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Version, crd.Spec.Names.Kind)
+	return fmt.Sprintf("%s_%s.yaml", crd.Spec.Group, crd.Spec.Names.Kind)
 }
 
 func GetCRDsFromDirectory(crdDirectory string) ([]v1beta1.CustomResourceDefinition, error) {
@@ -81,7 +81,7 @@ func GetCRDsFromDirectory(crdDirectory string) ([]v1beta1.CustomResourceDefiniti
 			return nil
 		}
 
-		crdFromFile, err := GetCRDFromFile(crdFile)
+		crdFromFile, err := getCRDFromFile(crdFile)
 		if err != nil {
 			log.Fatalf("failed to get crd from file: %v", err)
 			return err
@@ -94,7 +94,7 @@ func GetCRDsFromDirectory(crdDirectory string) ([]v1beta1.CustomResourceDefiniti
 	return crds, err
 }
 
-func GetCRDFromFile(pathToFile string) (v1beta1.CustomResourceDefinition, error) {
+func getCRDFromFile(pathToFile string) (v1beta1.CustomResourceDefinition, error) {
 	crd := v1beta1.CustomResourceDefinition{}
 
 	r, err := os.Open(pathToFile)

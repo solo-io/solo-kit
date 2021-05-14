@@ -22,14 +22,14 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: Mock resources for goofin off (no oneof!)
+          description: Mock resources for goofin off
           properties:
-            any:
-              description: Any field should include `x-kubernetes-preserve-unknown-fields`
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
             data:
               type: string
+            mapped_data:
+              additionalProperties:
+                type: string
+              type: object
             metadata:
               properties:
                 name:
