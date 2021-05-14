@@ -34,16 +34,18 @@ func NewProtocGenerator(importsCollector collector.Collector) *protocGenerator {
 }
 
 func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error) {
-	// Create a tmp directory to write schemas to
-	schemaOutputDir, err := p.getSchemaOutputDir(project)
+	// Use a tmp directory as the output of schemas
+	// The schemas will then be matched with the appropriate CRD
+	tmpOutputDir, err := ioutil.TempDir("", "")
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(schemaOutputDir)
+	_ = os.MkdirAll(tmpOutputDir, os.ModePerm)
+	defer os.Remove(tmpOutputDir)
 
 	// The Executor used to compile protos
 	protocExecutor := &collector.OpenApiProtocExecutor{
-		OutputDir: schemaOutputDir,
+		OutputDir: tmpOutputDir,
 	}
 
 	// 1. Generate the openApiSchemas for the project, writing them to a temp directory (schemaOutputDir)
@@ -58,23 +60,7 @@ func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[s
 	}
 
 	// 2. Walk the schemaOutputDir and convert the open api schemas into JSONSchemaProps
-	return p.processGeneratedSchemas(project, schemaOutputDir)
-}
-
-func (p *protocGenerator) getSchemaOutputDir(project *model.Project) (string, error) {
-	// Use a tmp directory as the output of schemas
-	// The schemas will then be matched with the appropriate CRD
-	tmpOutputDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		return "", err
-	}
-
-	// Use a directory that is specific to this project
-	// This ensures that when we traverse the outputDir, we only traverse project specific schemas
-	projectOutputDir := filepath.Join(tmpOutputDir, project.String())
-	_ = os.MkdirAll(projectOutputDir, os.ModePerm)
-
-	return projectOutputDir, nil
+	return p.processGeneratedSchemas(project, tmpOutputDir)
 }
 
 func (p *protocGenerator) generateSchemasForProjectProto(root, projectProtoFile string, protocExecutor collector.ProtocExecutor) error {
