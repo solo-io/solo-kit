@@ -64,8 +64,8 @@ type GenerateOptions struct {
 	CustomCompileProtos []string
 
 	// custom plugins
-	// each will append a <plugin_key>_out=<plugin_value> directive to protoc command
-	CustomPlugins map[string]string
+	// each will append a <plugin>_out= directive to protoc command
+	CustomPlugins []string
 
 	GenDocs       *DocsOptions
 	CustomImports []string

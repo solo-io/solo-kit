@@ -22,8 +22,8 @@ type DefaultProtocExecutor struct {
 	// arguments for go_out=
 	CustomGoArgs []string
 	// custom plugins
-	// each will append a <plugin_key>_out=<plugin_value> directive to protoc command
-	CustomPlugins map[string]string
+	// each will append a <plugin>_out= directive to protoc command
+	CustomPlugins []string
 }
 
 var defaultGoArgs = []string{
@@ -40,14 +40,15 @@ func (d *DefaultProtocExecutor) Execute(protoFile string, toFile string, imports
 
 	if d.ShouldCompileFile(protoFile) {
 		goArgs := append(defaultGoArgs, d.CustomGoArgs...)
+		goArgsJoined := strings.Join(goArgs, ",")
 		cmd.Args = append(cmd.Args,
-			fmt.Sprintf("--go_out=%s:%s", strings.Join(goArgs, ","), d.OutputDir),
-			fmt.Sprintf("--ext_out=%s:%s", strings.Join(goArgs, ","), d.OutputDir),
+			fmt.Sprintf("--go_out=%s:%s", goArgsJoined, d.OutputDir),
+			fmt.Sprintf("--ext_out=%s:%s", goArgsJoined, d.OutputDir),
 		)
 
-		for pluginName, pluginOpts := range d.CustomPlugins {
+		for _, pluginName := range d.CustomPlugins {
 			cmd.Args = append(cmd.Args,
-				fmt.Sprintf("--%s_out=%s:%s", pluginName, pluginOpts, d.OutputDir),
+				fmt.Sprintf("--%s_out=%s:%s", pluginName, goArgsJoined, d.OutputDir),
 			)
 		}
 	}
