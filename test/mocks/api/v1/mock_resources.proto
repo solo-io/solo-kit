@@ -18,7 +18,6 @@ option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/any.proto";
 
 /*
 go_package Comments
@@ -42,77 +41,21 @@ below Comments a
 /*
 Mock resources for goofin off
 */
-message SimpleMockResource {
-
-    option (core.solo.io.resource).short_name = "smk";
-    option (core.solo.io.resource).plural_name = "simplemocks";
-
-    // The status field comment
-    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
-    core.solo.io.Metadata metadata = 7;
-
-    string data = 1 [json_name="data.json"];
-    string some_dumb_field = 100 [(extproto.skip_hashing) = true];
-
-    map<string, string> mapped_data = 10;
-}
-
-/*
-Mock resources for goofin off
-Includes oneof, nested resources, and any other special cases we
-want to verify when generating validation schemas
-*/
 message MockResource {
 
     option (core.solo.io.resource).short_name = "mk";
     option (core.solo.io.resource).plural_name = "mocks";
 
-    // The status field comment
     core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
     core.solo.io.Metadata metadata = 7;
 
     string data = 1 [json_name="data.json"];
     string some_dumb_field = 100 [(extproto.skip_hashing) = true];
 
-    // Any field should include `x-kubernetes-preserve-unknown-fields`
-    // this prevents k8s from validating proto.Any fields (since it's unstructured)
-    .google.protobuf.Any any = 11;
-
-    // test one of fields comment
-    oneof nested_oneof_options {
-        // oneof comment
-        NestedOneOf oneof_nestedoneof = 12;
-        string oneof_string = 14;
-        bool oneof_bool = 15;
-    }
-}
-
-// A NestedOneOf message
-message NestedOneOf {
-
-    // oneof comment
-    oneof option {
-        string option_a = 1;
-        string option_b = 2;
-    }
-
-    oneof another_option {
-        string another_option_a = 11;
-        string another_option_b = 12;
-    }
-
-    // AnotherNestedOneOf comment
-    message InternalOneOf {
-        oneof option {
-            string option_a = 1;
-            string option_b = 2;
-        }
-    }
-
-    oneof nested_oneof {
-        InternalOneOf another_nested_oneof_one = 21;
-        InternalOneOf another_nested_oneof_two = 22;
-    }
+    oneof test_oneof_fields {
+        string oneof_one = 3;
+        bool oneof_two = 2;
+    };
 }
 
 message FakeResource {

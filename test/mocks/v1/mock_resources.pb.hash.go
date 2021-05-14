@@ -26,63 +26,6 @@ var (
 )
 
 // Hash function
-func (m *SimpleMockResource) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("testing.solo.io.github.com/solo-io/solo-kit/test/mocks/v1.SimpleMockResource")); err != nil {
-		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	if _, err = hasher.Write([]byte(m.GetData())); err != nil {
-		return 0, err
-	}
-
-	{
-		var result uint64
-		innerHash := fnv.New64()
-		for k, v := range m.GetMappedData() {
-			innerHash.Reset()
-
-			if _, err = innerHash.Write([]byte(v)); err != nil {
-				return 0, err
-			}
-
-			if _, err = innerHash.Write([]byte(k)); err != nil {
-				return 0, err
-			}
-
-			result = result ^ innerHash.Sum64()
-		}
-		err = binary.Write(hasher, binary.LittleEndian, result)
-		if err != nil {
-			return 0, err
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
 func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -113,133 +56,19 @@ func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetAny()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetAny(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
-	}
+	switch m.TestOneofFields.(type) {
 
-	switch m.NestedOneofOptions.(type) {
+	case *MockResource_OneofOne:
 
-	case *MockResource_OneofNestedoneof:
-
-		if h, ok := interface{}(m.GetOneofNestedoneof()).(safe_hasher.SafeHasher); ok {
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if val, err := hashstructure.Hash(m.GetOneofNestedoneof(), nil); err != nil {
-				return 0, err
-			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	case *MockResource_OneofString:
-
-		if _, err = hasher.Write([]byte(m.GetOneofString())); err != nil {
+		if _, err = hasher.Write([]byte(m.GetOneofOne())); err != nil {
 			return 0, err
 		}
 
-	case *MockResource_OneofBool:
+	case *MockResource_OneofTwo:
 
-		err = binary.Write(hasher, binary.LittleEndian, m.GetOneofBool())
+		err = binary.Write(hasher, binary.LittleEndian, m.GetOneofTwo())
 		if err != nil {
 			return 0, err
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *NestedOneOf) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("testing.solo.io.github.com/solo-io/solo-kit/test/mocks/v1.NestedOneOf")); err != nil {
-		return 0, err
-	}
-
-	switch m.Option.(type) {
-
-	case *NestedOneOf_OptionA:
-
-		if _, err = hasher.Write([]byte(m.GetOptionA())); err != nil {
-			return 0, err
-		}
-
-	case *NestedOneOf_OptionB:
-
-		if _, err = hasher.Write([]byte(m.GetOptionB())); err != nil {
-			return 0, err
-		}
-
-	}
-
-	switch m.AnotherOption.(type) {
-
-	case *NestedOneOf_AnotherOptionA:
-
-		if _, err = hasher.Write([]byte(m.GetAnotherOptionA())); err != nil {
-			return 0, err
-		}
-
-	case *NestedOneOf_AnotherOptionB:
-
-		if _, err = hasher.Write([]byte(m.GetAnotherOptionB())); err != nil {
-			return 0, err
-		}
-
-	}
-
-	switch m.NestedOneof.(type) {
-
-	case *NestedOneOf_AnotherNestedOneofOne:
-
-		if h, ok := interface{}(m.GetAnotherNestedOneofOne()).(safe_hasher.SafeHasher); ok {
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if val, err := hashstructure.Hash(m.GetAnotherNestedOneofOne(), nil); err != nil {
-				return 0, err
-			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	case *NestedOneOf_AnotherNestedOneofTwo:
-
-		if h, ok := interface{}(m.GetAnotherNestedOneofTwo()).(safe_hasher.SafeHasher); ok {
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if val, err := hashstructure.Hash(m.GetAnotherNestedOneofTwo(), nil); err != nil {
-				return 0, err
-			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-					return 0, err
-				}
-			}
 		}
 
 	}
@@ -297,38 +126,6 @@ func (m *MockXdsResourceConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	if _, err = hasher.Write([]byte(m.GetDomain())); err != nil {
 		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *NestedOneOf_InternalOneOf) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("testing.solo.io.github.com/solo-io/solo-kit/test/mocks/v1.NestedOneOf_InternalOneOf")); err != nil {
-		return 0, err
-	}
-
-	switch m.Option.(type) {
-
-	case *NestedOneOf_InternalOneOf_OptionA:
-
-		if _, err = hasher.Write([]byte(m.GetOptionA())); err != nil {
-			return 0, err
-		}
-
-	case *NestedOneOf_InternalOneOf_OptionB:
-
-		if _, err = hasher.Write([]byte(m.GetOptionB())); err != nil {
-			return 0, err
-		}
-
 	}
 
 	return hasher.Sum64(), nil

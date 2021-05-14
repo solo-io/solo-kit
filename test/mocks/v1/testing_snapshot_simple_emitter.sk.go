@@ -90,8 +90,6 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 				currentSnapshot = TestingSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
-					case *SimpleMockResource:
-						currentSnapshot.Simplemocks = append(currentSnapshot.Simplemocks, typed)
 					case *MockResource:
 						currentSnapshot.Mocks = append(currentSnapshot.Mocks, typed)
 					case *FakeResource:

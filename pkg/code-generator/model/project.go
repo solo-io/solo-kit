@@ -44,9 +44,6 @@ type ProjectConfig struct {
 	// Generate Kube clientset & types
 	GenKubeTypes bool `json:"gen_kube_types"`
 
-	// Generate Kube validation schemas
-	GenKubeValidationSchemas bool `json:"gen_kube_validation_schemas"`
-
 	// set by load
 	ProjectFile   string
 	ProjectProtos []string

@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
-
 	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
@@ -80,7 +78,7 @@ type GenerateOptions struct {
 	SkipGeneratedTests bool
 	/*
 		Represents the go package which this package would have been in the GOPATH
-		This allows it to be able to maintain compatility with the old solo-kit
+		This allows it to be able to maintain compatibility with the old solo-kit
 
 		default: current github.com/solo-io/<current-folder>
 		for example: github.com/solo-io/solo-kit
@@ -89,8 +87,6 @@ type GenerateOptions struct {
 
 	// config for anyvendor
 	ExternalImports *sk_anyvendor.Imports
-
-	ValidationSchemaOptions *schemagen.ValidationSchemaOptions
 }
 
 type Runner struct {
@@ -386,12 +382,6 @@ func (r *Runner) Run() error {
 			if err := genMocks(generatedFiles, outDir, workingRootAbsolute); err != nil {
 				return err
 			}
-		}
-
-		// Generate OpenApi validation schemas
-		jsonSchemaGenerator := schemagen.NewProtocGenerator(importsCollector)
-		if err := schemagen.GenerateOpenApiValidationSchemas(project, r.Opts.ValidationSchemaOptions, jsonSchemaGenerator); err != nil {
-			return err
 		}
 	}
 

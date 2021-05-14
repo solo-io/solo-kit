@@ -16,7 +16,6 @@ import (
 )
 
 type TestingSnapshot struct {
-	Simplemocks          SimpleMockResourceList
 	Mocks                MockResourceList
 	Fakes                FakeResourceList
 	Anothermockresources AnotherMockResourceList
@@ -27,7 +26,6 @@ type TestingSnapshot struct {
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
 	return TestingSnapshot{
-		Simplemocks:          s.Simplemocks.Clone(),
 		Mocks:                s.Mocks.Clone(),
 		Fakes:                s.Fakes.Clone(),
 		Anothermockresources: s.Anothermockresources.Clone(),
@@ -40,9 +38,6 @@ func (s TestingSnapshot) Clone() TestingSnapshot {
 func (s TestingSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
-	}
-	if _, err := s.hashSimplemocks(hasher); err != nil {
-		return 0, err
 	}
 	if _, err := s.hashMocks(hasher); err != nil {
 		return 0, err
@@ -63,10 +58,6 @@ func (s TestingSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
-}
-
-func (s TestingSnapshot) hashSimplemocks(hasher hash.Hash64) (uint64, error) {
-	return hashutils.HashAllSafe(hasher, s.Simplemocks.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) hashMocks(hasher hash.Hash64) (uint64, error) {
@@ -96,11 +87,6 @@ func (s TestingSnapshot) hashPods(hasher hash.Hash64) (uint64, error) {
 func (s TestingSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	SimplemocksHash, err := s.hashSimplemocks(hasher)
-	if err != nil {
-		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
-	}
-	fields = append(fields, zap.Uint64("simplemocks", SimplemocksHash))
 	MocksHash, err := s.hashMocks(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -140,7 +126,6 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 
 type TestingSnapshotStringer struct {
 	Version              uint64
-	Simplemocks          []string
 	Mocks                []string
 	Fakes                []string
 	Anothermockresources []string
@@ -151,11 +136,6 @@ type TestingSnapshotStringer struct {
 
 func (ss TestingSnapshotStringer) String() string {
 	s := fmt.Sprintf("TestingSnapshot %v\n", ss.Version)
-
-	s += fmt.Sprintf("  Simplemocks %v\n", len(ss.Simplemocks))
-	for _, name := range ss.Simplemocks {
-		s += fmt.Sprintf("    %v\n", name)
-	}
 
 	s += fmt.Sprintf("  Mocks %v\n", len(ss.Mocks))
 	for _, name := range ss.Mocks {
@@ -197,7 +177,6 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 	}
 	return TestingSnapshotStringer{
 		Version:              snapshotHash,
-		Simplemocks:          s.Simplemocks.NamespacesDotNames(),
 		Mocks:                s.Mocks.NamespacesDotNames(),
 		Fakes:                s.Fakes.NamespacesDotNames(),
 		Anothermockresources: s.Anothermockresources.NamespacesDotNames(),

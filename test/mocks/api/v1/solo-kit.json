@@ -16,10 +16,6 @@
   "resource_groups": {
     "testing.solo.io": [
       {
-        "name": "SimpleMockResource",
-        "package": "testing.solo.io"
-      },
-      {
         "name": "MockResource",
         "package": "testing.solo.io"
       },
@@ -44,6 +40,5 @@
         "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
       }
     ]
-  },
-  "gen_kube_validation_schemas": true
+  }
 }
