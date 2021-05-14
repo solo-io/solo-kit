@@ -1,10 +1,8 @@
 package collector
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -26,33 +24,21 @@ type ProtoCompiler interface {
 	CompileDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error)
 }
 
-func NewProtoCompiler(
-	collector Collector,
-	customImports, commonImports, customGoArgs, customPlugins []string,
-	descriptorOutDir string, wantCompile func(string) bool) *protoCompiler {
+func NewProtoCompiler(collector Collector, executor ProtocExecutor) *protoCompiler {
 	return &protoCompiler{
-		collector:        collector,
-		descriptorOutDir: descriptorOutDir,
-		customImports:    customImports,
-		commonImports:    commonImports,
-		customGoArgs:     customGoArgs,
-		wantCompile:      wantCompile,
-		customPlugins:    customPlugins,
+		importsCollector: collector,
+		protocExecutor:   executor,
 	}
 }
 
 type protoCompiler struct {
-	collector        Collector
-	descriptorOutDir string
-	customImports    []string
-	commonImports    []string
-	customGoArgs     []string
-	wantCompile      func(string) bool
-	customPlugins    []string
+	importsCollector Collector
+	protocExecutor   ProtocExecutor
 }
 
 func (c *protoCompiler) CompileDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error) {
 	defer metrics.MeasureElapsed("proto-compiler", time.Now())
+	log.Printf("Compiling proto descriptors from root:  %s", root)
 
 	var descriptors []*model.DescriptorWithPath
 	var mutex sync.Mutex
@@ -103,14 +89,12 @@ func (c *protoCompiler) CompileDescriptorsFromRoot(root string, skipDirs []strin
 	return parser.FilterDuplicateDescriptors(descriptors), nil
 }
 func (c *protoCompiler) addDescriptorsForFile(addDescriptor func(f model.DescriptorWithPath), root, protoFile string) error {
-	log.Printf("processing proto file input %v", protoFile)
-	imports, err := c.collector.CollectImportsForFile(root, protoFile)
+	log.Debugf("processing proto file input %v", protoFile)
+
+	imports, err := c.importsCollector.CollectImportsForFile(root, protoFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading imports for proto file")
 	}
-
-	// don't generate protos for non-project files
-	compile := c.wantCompile(protoFile)
 
 	// use a temp file to store the output from protoc, then parse it right back in
 	// this is how we "wrap" protoc
@@ -123,9 +107,10 @@ func (c *protoCompiler) addDescriptorsForFile(addDescriptor func(f model.Descrip
 	}
 	defer os.Remove(tmpFile.Name())
 
-	if err := c.writeDescriptors(protoFile, tmpFile.Name(), imports, compile); err != nil {
+	if err := c.protocExecutor.Execute(protoFile, tmpFile.Name(), imports); err != nil {
 		return errors.Wrapf(err, "writing descriptors")
 	}
+
 	desc, err := readDescriptors(tmpFile.Name())
 	if err != nil {
 		return errors.Wrapf(err, "reading descriptors")
@@ -152,97 +137,4 @@ func readDescriptors(fromFile string) (*descriptor.FileDescriptorSet, error) {
 		return nil, errors.Wrapf(err, "unmarshalling tmp file as descriptors")
 	}
 	return &desc, nil
-}
-
-func (c *protoCompiler) findImportRelativeToRoot(absoluteRoot, importedProtoFile string, customImports, existingImports []string) (string, error) {
-	// if the file is already imported, point to that import
-	for _, importPath := range existingImports {
-		if _, err := os.Stat(filepath.Join(importPath, importedProtoFile)); err == nil {
-			return importPath, nil
-		}
-	}
-	rootsToTry := []string{absoluteRoot}
-
-	for _, customImport := range customImports {
-		absoluteCustomImport, err := filepath.Abs(customImport)
-		if err != nil {
-			return "", err
-		}
-		// Try the more specific custom imports first, rather than trying all of vendor
-		rootsToTry = append([]string{absoluteCustomImport}, rootsToTry...)
-	}
-
-	// Sort by length, so longer (more specific paths are attempted first)
-	sort.Slice(rootsToTry, func(i, j int) bool {
-		elementsJ := strings.Split(rootsToTry[j], string(os.PathSeparator))
-		elementsI := strings.Split(rootsToTry[i], string(os.PathSeparator))
-		return len(elementsI) > len(elementsJ)
-	})
-
-	var possibleImportPaths []string
-	for _, root := range rootsToTry {
-		if err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-			if strings.HasSuffix(path, importedProtoFile) {
-				importPath := strings.TrimSuffix(path, importedProtoFile)
-				possibleImportPaths = append(possibleImportPaths, importPath)
-
-			}
-			return nil
-		}); err != nil {
-			return "", err
-		}
-		// if found break
-		if len(possibleImportPaths) > 0 {
-			break
-		}
-	}
-	if len(possibleImportPaths) == 0 {
-		return "", errors.Errorf("found no possible import paths in root directory %v for import %v",
-			absoluteRoot, importedProtoFile)
-	}
-	if len(possibleImportPaths) != 1 {
-		log.Warnf("found more than one possible import path in root directory for "+
-			"import %v: %v",
-			importedProtoFile, possibleImportPaths)
-	}
-	return possibleImportPaths[0], nil
-
-}
-
-var defaultGoArgs = []string{
-	"plugins=grpc",
-	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
-}
-
-func (c *protoCompiler) writeDescriptors(protoFile, toFile string, imports []string, compileProtos bool) error {
-	cmd := exec.Command("protoc")
-
-	var cmdImports []string
-	for _, i := range imports {
-		cmdImports = append(cmdImports, fmt.Sprintf("-I%s", i))
-	}
-	cmd.Args = append(cmd.Args, cmdImports...)
-	goArgs := append(defaultGoArgs, c.customGoArgs...)
-
-	if compileProtos {
-		cmd.Args = append(cmd.Args,
-			"--go_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
-			"--ext_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
-		)
-
-		for _, plugin := range c.customPlugins {
-			cmd.Args = append(cmd.Args,
-				"--"+plugin+"_out="+strings.Join(goArgs, ",")+":"+c.descriptorOutDir,
-			)
-		}
-	}
-
-	cmd.Args = append(cmd.Args, "-o"+toFile, "--include_imports", "--include_source_info",
-		protoFile)
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return errors.Wrapf(err, "%v failed: %s", cmd.Args, out)
-	}
-	return nil
 }

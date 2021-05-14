@@ -66,7 +66,7 @@ func getResource(resources []*model.Resource, project model.ProjectConfig, cfg m
 			return res, nil
 		}
 	}
-	return nil, errors.Errorf("found %v resources found which match %v, try specifying a version", len(possibleResources), cfg)
+	return nil, errors.Errorf("%v resources found which match %v, try specifying a version", len(possibleResources), cfg)
 }
 
 func getResources(project *model.Project, allProjectConfigs []*model.ProjectConfig, messages []ProtoMessageWrapper) ([]*model.Resource, []*model.ResourceGroup, error) {
@@ -137,7 +137,7 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 			resourcesForGroup = append(resourcesForGroup, resource)
 		}
 
-		log.Printf("creating resource group: %v", groupName)
+		log.Debugf("creating resource group: %v", groupName)
 		rg := &model.ResourceGroup{
 			Name:      groupName,
 			GoName:    goName(groupName),

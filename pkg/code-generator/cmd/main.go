@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
+
 	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -76,7 +78,7 @@ type GenerateOptions struct {
 	SkipGeneratedTests bool
 	/*
 		Represents the go package which this package would have been in the GOPATH
-		This allows it to be able to maintain compatility with the old solo-kit
+		This allows it to be able to maintain compatibility with the old solo-kit
 
 		default: current github.com/solo-io/<current-folder>
 		for example: github.com/solo-io/solo-kit
@@ -175,6 +177,7 @@ func Generate(opts GenerateOptions) error {
 		return nil
 	}
 
+	log.Printf("Copying relevant files from tmp directory: %s", descriptorOutDir)
 	if err := filepath.Walk(outPath, func(pbgoFile string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -182,6 +185,7 @@ func Generate(opts GenerateOptions) error {
 		if info.IsDir() {
 			return nil
 		}
+
 		if !(strings.HasSuffix(pbgoFile, ".pb.go") || strings.HasSuffix(pbgoFile, ".pb.hash.go") || strings.HasSuffix(pbgoFile, ".pb.equal.go")) {
 			return nil
 		}
@@ -204,7 +208,7 @@ func Generate(opts GenerateOptions) error {
 		}
 		defer dstFile.Close()
 
-		log.Printf("copying %v -> %v", pbgoFile, dest)
+		log.Debugf("copying %v -> %v", pbgoFile, dest)
 		_, err = io.Copy(dstFile, srcFile)
 		return err
 
@@ -272,26 +276,21 @@ func (r *Runner) Run() error {
 		return false
 	}
 
-	importsCollector := collector.NewCollector(
-		r.Opts.CustomImports,
-		r.CommonImports,
-	)
+	importsCollector := collector.NewCollector(r.Opts.CustomImports, r.CommonImports)
+	protocExecutor := &collector.DefaultProtocExecutor{
+		OutputDir:         r.DescriptorOutDir,
+		ShouldCompileFile: compileProto,
+		CustomGoArgs:      r.Opts.CustomGoOutArgs,
+		CustomPlugins:     r.Opts.CustomPlugins,
+	}
 
-	descriptorCollector := collector.NewProtoCompiler(
-		importsCollector,
-		r.Opts.CustomImports,
-		r.CommonImports,
-		r.Opts.CustomGoOutArgs,
-		r.Opts.CustomPlugins,
-		r.DescriptorOutDir,
-		compileProto)
-
+	descriptorCollector := collector.NewProtoCompiler(importsCollector, protocExecutor)
 	descriptors, err := descriptorCollector.CompileDescriptorsFromRoot(filepath.Join(r.BaseDir, anyvendor.DefaultDepDir), r.Opts.SkipDirs)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("collected descriptors: %v", func() []string {
+	log.Debugf("collected descriptors: %v", func() []string {
 		var names []string
 		for _, desc := range descriptors {
 			names = append(names, desc.GetName())
@@ -324,12 +323,11 @@ func (r *Runner) Run() error {
 	}
 
 	for _, project := range projectMap {
-		code, err := codegen.GenerateFiles(project, true, r.Opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
-		if err != nil {
-			return err
-		}
+		log.Printf("Generating files for project: %s", project.String())
 
-		if err := docgen.WritePerProjectsDocs(project, r.Opts.GenDocs, workingRootAbsolute); err != nil {
+		// Generate Files
+		generatedFiles, err := codegen.GenerateFiles(project, true, r.Opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
+		if err != nil {
 			return err
 		}
 
@@ -339,14 +337,21 @@ func (r *Runner) Run() error {
 		}
 		outDir := split[filepathValidLength-1]
 
-		for _, file := range code {
+		fileWriter := &writer.DefaultFileWriter{
+			Root: outDir,
+			HeaderFromFilename: func(filename string) string {
+				if strings.HasSuffix(filename, ".go") {
+					return fmt.Sprintf("// %s\n\n", writer.DefaultFileHeader)
+				}
+				return writer.NoFileHeader
+			},
+		}
+
+		for _, file := range generatedFiles {
+			if err := fileWriter.WriteFile(file); err != nil {
+				return err
+			}
 			path := filepath.Join(outDir, file.Filename)
-			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-				return err
-			}
-			if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-				return err
-			}
 
 			switch {
 			case strings.HasSuffix(file.Filename, ".sh"):
@@ -365,15 +370,21 @@ func (r *Runner) Run() error {
 			}
 		}
 
-		// Generate mocks
+		// Generate Docs
+		if err := docgen.WritePerProjectsDocs(project, r.Opts.GenDocs, workingRootAbsolute); err != nil {
+			return err
+		}
+
+		// Generate Mocks
 		// need to run after to make sure all resources have already been written
 		// Set this env var during tests so that mocks are not generated
 		if !r.Opts.SkipGenMocks {
-			if err := genMocks(code, outDir, workingRootAbsolute); err != nil {
+			if err := genMocks(generatedFiles, outDir, workingRootAbsolute); err != nil {
 				return err
 			}
 		}
 	}
+
 	if err := docgen.WriteCrossProjectDocs(r.Opts.GenDocs, workingRootAbsolute, projectMap); err != nil {
 		return err
 	}

@@ -2,9 +2,9 @@ package docgen
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
+
+	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 
@@ -92,20 +92,15 @@ func WriteCrossProjectDocsHugo(
 	}
 
 	file := code_generator.File{
-		Filename: options.HugoProtoDataFile,
-		Content:  string(fileBytes),
+		Filename:   options.HugoProtoDataFile,
+		Content:    string(fileBytes),
+		Permission: 0644,
 	}
-
-	// note that the data file is saved in the DataDir, not the directory specified by the project spec
-	path := filepath.Join(absoluteRoot, hugoOptions.DataDir, file.Filename)
-	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-		return err
+	fileWriter := &writer.DefaultFileWriter{
+		// note that the data file is saved in the DataDir, not the directory specified by the project spec
+		Root: filepath.Join(absoluteRoot, hugoOptions.DataDir),
 	}
-	if err := ioutil.WriteFile(path, []byte(file.Content), 0644); err != nil {
-		return err
-	}
-	return nil
-
+	return fileWriter.WriteFile(file)
 }
 
 // util for populating the Hugo ProtoMap to enable allows lookup by
