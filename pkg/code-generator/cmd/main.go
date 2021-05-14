@@ -66,8 +66,8 @@ type GenerateOptions struct {
 	CustomCompileProtos []string
 
 	// custom plugins
-	// each will append a <plugin_key>_out=<plugin_value> directive to protoc command
-	CustomPlugins map[string]string
+	// each will append a <plugin>_out= directive to protoc command
+	CustomPlugins []string
 
 	GenDocs       *DocsOptions
 	CustomImports []string
@@ -80,7 +80,7 @@ type GenerateOptions struct {
 	SkipGeneratedTests bool
 	/*
 		Represents the go package which this package would have been in the GOPATH
-		This allows it to be able to maintain compatility with the old solo-kit
+		This allows it to be able to maintain compatibility with the old solo-kit
 
 		default: current github.com/solo-io/<current-folder>
 		for example: github.com/solo-io/solo-kit
