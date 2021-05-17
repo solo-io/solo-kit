@@ -64,7 +64,7 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 			continue
 		}
 
-		if err := validateStructural(specJsonSchema); err != nil {
+		if err := validateStructural(crdGVK, specJsonSchema); err != nil {
 			return err
 		}
 
@@ -85,19 +85,19 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 }
 
 // Lifted from https://github.com/istio/tools/blob/477454adf7995dd3070129998495cdc8aaec5aff/cmd/cue-gen/crd.go#L108
-func validateStructural(s *v1beta1.JSONSchemaProps) error {
+func validateStructural(gvk schema.GroupVersionKind, s *v1beta1.JSONSchemaProps) error {
 	out := &apiext.JSONSchemaProps{}
 	if err := v1beta1.Convert_v1beta1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(s, out, nil); err != nil {
-		return fmt.Errorf("cannot convert v1beta1 JSONSchemaProps to JSONSchemaProps: %v", err)
+		return fmt.Errorf("%v cannot convert v1beta1 JSONSchemaProps to JSONSchemaProps: %v", gvk, err)
 	}
 
 	r, err := structuralschema.NewStructural(out)
 	if err != nil {
-		return fmt.Errorf("cannot convert to a structural schema: %v", err)
+		return fmt.Errorf("%v cannot convert to a structural schema: %v", gvk, err)
 	}
 
 	if errs := structuralschema.ValidateStructural(nil, r); len(errs) != 0 {
-		return fmt.Errorf("schema is not structural: %v", errs.ToAggregate().Error())
+		return fmt.Errorf("%v schema is not structural: %v", gvk, errs.ToAggregate().Error())
 	}
 
 	return nil

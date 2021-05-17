@@ -19,6 +19,7 @@ option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 
 /*
 go_package Comments
@@ -40,21 +41,36 @@ below Comments a
 */
 
 /*
-Mock resources for goofin off
+A SimpleMockResource defines a variety of baseline types to ensure
+that we can generate open api schemas properly. It intentionally avoids
+messages that include either:
+    - oneof
+    - recursive definitions (core.solo.io.Status)
 */
 message SimpleMockResource {
 
     option (core.solo.io.resource).short_name = "smk";
     option (core.solo.io.resource).plural_name = "simplemocks";
 
-    // The status field comment
-    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
-    core.solo.io.Metadata metadata = 7;
+    core.solo.io.Metadata metadata = 100;
 
-    string data = 1 [json_name="data.json"];
-    string some_dumb_field = 100 [(extproto.skip_hashing) = true];
+    string data = 1;
 
-    map<string, string> mapped_data = 10;
+    map<string, string> mapped_data = 2;
+
+    // Any field should include `x-kubernetes-preserve-unknown-fields`
+    // this prevents k8s from validating proto.Any fields (since it's unstructured)
+    .google.protobuf.Any any = 3;
+
+    // Struct field TODO (sam-heilbron)
+    //.google.protobuf.Struct struct = 4;
+
+    message NestedMessage {
+        bool option_bool = 1;
+        string option_string = 2;
+    }
+
+    NestedMessage nested_message = 5;
 }
 
 /*

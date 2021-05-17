@@ -22,8 +22,12 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: Mock resources for goofin off
+          description: 'A SimpleMockResource defines a variety of baseline types to ensure that we can generate open api schemas properly. It intentionally avoids messages that include either: - oneof - recursive definitions (core.solo.io.Status)'
           properties:
+            any:
+              description: Any field should include `x-kubernetes-preserve-unknown-fields` this prevents k8s from validating proto.Any fields (since it's unstructured)
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
             data:
               type: string
             mapped_data:
@@ -36,12 +40,13 @@ spec:
                   description: Name of the resource.
                   type: string
               type: object
-            some_dumb_field:
-              type: string
-            status:
-              description: The status field comment
+            nested_message:
+              properties:
+                option_bool:
+                  type: boolean
+                option_string:
+                  type: string
               type: object
-              x-kubernetes-preserve-unknown-fields: true
           type: object
       type: object
   version: v1

@@ -3,6 +3,7 @@ module github.com/solo-io/solo-kit
 go 1.16
 
 require (
+	cuelang.org/go v0.3.2
 	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect

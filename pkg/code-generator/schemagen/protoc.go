@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+// Implementation of JsonSchemaGenerator that uses a plugin for the protocol buffer compiler
 type protocGenerator struct {
 	// The Collector used to extract imports for proto files
 	importsCollector collector.Collector
