@@ -15,6 +15,12 @@ import (
 	"github.com/solo-io/go-utils/stringutils"
 )
 
+func init() {
+	// initalize metrics during init phase.
+	// can be safely called multiple times
+	metrics.NewAggregator()
+}
+
 type Collector interface {
 	CollectImportsForFile(root, protoFile string) ([]string, error)
 }

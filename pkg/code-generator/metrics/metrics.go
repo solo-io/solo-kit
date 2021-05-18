@@ -17,16 +17,10 @@ func NewAggregator() {
 }
 
 func MeasureElapsed(key string, startTime time.Time) {
-	if aggregator == nil {
-		return
-	}
 	aggregator.setDurationMetric(keyWithGlobalNamespace(key), time.Since(startTime).String())
 }
 
 func IncrementFrequency(key string) {
-	if aggregator == nil {
-		return
-	}
 	aggregator.incrementFrequencyMetric(keyWithGlobalNamespace(key))
 }
 

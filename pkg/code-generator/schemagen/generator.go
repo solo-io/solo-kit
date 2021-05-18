@@ -6,7 +6,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	structuralschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -23,7 +23,7 @@ type ValidationSchemaOptions struct {
 }
 
 type JsonSchemaGenerator interface {
-	GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error)
+	GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*apiextv1beta1.JSONSchemaProps, error)
 }
 
 func GenerateOpenApiValidationSchemas(project *model.Project, options *ValidationSchemaOptions, importsCollector collector.Collector, absoluteRoot string) error {
@@ -79,15 +79,17 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 			continue
 		}
 
+		// prevent k8s from validating metadata field
 		removeProtoMetadataValidation(specJsonSchema)
+
 		if err := validateStructural(crdGVK, specJsonSchema); err != nil {
 			return err
 		}
 
-		validationSchema := &v1beta1.CustomResourceValidation{
-			OpenAPIV3Schema: &v1beta1.JSONSchemaProps{
+		validationSchema := &apiextv1beta1.CustomResourceValidation{
+			OpenAPIV3Schema: &apiextv1beta1.JSONSchemaProps{
 				Type:       "object",
-				Properties: map[string]v1beta1.JSONSchemaProps{},
+				Properties: map[string]apiextv1beta1.JSONSchemaProps{},
 			},
 		}
 		validationSchema.OpenAPIV3Schema.Properties["spec"] = *specJsonSchema
@@ -101,9 +103,9 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 }
 
 // Lifted from https://github.com/istio/tools/blob/477454adf7995dd3070129998495cdc8aaec5aff/cmd/cue-gen/crd.go#L108
-func validateStructural(gvk schema.GroupVersionKind, s *v1beta1.JSONSchemaProps) error {
+func validateStructural(gvk schema.GroupVersionKind, s *apiextv1beta1.JSONSchemaProps) error {
 	out := &apiext.JSONSchemaProps{}
-	if err := v1beta1.Convert_v1beta1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(s, out, nil); err != nil {
+	if err := apiextv1beta1.Convert_v1beta1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(s, out, nil); err != nil {
 		return fmt.Errorf("%v cannot convert v1beta1 JSONSchemaProps to JSONSchemaProps: %v", gvk, err)
 	}
 
@@ -120,6 +122,34 @@ func validateStructural(gvk schema.GroupVersionKind, s *v1beta1.JSONSchemaProps)
 }
 
 // prevent k8s from validating metadata field
-func removeProtoMetadataValidation(s *v1beta1.JSONSchemaProps) {
+// https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema
+// "if metadata is specified, then only restrictions on metadata.name and metadata.generateName are allowed."
+// The kube api server is responsible for managing the metadata field, so users are not allowed to define schemas on it.
+// We remove validation altogether.
+func removeProtoMetadataValidation(s *apiextv1beta1.JSONSchemaProps) {
 	delete(s.Properties, "metadata")
+}
+
+// prevent k8s from validating proto.Any fields (since it's unstructured)
+func removeProtoAnyValidation(d map[string]interface{}, propertyField string) {
+	for _, v := range d {
+		values, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		desc, ok := values["properties"]
+		properties, isObj := desc.(map[string]interface{})
+		// detect proto.Any field from presence of [propertyField] as field under "properties"
+		if !ok || !isObj || properties[propertyField] == nil {
+			removeProtoAnyValidation(values, propertyField)
+			continue
+		}
+		// remove "properties" value
+		delete(values, "properties")
+		// remove "required" value
+		delete(values, "required")
+		// x-kubernetes-preserve-unknown-fields allows for unknown fields from a particular node
+		// see https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema
+		values["x-kubernetes-preserve-unknown-fields"] = true
+	}
 }

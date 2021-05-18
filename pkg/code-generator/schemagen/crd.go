@@ -13,7 +13,7 @@ import (
 
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/utils/pointer"
 
 	"github.com/ghodss/yaml"
@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	apiVersion = "apiextensions.k8s.io/v1beta1"
+	v1beta1 = "apiextensions.k8s.io/v1beta1"
 )
 
 var (
@@ -45,7 +45,7 @@ func NewCrdWriter(crdDirectory string) *CrdWriter {
 	}
 }
 
-func (c *CrdWriter) ApplyValidationSchemaToCRD(crd v1beta1.CustomResourceDefinition, validationSchema *v1beta1.CustomResourceValidation) error {
+func (c *CrdWriter) ApplyValidationSchemaToCRD(crd apiextv1beta1.CustomResourceDefinition, validationSchema *apiextv1beta1.CustomResourceValidation) error {
 	crd.Spec.Validation = validationSchema
 	// Setting PreserveUnknownFields to false ensures that objects with unknown fields are rejected.
 	// This is deprecated and will default to false in future versions.
@@ -62,12 +62,12 @@ func (c *CrdWriter) ApplyValidationSchemaToCRD(crd v1beta1.CustomResourceDefinit
 	})
 }
 
-func (c *CrdWriter) getFilenameForCRD(crd v1beta1.CustomResourceDefinition) string {
-	return fmt.Sprintf("%s_%s.yaml", crd.Spec.Group, crd.Spec.Names.Kind)
+func (c *CrdWriter) getFilenameForCRD(crd apiextv1beta1.CustomResourceDefinition) string {
+	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Version, crd.Spec.Names.Kind)
 }
 
-func GetCRDsFromDirectory(crdDirectory string) ([]v1beta1.CustomResourceDefinition, error) {
-	var crds []v1beta1.CustomResourceDefinition
+func GetCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDefinition, error) {
+	var crds []apiextv1beta1.CustomResourceDefinition
 
 	err := filepath.Walk(crdDirectory, func(crdFile string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -94,15 +94,18 @@ func GetCRDsFromDirectory(crdDirectory string) ([]v1beta1.CustomResourceDefiniti
 	return crds, err
 }
 
-func getCRDFromFile(pathToFile string) (v1beta1.CustomResourceDefinition, error) {
-	crd := v1beta1.CustomResourceDefinition{}
+func getCRDFromFile(pathToFile string) (apiextv1beta1.CustomResourceDefinition, error) {
+	crd := apiextv1beta1.CustomResourceDefinition{}
 
 	r, err := os.Open(pathToFile)
 	if err != nil {
 		return crd, err
 	}
 	defer func() {
-		_ = r.Close()
+		err := r.Close()
+		if err != nil {
+			log.Fatalf("failed to close file [%s]. %v", pathToFile, err)
+		}
 	}()
 
 	f := bufio.NewReader(r)
@@ -115,8 +118,8 @@ func getCRDFromFile(pathToFile string) (v1beta1.CustomResourceDefinition, error)
 	chunk := bytes.TrimSpace(doc)
 
 	err = yaml.Unmarshal(chunk, &crd)
-	if err == nil && apiVersion != crd.APIVersion {
-		return crd, ApiVersionMismatch(apiVersion, crd.APIVersion)
+	if err == nil && v1beta1 != crd.APIVersion {
+		return crd, ApiVersionMismatch(v1beta1, crd.APIVersion)
 	}
 
 	return crd, err

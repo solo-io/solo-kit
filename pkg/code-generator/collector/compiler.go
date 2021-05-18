@@ -20,6 +20,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+func init() {
+	// initalize metrics during init phase.
+	// can be safely called multiple times
+	metrics.NewAggregator()
+}
+
 type ProtoCompiler interface {
 	CompileDescriptorsFromRoot(root string, skipDirs []string) ([]*model.DescriptorWithPath, error)
 }
