@@ -41,42 +41,9 @@ below Comments a
 */
 
 /*
-A SimpleMockResource defines a variety of baseline types to ensure
-that we can generate open api schemas properly. It intentionally avoids
-messages that include either:
-    - oneof
-    - recursive definitions (core.solo.io.Status)
-*/
-message SimpleMockResource {
-
-    option (core.solo.io.resource).short_name = "smk";
-    option (core.solo.io.resource).plural_name = "simplemocks";
-
-    core.solo.io.Metadata metadata = 100;
-
-    string data = 1;
-
-    map<string, string> mapped_data = 2;
-
-    // Any field should include `x-kubernetes-preserve-unknown-fields`
-    // this prevents k8s from validating proto.Any fields (since it's unstructured)
-    .google.protobuf.Any any = 3;
-
-    // Struct field TODO (sam-heilbron)
-    //.google.protobuf.Struct struct = 4;
-
-    message NestedMessage {
-        bool option_bool = 1;
-        string option_string = 2;
-    }
-
-    NestedMessage nested_message = 5;
-}
-
-/*
 Mock resources for goofin off
-Includes oneof, nested resources, and any other special cases we
-want to verify when generating validation schemas
+This includes oneof, nested resources, and any other special cases that
+may cause issues during schemagen
 */
 message MockResource {
 
@@ -90,16 +57,15 @@ message MockResource {
     string data = 1 [json_name="data.json"];
     string some_dumb_field = 100 [(extproto.skip_hashing) = true];
 
-    // Any field should include `x-kubernetes-preserve-unknown-fields`
-    // this prevents k8s from validating proto.Any fields (since it's unstructured)
-    .google.protobuf.Any any = 11;
+    oneof test_oneof_fields {
+        string oneof_one = 3;
+        bool oneof_two = 2;
+    };
 
     // test one of fields comment
     oneof nested_oneof_options {
         // oneof comment
         NestedOneOf oneof_nestedoneof = 12;
-        string oneof_string = 14;
-        bool oneof_bool = 15;
     }
 }
 
@@ -117,17 +83,17 @@ message NestedOneOf {
         string another_option_b = 12;
     }
 
-    // AnotherNestedOneOf comment
-    message InternalOneOf {
-        oneof option {
-            string option_a = 1;
-            string option_b = 2;
-        }
-    }
-
     oneof nested_oneof {
         InternalOneOf another_nested_oneof_one = 21;
         InternalOneOf another_nested_oneof_two = 22;
+    }
+}
+
+// AnotherNestedOneOf comment
+message InternalOneOf {
+    oneof option {
+        string option_a = 1;
+        string option_b = 2;
     }
 }
 

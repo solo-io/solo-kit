@@ -22,23 +22,25 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: 'A SimpleMockResource defines a variety of baseline types to ensure that we can generate open api schemas properly. It intentionally avoids messages that include either: - oneof - recursive definitions (core.solo.io.Status)'
+          description: A SimpleMockResource defines a variety of baseline types to ensure that we can generate open api schemas properly. It intentionally avoids messages that include oneof and recursive schemas (like core.solo.io.Status)
           properties:
             any:
-              description: Any field should include `x-kubernetes-preserve-unknown-fields` this prevents k8s from validating proto.Any fields (since it's unstructured)
               type: object
               x-kubernetes-preserve-unknown-fields: true
             data:
               type: string
+            list:
+              items:
+                type: boolean
+              type: array
             mapped_data:
               additionalProperties:
                 type: string
               type: object
-            metadata:
-              properties:
-                name:
-                  description: Name of the resource.
-                  type: string
+            mapped_struct:
+              additionalProperties:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               type: object
             nested_message:
               properties:
@@ -47,6 +49,18 @@ spec:
                 option_string:
                   type: string
               type: object
+            nested_message_list:
+              items:
+                properties:
+                  option_bool:
+                    type: boolean
+                  option_string:
+                    type: string
+                type: object
+              type: array
+            struct:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
           type: object
       type: object
   version: v1

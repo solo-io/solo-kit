@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package testing.solo.io;
+
+option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
+
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+
+
+/*
+A SimpleMockResource defines a variety of baseline types to ensure
+that we can generate open api schemas properly. It intentionally avoids
+messages that include oneof and recursive schemas (like core.solo.io.Status)
+*/
+message SimpleMockResource {
+
+  option (core.solo.io.resource).short_name = "smk";
+  option (core.solo.io.resource).plural_name = "simplemocks";
+
+  core.solo.io.Metadata metadata = 100;
+
+  string data = 1;
+
+  map<string, string> mapped_data = 2;
+
+  repeated bool list = 3;
+
+  NestedMessage nested_message = 4;
+
+  repeated NestedMessage nested_message_list = 5;
+
+  google.protobuf.Any any = 11;
+
+  google.protobuf.Struct struct = 12;
+
+  map<string, google.protobuf.Struct> mapped_struct = 13;
+
+  message NestedMessage {
+    bool option_bool = 1;
+    string option_string = 2;
+  }
+}

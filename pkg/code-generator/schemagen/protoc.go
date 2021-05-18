@@ -26,11 +26,15 @@ import (
 type protocGenerator struct {
 	// The Collector used to extract imports for proto files
 	importsCollector collector.Collector
+	absoluteRoot     string
+	protoDir         string
 }
 
-func NewProtocGenerator(importsCollector collector.Collector) *protocGenerator {
+func NewProtocGenerator(importsCollector collector.Collector, absoluteRoot string) *protocGenerator {
 	return &protocGenerator{
 		importsCollector: importsCollector,
+		absoluteRoot:     absoluteRoot,
+		protoDir:         anyvendor.DefaultDepDir,
 	}
 }
 
@@ -50,12 +54,8 @@ func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[s
 	}
 
 	// 1. Generate the openApiSchemas for the project, writing them to a temp directory (schemaOutputDir)
-	absoluteRoot, err := filepath.Abs(anyvendor.DefaultDepDir)
-	if err != nil {
-		return nil, err
-	}
 	for _, projectProto := range project.ProjectConfig.ProjectProtos {
-		if err := p.generateSchemasForProjectProto(absoluteRoot, projectProto, protocExecutor); err != nil {
+		if err := p.generateSchemasForProjectProto(projectProto, protocExecutor); err != nil {
 			return nil, err
 		}
 	}
@@ -64,8 +64,9 @@ func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[s
 	return p.processGeneratedSchemas(project, tmpOutputDir)
 }
 
-func (p *protocGenerator) generateSchemasForProjectProto(root, projectProtoFile string, protocExecutor collector.ProtocExecutor) error {
-	imports, err := p.importsCollector.CollectImportsForFile(root, filepath.Join(root, projectProtoFile))
+func (p *protocGenerator) generateSchemasForProjectProto(projectProtoFile string, protocExecutor collector.ProtocExecutor) error {
+	protoRoot := filepath.Join(p.absoluteRoot, p.protoDir)
+	imports, err := p.importsCollector.CollectImportsForFile(protoRoot, filepath.Join(protoRoot, projectProtoFile))
 	if err != nil {
 		return errors.Wrapf(err, "collecting imports for proto file")
 	}
@@ -114,7 +115,7 @@ func (p *protocGenerator) processGeneratedSchemas(project *model.Project, schema
 			schemaGVK := p.getGVKForSchemaKey(project, schemaKey)
 
 			// Spec validation schema
-			specJsonSchema, err := getJsonSchema(schemaKey, schemaValue)
+			specJsonSchema, err := p.getJsonSchema(schemaKey, schemaValue)
 			if err != nil {
 				return err
 			}
@@ -155,7 +156,7 @@ func (p *protocGenerator) getGVKForSchemaKey(project *model.Project, schemaKey s
 	}
 }
 
-func getJsonSchema(schemaKey string, schema *openapi3.SchemaRef) (*v1beta1.JSONSchemaProps, error) {
+func (p *protocGenerator) getJsonSchema(schemaKey string, schema *openapi3.SchemaRef) (*v1beta1.JSONSchemaProps, error) {
 	if schema == nil {
 		return nil, eris.Errorf("no open api schema for %s", schemaKey)
 	}
@@ -170,7 +171,7 @@ func getJsonSchema(schemaKey string, schema *openapi3.SchemaRef) (*v1beta1.JSONS
 		return nil, err
 	}
 
-	removeProtoAnyValidation(obj)
+	p.removeProtoAnyValidation(obj)
 
 	bytes, err := json.Marshal(obj)
 	if err != nil {
@@ -186,7 +187,7 @@ func getJsonSchema(schemaKey string, schema *openapi3.SchemaRef) (*v1beta1.JSONS
 }
 
 // prevent k8s from validating proto.Any fields (since it's unstructured)
-func removeProtoAnyValidation(d map[string]interface{}) {
+func (p *protocGenerator) removeProtoAnyValidation(d map[string]interface{}) {
 	for _, v := range d {
 		values, ok := v.(map[string]interface{})
 		if !ok {
@@ -196,7 +197,7 @@ func removeProtoAnyValidation(d map[string]interface{}) {
 		properties, isObj := desc.(map[string]interface{})
 		// detect proto.Any field from presence of "type_url" as field under "properties"
 		if !ok || !isObj || properties["type_url"] == nil {
-			removeProtoAnyValidation(values)
+			p.removeProtoAnyValidation(values)
 			continue
 		}
 		// remove "properties" value

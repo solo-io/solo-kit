@@ -97,9 +97,10 @@ func (c *cueGenerator) GetJsonSchemaForProject(project *model.Project) (map[sche
 func (c *cueGenerator) getProtobufExtractorForProject(project *model.Project) (*protobuf.Extractor, error) {
 	// Collect all protobuf definitions including transitive dependencies.
 	var imports []string
+	protoRoot := filepath.Join(c.absoluteRoot, c.protoDir)
+
 	for _, projectProto := range project.ProjectConfig.ProjectProtos {
-		absoluteProjectProtoPath := filepath.Join(c.absoluteRoot, c.protoDir, projectProto)
-		importsForResource, err := c.importsCollector.CollectImportsForFile(c.protoDir, absoluteProjectProtoPath)
+		importsForResource, err := c.importsCollector.CollectImportsForFile(protoRoot, filepath.Join(protoRoot, projectProto))
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +110,7 @@ func (c *cueGenerator) getProtobufExtractorForProject(project *model.Project) (*
 
 	// Parse protobuf into cuelang
 	protobufExtractor := protobuf.NewExtractor(&protobuf.Config{
-		Root:   c.protoDir,
+		Root:   protoRoot,
 		Module: project.ProjectConfig.GoPackage,
 		Paths:  imports,
 	})

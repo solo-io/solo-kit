@@ -22,22 +22,10 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: Mock resources for goofin off Includes oneof, nested resources, and any other special cases we want to verify when generating validation schemas
+          description: Mock resources for goofin off This includes oneof, nested resources, and any other special cases that may cause issues during schemagen
           properties:
-            any:
-              description: Any field should include `x-kubernetes-preserve-unknown-fields` this prevents k8s from validating proto.Any fields (since it's unstructured)
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
             data:
               type: string
-            metadata:
-              properties:
-                name:
-                  description: Name of the resource.
-                  type: string
-              type: object
-            oneof_bool:
-              type: boolean
             oneof_nestedoneof:
               description: oneof comment
               properties:
@@ -64,8 +52,10 @@ spec:
                 option_b:
                   type: string
               type: object
-            oneof_string:
+            oneof_one:
               type: string
+            oneof_two:
+              type: boolean
             some_dumb_field:
               type: string
             status:

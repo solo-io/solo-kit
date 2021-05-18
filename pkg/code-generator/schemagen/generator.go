@@ -3,6 +3,8 @@ package schemagen
 import (
 	"fmt"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
+
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	structuralschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
@@ -15,13 +17,16 @@ import (
 type ValidationSchemaOptions struct {
 	// Path to the directory where CRDs will be read from and written to
 	CrdDirectory string
+
+	// Tool used to generate JsonSchemas, defaults to protoc
+	JsonSchemaTool string
 }
 
 type JsonSchemaGenerator interface {
 	GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*v1beta1.JSONSchemaProps, error)
 }
 
-func GenerateOpenApiValidationSchemas(project *model.Project, options *ValidationSchemaOptions, jsonSchemaGenerator JsonSchemaGenerator) error {
+func GenerateOpenApiValidationSchemas(project *model.Project, options *ValidationSchemaOptions, importsCollector collector.Collector, absoluteRoot string) error {
 	if options == nil || options.CrdDirectory == "" {
 		log.Debugf("No CRDDirectory provided, skipping schema-gen")
 		return nil
@@ -44,6 +49,16 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 	}
 
 	// Build the JsonSchemas for the project
+	var jsonSchemaGenerator JsonSchemaGenerator
+	switch options.JsonSchemaTool {
+	case "cue":
+		jsonSchemaGenerator = NewCueGenerator(importsCollector, absoluteRoot)
+	case "protoc":
+		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot)
+	default:
+		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot)
+	}
+
 	jsonSchemasByGVK, err := jsonSchemaGenerator.GetJsonSchemaForProject(project)
 	if err != nil {
 		return err
@@ -64,6 +79,7 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 			continue
 		}
 
+		removeProtoMetadataValidation(specJsonSchema)
 		if err := validateStructural(crdGVK, specJsonSchema); err != nil {
 			return err
 		}
@@ -101,4 +117,9 @@ func validateStructural(gvk schema.GroupVersionKind, s *v1beta1.JSONSchemaProps)
 	}
 
 	return nil
+}
+
+// prevent k8s from validating metadata field
+func removeProtoMetadataValidation(s *v1beta1.JSONSchemaProps) {
+	delete(s.Properties, "metadata")
 }
