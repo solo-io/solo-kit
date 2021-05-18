@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package envoy.api.v2.listener;
+
+import public "github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/listener_components.proto";
+
+option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/listener";
