@@ -40,15 +40,24 @@ type SimpleMockResource struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Metadata          *core.Metadata                      `protobuf:"bytes,100,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	Data              string                              `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	MappedData        map[string]string                   `protobuf:"bytes,2,rep,name=mapped_data,json=mappedData,proto3" json:"mapped_data,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	List              []bool                              `protobuf:"varint,3,rep,packed,name=list,proto3" json:"list,omitempty"`
-	NestedMessage     *SimpleMockResource_NestedMessage   `protobuf:"bytes,4,opt,name=nested_message,json=nestedMessage,proto3" json:"nested_message,omitempty"`
+	// metadata comment
+	Metadata *core.Metadata `protobuf:"bytes,100,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	// data comment
+	Data string `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	// mapped_data comment
+	MappedData map[string]string `protobuf:"bytes,2,rep,name=mapped_data,json=mappedData,proto3" json:"mapped_data,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// list comment
+	List []bool `protobuf:"varint,3,rep,packed,name=list,proto3" json:"list,omitempty"`
+	// nested_message comment
+	NestedMessage *SimpleMockResource_NestedMessage `protobuf:"bytes,4,opt,name=nested_message,json=nestedMessage,proto3" json:"nested_message,omitempty"`
+	// nested_message_list comment
 	NestedMessageList []*SimpleMockResource_NestedMessage `protobuf:"bytes,5,rep,name=nested_message_list,json=nestedMessageList,proto3" json:"nested_message_list,omitempty"`
-	Any               *any.Any                            `protobuf:"bytes,11,opt,name=any,proto3" json:"any,omitempty"`
-	Struct            *_struct.Struct                     `protobuf:"bytes,12,opt,name=struct,proto3" json:"struct,omitempty"`
-	MappedStruct      map[string]*_struct.Struct          `protobuf:"bytes,13,rep,name=mapped_struct,json=mappedStruct,proto3" json:"mapped_struct,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// any comment
+	Any *any.Any `protobuf:"bytes,11,opt,name=any,proto3" json:"any,omitempty"`
+	// struct comment
+	Struct *_struct.Struct `protobuf:"bytes,12,opt,name=struct,proto3" json:"struct,omitempty"`
+	// mapped_struct comment
+	MappedStruct map[string]*_struct.Struct `protobuf:"bytes,13,rep,name=mapped_struct,json=mappedStruct,proto3" json:"mapped_struct,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *SimpleMockResource) Reset() {
@@ -146,6 +155,7 @@ func (x *SimpleMockResource) GetMappedStruct() map[string]*_struct.Struct {
 	return nil
 }
 
+// NestedMessage type comment
 type SimpleMockResource_NestedMessage struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

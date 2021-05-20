@@ -38,7 +38,7 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 	}
 
 	// Extract the CRDs from the directory
-	crds, err := GetCRDsFromDirectory(options.CrdDirectory)
+	crds, err := getCRDsFromDirectory(options.CrdDirectory)
 	if err != nil {
 		return err
 	}

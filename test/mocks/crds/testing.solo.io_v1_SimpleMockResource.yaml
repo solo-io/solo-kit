@@ -25,24 +25,30 @@ spec:
           description: A SimpleMockResource defines a variety of baseline types to ensure that we can generate open api schemas properly. It intentionally avoids messages that include oneof and recursive schemas (like core.solo.io.Status)
           properties:
             any:
+              description: any comment
               type: object
               x-kubernetes-preserve-unknown-fields: true
             data:
+              description: data comment
               type: string
             list:
+              description: list comment
               items:
                 type: boolean
               type: array
             mapped_data:
               additionalProperties:
                 type: string
+              description: mapped_data comment
               type: object
             mapped_struct:
               additionalProperties:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              description: mapped_struct comment
               type: object
             nested_message:
+              description: nested_message comment
               properties:
                 option_bool:
                   type: boolean
@@ -50,7 +56,9 @@ spec:
                   type: string
               type: object
             nested_message_list:
+              description: nested_message_list comment
               items:
+                description: NestedMessage type comment
                 properties:
                   option_bool:
                     type: boolean
@@ -59,6 +67,7 @@ spec:
                 type: object
               type: array
             struct:
+              description: struct comment
               type: object
               x-kubernetes-preserve-unknown-fields: true
           type: object

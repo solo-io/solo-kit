@@ -27,24 +27,34 @@ message SimpleMockResource {
   option (core.solo.io.resource).short_name = "smk";
   option (core.solo.io.resource).plural_name = "simplemocks";
 
+  // metadata comment
   core.solo.io.Metadata metadata = 100;
 
+  // data comment
   string data = 1;
 
+  // mapped_data comment
   map<string, string> mapped_data = 2;
 
+  // list comment
   repeated bool list = 3;
 
+  // nested_message comment
   NestedMessage nested_message = 4;
 
+  // nested_message_list comment
   repeated NestedMessage nested_message_list = 5;
 
+  // any comment
   google.protobuf.Any any = 11;
 
+  // struct comment
   google.protobuf.Struct struct = 12;
 
+  // mapped_struct comment
   map<string, google.protobuf.Struct> mapped_struct = 13;
 
+  // NestedMessage type comment
   message NestedMessage {
     bool option_bool = 1;
     string option_string = 2;

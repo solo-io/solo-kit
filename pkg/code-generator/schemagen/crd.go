@@ -57,16 +57,16 @@ func (c *CrdWriter) ApplyValidationSchemaToCRD(crd apiextv1beta1.CustomResourceD
 	}
 
 	return c.fileWriter.WriteFile(code_generator.File{
-		Filename: c.getFilenameForCRD(crd),
+		Filename: getFilenameForCRD(crd),
 		Content:  string(crdBytes),
 	})
 }
 
-func (c *CrdWriter) getFilenameForCRD(crd apiextv1beta1.CustomResourceDefinition) string {
+func getFilenameForCRD(crd apiextv1beta1.CustomResourceDefinition) string {
 	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Version, crd.Spec.Names.Kind)
 }
 
-func GetCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDefinition, error) {
+func getCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDefinition, error) {
 	var crds []apiextv1beta1.CustomResourceDefinition
 
 	err := filepath.Walk(crdDirectory, func(crdFile string, info os.FileInfo, err error) error {
