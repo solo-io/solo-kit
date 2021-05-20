@@ -73,48 +73,63 @@ var _ = Describe("schemagen", func() {
 		})
 
 		ExpectJsonSchemasToMatch := func(cue, protoc *v1beta1.JSONSchemaProps) {
+			var (
+				fieldName               string
+				cueSchema, protocSchema v1beta1.JSONSchemaProps
+			)
+
 			// type: string
-			cueData := cue.Properties["data"]
-			protocData := protoc.Properties["data"]
-			ExpectWithOffset(1, cueData.Type).To(Equal("string"))
-			ExpectWithOffset(1, cueData).To(Equal(protocData))
+			fieldName = "data"
+			cueSchema = cue.Properties[fieldName]
+			protocSchema = protoc.Properties[fieldName]
+			ExpectWithOffset(1, cueSchema.Type).To(Equal("string"))
+			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 
 			// type: map<string, string>
-			cueMappedData := cue.Properties["mappedData"]
-			protocMappedData := protoc.Properties["mapped_data"]
-			ExpectWithOffset(1, cueMappedData.Type).To(Equal("object"))
-			ExpectWithOffset(1, cueMappedData).To(Equal(protocMappedData))
+			fieldName = "mappedData"
+			cueSchema = cue.Properties[fieldName]
+			protocSchema = protoc.Properties[fieldName]
+			ExpectWithOffset(1, cueSchema.Type).To(Equal("object"))
+			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 
 			// type: repeated bool
-			cueList := cue.Properties["list"]
-			protocList := protoc.Properties["list"]
-			ExpectWithOffset(1, cueList.Type).To(Equal("array"))
-			ExpectWithOffset(1, cueList.Items.Schema.Type).To(Equal("boolean"))
-			ExpectWithOffset(1, cueList).To(Equal(protocList))
+			fieldName = "list"
+			cueSchema = cue.Properties[fieldName]
+			protocSchema = protoc.Properties[fieldName]
+			ExpectWithOffset(1, cueSchema.Type).To(Equal("array"))
+			ExpectWithOffset(1, cueSchema.Items.Schema.Type).To(Equal("boolean"))
+			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 
 			// type: NestedMessage
-			cueNestedMessage := cue.Properties["nestedMessage"]
-			protocNestedMessage := protoc.Properties["nested_message"]
-			ExpectWithOffset(1, cueNestedMessage.Properties["optionBool"]).To(Equal(protocNestedMessage.Properties["option_bool"]))
-			ExpectWithOffset(1, cueNestedMessage.Properties["optionString"]).To(Equal(protocNestedMessage.Properties["option_string"]))
+			fieldName = "nestedMessage"
+			cueSchema = cue.Properties[fieldName]
+			protocSchema = protoc.Properties[fieldName]
+			for _, nestedFieldName := range []string{"optionBool", "optionString"} {
+				ExpectWithOffset(1, cueSchema.Properties[nestedFieldName]).To(Equal(protocSchema.Properties[nestedFieldName]))
+			}
 
 			// type: repeated NestedMessage
-			cueNestedMessageList := cue.Properties["nestedMessageList"]
-			protocNestedMessageList := protoc.Properties["nested_message_list"]
-			ExpectWithOffset(1, cueNestedMessageList.Items.Schema.Properties["optionBool"]).To(Equal(protocNestedMessageList.Items.Schema.Properties["option_bool"]))
-			ExpectWithOffset(1, cueNestedMessageList.Items.Schema.Properties["optionString"]).To(Equal(protocNestedMessageList.Items.Schema.Properties["option_string"]))
+			fieldName = "nestedMessageList"
+			cueSchema = cue.Properties[fieldName]
+			protocSchema = protoc.Properties[fieldName]
+			for _, nestedFieldName := range []string{"optionBool", "optionString"} {
+				ExpectWithOffset(1, cueSchema.Items.Schema.Properties[nestedFieldName]).To(Equal(protocSchema.Items.Schema.Properties[nestedFieldName]))
+			}
 
 			// type: struct
-			cueStruct := cue.Properties["struct"]
-			cueStruct.XPreserveUnknownFields = pointer.BoolPtr(true) // cue doesn't preserve unknown fields for structs by default
-			protocStruct := protoc.Properties["struct"]
-			ExpectWithOffset(1, cueStruct).To(Equal(protocStruct))
+			fieldName = "struct"
+			cueSchema = cue.Properties["struct"]
+			cueSchema.XPreserveUnknownFields = pointer.BoolPtr(true) // cue doesn't preserve unknown fields for structs by default
+			protocSchema = protoc.Properties["struct"]
+			ExpectWithOffset(1, cueSchema.Type).To(Equal("object"))
+			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 
 			// type: any
-			cueAny := cue.Properties["any"]
-			protocAny := protoc.Properties["any"]
-			ExpectWithOffset(1, cueAny.Type).To(Equal("object"))
-			ExpectWithOffset(1, cueAny).To(Equal(protocAny))
+			fieldName = "any"
+			cueSchema = cue.Properties[fieldName]
+			protocSchema = protoc.Properties[fieldName]
+			ExpectWithOffset(1, cueSchema.Type).To(Equal("object"))
+			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 		}
 
 		It("Schema for SimpleMockResource created by cue and protoc match", func() {

@@ -171,8 +171,8 @@ func (p *protocGenerator) getJsonSchema(schemaKey string, schema *openapi3.Schem
 		return nil, err
 	}
 
-	// detect proto.Any field from presence of "type_url" as field under "properties"
-	removeProtoAnyValidation(obj, "type_url")
+	// detect proto.Any field from presence of "typeUrl" as field under "properties"
+	removeProtoAnyValidation(obj, "typeUrl")
 
 	bytes, err := json.Marshal(obj)
 	if err != nil {

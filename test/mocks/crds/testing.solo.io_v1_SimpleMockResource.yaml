@@ -36,33 +36,33 @@ spec:
               items:
                 type: boolean
               type: array
-            mapped_data:
+            mappedData:
               additionalProperties:
                 type: string
               description: mapped_data comment
               type: object
-            mapped_struct:
+            mappedStruct:
               additionalProperties:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               description: mapped_struct comment
               type: object
-            nested_message:
+            nestedMessage:
               description: nested_message comment
               properties:
-                option_bool:
+                optionBool:
                   type: boolean
-                option_string:
+                optionString:
                   type: string
               type: object
-            nested_message_list:
+            nestedMessageList:
               description: nested_message_list comment
               items:
                 description: NestedMessage type comment
                 properties:
-                  option_bool:
+                  optionBool:
                     type: boolean
-                  option_string:
+                  optionString:
                     type: string
                 type: object
               type: array

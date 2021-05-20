@@ -24,39 +24,39 @@ spec:
         spec:
           description: Mock resources for goofin off This includes oneof, nested resources, and any other special cases that may cause issues during schemagen
           properties:
-            data:
+            data.json:
               type: string
-            oneof_nestedoneof:
+            oneofNestedoneof:
               description: oneof comment
               properties:
-                another_nested_oneof_one:
+                anotherNestedOneofOne:
                   properties:
-                    option_a:
+                    optionA:
                       type: string
-                    option_b:
+                    optionB:
                       type: string
                   type: object
-                another_nested_oneof_two:
+                anotherNestedOneofTwo:
                   properties:
-                    option_a:
+                    optionA:
                       type: string
-                    option_b:
+                    optionB:
                       type: string
                   type: object
-                another_option_a:
+                anotherOptionA:
                   type: string
-                another_option_b:
+                anotherOptionB:
                   type: string
-                option_a:
+                optionA:
                   type: string
-                option_b:
+                optionB:
                   type: string
               type: object
-            oneof_one:
+            oneofOne:
               type: string
-            oneof_two:
+            oneofTwo:
               type: boolean
-            some_dumb_field:
+            someDumbField:
               type: string
             status:
               description: The status field comment
