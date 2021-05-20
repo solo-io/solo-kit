@@ -43,7 +43,7 @@ require (
 	github.com/pseudomuto/protokit v0.2.0
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
-	github.com/sam-heilbron/protoc-gen-openapi v0.0.0-20210520163255-ac45a5335d58
+	github.com/sam-heilbron/protoc-gen-openapi v0.0.0-20210520171137-80292e02f930
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.0.4
 	github.com/solo-io/go-utils v0.20.2
