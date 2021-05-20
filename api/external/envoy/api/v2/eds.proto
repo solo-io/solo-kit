@@ -6,21 +6,17 @@ import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 
 import "google/api/annotations.proto";
 
-import "envoy/annotations/resource.proto";
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
+import "github.com/envoyproxy/go-control-plane/envoy/annotations/resource.proto";
 
 import public "github.com/solo-io/solo-kit/api/external/envoy/api/v2/endpoint.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
-option (udpa.annotations.file_migrate).move_to_package = "envoy.service.endpoint.v3";
-option (udpa.annotations.file_status).package_version_status = FROZEN;
 
 // [#protodoc-title: EDS]
 // Endpoint discovery :ref:`architecture overview <arch_overview_service_discovery_types_eds>`
 
 service EndpointDiscoveryService {
-  option (envoy.annotations.resource).type = "envoy.api.v2.ClusterLoadAssignment";
+  option (envoy.annotations.resource).type = "solo.io.envoy.api.v2.ClusterLoadAssignment";
 
   // The resource_names field in DiscoveryRequest specifies a list of clusters
   // to subscribe to updates for.

@@ -5,9 +5,6 @@ package envoy.api.v2.listener;
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
-
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/listener";
 
 // [#protodoc-title: QUIC listener Config]

@@ -14,9 +14,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
-import "envoy/annotations/deprecation.proto";
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
+import "github.com/envoyproxy/go-control-plane/envoy/annotations/deprecation.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/route";
@@ -109,7 +107,7 @@ message VirtualHost {
   // enclosing :ref:`envoy_api_msg_RouteConfiguration`. For more information, including
   // details on header value syntax, see the documentation on :ref:`custom request headers
   // <config_http_conn_man_headers_custom_request_headers>`.
-  repeated core.HeaderValueOption response_headers_to_add = 10
+  repeated solo.io.envoy.api.v2.core.HeaderValueOption response_headers_to_add = 10
       [(validate.rules).repeated = {max_items: 1000}];
 
   // Specifies a list of HTTP headers that should be removed from each response

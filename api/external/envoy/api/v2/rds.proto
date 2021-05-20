@@ -6,9 +6,7 @@ import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 
 import "google/api/annotations.proto";
 
-import "envoy/annotations/resource.proto";
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
+import "github.com/envoyproxy/go-control-plane/envoy/annotations/resource.proto";
 
 import public "github.com/solo-io/solo-kit/api/external/envoy/api/v2/route.proto";
 
@@ -22,7 +20,7 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
 // configurations. Each listener will bind its HTTP connection manager filter to
 // a route table via this identifier.
 service RouteDiscoveryService {
-  option (envoy.annotations.resource).type = "envoy.api.v2.RouteConfiguration";
+  option (envoy.annotations.resource).type = "solo.io.envoy.api.v2.RouteConfiguration";
 
   rpc StreamRoutes(stream DiscoveryRequest) returns (stream DiscoveryResponse) {
   }
@@ -47,7 +45,7 @@ service RouteDiscoveryService {
 // contains a list of virtual host names that have been :ref:`unsubscribed
 // <xds_protocol_unsubscribe>` from the routing table associated with the RouteConfiguration.
 service VirtualHostDiscoveryService {
-  option (envoy.annotations.resource).type = "envoy.api.v2.route.VirtualHost";
+  option (envoy.annotations.resource).type = "solo.io.envoy.api.v2.route.VirtualHost";
 
   rpc DeltaVirtualHosts(stream DeltaDiscoveryRequest) returns (stream DeltaDiscoveryResponse) {
   }

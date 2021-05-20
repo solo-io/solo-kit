@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package envoy.api.v2.ratelimit;
 
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/ratelimit";

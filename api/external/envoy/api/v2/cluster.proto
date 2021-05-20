@@ -19,9 +19,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
-import "envoy/annotations/deprecation.proto";
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
+import "github.com/envoyproxy/go-control-plane/envoy/annotations/deprecation.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";

@@ -6,7 +6,7 @@ import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 
 import "google/api/annotations.proto";
 
-import "envoy/annotations/resource.proto";
+import "github.com/envoyproxy/go-control-plane/envoy/annotations/resource.proto";
 
 import public "github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster.proto";
 
@@ -16,7 +16,7 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
 
 // Return list of all clusters this proxy will load balance to.
 service ClusterDiscoveryService {
-  option (envoy.annotations.resource).type = "envoy.api.v2.Cluster";
+  option (envoy.annotations.resource).type = "solo.io.envoy.api.v2.Cluster";
 
   rpc StreamClusters(stream DiscoveryRequest) returns (stream DiscoveryResponse) {
   }

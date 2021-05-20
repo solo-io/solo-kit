@@ -8,8 +8,6 @@ import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/endpoint";
@@ -23,7 +21,7 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/e
 message UpstreamLocalityStats {
   // Name of zone, region and optionally endpoint group these metrics were
   // collected from. Zone and region names could be empty if unknown.
-  core.Locality locality = 1;
+  solo.io.envoy.api.v2.core.Locality locality = 1;
 
   // The total number of requests successfully completed by the endpoints in the
   // locality.
@@ -58,7 +56,7 @@ message UpstreamLocalityStats {
 // [#next-free-field: 8]
 message UpstreamEndpointStats {
   // Upstream host address.
-  core.Address address = 1;
+  solo.io.envoy.api.v2.core..Address address = 1;
 
   // Opaque and implementation dependent metadata of the
   // endpoint. Envoy will pass this directly to the management server.

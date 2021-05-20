@@ -11,8 +11,6 @@ import "google/protobuf/any.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/listener";
@@ -85,7 +83,7 @@ message FilterChainMatch {
 
   // If non-empty, an IP address and prefix length to match addresses when the
   // listener is bound to 0.0.0.0/:: or when use_original_dst is specified.
-  repeated core.CidrRange prefix_ranges = 3;
+  repeated solo.io.envoy.api.v2.core.CidrRange prefix_ranges = 3;
 
   // If non-empty, an IP address and suffix length to match addresses when the
   // listener is bound to 0.0.0.0/:: or when use_original_dst is specified.

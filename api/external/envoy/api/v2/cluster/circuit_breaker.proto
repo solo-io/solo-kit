@@ -7,8 +7,6 @@ import "github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto";
 
 import "google/protobuf/wrappers.proto";
 
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/cluster";
@@ -39,7 +37,7 @@ message CircuitBreakers {
 
     // The :ref:`RoutingPriority<envoy_api_enum_core.RoutingPriority>`
     // the specified CircuitBreaker settings apply to.
-    core.RoutingPriority priority = 1 [(validate.rules).enum = {defined_only: true}];
+    solo.io.envoy.api.v2.core.RoutingPriority priority = 1 [(validate.rules).enum = {defined_only: true}];
 
     // The maximum number of connections that Envoy will make to the upstream
     // cluster. If not specified, the default is 1024.

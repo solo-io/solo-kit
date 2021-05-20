@@ -8,8 +8,6 @@ import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/health_check.
 
 import "google/protobuf/wrappers.proto";
 
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/endpoint";
@@ -44,7 +42,7 @@ message Endpoint {
   //   specified :ref:`resolver <envoy_api_field_core.SocketAddress.resolver_name>`
   //   in the Address). For LOGICAL or STRICT DNS, it is expected to be hostname,
   //   and will be resolved via DNS.
-  core.Address address = 1;
+  solo.io.envoy.api.v2.core.Address address = 1;
 
   // The optional health check configuration is used as configuration for the
   // health checker to contact the health checked host.

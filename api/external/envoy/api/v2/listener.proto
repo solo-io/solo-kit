@@ -13,8 +13,6 @@ import "envoy/config/listener/v2/api_listener.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";

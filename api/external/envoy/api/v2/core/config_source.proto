@@ -7,9 +7,7 @@ import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/grpc_service.
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
-import "envoy/annotations/deprecation.proto";
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
+import "github.com/envoyproxy/go-control-plane/envoy/annotations/deprecation.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core";
@@ -75,7 +73,7 @@ message ApiConfigSource {
 
   // Multiple gRPC services be provided for GRPC. If > 1 cluster is defined,
   // services will be cycled through if any kind of failure occurs.
-  repeated GrpcService grpc_services = 4;
+  repeated solo.io.envoy.api.v2.core.GrpcService grpc_services = 4;
 
   // For REST APIs, the delay between successive polls.
   google.protobuf.Duration refresh_delay = 3;

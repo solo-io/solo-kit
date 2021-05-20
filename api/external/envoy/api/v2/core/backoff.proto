@@ -4,8 +4,6 @@ package envoy.api.v2.core;
 
 import "google/protobuf/duration.proto";
 
-import "udpa/annotations/migrate.proto";
-import "udpa/annotations/status.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core";
