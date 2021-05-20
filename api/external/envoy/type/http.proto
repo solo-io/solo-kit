@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package solo.io.envoy.type;
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+
+option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/type";
+
+// [#protodoc-title: HTTP]
+
+enum CodecClientType {
+  HTTP1 = 0;
+
+  HTTP2 = 1;
+
+  // [#not-implemented-hide:] QUIC implementation is not production ready yet. Use this enum with
+  // caution to prevent accidental execution of QUIC code. I.e. `!= HTTP2` is no longer sufficient
+  // to distinguish HTTP1 and HTTP2 traffic.
+  HTTP3 = 2;
+}

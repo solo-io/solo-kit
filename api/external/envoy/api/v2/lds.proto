@@ -1,14 +1,12 @@
 syntax = "proto3";
 
-package envoy.api.v2;
+package solo.io.envoy.api.v2;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 
 import "google/api/annotations.proto";
 
-import "github.com/envoyproxy/go-control-plane/envoy/annotations/resource.proto";
-
-import public "github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/annotations/resource.proto";
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
 
@@ -20,7 +18,7 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
 // consist of a complete update of all listeners. Existing connections will be
 // allowed to drain from listeners that are no longer present.
 service ListenerDiscoveryService {
-  option (envoy.annotations.resource).type = "solo.io.envoy.api.v2.Listener";
+  option (solo.io.envoy.annotations.resource).type = "solo.io.envoy.api.v2.Listener";
 
   rpc DeltaListeners(stream DeltaDiscoveryRequest) returns (stream DeltaDiscoveryResponse) {
   }

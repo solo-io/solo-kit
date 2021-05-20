@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package envoy.api.v2;
+package solo.io.envoy.api.v2;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/tls.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster/circuit_breaker.proto";
@@ -19,8 +19,12 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
-import "github.com/envoyproxy/go-control-plane/envoy/annotations/deprecation.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/annotations/deprecation.proto";
 import "validate/validate.proto";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
 
@@ -87,7 +91,7 @@ message Cluster {
     //
     //   **This load balancing policy is deprecated**. Use CLUSTER_PROVIDED instead.
     //
-    ORIGINAL_DST_LB = 4 [deprecated = true, (envoy.annotations.disallowed_by_default_enum) = true];
+    ORIGINAL_DST_LB = 4 [deprecated = true, (solo.io.envoy.annotations.disallowed_by_default_enum) = true];
 
     // Refer to the :ref:`Maglev load balancing policy<arch_overview_load_balancing_types_maglev>`
     // for an explanation.
@@ -146,7 +150,7 @@ message Cluster {
     google.protobuf.Struct match = 2;
 
     // The configuration of the transport socket.
-    core.TransportSocket transport_socket = 3;
+    solo.io.envoy.api.v2.core.TransportSocket transport_socket = 3;
   }
 
   // Extended cluster type.
@@ -162,7 +166,7 @@ message Cluster {
   // Only valid when discovery type is EDS.
   message EdsClusterConfig {
     // Configuration for the source of EDS updates for this Cluster.
-    core.ConfigSource eds_config = 1;
+    solo.io.envoy.api.v2.core.ConfigSource eds_config = 1;
 
     // Optional alternative to cluster name to present to EDS. This does not
     // have the same restrictions as cluster name, i.e. it may be arbitrary
@@ -562,7 +566,7 @@ message Cluster {
   //   **This field is deprecated**. Set the
   //   :ref:`load_assignment<envoy_api_field_Cluster.load_assignment>` field instead.
   //
-  repeated core.Address hosts = 7 [deprecated = true];
+  repeated solo.io.envoy.api.v2.core.Address hosts = 7 [deprecated = true];
 
   // Setting this is required for specifying members of
   // :ref:`STATIC<envoy_api_enum_value_Cluster.DiscoveryType.STATIC>`,
@@ -581,7 +585,7 @@ message Cluster {
   // configuration for the cluster. If no
   // configuration is specified no health checking will be done and all cluster
   // members will be considered healthy at all times.
-  repeated core.HealthCheck health_checks = 8;
+  repeated solo.io.envoy.api.v2.core.HealthCheck health_checks = 8;
 
   // Optional maximum requests for a single upstream connection. This parameter
   // is respected by both the HTTP/1.1 and HTTP/2 connection pool
@@ -590,7 +594,7 @@ message Cluster {
   google.protobuf.UInt32Value max_requests_per_connection = 9;
 
   // Optional :ref:`circuit breaking <arch_overview_circuit_break>` for the cluster.
-  cluster.CircuitBreakers circuit_breakers = 10;
+  solo.io.envoy.api.v2.cluster.CircuitBreakers circuit_breakers = 10;
 
   // The TLS configuration for connections to the upstream cluster.
   //
@@ -598,19 +602,19 @@ message Cluster {
   //
   //   **This field is deprecated**. Use `transport_socket` with name `tls` instead. If both are
   //   set, `transport_socket` takes priority.
-  auth.UpstreamTlsContext tls_context = 11
-      [deprecated = true, (envoy.annotations.disallowed_by_default) = true];
+  solo.io.envoy.api.v2.auth.UpstreamTlsContext tls_context = 11
+      [deprecated = true, (solo.io.envoy.annotations.disallowed_by_default) = true];
 
   // HTTP protocol options that are applied only to upstream HTTP connections.
   // These options apply to all HTTP versions.
-  core.UpstreamHttpProtocolOptions upstream_http_protocol_options = 46;
+  solo.io.envoy.api.v2.core.UpstreamHttpProtocolOptions upstream_http_protocol_options = 46;
 
   // Additional options when handling HTTP requests upstream. These options will be applicable to
   // both HTTP1 and HTTP2 requests.
-  core.HttpProtocolOptions common_http_protocol_options = 29;
+  solo.io.envoy.api.v2.core.HttpProtocolOptions common_http_protocol_options = 29;
 
   // Additional options when handling HTTP1 requests.
-  core.Http1ProtocolOptions http_protocol_options = 13;
+  solo.io.envoy.api.v2.core.Http1ProtocolOptions http_protocol_options = 13;
 
   // Even if default HTTP2 protocol options are desired, this field must be
   // set so that Envoy will assume that the upstream supports HTTP/2 when
@@ -618,14 +622,14 @@ message Cluster {
   // supports prior knowledge for upstream connections. Even if TLS is used
   // with ALPN, `http2_protocol_options` must be specified. As an aside this allows HTTP/2
   // connections to happen over plain text.
-  core.Http2ProtocolOptions http2_protocol_options = 14;
+  solo.io.envoy.api.v2.core.Http2ProtocolOptions http2_protocol_options = 14;
 
   // The extension_protocol_options field is used to provide extension-specific protocol options
   // for upstream connections. The key should match the extension filter name, such as
   // "envoy.filters.network.thrift_proxy". See the extension's documentation for details on
   // specific options.
   map<string, google.protobuf.Struct> extension_protocol_options = 35
-      [deprecated = true, (envoy.annotations.disallowed_by_default) = true];
+      [deprecated = true, (solo.io.envoy.annotations.disallowed_by_default) = true];
 
   // The extension_protocol_options field is used to provide extension-specific protocol options
   // for upstream connections. The key should match the extension filter name, such as
@@ -678,7 +682,7 @@ message Cluster {
   // Setting this value causes failure if the
   // ``envoy.restart_features.use_apple_api_for_dns_lookups`` runtime value is true during
   // server startup. Apple's API only allows overriding DNS resolvers via system settings.
-  repeated core.Address dns_resolvers = 18;
+  repeated solo.io.envoy.api.v2.core.Address dns_resolvers = 18;
 
   // [#next-major-version: Reconcile DNS options in a single message.]
   // Always use TCP queries instead of UDP queries for DNS lookups.
@@ -690,7 +694,7 @@ message Cluster {
   // If specified, outlier detection will be enabled for this upstream cluster.
   // Each of the configuration values can be overridden via
   // :ref:`runtime values <config_cluster_manager_cluster_runtime_outlier_detection>`.
-  cluster.OutlierDetection outlier_detection = 19;
+  solo.io.envoy.api.v2.cluster.OutlierDetection outlier_detection = 19;
 
   // The interval for removing stale hosts from a cluster type
   // :ref:`ORIGINAL_DST<envoy_api_enum_value_Cluster.DiscoveryType.ORIGINAL_DST>`.
@@ -710,7 +714,7 @@ message Cluster {
   // Optional configuration used to bind newly established upstream connections.
   // This overrides any bind_config specified in the bootstrap proto.
   // If the address and port are empty, no bind will be performed.
-  core.BindConfig upstream_bind_config = 21;
+  solo.io.envoy.api.v2.core.BindConfig upstream_bind_config = 21;
 
   // Configuration for load balancing subsetting.
   LbSubsetConfig lb_subset_config = 22;
@@ -741,14 +745,14 @@ message Cluster {
   // :ref:`UpstreamTlsContexts <envoy_api_msg_auth.UpstreamTlsContext>` in the `typed_config`.
   // If no transport socket configuration is specified, new connections
   // will be set up with plaintext.
-  core.TransportSocket transport_socket = 24;
+  solo.io.envoy.api.v2.core.TransportSocket transport_socket = 24;
 
   // The Metadata field can be used to provide additional information about the
   // cluster. It can be used for stats, logging, and varying filter behavior.
   // Fields should use reverse DNS notation to denote which entity within Envoy
   // will need the information. For instance, if the metadata is intended for
   // the Router filter, the filter name should be specified as *envoy.filters.http.router*.
-  core.Metadata metadata = 25;
+  solo.io.envoy.api.v2.core.Metadata metadata = 25;
 
   // Determines how Envoy selects the protocol used to speak to upstream hosts.
   ClusterProtocolSelection protocol_selection = 26;
@@ -774,13 +778,12 @@ message Cluster {
   // If set to true, Envoy will ignore the health value of a host when processing its removal
   // from service discovery. This means that if active health checking is used, Envoy will *not*
   // wait for the endpoint to go unhealthy before removing it.
-  bool drain_connections_on_host_removal = 32
-      [(udpa.annotations.field_migrate).rename = "ignore_health_on_host_removal"];
+  bool drain_connections_on_host_removal = 32;
 
   // An (optional) network filter chain, listed in the order the filters should be applied.
   // The chain will be applied to all outgoing connections that Envoy makes to the upstream
   // servers of this cluster.
-  repeated cluster.Filter filters = 40;
+  repeated solo.io.envoy.api.v2.cluster.Filter filters = 40;
 
   // [#not-implemented-hide:] New mechanism for LB policy configuration. Used only if the
   // :ref:`lb_policy<envoy_api_field_Cluster.lb_policy>` field has the value
@@ -801,7 +804,7 @@ message Cluster {
   // [#next-major-version: In the v3 API, we should consider restructuring this somehow,
   // maybe by allowing LRS to go on the ADS stream, or maybe by moving some of the negotiation
   // from the LRS stream here.]
-  core.ConfigSource lrs_server = 42;
+  solo.io.envoy.api.v2.core.ConfigSource lrs_server = 42;
 
   // If track_timeout_budgets is true, the :ref:`timeout budget histograms
   // <config_cluster_manager_cluster_stats_timeout_budgets>` will be published for each
@@ -852,10 +855,10 @@ message LoadBalancingPolicy {
 // establishing upstream connections.
 message UpstreamBindConfig {
   // The address Envoy should bind to when establishing upstream connections.
-  core.Address source_address = 1;
+  solo.io.envoy.api.v2.core.Address source_address = 1;
 }
 
 message UpstreamConnectionOptions {
   // If set then set SO_KEEPALIVE on the socket to enable TCP Keepalives.
-  core.TcpKeepalive tcp_keepalive = 1;
+  solo.io.envoy.api.v2.core.TcpKeepalive tcp_keepalive = 1;
 }

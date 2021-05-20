@@ -294,6 +294,9 @@ func (m *HeaderValueOption) Equal(that interface{}) bool {
 	switch m.HeaderOption.(type) {
 
 	case *HeaderValueOption_Header:
+		if _, ok := target.HeaderOption.(*HeaderValueOption_Header); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeader()) {
@@ -306,6 +309,9 @@ func (m *HeaderValueOption) Equal(that interface{}) bool {
 		}
 
 	case *HeaderValueOption_HeaderSecretRef:
+		if _, ok := target.HeaderOption.(*HeaderValueOption_HeaderSecretRef); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetHeaderSecretRef()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeaderSecretRef()) {
@@ -317,6 +323,11 @@ func (m *HeaderValueOption) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.HeaderOption != target.HeaderOption {
+			return false
+		}
 	}
 
 	return true
@@ -387,23 +398,37 @@ func (m *DataSource) Equal(that interface{}) bool {
 	switch m.Specifier.(type) {
 
 	case *DataSource_Filename:
+		if _, ok := target.Specifier.(*DataSource_Filename); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetFilename(), target.GetFilename()) != 0 {
 			return false
 		}
 
 	case *DataSource_InlineBytes:
+		if _, ok := target.Specifier.(*DataSource_InlineBytes); !ok {
+			return false
+		}
 
 		if bytes.Compare(m.GetInlineBytes(), target.GetInlineBytes()) != 0 {
 			return false
 		}
 
 	case *DataSource_InlineString:
+		if _, ok := target.Specifier.(*DataSource_InlineString); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetInlineString(), target.GetInlineString()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Specifier != target.Specifier {
+			return false
+		}
 	}
 
 	return true
@@ -471,6 +496,9 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 	switch m.Specifier.(type) {
 
 	case *AsyncDataSource_Local:
+		if _, ok := target.Specifier.(*AsyncDataSource_Local); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetLocal()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLocal()) {
@@ -483,6 +511,9 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 		}
 
 	case *AsyncDataSource_Remote:
+		if _, ok := target.Specifier.(*AsyncDataSource_Remote); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRemote()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRemote()) {
@@ -494,6 +525,11 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Specifier != target.Specifier {
+			return false
+		}
 	}
 
 	return true
@@ -527,6 +563,9 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *TransportSocket_Config:
+		if _, ok := target.ConfigType.(*TransportSocket_Config); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -539,6 +578,9 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 		}
 
 	case *TransportSocket_TypedConfig:
+		if _, ok := target.ConfigType.(*TransportSocket_TypedConfig); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -550,62 +592,11 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 			}
 		}
 
-	}
-
-	return true
-}
-
-// Equal function
-func (m *SocketOption) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*SocketOption)
-	if !ok {
-		that2, ok := that.(SocketOption)
-		if ok {
-			target = &that2
-		} else {
+	default:
+		// m is nil but target is not nil
+		if m.ConfigType != target.ConfigType {
 			return false
 		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetDescription(), target.GetDescription()) != 0 {
-		return false
-	}
-
-	if m.GetLevel() != target.GetLevel() {
-		return false
-	}
-
-	if m.GetName() != target.GetName() {
-		return false
-	}
-
-	if m.GetState() != target.GetState() {
-		return false
-	}
-
-	switch m.Value.(type) {
-
-	case *SocketOption_IntValue:
-
-		if m.GetIntValue() != target.GetIntValue() {
-			return false
-		}
-
-	case *SocketOption_BufValue:
-
-		if bytes.Compare(m.GetBufValue(), target.GetBufValue()) != 0 {
-			return false
-		}
-
 	}
 
 	return true

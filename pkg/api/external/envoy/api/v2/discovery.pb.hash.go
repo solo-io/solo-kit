@@ -34,7 +34,7 @@ func (m *DiscoveryRequest) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DiscoveryRequest")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DiscoveryRequest")); err != nil {
 		return 0, err
 	}
 
@@ -43,14 +43,20 @@ func (m *DiscoveryRequest) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetNode()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Node")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetNode(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetNode(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("Node")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -73,14 +79,20 @@ func (m *DiscoveryRequest) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetErrorDetail()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ErrorDetail")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetErrorDetail(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetErrorDetail(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("ErrorDetail")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -98,7 +110,7 @@ func (m *DiscoveryResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DiscoveryResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DiscoveryResponse")); err != nil {
 		return 0, err
 	}
 
@@ -109,14 +121,20 @@ func (m *DiscoveryResponse) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetResources() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(v, nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -138,14 +156,20 @@ func (m *DiscoveryResponse) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetControlPlane()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ControlPlane")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetControlPlane(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetControlPlane(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("ControlPlane")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -163,19 +187,25 @@ func (m *DeltaDiscoveryRequest) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DeltaDiscoveryRequest")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DeltaDiscoveryRequest")); err != nil {
 		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetNode()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Node")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetNode(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetNode(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("Node")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -229,14 +259,20 @@ func (m *DeltaDiscoveryRequest) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetErrorDetail()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ErrorDetail")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetErrorDetail(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetErrorDetail(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("ErrorDetail")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -254,7 +290,7 @@ func (m *DeltaDiscoveryResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DeltaDiscoveryResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DeltaDiscoveryResponse")); err != nil {
 		return 0, err
 	}
 
@@ -265,14 +301,20 @@ func (m *DeltaDiscoveryResponse) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetResources() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(v, nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -308,7 +350,7 @@ func (m *Resource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.Resource")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.Resource")); err != nil {
 		return 0, err
 	}
 
@@ -329,14 +371,20 @@ func (m *Resource) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetResource()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Resource")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetResource(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetResource(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("Resource")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}

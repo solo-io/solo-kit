@@ -1,14 +1,18 @@
 syntax = "proto3";
 
-package envoy.api.v2.core;
+package solo.io.envoy.api.v2.core;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/grpc_service.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
-import "github.com/envoyproxy/go-control-plane/envoy/annotations/deprecation.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/annotations/deprecation.proto";
 import "validate/validate.proto";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core";
 
@@ -38,7 +42,7 @@ message ApiConfigSource {
     // Ideally this would be 'reserved 0' but one can't reserve the default
     // value. Instead we throw an exception if this is ever used.
     UNSUPPORTED_REST_LEGACY = 0
-        [deprecated = true, (envoy.annotations.disallowed_by_default_enum) = true];
+        [deprecated = true, (solo.io.envoy.annotations.disallowed_by_default_enum) = true];
 
     // REST-JSON v2 API. The `canonical JSON encoding
     // <https://developers.google.com/protocol-buffers/docs/proto3#json>`_ for
@@ -73,7 +77,7 @@ message ApiConfigSource {
 
   // Multiple gRPC services be provided for GRPC. If > 1 cluster is defined,
   // services will be cycled through if any kind of failure occurs.
-  repeated solo.io.envoy.api.v2.core.GrpcService grpc_services = 4;
+  repeated GrpcService grpc_services = 4;
 
   // For REST APIs, the delay between successive polls.
   google.protobuf.Duration refresh_delay = 3;

@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package envoy.api.v2.route;
-
-import public "github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto";
-
-option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/route";

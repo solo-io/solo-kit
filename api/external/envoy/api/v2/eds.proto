@@ -1,14 +1,18 @@
 syntax = "proto3";
 
-package envoy.api.v2;
+package solo.io.envoy.api.v2;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 
 import "google/api/annotations.proto";
 
-import "github.com/envoyproxy/go-control-plane/envoy/annotations/resource.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/annotations/resource.proto";
 
 import public "github.com/solo-io/solo-kit/api/external/envoy/api/v2/endpoint.proto";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
 
@@ -16,7 +20,7 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
 // Endpoint discovery :ref:`architecture overview <arch_overview_service_discovery_types_eds>`
 
 service EndpointDiscoveryService {
-  option (envoy.annotations.resource).type = "solo.io.envoy.api.v2.ClusterLoadAssignment";
+  option (solo.io.envoy.annotations.resource).type = "solo.io.envoy.api.v2.ClusterLoadAssignment";
 
   // The resource_names field in DiscoveryRequest specifies a list of clusters
   // to subscribe to updates for.

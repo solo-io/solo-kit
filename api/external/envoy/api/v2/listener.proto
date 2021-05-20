@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package envoy.api.v2;
+package solo.io.envoy.api.v2;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/listener_components.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/udp_listener_config.proto";
-import "envoy/config/filter/accesslog/v2/accesslog.proto";
-import "envoy/config/listener/v2/api_listener.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/config/listener/v2/api_listener.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -77,7 +77,7 @@ message Listener {
   // The address that the listener should listen on. In general, the address must be unique, though
   // that is governed by the bind rules of the OS. E.g., multiple listeners can listen on port 0 on
   // Linux as the actual port will be allocated by the OS.
-  core.Address address = 2 [(validate.rules).message = {required: true}];
+  solo.io.envoy.api.v2.core.Address address = 2 [(validate.rules).message = {required: true}];
 
   // A list of filter chains to consider for this listener. The
   // :ref:`FilterChain <envoy_api_msg_listener.FilterChain>` with the most specific
@@ -86,7 +86,7 @@ message Listener {
   //
   // Example using SNI for filter chain selection can be found in the
   // :ref:`FAQ entry <faq_how_to_setup_sni>`.
-  repeated listener.FilterChain filter_chains = 3;
+  repeated solo.io.envoy.api.v2.listener.FilterChain filter_chains = 3;
 
   // If a connection is redirected using *iptables*, the port on which the proxy
   // receives it might be different from the original destination address. When this flag is set to
@@ -110,7 +110,7 @@ message Listener {
   google.protobuf.UInt32Value per_connection_buffer_limit_bytes = 5;
 
   // Listener metadata.
-  core.Metadata metadata = 6;
+  solo.io.envoy.api.v2.core.Metadata metadata = 6;
 
   // [#not-implemented-hide:]
   DeprecatedV1 deprecated_v1 = 7;
@@ -127,7 +127,7 @@ message Listener {
   // :ref:`protocol <envoy_api_field_core.SocketAddress.protocol>` is :ref:`UDP
   // <envoy_api_enum_value_core.SocketAddress.Protocol.UDP>`.
   // UDP listeners currently support a single filter.
-  repeated listener.ListenerFilter listener_filters = 9;
+  repeated solo.io.envoy.api.v2.listener.ListenerFilter listener_filters = 9;
 
   // The timeout to wait for all listener filters to complete operation. If the timeout is reached,
   // the accepted socket is closed without a connection being created unless
@@ -170,7 +170,7 @@ message Listener {
 
   // Additional socket options that may not be present in Envoy source code or
   // precompiled binaries.
-  repeated core.SocketOption socket_options = 13;
+  repeated solo.io.envoy.api.v2.core.SocketOption socket_options = 13;
 
   // Whether the listener should accept TCP Fast Open (TFO) connections.
   // When this flag is set to a value greater than 0, the option TCP_FASTOPEN is enabled on
@@ -191,7 +191,7 @@ message Listener {
   // Specifies the intended direction of the traffic relative to the local Envoy.
   // This property is required on Windows for listeners using the original destination filter,
   // see :ref:`Original Destination <config_listener_filters_original_dst>`.
-  core.TrafficDirection traffic_direction = 16;
+  solo.io.envoy.api.v2.core.TrafficDirection traffic_direction = 16;
 
   // If the protocol in the listener socket address in :ref:`protocol
   // <envoy_api_field_core.SocketAddress.protocol>` is :ref:`UDP
@@ -199,7 +199,7 @@ message Listener {
   // listener to create, i.e. :ref:`udp_listener_name
   // <envoy_api_field_listener.UdpListenerConfig.udp_listener_name>` = "raw_udp_listener" for
   // creating a packet-oriented UDP listener. If not present, treat it as "raw_udp_listener".
-  listener.UdpListenerConfig udp_listener_config = 18;
+  solo.io.envoy.api.v2.listener.UdpListenerConfig udp_listener_config = 18;
 
   // Used to represent an API listener, which is used in non-proxy clients. The type of API
   // exposed to the non-proxy application depends on the type of API listener.
@@ -217,7 +217,7 @@ message Listener {
   // and the top-level Listener should essentially be a oneof that selects between the
   // socket listener and the various types of API listener. That way, a given Listener message
   // can structurally only contain the fields of the relevant type.]
-  config.listener.v2.ApiListener api_listener = 19;
+  solo.io.envoy.config.listener.v2.ApiListener api_listener = 19;
 
   // The listener's connection balancer configuration, currently only applicable to TCP listeners.
   // If no configuration is specified, Envoy will not attempt to balance active connections between

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package envoy.api.v2.listener;
+package solo.io.envoy.api.v2.listener;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/tls.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto";
@@ -12,6 +12,10 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
 import "validate/validate.proto";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/listener";
 
@@ -69,7 +73,7 @@ message FilterChainMatch {
     ANY = 0;
 
     // Match a connection originating from the same host.
-    LOCAL = 1 [(udpa.annotations.enum_value_migrate).rename = "SAME_IP_OR_LOOPBACK"];
+    LOCAL = 1;
 
     // Match a connection originating from a different host.
     EXTERNAL = 2;
@@ -100,7 +104,7 @@ message FilterChainMatch {
   // connection is contained in at least one of the specified subnets. If the
   // parameter is not specified or the list is empty, the source IP address is
   // ignored.
-  repeated core.CidrRange source_prefix_ranges = 6;
+  repeated solo.io.envoy.api.v2.core.CidrRange source_prefix_ranges = 6;
 
   // The criteria is satisfied if the source port of the downstream connection
   // is contained in at least one of the specified ports. If the parameter is
@@ -169,7 +173,7 @@ message FilterChain {
   //
   //   **This field is deprecated**. Use `transport_socket` with name `tls` instead. If both are
   //   set, `transport_socket` takes priority.
-  auth.DownstreamTlsContext tls_context = 2 [deprecated = true];
+  solo.io.envoy.api.v2.auth.DownstreamTlsContext tls_context = 2 [deprecated = true];
 
   // A list of individual network filters that make up the filter chain for
   // connections established with the listener. Order matters as the filters are
@@ -186,14 +190,14 @@ message FilterChain {
   google.protobuf.BoolValue use_proxy_proto = 4;
 
   // [#not-implemented-hide:] filter chain metadata.
-  core.Metadata metadata = 5;
+  solo.io.envoy.api.v2.core.Metadata metadata = 5;
 
   // Optional custom transport socket implementation to use for downstream connections.
   // To setup TLS, set a transport socket with name `tls` and
   // :ref:`DownstreamTlsContext <envoy_api_msg_auth.DownstreamTlsContext>` in the `typed_config`.
   // If no transport socket configuration is specified, new connections
   // will be set up with plaintext.
-  core.TransportSocket transport_socket = 6;
+  solo.io.envoy.api.v2.core.TransportSocket transport_socket = 6;
 
   // [#not-implemented-hide:] The unique name (or empty) by which this filter chain is known. If no
   // name is provided, Envoy will allocate an internal UUID for the filter chain. If the filter

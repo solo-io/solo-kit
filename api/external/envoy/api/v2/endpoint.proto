@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package envoy.api.v2;
+package solo.io.envoy.api.v2;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/endpoint/endpoint_components.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto";
@@ -102,7 +102,7 @@ message ClusterLoadAssignment {
   string cluster_name = 1 [(validate.rules).string = {min_bytes: 1}];
 
   // List of endpoints to load balance to.
-  repeated endpoint.LocalityLbEndpoints endpoints = 2;
+  repeated solo.io.envoy.api.v2.endpoint.LocalityLbEndpoints endpoints = 2;
 
   // Map of named endpoints that can be referenced in LocalityLbEndpoints.
   // [#not-implemented-hide:]

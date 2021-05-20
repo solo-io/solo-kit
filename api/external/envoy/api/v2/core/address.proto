@@ -1,12 +1,16 @@
 syntax = "proto3";
 
-package envoy.api.v2.core;
+package solo.io.envoy.api.v2.core;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto";
 
 import "google/protobuf/wrappers.proto";
 
 import "validate/validate.proto";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core";
 
@@ -101,7 +105,7 @@ message BindConfig {
 
   // Additional socket options that may not be present in Envoy source code or
   // precompiled binaries.
-  repeated solo.io.envoy.api.v2.core.SocketOption socket_options = 3;
+  repeated SocketOption socket_options = 3;
 }
 
 // Addresses specify either a logical or physical address and port, which are
