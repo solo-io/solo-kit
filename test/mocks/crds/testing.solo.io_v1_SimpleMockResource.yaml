@@ -117,6 +117,9 @@ spec:
               nullable: true
               type: integer
           type: object
+        status:
+          type: object
+          x-kubernetes-preserve-unknown-fields: true
       type: object
   version: v1
   versions:

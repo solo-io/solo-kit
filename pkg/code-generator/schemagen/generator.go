@@ -3,6 +3,8 @@ package schemagen
 import (
 	"fmt"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -92,7 +94,18 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 				Properties: map[string]apiextv1beta1.JSONSchemaProps{},
 			},
 		}
+
+		// Either use the status defined on the spec, or a generic status
+		statusSchema := specJsonSchema.Properties["status"]
+		if statusSchema.Type == "" {
+			statusSchema = apiextv1beta1.JSONSchemaProps{
+				Type:                   "object",
+				XPreserveUnknownFields: pointer.BoolPtr(true),
+			}
+		}
+
 		validationSchema.OpenAPIV3Schema.Properties["spec"] = *specJsonSchema
+		validationSchema.OpenAPIV3Schema.Properties["status"] = statusSchema
 
 		if err = crdWriter.ApplyValidationSchemaToCRD(crd, validationSchema); err != nil {
 			return err
