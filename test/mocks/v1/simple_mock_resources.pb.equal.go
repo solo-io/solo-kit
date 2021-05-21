@@ -236,6 +236,10 @@ func (m *SimpleMockResource) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetEnumOptions() != target.GetEnumOptions() {
+		return false
+	}
+
 	return true
 }
 

@@ -46,6 +46,13 @@ spec:
               description: empty comment
               maxProperties: 0
               type: object
+            enumOptions:
+              description: enum_options comment
+              enum:
+              - OPTION_A
+              - OPTION_B
+              - OPTION_C
+              type: string
             floatValue:
               description: float_value comment
               nullable: true

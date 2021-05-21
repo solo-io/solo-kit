@@ -85,9 +85,23 @@ message SimpleMockResource {
   // timestamp comment
   google.protobuf.Timestamp timestamp = 22;
 
+  // enum_options comment
+  EnumOptions enum_options = 30;
+
   // NestedMessage type comment
   message NestedMessage {
     bool option_bool = 1;
     string option_string = 2;
+  }
+
+  enum EnumOptions {
+    // option_a comment
+    OPTION_A = 0;
+
+    // option_b comment
+    OPTION_B = 1;
+
+    // option_c comment
+    OPTION_C = 2;
   }
 }

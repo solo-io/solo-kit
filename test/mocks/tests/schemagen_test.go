@@ -19,7 +19,7 @@ import (
 
 var _ = Describe("schemagen", func() {
 
-	FContext("JSONSchemaGenerator", func() {
+	Context("JSONSchemaGenerator", func() {
 		// At the moment we rely on a plugin for the protocol buffer compiler to generate
 		// validation schemas for our CRDs.
 		// We'd like to move towards relying on cuelang packages to support this feature.
@@ -114,6 +114,7 @@ var _ = Describe("schemagen", func() {
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "data")
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "mappedData")
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "list")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "enumOptions")
 
 			// type: NestedMessage
 			fieldName = "nestedMessage"
