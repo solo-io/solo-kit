@@ -77,7 +77,7 @@ func getCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDe
 			return nil
 		}
 
-		if !strings.HasSuffix(crdFile, ".yaml") {
+		if !strings.HasSuffix(crdFile, ".yaml") || !strings.HasSuffix(crdFile, ".yml") {
 			return nil
 		}
 
