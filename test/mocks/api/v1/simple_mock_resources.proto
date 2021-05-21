@@ -10,7 +10,11 @@ option (extproto.equal_all) = true;
 
 import "google/api/annotations.proto";
 import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
@@ -53,6 +57,33 @@ message SimpleMockResource {
 
   // mapped_struct comment
   map<string, google.protobuf.Struct> mapped_struct = 13;
+
+  // bool_value comment
+  google.protobuf.BoolValue bool_value = 14;
+
+  // int32_value comment
+  google.protobuf.Int32Value int32_value = 15;
+
+  // uint32_value comment
+  google.protobuf.UInt32Value uint32_value = 16;
+
+  // float_value comment
+  google.protobuf.FloatValue float_value = 17;
+
+  // duration comment
+  google.protobuf.Duration duration = 18;
+
+  // empty comment
+  google.protobuf.Empty empty = 19;
+
+  // string_value comment
+  google.protobuf.StringValue string_value = 20;
+
+  // double_value comment
+  google.protobuf.DoubleValue double_value = 21;
+
+  // timestamp comment
+  google.protobuf.Timestamp timestamp = 22;
 
   // NestedMessage type comment
   message NestedMessage {

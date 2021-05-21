@@ -28,9 +28,34 @@ spec:
               description: any comment
               type: object
               x-kubernetes-preserve-unknown-fields: true
+            boolValue:
+              description: bool_value comment
+              nullable: true
+              type: boolean
             data:
               description: data comment
               type: string
+            doubleValue:
+              description: double_value comment
+              nullable: true
+              type: number
+            duration:
+              description: duration comment
+              type: string
+            empty:
+              description: empty comment
+              maxProperties: 0
+              type: object
+            floatValue:
+              description: float_value comment
+              nullable: true
+              type: number
+            int32Value:
+              description: int32_value comment
+              maximum: 2147483647
+              minimum: -2147483648
+              nullable: true
+              type: integer
             list:
               description: list comment
               items:
@@ -66,10 +91,24 @@ spec:
                     type: string
                 type: object
               type: array
+            stringValue:
+              description: string_value comment
+              nullable: true
+              type: string
             struct:
               description: struct comment
               type: object
               x-kubernetes-preserve-unknown-fields: true
+            timestamp:
+              description: timestamp comment
+              format: date-time
+              type: string
+            uint32Value:
+              description: uint32_value comment
+              maximum: 4294967295
+              minimum: 0
+              nullable: true
+              type: integer
           type: object
       type: object
   version: v1

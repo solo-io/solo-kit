@@ -19,7 +19,7 @@ import (
 
 var _ = Describe("schemagen", func() {
 
-	Context("JSONSchemaGenerator", func() {
+	FContext("JSONSchemaGenerator", func() {
 		// At the moment we rely on a plugin for the protocol buffer compiler to generate
 		// validation schemas for our CRDs.
 		// We'd like to move towards relying on cuelang packages to support this feature.
@@ -72,33 +72,48 @@ var _ = Describe("schemagen", func() {
 			}
 		})
 
+		ExpectSchemaPropertiesAreEqual := func(cue, protoc *v1beta1.JSONSchemaProps, property string) {
+			cueSchema := cue.Properties[property]
+			protocSchema := protoc.Properties[property]
+			ExpectWithOffset(2, cueSchema).To(Equal(protocSchema))
+		}
+
 		ExpectJsonSchemasToMatch := func(cue, protoc *v1beta1.JSONSchemaProps) {
 			var (
 				fieldName               string
 				cueSchema, protocSchema v1beta1.JSONSchemaProps
 			)
 
-			// type: string
-			fieldName = "data"
+			// google.protobuf types
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "boolValue")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "int32Value")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "uint32Value")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "floatValue")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "duration")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "empty")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "stringValue")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "doubleValue")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "timestamp")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "any")
+
+			// type: google.protobuf.Any
+			fieldName = "any"
 			cueSchema = cue.Properties[fieldName]
+			cueSchema.XPreserveUnknownFields = pointer.BoolPtr(true) // cue doesn't preserve unknown fields for any by default
 			protocSchema = protoc.Properties[fieldName]
-			ExpectWithOffset(1, cueSchema.Type).To(Equal("string"))
 			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 
-			// type: map<string, string>
-			fieldName = "mappedData"
+			// type: google.protobuf.Struct
+			fieldName = "struct"
 			cueSchema = cue.Properties[fieldName]
+			cueSchema.XPreserveUnknownFields = pointer.BoolPtr(true) // cue doesn't preserve unknown fields for structs by default
 			protocSchema = protoc.Properties[fieldName]
-			ExpectWithOffset(1, cueSchema.Type).To(Equal("object"))
 			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 
-			// type: repeated bool
-			fieldName = "list"
-			cueSchema = cue.Properties[fieldName]
-			protocSchema = protoc.Properties[fieldName]
-			ExpectWithOffset(1, cueSchema.Type).To(Equal("array"))
-			ExpectWithOffset(1, cueSchema.Items.Schema.Type).To(Equal("boolean"))
-			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
+			// primitive types
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "data")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "mappedData")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "list")
 
 			// type: NestedMessage
 			fieldName = "nestedMessage"
@@ -115,21 +130,6 @@ var _ = Describe("schemagen", func() {
 			for _, nestedFieldName := range []string{"optionBool", "optionString"} {
 				ExpectWithOffset(1, cueSchema.Items.Schema.Properties[nestedFieldName]).To(Equal(protocSchema.Items.Schema.Properties[nestedFieldName]))
 			}
-
-			// type: struct
-			fieldName = "struct"
-			cueSchema = cue.Properties["struct"]
-			cueSchema.XPreserveUnknownFields = pointer.BoolPtr(true) // cue doesn't preserve unknown fields for structs by default
-			protocSchema = protoc.Properties["struct"]
-			ExpectWithOffset(1, cueSchema.Type).To(Equal("object"))
-			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
-
-			// type: any
-			fieldName = "any"
-			cueSchema = cue.Properties[fieldName]
-			protocSchema = protoc.Properties[fieldName]
-			ExpectWithOffset(1, cueSchema.Type).To(Equal("object"))
-			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 		}
 
 		It("Schema for SimpleMockResource created by cue and protoc match", func() {

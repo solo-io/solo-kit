@@ -146,6 +146,96 @@ func (m *SimpleMockResource) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetBoolValue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetBoolValue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetBoolValue(), target.GetBoolValue()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetInt32Value()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInt32Value()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInt32Value(), target.GetInt32Value()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetUint32Value()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUint32Value()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUint32Value(), target.GetUint32Value()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetFloatValue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFloatValue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFloatValue(), target.GetFloatValue()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetDuration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDuration()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDuration(), target.GetDuration()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetEmpty()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEmpty()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEmpty(), target.GetEmpty()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetStringValue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetStringValue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetStringValue(), target.GetStringValue()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetDoubleValue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDoubleValue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDoubleValue(), target.GetDoubleValue()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetTimestamp()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTimestamp()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTimestamp(), target.GetTimestamp()) {
+			return false
+		}
+	}
+
 	return true
 }
 
