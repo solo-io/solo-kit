@@ -125,9 +125,6 @@ func (m *Secret) Equal(that interface{}) bool {
 	switch m.Type.(type) {
 
 	case *Secret_TlsCertificate:
-		if _, ok := target.Type.(*Secret_TlsCertificate); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTlsCertificate()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTlsCertificate()) {
@@ -140,9 +137,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_SessionTicketKeys:
-		if _, ok := target.Type.(*Secret_SessionTicketKeys); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetSessionTicketKeys()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSessionTicketKeys()) {
@@ -155,9 +149,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_ValidationContext:
-		if _, ok := target.Type.(*Secret_ValidationContext); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetValidationContext()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetValidationContext()) {
@@ -170,9 +161,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_GenericSecret:
-		if _, ok := target.Type.(*Secret_GenericSecret); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetGenericSecret()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGenericSecret()) {
@@ -184,11 +172,6 @@ func (m *Secret) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Type != target.Type {
-			return false
-		}
 	}
 
 	return true

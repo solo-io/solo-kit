@@ -141,9 +141,6 @@ func (m *DownstreamTlsContext) Equal(that interface{}) bool {
 	switch m.SessionTicketKeysType.(type) {
 
 	case *DownstreamTlsContext_SessionTicketKeys:
-		if _, ok := target.SessionTicketKeysType.(*DownstreamTlsContext_SessionTicketKeys); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetSessionTicketKeys()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSessionTicketKeys()) {
@@ -156,9 +153,6 @@ func (m *DownstreamTlsContext) Equal(that interface{}) bool {
 		}
 
 	case *DownstreamTlsContext_SessionTicketKeysSdsSecretConfig:
-		if _, ok := target.SessionTicketKeysType.(*DownstreamTlsContext_SessionTicketKeysSdsSecretConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetSessionTicketKeysSdsSecretConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSessionTicketKeysSdsSecretConfig()) {
@@ -171,19 +165,11 @@ func (m *DownstreamTlsContext) Equal(that interface{}) bool {
 		}
 
 	case *DownstreamTlsContext_DisableStatelessSessionResumption:
-		if _, ok := target.SessionTicketKeysType.(*DownstreamTlsContext_DisableStatelessSessionResumption); !ok {
-			return false
-		}
 
 		if m.GetDisableStatelessSessionResumption() != target.GetDisableStatelessSessionResumption() {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.SessionTicketKeysType != target.SessionTicketKeysType {
-			return false
-		}
 	}
 
 	return true
@@ -268,9 +254,6 @@ func (m *CommonTlsContext) Equal(that interface{}) bool {
 	switch m.ValidationContextType.(type) {
 
 	case *CommonTlsContext_ValidationContext:
-		if _, ok := target.ValidationContextType.(*CommonTlsContext_ValidationContext); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetValidationContext()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetValidationContext()) {
@@ -283,9 +266,6 @@ func (m *CommonTlsContext) Equal(that interface{}) bool {
 		}
 
 	case *CommonTlsContext_ValidationContextSdsSecretConfig:
-		if _, ok := target.ValidationContextType.(*CommonTlsContext_ValidationContextSdsSecretConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetValidationContextSdsSecretConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetValidationContextSdsSecretConfig()) {
@@ -298,9 +278,6 @@ func (m *CommonTlsContext) Equal(that interface{}) bool {
 		}
 
 	case *CommonTlsContext_CombinedValidationContext:
-		if _, ok := target.ValidationContextType.(*CommonTlsContext_CombinedValidationContext); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetCombinedValidationContext()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetCombinedValidationContext()) {
@@ -312,11 +289,6 @@ func (m *CommonTlsContext) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ValidationContextType != target.ValidationContextType {
-			return false
-		}
 	}
 
 	return true

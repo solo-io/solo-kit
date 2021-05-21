@@ -45,20 +45,14 @@ func (m *CircuitBreakers) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetThresholds() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -88,100 +82,70 @@ func (m *CircuitBreakers_Thresholds) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetMaxConnections()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxConnections")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxConnections(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxConnections(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxConnections")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetMaxPendingRequests()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxPendingRequests")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxPendingRequests(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxPendingRequests(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxPendingRequests")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetMaxRequests()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxRequests")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxRequests(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxRequests(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxRequests")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetMaxRetries()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxRetries")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxRetries(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxRetries(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxRetries")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetRetryBudget()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RetryBudget")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRetryBudget(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRetryBudget(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RetryBudget")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -193,20 +157,14 @@ func (m *CircuitBreakers_Thresholds) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetMaxConnectionPools()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxConnectionPools")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxConnectionPools(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxConnectionPools(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxConnectionPools")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -229,40 +187,28 @@ func (m *CircuitBreakers_Thresholds_RetryBudget) Hash(hasher hash.Hash64) (uint6
 	}
 
 	if h, ok := interface{}(m.GetBudgetPercent()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("BudgetPercent")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetBudgetPercent(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetBudgetPercent(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("BudgetPercent")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetMinRetryConcurrency()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MinRetryConcurrency")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMinRetryConcurrency(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMinRetryConcurrency(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MinRetryConcurrency")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

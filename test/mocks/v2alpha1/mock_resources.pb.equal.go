@@ -69,55 +69,33 @@ func (m *MockResource) Equal(that interface{}) bool {
 	switch m.WeStuckItInAOneof.(type) {
 
 	case *MockResource_SomeDumbField:
-		if _, ok := target.WeStuckItInAOneof.(*MockResource_SomeDumbField); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetSomeDumbField(), target.GetSomeDumbField()) != 0 {
 			return false
 		}
 
 	case *MockResource_Data:
-		if _, ok := target.WeStuckItInAOneof.(*MockResource_Data); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetData(), target.GetData()) != 0 {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.WeStuckItInAOneof != target.WeStuckItInAOneof {
-			return false
-		}
 	}
 
 	switch m.TestOneofFields.(type) {
 
 	case *MockResource_OneofOne:
-		if _, ok := target.TestOneofFields.(*MockResource_OneofOne); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetOneofOne(), target.GetOneofOne()) != 0 {
 			return false
 		}
 
 	case *MockResource_OneofTwo:
-		if _, ok := target.TestOneofFields.(*MockResource_OneofTwo); !ok {
-			return false
-		}
 
 		if m.GetOneofTwo() != target.GetOneofTwo() {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.TestOneofFields != target.TestOneofFields {
-			return false
-		}
 	}
 
 	return true

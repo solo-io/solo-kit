@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package solo.io.envoy.service.discovery.v2;
+
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
+
+import "google/api/annotations.proto";
+
+import "github.com/solo-io/solo-kit/api/external/envoy/annotations/resource.proto";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+
+option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/service/discovery/v2";
+
+// [#protodoc-title: Secret Discovery Service (SDS)]
+
+service SecretDiscoveryService {
+  option (solo.io.envoy.annotations.resource).type = "solo.io.envoy.api.v2.auth.Secret";
+
+  rpc DeltaSecrets(stream solo.io.envoy.api.v2.DeltaDiscoveryRequest)
+      returns (stream solo.io.envoy.api.v2.DeltaDiscoveryResponse) {
+  }
+
+  rpc StreamSecrets(stream solo.io.envoy.api.v2.DiscoveryRequest) returns (stream solo.io.envoy.api.v2.DiscoveryResponse) {
+  }
+
+  rpc FetchSecrets(solo.io.envoy.api.v2.DiscoveryRequest) returns (solo.io.envoy.api.v2.DiscoveryResponse) {
+    option (google.api.http).post = "/v2/discovery:secrets";
+    option (google.api.http).body = "*";
+  }
+}
+
+// [#not-implemented-hide:] Not configuration. Workaround c++ protobuf issue with importing
+// services: https://github.com/google/protobuf/issues/4221
+message SdsDummy {
+}

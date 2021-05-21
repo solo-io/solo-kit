@@ -63,9 +63,6 @@ func (m *AccessLog) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *AccessLog_Config:
-		if _, ok := target.ConfigType.(*AccessLog_Config); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -78,9 +75,6 @@ func (m *AccessLog) Equal(that interface{}) bool {
 		}
 
 	case *AccessLog_TypedConfig:
-		if _, ok := target.ConfigType.(*AccessLog_TypedConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -92,11 +86,6 @@ func (m *AccessLog) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigType != target.ConfigType {
-			return false
-		}
 	}
 
 	return true
@@ -126,9 +115,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 	switch m.FilterSpecifier.(type) {
 
 	case *AccessLogFilter_StatusCodeFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_StatusCodeFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetStatusCodeFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetStatusCodeFilter()) {
@@ -141,9 +127,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_DurationFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_DurationFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetDurationFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDurationFilter()) {
@@ -156,9 +139,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_NotHealthCheckFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_NotHealthCheckFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetNotHealthCheckFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetNotHealthCheckFilter()) {
@@ -171,9 +151,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_TraceableFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_TraceableFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTraceableFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTraceableFilter()) {
@@ -186,9 +163,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_RuntimeFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_RuntimeFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRuntimeFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRuntimeFilter()) {
@@ -201,9 +175,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_AndFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_AndFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAndFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAndFilter()) {
@@ -216,9 +187,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_OrFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_OrFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOrFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOrFilter()) {
@@ -231,9 +199,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_HeaderFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_HeaderFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetHeaderFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeaderFilter()) {
@@ -246,9 +211,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_ResponseFlagFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_ResponseFlagFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetResponseFlagFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetResponseFlagFilter()) {
@@ -261,9 +223,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_GrpcStatusFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_GrpcStatusFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetGrpcStatusFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGrpcStatusFilter()) {
@@ -276,9 +235,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 		}
 
 	case *AccessLogFilter_ExtensionFilter:
-		if _, ok := target.FilterSpecifier.(*AccessLogFilter_ExtensionFilter); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetExtensionFilter()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetExtensionFilter()) {
@@ -290,11 +246,6 @@ func (m *AccessLogFilter) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.FilterSpecifier != target.FilterSpecifier {
-			return false
-		}
 	}
 
 	return true
@@ -714,9 +665,6 @@ func (m *ExtensionFilter) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *ExtensionFilter_Config:
-		if _, ok := target.ConfigType.(*ExtensionFilter_Config); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -729,9 +677,6 @@ func (m *ExtensionFilter) Equal(that interface{}) bool {
 		}
 
 	case *ExtensionFilter_TypedConfig:
-		if _, ok := target.ConfigType.(*ExtensionFilter_TypedConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -743,11 +688,6 @@ func (m *ExtensionFilter) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigType != target.ConfigType {
-			return false
-		}
 	}
 
 	return true

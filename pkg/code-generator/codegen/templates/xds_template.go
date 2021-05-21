@@ -11,8 +11,8 @@ import (
 	"errors"
 	"fmt"
 
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	discovery "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	discovery "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 

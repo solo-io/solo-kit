@@ -62,6 +62,100 @@ func (m *Locality) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *BuildVersion) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*BuildVersion)
+	if !ok {
+		that2, ok := that.(BuildVersion)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetVersion()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetVersion()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetVersion(), target.GetVersion()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Extension) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Extension)
+	if !ok {
+		that2, ok := that.(Extension)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCategory(), target.GetCategory()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTypeDescriptor(), target.GetTypeDescriptor()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetVersion()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetVersion()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetVersion(), target.GetVersion()) {
+			return false
+		}
+	}
+
+	if m.GetDisabled() != target.GetDisabled() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Node) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -112,6 +206,77 @@ func (m *Node) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetBuildVersion(), target.GetBuildVersion()) != 0 {
 		return false
+	}
+
+	if strings.Compare(m.GetUserAgentName(), target.GetUserAgentName()) != 0 {
+		return false
+	}
+
+	if len(m.GetExtensions()) != len(target.GetExtensions()) {
+		return false
+	}
+	for idx, v := range m.GetExtensions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetExtensions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetExtensions()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetClientFeatures()) != len(target.GetClientFeatures()) {
+		return false
+	}
+	for idx, v := range m.GetClientFeatures() {
+
+		if strings.Compare(v, target.GetClientFeatures()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetListeningAddresses()) != len(target.GetListeningAddresses()) {
+		return false
+	}
+	for idx, v := range m.GetListeningAddresses() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetListeningAddresses()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetListeningAddresses()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	switch m.UserAgentVersionType.(type) {
+
+	case *Node_UserAgentVersion:
+
+		if strings.Compare(m.GetUserAgentVersion(), target.GetUserAgentVersion()) != 0 {
+			return false
+		}
+
+	case *Node_UserAgentBuildVersion:
+
+		if h, ok := interface{}(m.GetUserAgentBuildVersion()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetUserAgentBuildVersion()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetUserAgentBuildVersion(), target.GetUserAgentBuildVersion()) {
+				return false
+			}
+		}
+
 	}
 
 	return true
@@ -294,9 +459,6 @@ func (m *HeaderValueOption) Equal(that interface{}) bool {
 	switch m.HeaderOption.(type) {
 
 	case *HeaderValueOption_Header:
-		if _, ok := target.HeaderOption.(*HeaderValueOption_Header); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeader()) {
@@ -309,9 +471,6 @@ func (m *HeaderValueOption) Equal(that interface{}) bool {
 		}
 
 	case *HeaderValueOption_HeaderSecretRef:
-		if _, ok := target.HeaderOption.(*HeaderValueOption_HeaderSecretRef); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetHeaderSecretRef()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeaderSecretRef()) {
@@ -323,11 +482,6 @@ func (m *HeaderValueOption) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.HeaderOption != target.HeaderOption {
-			return false
-		}
 	}
 
 	return true
@@ -398,37 +552,23 @@ func (m *DataSource) Equal(that interface{}) bool {
 	switch m.Specifier.(type) {
 
 	case *DataSource_Filename:
-		if _, ok := target.Specifier.(*DataSource_Filename); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetFilename(), target.GetFilename()) != 0 {
 			return false
 		}
 
 	case *DataSource_InlineBytes:
-		if _, ok := target.Specifier.(*DataSource_InlineBytes); !ok {
-			return false
-		}
 
 		if bytes.Compare(m.GetInlineBytes(), target.GetInlineBytes()) != 0 {
 			return false
 		}
 
 	case *DataSource_InlineString:
-		if _, ok := target.Specifier.(*DataSource_InlineString); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetInlineString(), target.GetInlineString()) != 0 {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Specifier != target.Specifier {
-			return false
-		}
 	}
 
 	return true
@@ -496,9 +636,6 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 	switch m.Specifier.(type) {
 
 	case *AsyncDataSource_Local:
-		if _, ok := target.Specifier.(*AsyncDataSource_Local); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLocal()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLocal()) {
@@ -511,9 +648,6 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 		}
 
 	case *AsyncDataSource_Remote:
-		if _, ok := target.Specifier.(*AsyncDataSource_Remote); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRemote()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRemote()) {
@@ -525,11 +659,6 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Specifier != target.Specifier {
-			return false
-		}
 	}
 
 	return true
@@ -563,9 +692,6 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *TransportSocket_Config:
-		if _, ok := target.ConfigType.(*TransportSocket_Config); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -578,9 +704,6 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 		}
 
 	case *TransportSocket_TypedConfig:
-		if _, ok := target.ConfigType.(*TransportSocket_TypedConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -592,11 +715,6 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigType != target.ConfigType {
-			return false
-		}
 	}
 
 	return true

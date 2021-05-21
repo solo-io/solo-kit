@@ -76,9 +76,6 @@ func (m *GrpcService) Equal(that interface{}) bool {
 	switch m.TargetSpecifier.(type) {
 
 	case *GrpcService_EnvoyGrpc_:
-		if _, ok := target.TargetSpecifier.(*GrpcService_EnvoyGrpc_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetEnvoyGrpc()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetEnvoyGrpc()) {
@@ -91,9 +88,6 @@ func (m *GrpcService) Equal(that interface{}) bool {
 		}
 
 	case *GrpcService_GoogleGrpc_:
-		if _, ok := target.TargetSpecifier.(*GrpcService_GoogleGrpc_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetGoogleGrpc()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGoogleGrpc()) {
@@ -105,11 +99,6 @@ func (m *GrpcService) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.TargetSpecifier != target.TargetSpecifier {
-			return false
-		}
 	}
 
 	return true
@@ -318,9 +307,6 @@ func (m *GrpcService_GoogleGrpc_ChannelCredentials) Equal(that interface{}) bool
 	switch m.CredentialSpecifier.(type) {
 
 	case *GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetSslCredentials()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSslCredentials()) {
@@ -333,9 +319,6 @@ func (m *GrpcService_GoogleGrpc_ChannelCredentials) Equal(that interface{}) bool
 		}
 
 	case *GrpcService_GoogleGrpc_ChannelCredentials_GoogleDefault:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_ChannelCredentials_GoogleDefault); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetGoogleDefault()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGoogleDefault()) {
@@ -348,9 +331,6 @@ func (m *GrpcService_GoogleGrpc_ChannelCredentials) Equal(that interface{}) bool
 		}
 
 	case *GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLocalCredentials()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLocalCredentials()) {
@@ -362,11 +342,6 @@ func (m *GrpcService_GoogleGrpc_ChannelCredentials) Equal(that interface{}) bool
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.CredentialSpecifier != target.CredentialSpecifier {
-			return false
-		}
 	}
 
 	return true
@@ -396,18 +371,12 @@ func (m *GrpcService_GoogleGrpc_CallCredentials) Equal(that interface{}) bool {
 	switch m.CredentialSpecifier.(type) {
 
 	case *GrpcService_GoogleGrpc_CallCredentials_AccessToken:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_CallCredentials_AccessToken); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetAccessToken(), target.GetAccessToken()) != 0 {
 			return false
 		}
 
 	case *GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetGoogleComputeEngine()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGoogleComputeEngine()) {
@@ -420,18 +389,12 @@ func (m *GrpcService_GoogleGrpc_CallCredentials) Equal(that interface{}) bool {
 		}
 
 	case *GrpcService_GoogleGrpc_CallCredentials_GoogleRefreshToken:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_CallCredentials_GoogleRefreshToken); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetGoogleRefreshToken(), target.GetGoogleRefreshToken()) != 0 {
 			return false
 		}
 
 	case *GrpcService_GoogleGrpc_CallCredentials_ServiceAccountJwtAccess:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_CallCredentials_ServiceAccountJwtAccess); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetServiceAccountJwtAccess()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetServiceAccountJwtAccess()) {
@@ -444,9 +407,6 @@ func (m *GrpcService_GoogleGrpc_CallCredentials) Equal(that interface{}) bool {
 		}
 
 	case *GrpcService_GoogleGrpc_CallCredentials_GoogleIam:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_CallCredentials_GoogleIam); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetGoogleIam()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGoogleIam()) {
@@ -459,9 +419,6 @@ func (m *GrpcService_GoogleGrpc_CallCredentials) Equal(that interface{}) bool {
 		}
 
 	case *GrpcService_GoogleGrpc_CallCredentials_FromPlugin:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_CallCredentials_FromPlugin); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetFromPlugin()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetFromPlugin()) {
@@ -474,9 +431,6 @@ func (m *GrpcService_GoogleGrpc_CallCredentials) Equal(that interface{}) bool {
 		}
 
 	case *GrpcService_GoogleGrpc_CallCredentials_StsService_:
-		if _, ok := target.CredentialSpecifier.(*GrpcService_GoogleGrpc_CallCredentials_StsService_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetStsService()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetStsService()) {
@@ -488,11 +442,6 @@ func (m *GrpcService_GoogleGrpc_CallCredentials) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.CredentialSpecifier != target.CredentialSpecifier {
-			return false
-		}
 	}
 
 	return true
@@ -590,9 +539,6 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin) E
 	switch m.ConfigType.(type) {
 
 	case *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_Config:
-		if _, ok := target.ConfigType.(*GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_Config); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -605,9 +551,6 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin) E
 		}
 
 	case *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig:
-		if _, ok := target.ConfigType.(*GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -619,11 +562,6 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin) E
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigType != target.ConfigType {
-			return false
-		}
 	}
 
 	return true

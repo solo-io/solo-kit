@@ -53,9 +53,6 @@ func (m *Filter) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *Filter_Config:
-		if _, ok := target.ConfigType.(*Filter_Config); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -68,9 +65,6 @@ func (m *Filter) Equal(that interface{}) bool {
 		}
 
 	case *Filter_TypedConfig:
-		if _, ok := target.ConfigType.(*Filter_TypedConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -82,11 +76,6 @@ func (m *Filter) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigType != target.ConfigType {
-			return false
-		}
 	}
 
 	return true
@@ -334,9 +323,6 @@ func (m *ListenerFilterChainMatchPredicate) Equal(that interface{}) bool {
 	switch m.Rule.(type) {
 
 	case *ListenerFilterChainMatchPredicate_OrMatch:
-		if _, ok := target.Rule.(*ListenerFilterChainMatchPredicate_OrMatch); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOrMatch()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOrMatch()) {
@@ -349,9 +335,6 @@ func (m *ListenerFilterChainMatchPredicate) Equal(that interface{}) bool {
 		}
 
 	case *ListenerFilterChainMatchPredicate_AndMatch:
-		if _, ok := target.Rule.(*ListenerFilterChainMatchPredicate_AndMatch); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAndMatch()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAndMatch()) {
@@ -364,9 +347,6 @@ func (m *ListenerFilterChainMatchPredicate) Equal(that interface{}) bool {
 		}
 
 	case *ListenerFilterChainMatchPredicate_NotMatch:
-		if _, ok := target.Rule.(*ListenerFilterChainMatchPredicate_NotMatch); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetNotMatch()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetNotMatch()) {
@@ -379,18 +359,12 @@ func (m *ListenerFilterChainMatchPredicate) Equal(that interface{}) bool {
 		}
 
 	case *ListenerFilterChainMatchPredicate_AnyMatch:
-		if _, ok := target.Rule.(*ListenerFilterChainMatchPredicate_AnyMatch); !ok {
-			return false
-		}
 
 		if m.GetAnyMatch() != target.GetAnyMatch() {
 			return false
 		}
 
 	case *ListenerFilterChainMatchPredicate_DestinationPortRange:
-		if _, ok := target.Rule.(*ListenerFilterChainMatchPredicate_DestinationPortRange); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetDestinationPortRange()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDestinationPortRange()) {
@@ -402,11 +376,6 @@ func (m *ListenerFilterChainMatchPredicate) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Rule != target.Rule {
-			return false
-		}
 	}
 
 	return true
@@ -450,9 +419,6 @@ func (m *ListenerFilter) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *ListenerFilter_Config:
-		if _, ok := target.ConfigType.(*ListenerFilter_Config); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -465,9 +431,6 @@ func (m *ListenerFilter) Equal(that interface{}) bool {
 		}
 
 	case *ListenerFilter_TypedConfig:
-		if _, ok := target.ConfigType.(*ListenerFilter_TypedConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -479,11 +442,6 @@ func (m *ListenerFilter) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigType != target.ConfigType {
-			return false
-		}
 	}
 
 	return true

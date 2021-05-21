@@ -22,9 +22,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
+	envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	discovery "github.com/solo-io/solo-kit/pkg/api/external/envoy/service/discovery/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
 	"google.golang.org/grpc"

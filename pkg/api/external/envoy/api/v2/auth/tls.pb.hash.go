@@ -39,20 +39,14 @@ func (m *UpstreamTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetCommonTlsContext()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("CommonTlsContext")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetCommonTlsContext(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetCommonTlsContext(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("CommonTlsContext")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -68,20 +62,14 @@ func (m *UpstreamTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetMaxSessionKeys()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxSessionKeys")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxSessionKeys(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxSessionKeys(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxSessionKeys")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -104,80 +92,56 @@ func (m *DownstreamTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetCommonTlsContext()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("CommonTlsContext")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetCommonTlsContext(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetCommonTlsContext(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("CommonTlsContext")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetRequireClientCertificate()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RequireClientCertificate")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRequireClientCertificate(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRequireClientCertificate(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RequireClientCertificate")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetRequireSni()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RequireSni")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRequireSni(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRequireSni(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RequireSni")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetSessionTimeout()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("SessionTimeout")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetSessionTimeout(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetSessionTimeout(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("SessionTimeout")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -188,20 +152,14 @@ func (m *DownstreamTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	case *DownstreamTlsContext_SessionTicketKeys:
 
 		if h, ok := interface{}(m.GetSessionTicketKeys()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("SessionTicketKeys")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetSessionTicketKeys(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetSessionTicketKeys(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("SessionTicketKeys")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -210,20 +168,14 @@ func (m *DownstreamTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	case *DownstreamTlsContext_SessionTicketKeysSdsSecretConfig:
 
 		if h, ok := interface{}(m.GetSessionTicketKeysSdsSecretConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("SessionTicketKeysSdsSecretConfig")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetSessionTicketKeysSdsSecretConfig(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetSessionTicketKeysSdsSecretConfig(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("SessionTicketKeysSdsSecretConfig")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -255,20 +207,14 @@ func (m *CommonTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetTlsParams()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("TlsParams")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetTlsParams(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetTlsParams(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("TlsParams")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -277,20 +223,14 @@ func (m *CommonTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetTlsCertificates() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -301,20 +241,14 @@ func (m *CommonTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetTlsCertificateSdsSecretConfigs() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -335,20 +269,14 @@ func (m *CommonTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	case *CommonTlsContext_ValidationContext:
 
 		if h, ok := interface{}(m.GetValidationContext()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("ValidationContext")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetValidationContext(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetValidationContext(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("ValidationContext")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -357,20 +285,14 @@ func (m *CommonTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	case *CommonTlsContext_ValidationContextSdsSecretConfig:
 
 		if h, ok := interface{}(m.GetValidationContextSdsSecretConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("ValidationContextSdsSecretConfig")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetValidationContextSdsSecretConfig(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetValidationContextSdsSecretConfig(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("ValidationContextSdsSecretConfig")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -379,20 +301,14 @@ func (m *CommonTlsContext) Hash(hasher hash.Hash64) (uint64, error) {
 	case *CommonTlsContext_CombinedValidationContext:
 
 		if h, ok := interface{}(m.GetCombinedValidationContext()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("CombinedValidationContext")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetCombinedValidationContext(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetCombinedValidationContext(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("CombinedValidationContext")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -417,40 +333,28 @@ func (m *CommonTlsContext_CombinedCertificateValidationContext) Hash(hasher hash
 	}
 
 	if h, ok := interface{}(m.GetDefaultValidationContext()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("DefaultValidationContext")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetDefaultValidationContext(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetDefaultValidationContext(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("DefaultValidationContext")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetValidationContextSdsSecretConfig()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ValidationContextSdsSecretConfig")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetValidationContextSdsSecretConfig(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetValidationContextSdsSecretConfig(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ValidationContextSdsSecretConfig")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

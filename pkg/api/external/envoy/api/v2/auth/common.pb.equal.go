@@ -107,9 +107,6 @@ func (m *PrivateKeyProvider) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *PrivateKeyProvider_Config:
-		if _, ok := target.ConfigType.(*PrivateKeyProvider_Config); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -122,9 +119,6 @@ func (m *PrivateKeyProvider) Equal(that interface{}) bool {
 		}
 
 	case *PrivateKeyProvider_TypedConfig:
-		if _, ok := target.ConfigType.(*PrivateKeyProvider_TypedConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -136,11 +130,6 @@ func (m *PrivateKeyProvider) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigType != target.ConfigType {
-			return false
-		}
 	}
 
 	return true

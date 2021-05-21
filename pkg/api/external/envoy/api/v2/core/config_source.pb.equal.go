@@ -253,18 +253,12 @@ func (m *ConfigSource) Equal(that interface{}) bool {
 	switch m.ConfigSourceSpecifier.(type) {
 
 	case *ConfigSource_Path:
-		if _, ok := target.ConfigSourceSpecifier.(*ConfigSource_Path); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetPath(), target.GetPath()) != 0 {
 			return false
 		}
 
 	case *ConfigSource_ApiConfigSource:
-		if _, ok := target.ConfigSourceSpecifier.(*ConfigSource_ApiConfigSource); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetApiConfigSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetApiConfigSource()) {
@@ -277,9 +271,6 @@ func (m *ConfigSource) Equal(that interface{}) bool {
 		}
 
 	case *ConfigSource_Ads:
-		if _, ok := target.ConfigSourceSpecifier.(*ConfigSource_Ads); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAds()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAds()) {
@@ -292,9 +283,6 @@ func (m *ConfigSource) Equal(that interface{}) bool {
 		}
 
 	case *ConfigSource_Self:
-		if _, ok := target.ConfigSourceSpecifier.(*ConfigSource_Self); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetSelf()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSelf()) {
@@ -306,11 +294,6 @@ func (m *ConfigSource) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigSourceSpecifier != target.ConfigSourceSpecifier {
-			return false
-		}
 	}
 
 	return true

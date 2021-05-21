@@ -77,28 +77,17 @@ func (m *MockResource) Equal(that interface{}) bool {
 	switch m.TestOneofFields.(type) {
 
 	case *MockResource_OneofOne:
-		if _, ok := target.TestOneofFields.(*MockResource_OneofOne); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetOneofOne(), target.GetOneofOne()) != 0 {
 			return false
 		}
 
 	case *MockResource_OneofTwo:
-		if _, ok := target.TestOneofFields.(*MockResource_OneofTwo); !ok {
-			return false
-		}
 
 		if m.GetOneofTwo() != target.GetOneofTwo() {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.TestOneofFields != target.TestOneofFields {
-			return false
-		}
 	}
 
 	return true

@@ -43,40 +43,28 @@ func (m *Endpoint) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetAddress()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Address")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetAddress(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetAddress(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Address")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetHealthCheckConfig()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("HealthCheckConfig")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetHealthCheckConfig(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetHealthCheckConfig(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("HealthCheckConfig")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -108,40 +96,28 @@ func (m *LbEndpoint) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Metadata")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Metadata")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetLoadBalancingWeight()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("LoadBalancingWeight")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetLoadBalancingWeight(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetLoadBalancingWeight(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("LoadBalancingWeight")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -152,20 +128,14 @@ func (m *LbEndpoint) Hash(hasher hash.Hash64) (uint64, error) {
 	case *LbEndpoint_Endpoint:
 
 		if h, ok := interface{}(m.GetEndpoint()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Endpoint")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetEndpoint(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetEndpoint(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Endpoint")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -196,20 +166,14 @@ func (m *LocalityLbEndpoints) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetLocality()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Locality")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetLocality(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetLocality(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Locality")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -218,20 +182,14 @@ func (m *LocalityLbEndpoints) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetLbEndpoints() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -240,20 +198,14 @@ func (m *LocalityLbEndpoints) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetLoadBalancingWeight()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("LoadBalancingWeight")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetLoadBalancingWeight(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetLoadBalancingWeight(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("LoadBalancingWeight")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -265,20 +217,14 @@ func (m *LocalityLbEndpoints) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetProximity()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Proximity")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetProximity(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetProximity(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Proximity")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

@@ -39,20 +39,14 @@ func (m *GenericSecret) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetSecret()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Secret")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetSecret(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetSecret(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Secret")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -79,20 +73,14 @@ func (m *SdsSecretConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetSdsConfig()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("SdsConfig")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetSdsConfig(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetSdsConfig(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("SdsConfig")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -123,20 +111,14 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_TlsCertificate:
 
 		if h, ok := interface{}(m.GetTlsCertificate()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("TlsCertificate")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetTlsCertificate(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetTlsCertificate(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("TlsCertificate")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -145,20 +127,14 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_SessionTicketKeys:
 
 		if h, ok := interface{}(m.GetSessionTicketKeys()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("SessionTicketKeys")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetSessionTicketKeys(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetSessionTicketKeys(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("SessionTicketKeys")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -167,20 +143,14 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_ValidationContext:
 
 		if h, ok := interface{}(m.GetValidationContext()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("ValidationContext")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetValidationContext(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetValidationContext(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("ValidationContext")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -189,20 +159,14 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_GenericSecret:
 
 		if h, ok := interface{}(m.GetGenericSecret()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("GenericSecret")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetGenericSecret(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetGenericSecret(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("GenericSecret")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}

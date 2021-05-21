@@ -125,9 +125,6 @@ func (m *LbEndpoint) Equal(that interface{}) bool {
 	switch m.HostIdentifier.(type) {
 
 	case *LbEndpoint_Endpoint:
-		if _, ok := target.HostIdentifier.(*LbEndpoint_Endpoint); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetEndpoint()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetEndpoint()) {
@@ -140,19 +137,11 @@ func (m *LbEndpoint) Equal(that interface{}) bool {
 		}
 
 	case *LbEndpoint_EndpointName:
-		if _, ok := target.HostIdentifier.(*LbEndpoint_EndpointName); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetEndpointName(), target.GetEndpointName()) != 0 {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.HostIdentifier != target.HostIdentifier {
-			return false
-		}
 	}
 
 	return true

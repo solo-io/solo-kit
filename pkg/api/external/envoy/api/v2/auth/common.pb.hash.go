@@ -89,20 +89,14 @@ func (m *PrivateKeyProvider) Hash(hasher hash.Hash64) (uint64, error) {
 	case *PrivateKeyProvider_Config:
 
 		if h, ok := interface{}(m.GetConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Config")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetConfig(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetConfig(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Config")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -111,20 +105,14 @@ func (m *PrivateKeyProvider) Hash(hasher hash.Hash64) (uint64, error) {
 	case *PrivateKeyProvider_TypedConfig:
 
 		if h, ok := interface{}(m.GetTypedConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("TypedConfig")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetTypedConfig(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetTypedConfig(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("TypedConfig")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -149,100 +137,70 @@ func (m *TlsCertificate) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetCertificateChain()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("CertificateChain")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetCertificateChain(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetCertificateChain(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("CertificateChain")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetPrivateKey()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("PrivateKey")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetPrivateKey(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetPrivateKey(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("PrivateKey")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetPrivateKeyProvider()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("PrivateKeyProvider")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetPrivateKeyProvider(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetPrivateKeyProvider(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("PrivateKeyProvider")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetPassword()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Password")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetPassword(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetPassword(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Password")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetOcspStaple()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("OcspStaple")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetOcspStaple(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetOcspStaple(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("OcspStaple")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -251,20 +209,14 @@ func (m *TlsCertificate) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetSignedCertificateTimestamp() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -291,20 +243,14 @@ func (m *TlsSessionTicketKeys) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetKeys() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -329,20 +275,14 @@ func (m *CertificateValidationContext) Hash(hasher hash.Hash64) (uint64, error) 
 	}
 
 	if h, ok := interface{}(m.GetTrustedCa()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("TrustedCa")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetTrustedCa(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetTrustedCa(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("TrustedCa")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -375,20 +315,14 @@ func (m *CertificateValidationContext) Hash(hasher hash.Hash64) (uint64, error) 
 	for _, v := range m.GetMatchSubjectAltNames() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -397,60 +331,42 @@ func (m *CertificateValidationContext) Hash(hasher hash.Hash64) (uint64, error) 
 	}
 
 	if h, ok := interface{}(m.GetRequireOcspStaple()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RequireOcspStaple")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRequireOcspStaple(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRequireOcspStaple(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RequireOcspStaple")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetRequireSignedCertificateTimestamp()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RequireSignedCertificateTimestamp")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRequireSignedCertificateTimestamp(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRequireSignedCertificateTimestamp(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RequireSignedCertificateTimestamp")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetCrl()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Crl")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetCrl(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetCrl(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Crl")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

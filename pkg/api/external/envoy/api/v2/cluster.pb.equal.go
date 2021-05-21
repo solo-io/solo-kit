@@ -438,18 +438,12 @@ func (m *Cluster) Equal(that interface{}) bool {
 	switch m.ClusterDiscoveryType.(type) {
 
 	case *Cluster_Type:
-		if _, ok := target.ClusterDiscoveryType.(*Cluster_Type); !ok {
-			return false
-		}
 
 		if m.GetType() != target.GetType() {
 			return false
 		}
 
 	case *Cluster_ClusterType:
-		if _, ok := target.ClusterDiscoveryType.(*Cluster_ClusterType); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetClusterType()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetClusterType()) {
@@ -461,19 +455,11 @@ func (m *Cluster) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ClusterDiscoveryType != target.ClusterDiscoveryType {
-			return false
-		}
 	}
 
 	switch m.LbConfig.(type) {
 
 	case *Cluster_RingHashLbConfig_:
-		if _, ok := target.LbConfig.(*Cluster_RingHashLbConfig_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRingHashLbConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRingHashLbConfig()) {
@@ -486,9 +472,6 @@ func (m *Cluster) Equal(that interface{}) bool {
 		}
 
 	case *Cluster_OriginalDstLbConfig_:
-		if _, ok := target.LbConfig.(*Cluster_OriginalDstLbConfig_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOriginalDstLbConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOriginalDstLbConfig()) {
@@ -501,9 +484,6 @@ func (m *Cluster) Equal(that interface{}) bool {
 		}
 
 	case *Cluster_LeastRequestLbConfig_:
-		if _, ok := target.LbConfig.(*Cluster_LeastRequestLbConfig_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLeastRequestLbConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLeastRequestLbConfig()) {
@@ -515,11 +495,6 @@ func (m *Cluster) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.LbConfig != target.LbConfig {
-			return false
-		}
 	}
 
 	return true
@@ -1001,9 +976,6 @@ func (m *Cluster_CommonLbConfig) Equal(that interface{}) bool {
 	switch m.LocalityConfigSpecifier.(type) {
 
 	case *Cluster_CommonLbConfig_ZoneAwareLbConfig_:
-		if _, ok := target.LocalityConfigSpecifier.(*Cluster_CommonLbConfig_ZoneAwareLbConfig_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetZoneAwareLbConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetZoneAwareLbConfig()) {
@@ -1016,9 +988,6 @@ func (m *Cluster_CommonLbConfig) Equal(that interface{}) bool {
 		}
 
 	case *Cluster_CommonLbConfig_LocalityWeightedLbConfig_:
-		if _, ok := target.LocalityConfigSpecifier.(*Cluster_CommonLbConfig_LocalityWeightedLbConfig_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLocalityWeightedLbConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLocalityWeightedLbConfig()) {
@@ -1030,11 +999,6 @@ func (m *Cluster_CommonLbConfig) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.LocalityConfigSpecifier != target.LocalityConfigSpecifier {
-			return false
-		}
 	}
 
 	return true
