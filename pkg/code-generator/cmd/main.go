@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
+
 	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
@@ -87,6 +89,8 @@ type GenerateOptions struct {
 
 	// config for anyvendor
 	ExternalImports *sk_anyvendor.Imports
+
+	ValidationSchemaOptions *schemagen.ValidationSchemaOptions
 }
 
 type Runner struct {
@@ -382,6 +386,11 @@ func (r *Runner) Run() error {
 			if err := genMocks(generatedFiles, outDir, workingRootAbsolute); err != nil {
 				return err
 			}
+		}
+
+		// Generate OpenApi validation schemas
+		if err := schemagen.GenerateOpenApiValidationSchemas(project, r.Opts.ValidationSchemaOptions, importsCollector, workingRootAbsolute); err != nil {
+			return err
 		}
 	}
 
