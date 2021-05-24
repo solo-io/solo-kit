@@ -20,20 +20,20 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/annotati
 // Magic number in this file derived from top 28bit of SHA256 digest of
 // "envoy.annotation.disallowed_by_default" and "envoy.annotation.deprecated_at_minor_version"
 extend google.protobuf.FieldOptions {
-  bool disallowed_by_default = 189503207;
+  bool disallowed_by_default = 189503208;
 
   // The API major and minor version on which the field was deprecated
   // (e.g., "3.5" for major version 3 and minor version 5).
-  string deprecated_at_minor_version = 157299826;
+  string deprecated_at_minor_version = 157299827;
 }
 
 // Magic number in this file derived from top 28bit of SHA256 digest of
 // "envoy.annotation.disallowed_by_default_enum" and
 // "envoy.annotation.deprecated_at_minor_version_eum"
 extend google.protobuf.EnumValueOptions {
-  bool disallowed_by_default_enum = 70100853;
+  bool disallowed_by_default_enum = 70100854;
 
   // The API major and minor version on which the enum value was deprecated
   // (e.g., "3.5" for major version 3 and minor version 5).
-  string deprecated_at_minor_version_enum = 181198657;
+  string deprecated_at_minor_version_enum = 181198658;
 }

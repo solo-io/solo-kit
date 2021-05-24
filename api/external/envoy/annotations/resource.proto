@@ -14,7 +14,7 @@ option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/annotati
 
 // Magic number in this file derived from top 28bit of SHA256 digest of "envoy.annotation.resource".
 extend google.protobuf.ServiceOptions {
-  ResourceAnnotation resource = 265073217;
+  ResourceAnnotation resource = 265073218;
 }
 
 message ResourceAnnotation {
