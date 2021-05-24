@@ -446,6 +446,16 @@ func (m *HeaderValueOption) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHeader()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHeader(), target.GetHeader()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetAppend()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetAppend()) {
 			return false
@@ -454,34 +464,6 @@ func (m *HeaderValueOption) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetAppend(), target.GetAppend()) {
 			return false
 		}
-	}
-
-	switch m.HeaderOption.(type) {
-
-	case *HeaderValueOption_Header:
-
-		if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetHeader()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetHeader(), target.GetHeader()) {
-				return false
-			}
-		}
-
-	case *HeaderValueOption_HeaderSecretRef:
-
-		if h, ok := interface{}(m.GetHeaderSecretRef()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetHeaderSecretRef()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetHeaderSecretRef(), target.GetHeaderSecretRef()) {
-				return false
-			}
-		}
-
 	}
 
 	return true

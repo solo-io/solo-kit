@@ -244,26 +244,24 @@ message RuntimeFeatureFlag {
 // Header name/value pair.
 message HeaderValue {
   // Header name.
-  string key = 1 [(validate.rules).string = {min_bytes: 1 max_bytes: 16384}];
+  string key = 1
+      [(validate.rules).string =
+           {min_bytes: 1 max_bytes: 16384 well_known_regex: HTTP_HEADER_NAME strict: false}];
 
   // Header value.
   //
-  // The same `format specifier (config_access_log_format)` as used for
-  // `HTTP access logging (config_access_log)` applies here, however
+  // The same :ref:`format specifier <config_access_log_format>` as used for
+  // :ref:`HTTP access logging <config_access_log>` applies here, however
   // unknown header values are replaced with the empty string instead of `-`.
-  string value = 2 [(validate.rules).string = {max_bytes: 16384}];
+  string value = 2 [
+    (validate.rules).string = {max_bytes: 16384 well_known_regex: HTTP_HEADER_VALUE strict: false}
+  ];
 }
 
 // Header name/value pair plus option to control append behavior.
 message HeaderValueOption {
   // Header name/value pair that this option applies to.
-  oneof header_option {
-    option (validate.required) = true;
-    // Explicitly specified header
-    HeaderValue header = 1;
-    // Reference to header contained in a secret
-    .core.solo.io.ResourceRef header_secret_ref = 3;
-  }
+  HeaderValue header = 1 [(validate.rules).message = {required: true}];
 
   // Should the value be appended? If true (default), the value is appended to
   // existing values.
