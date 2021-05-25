@@ -2,3 +2,4 @@ changelog:
   - type: NON_USER_FACING
     description: Add Envoy v2 API to solo-kit
     issueLink: https://github.com/solo-io/gloo/issues/4369
+    resolvesIssue: false
