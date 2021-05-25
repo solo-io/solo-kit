@@ -9,7 +9,6 @@ import (
 	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/endpoint"
 	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/listener"
-	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/ratelimit"
 	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/route"
 	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/config/filter/accesslog/v2"
 	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/config/listener/v2"
