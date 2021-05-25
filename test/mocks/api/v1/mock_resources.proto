@@ -18,6 +18,8 @@ option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 
 /*
 go_package Comments
@@ -40,12 +42,15 @@ below Comments a
 
 /*
 Mock resources for goofin off
+This includes oneof, nested resources, and any other special cases that
+may cause issues during schemagen
 */
 message MockResource {
 
     option (core.solo.io.resource).short_name = "mk";
     option (core.solo.io.resource).plural_name = "mocks";
 
+    // The status field comment
     core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
     core.solo.io.Metadata metadata = 7;
 
@@ -56,6 +61,40 @@ message MockResource {
         string oneof_one = 3;
         bool oneof_two = 2;
     };
+
+    // test one of fields comment
+    oneof nested_oneof_options {
+        // oneof comment
+        NestedOneOf oneof_nestedoneof = 12;
+    }
+}
+
+// A NestedOneOf message
+message NestedOneOf {
+
+    // oneof comment
+    oneof option {
+        string option_a = 1;
+        string option_b = 2;
+    }
+
+    oneof another_option {
+        string another_option_a = 11;
+        string another_option_b = 12;
+    }
+
+    oneof nested_oneof {
+        InternalOneOf another_nested_oneof_one = 21;
+        InternalOneOf another_nested_oneof_two = 22;
+    }
+}
+
+// AnotherNestedOneOf comment
+message InternalOneOf {
+    oneof option {
+        string option_a = 1;
+        string option_b = 2;
+    }
 }
 
 message FakeResource {

@@ -29,6 +29,12 @@ var _ = Describe("TestingEventLoop", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 
+		simpleMockResourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		simpleMockResourceClient, err := NewSimpleMockResourceClient(ctx, simpleMockResourceClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
 		mockResourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
@@ -65,9 +71,11 @@ var _ = Describe("TestingEventLoop", func() {
 		podClient, err := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(ctx, podClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
+		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 	})
 	It("runs sync function on a new snapshot", func() {
+		_, err = emitter.SimpleMockResource().Write(NewSimpleMockResource(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.MockResource().Write(NewMockResource(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.FakeResource().Write(NewFakeResource(namespace, "jerry"), clients.WriteOpts{})

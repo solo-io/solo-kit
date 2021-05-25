@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package testing.solo.io;
+
+option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+
+
+/*
+A SimpleMockResource defines a variety of baseline types to ensure
+that we can generate open api schemas properly. It intentionally avoids
+messages that include oneof and recursive schemas (like core.solo.io.Status)
+*/
+message SimpleMockResource {
+
+  option (core.solo.io.resource).short_name = "smk";
+  option (core.solo.io.resource).plural_name = "simplemocks";
+
+  // metadata comment
+  core.solo.io.Metadata metadata = 100;
+
+  // data comment
+  string data = 1;
+
+  // mapped_data comment
+  map<string, string> mapped_data = 2;
+
+  // list comment
+  repeated bool list = 3;
+
+  // nested_message comment
+  NestedMessage nested_message = 4;
+
+  // nested_message_list comment
+  repeated NestedMessage nested_message_list = 5;
+
+  // any comment
+  google.protobuf.Any any = 11;
+
+  // struct comment
+  google.protobuf.Struct struct = 12;
+
+  // mapped_struct comment
+  map<string, google.protobuf.Struct> mapped_struct = 13;
+
+  // bool_value comment
+  google.protobuf.BoolValue bool_value = 14;
+
+  // int32_value comment
+  google.protobuf.Int32Value int32_value = 15;
+
+  // uint32_value comment
+  google.protobuf.UInt32Value uint32_value = 16;
+
+  // float_value comment
+  google.protobuf.FloatValue float_value = 17;
+
+  // duration comment
+  google.protobuf.Duration duration = 18;
+
+  // empty comment
+  google.protobuf.Empty empty = 19;
+
+  // string_value comment
+  google.protobuf.StringValue string_value = 20;
+
+  // double_value comment
+  google.protobuf.DoubleValue double_value = 21;
+
+  // timestamp comment
+  google.protobuf.Timestamp timestamp = 22;
+
+  // enum_options comment
+  EnumOptions enum_options = 30;
+
+  // NestedMessage type comment
+  message NestedMessage {
+    bool option_bool = 1;
+    string option_string = 2;
+  }
+
+  enum EnumOptions {
+    // option_a comment
+    OPTION_A = 0;
+
+    // option_b comment
+    OPTION_B = 1;
+
+    // option_c comment
+    OPTION_C = 2;
+  }
+}

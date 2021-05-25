@@ -3,6 +3,7 @@ module github.com/solo-io/solo-kit
 go 1.16
 
 require (
+	cuelang.org/go v0.3.2
 	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
@@ -12,6 +13,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/frankban/quicktest v1.4.1 // indirect
+	github.com/getkin/kin-openapi v0.1.1-0.20190507152207-d3180292eead
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-test/deep v1.0.2
 	github.com/golang/mock v1.4.3
@@ -41,6 +43,7 @@ require (
 	github.com/pseudomuto/protokit v0.2.0
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
+	github.com/sam-heilbron/protoc-gen-openapi v0.0.0-20210521134209-c323189e7a9a
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.0.4
 	github.com/solo-io/go-utils v0.20.2
@@ -61,6 +64,7 @@ require (
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v0.18.6
 	k8s.io/code-generator v0.18.6
+	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451
 	sigs.k8s.io/yaml v1.2.0
 )
 

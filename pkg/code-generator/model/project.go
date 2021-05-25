@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	kubeschema "k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin_go "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pseudomuto/protokit"
@@ -26,7 +28,7 @@ type ProjectConfig struct {
 	Version        string                      `json:"version"`
 	DocsDir        string                      `json:"docs_dir"`
 	ResourceGroups map[string][]ResourceConfig `json:"resource_groups"`
-	// if set, this group will override the proto pacakge typically used
+	// if set, this group will override the proto package typically used
 	// as the api group for the crd
 	CrdGroupOverride string `json:"crd_group_override"`
 
@@ -41,6 +43,9 @@ type ProjectConfig struct {
 
 	// Generate Kube clientset & types
 	GenKubeTypes bool `json:"gen_kube_types"`
+
+	// Generate Kube validation schemas
+	GenKubeValidationSchemas bool `json:"gen_kube_validation_schemas"`
 
 	// set by load
 	ProjectFile   string
@@ -229,4 +234,17 @@ func detectGoPackageForProject(projectFile string) (string, error) {
 type DescriptorWithPath struct {
 	*descriptor.FileDescriptorProto
 	ProtoFilePath string
+}
+
+func GetGVForProject(project *Project) kubeschema.GroupVersion {
+	crdGroupName := project.ProtoPackage
+	crdGroupNameOverride := project.ProjectConfig.CrdGroupOverride
+	if crdGroupNameOverride != "" {
+		crdGroupName = crdGroupNameOverride
+	}
+
+	return kubeschema.GroupVersion{
+		Group:   crdGroupName,
+		Version: project.ProjectConfig.Version,
+	}
 }

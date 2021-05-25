@@ -90,6 +90,146 @@ func (m *MockResource) Equal(that interface{}) bool {
 
 	}
 
+	switch m.NestedOneofOptions.(type) {
+
+	case *MockResource_OneofNestedoneof:
+
+		if h, ok := interface{}(m.GetOneofNestedoneof()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOneofNestedoneof()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOneofNestedoneof(), target.GetOneofNestedoneof()) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *NestedOneOf) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*NestedOneOf)
+	if !ok {
+		that2, ok := that.(NestedOneOf)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Option.(type) {
+
+	case *NestedOneOf_OptionA:
+
+		if strings.Compare(m.GetOptionA(), target.GetOptionA()) != 0 {
+			return false
+		}
+
+	case *NestedOneOf_OptionB:
+
+		if strings.Compare(m.GetOptionB(), target.GetOptionB()) != 0 {
+			return false
+		}
+
+	}
+
+	switch m.AnotherOption.(type) {
+
+	case *NestedOneOf_AnotherOptionA:
+
+		if strings.Compare(m.GetAnotherOptionA(), target.GetAnotherOptionA()) != 0 {
+			return false
+		}
+
+	case *NestedOneOf_AnotherOptionB:
+
+		if strings.Compare(m.GetAnotherOptionB(), target.GetAnotherOptionB()) != 0 {
+			return false
+		}
+
+	}
+
+	switch m.NestedOneof.(type) {
+
+	case *NestedOneOf_AnotherNestedOneofOne:
+
+		if h, ok := interface{}(m.GetAnotherNestedOneofOne()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAnotherNestedOneofOne()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAnotherNestedOneofOne(), target.GetAnotherNestedOneofOne()) {
+				return false
+			}
+		}
+
+	case *NestedOneOf_AnotherNestedOneofTwo:
+
+		if h, ok := interface{}(m.GetAnotherNestedOneofTwo()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAnotherNestedOneofTwo()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAnotherNestedOneofTwo(), target.GetAnotherNestedOneofTwo()) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *InternalOneOf) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*InternalOneOf)
+	if !ok {
+		that2, ok := that.(InternalOneOf)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Option.(type) {
+
+	case *InternalOneOf_OptionA:
+
+		if strings.Compare(m.GetOptionA(), target.GetOptionA()) != 0 {
+			return false
+		}
+
+	case *InternalOneOf_OptionB:
+
+		if strings.Compare(m.GetOptionB(), target.GetOptionB()) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 

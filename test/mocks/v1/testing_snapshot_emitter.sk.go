@@ -82,6 +82,7 @@ type TestingSnapshotEmitter interface {
 type TestingEmitter interface {
 	TestingSnapshotEmitter
 	Register() error
+	SimpleMockResource() SimpleMockResourceClient
 	MockResource() MockResourceClient
 	FakeResource() FakeResourceClient
 	AnotherMockResource() AnotherMockResourceClient
@@ -90,12 +91,13 @@ type TestingEmitter interface {
 	Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
-	return NewTestingEmitterWithEmit(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, make(chan struct{}))
+func NewTestingEmitter(simpleMockResourceClient SimpleMockResourceClient, mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
+	return NewTestingEmitterWithEmit(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(simpleMockResourceClient SimpleMockResourceClient, mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
+		simpleMockResource:  simpleMockResourceClient,
 		mockResource:        mockResourceClient,
 		fakeResource:        fakeResourceClient,
 		anotherMockResource: anotherMockResourceClient,
@@ -108,6 +110,7 @@ func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, fakeResour
 
 type testingEmitter struct {
 	forceEmit           <-chan struct{}
+	simpleMockResource  SimpleMockResourceClient
 	mockResource        MockResourceClient
 	fakeResource        FakeResourceClient
 	anotherMockResource AnotherMockResourceClient
@@ -117,6 +120,9 @@ type testingEmitter struct {
 }
 
 func (c *testingEmitter) Register() error {
+	if err := c.simpleMockResource.Register(); err != nil {
+		return err
+	}
 	if err := c.mockResource.Register(); err != nil {
 		return err
 	}
@@ -136,6 +142,10 @@ func (c *testingEmitter) Register() error {
 		return err
 	}
 	return nil
+}
+
+func (c *testingEmitter) SimpleMockResource() SimpleMockResourceClient {
+	return c.simpleMockResource
 }
 
 func (c *testingEmitter) MockResource() MockResourceClient {
@@ -178,6 +188,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
+	/* Create channel for SimpleMockResource */
+	type simpleMockResourceListWithNamespace struct {
+		list      SimpleMockResourceList
+		namespace string
+	}
+	simpleMockResourceChan := make(chan simpleMockResourceListWithNamespace)
+
+	var initialSimpleMockResourceList SimpleMockResourceList
 	/* Create channel for MockResource */
 	type mockResourceListWithNamespace struct {
 		list      MockResourceList
@@ -223,6 +241,24 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	currentSnapshot := TestingSnapshot{}
 
 	for _, namespace := range watchNamespaces {
+		/* Setup namespaced watch for SimpleMockResource */
+		{
+			simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial SimpleMockResource list")
+			}
+			initialSimpleMockResourceList = append(initialSimpleMockResourceList, simplemocks...)
+		}
+		simpleMockResourceNamespacesChan, simpleMockResourceErrs, err := c.simpleMockResource.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting SimpleMockResource watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-simplemocks")
+		}(namespace)
 		/* Setup namespaced watch for MockResource */
 		{
 			mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
@@ -320,6 +356,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				select {
 				case <-ctx.Done():
 					return
+				case simpleMockResourceList, ok := <-simpleMockResourceNamespacesChan:
+					if !ok {
+						return
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case simpleMockResourceChan <- simpleMockResourceListWithNamespace{list: simpleMockResourceList, namespace: namespace}:
+					}
 				case mockResourceList, ok := <-mockResourceNamespacesChan:
 					if !ok {
 						return
@@ -369,6 +414,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Simplemocks */
+	currentSnapshot.Simplemocks = initialSimpleMockResourceList.Sort()
 	/* Initialize snapshot for Mocks */
 	currentSnapshot.Mocks = initialMockResourceList.Sort()
 	/* Initialize snapshot for Fakes */
@@ -425,6 +472,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				stats.Record(ctx, mTestingSnapshotMissed.M(1))
 			}
 		}
+		simplemocksByNamespace := make(map[string]SimpleMockResourceList)
 		mocksByNamespace := make(map[string]MockResourceList)
 		fakesByNamespace := make(map[string]FakeResourceList)
 		anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
@@ -448,6 +496,28 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
+			case simpleMockResourceNamespacedList, ok := <-simpleMockResourceChan:
+				if !ok {
+					return
+				}
+				record()
+
+				namespace := simpleMockResourceNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"simple_mock_resource",
+					mTestingResourcesIn,
+				)
+
+				// merge lists by namespace
+				simplemocksByNamespace[namespace] = simpleMockResourceNamespacedList.list
+				var simpleMockResourceList SimpleMockResourceList
+				for _, simplemocks := range simplemocksByNamespace {
+					simpleMockResourceList = append(simpleMockResourceList, simplemocks...)
+				}
+				currentSnapshot.Simplemocks = simpleMockResourceList.Sort()
 			case mockResourceNamespacedList, ok := <-mockResourceChan:
 				if !ok {
 					return

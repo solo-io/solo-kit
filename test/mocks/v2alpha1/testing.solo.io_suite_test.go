@@ -48,6 +48,8 @@ var (
 		testutils.ErrorNotOccuredOrNotFound(err)
 		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "mocks.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "simplemocks.testing.solo.io", metav1.DeleteOptions{})
+		testutils.ErrorNotOccuredOrNotFound(err)
 		Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
 	})
 

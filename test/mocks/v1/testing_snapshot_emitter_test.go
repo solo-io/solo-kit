@@ -45,6 +45,7 @@ var _ = Describe("V1Emitter", func() {
 		clientset                 *apiext.Clientset
 		kube                      kubernetes.Interface
 		emitter                   TestingEmitter
+		simpleMockResourceClient  SimpleMockResourceClient
 		mockResourceClient        MockResourceClient
 		fakeResourceClient        FakeResourceClient
 		anotherMockResourceClient AnotherMockResourceClient
@@ -64,6 +65,13 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		clientset, err = apiext.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		// SimpleMockResource Constructor
+		simpleMockResourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+
+		simpleMockResourceClient, err = NewSimpleMockResourceClient(ctx, simpleMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// MockResource Constructor
 		mockResourceClientFactory := &factory.KubeResourceClientFactory{
@@ -122,7 +130,7 @@ var _ = Describe("V1Emitter", func() {
 
 		podClient, err = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(ctx, podClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewTestingEmitter(mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
+		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 	})
 	AfterEach(func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
@@ -142,6 +150,63 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		var snap *TestingSnapshot
+
+		/*
+			SimpleMockResource
+		*/
+
+		assertSnapshotSimplemocks := func(expectSimplemocks SimpleMockResourceList, unexpectSimplemocks SimpleMockResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectSimplemocks {
+						if _, err := snap.Simplemocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectSimplemocks {
+						if _, err := snap.Simplemocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := simpleMockResourceClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := simpleMockResourceClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		simpleMockResource1a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		simpleMockResource1b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotSimplemocks(SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}, nil)
+		simpleMockResource2a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		simpleMockResource2b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotSimplemocks(SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b, simpleMockResource2a, simpleMockResource2b}, nil)
+
+		err = simpleMockResourceClient.Delete(simpleMockResource2a.GetMetadata().Namespace, simpleMockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = simpleMockResourceClient.Delete(simpleMockResource2b.GetMetadata().Namespace, simpleMockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotSimplemocks(SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}, SimpleMockResourceList{simpleMockResource2a, simpleMockResource2b})
+
+		err = simpleMockResourceClient.Delete(simpleMockResource1a.GetMetadata().Namespace, simpleMockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = simpleMockResourceClient.Delete(simpleMockResource1b.GetMetadata().Namespace, simpleMockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotSimplemocks(nil, SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b, simpleMockResource2a, simpleMockResource2b})
 
 		/*
 			MockResource
@@ -487,6 +552,63 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		var snap *TestingSnapshot
+
+		/*
+			SimpleMockResource
+		*/
+
+		assertSnapshotSimplemocks := func(expectSimplemocks SimpleMockResourceList, unexpectSimplemocks SimpleMockResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectSimplemocks {
+						if _, err := snap.Simplemocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectSimplemocks {
+						if _, err := snap.Simplemocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := simpleMockResourceClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := simpleMockResourceClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		simpleMockResource1a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		simpleMockResource1b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotSimplemocks(SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}, nil)
+		simpleMockResource2a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		simpleMockResource2b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotSimplemocks(SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b, simpleMockResource2a, simpleMockResource2b}, nil)
+
+		err = simpleMockResourceClient.Delete(simpleMockResource2a.GetMetadata().Namespace, simpleMockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = simpleMockResourceClient.Delete(simpleMockResource2b.GetMetadata().Namespace, simpleMockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotSimplemocks(SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}, SimpleMockResourceList{simpleMockResource2a, simpleMockResource2b})
+
+		err = simpleMockResourceClient.Delete(simpleMockResource1a.GetMetadata().Namespace, simpleMockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = simpleMockResourceClient.Delete(simpleMockResource1b.GetMetadata().Namespace, simpleMockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotSimplemocks(nil, SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b, simpleMockResource2a, simpleMockResource2b})
 
 		/*
 			MockResource
