@@ -8,9 +8,11 @@ import "google/api/annotations.proto";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/annotations/resource.proto";
 
-import public "github.com/solo-io/solo-kit/api/external/envoy/api/v2/route.proto";
-
 option go_package = "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // [#protodoc-title: RDS]
 

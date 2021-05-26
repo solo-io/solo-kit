@@ -3,7 +3,6 @@ syntax = "proto3";
 package solo.io.envoy.api.v2.core;
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
-import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/event_service_config.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/type/http.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/type/matcher/string.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/type/range.proto";
@@ -290,11 +289,6 @@ message HealthCheck {
   // Specifies the path to the :ref:`health check event log <arch_overview_health_check_logging>`.
   // If empty, no event log will be written.
   string event_log_path = 17;
-
-  // [#not-implemented-hide:]
-  // The gRPC service for the health check event service.
-  // If empty, health check events won't be sent to a remote endpoint.
-  EventServiceConfig event_service = 22;
 
   // If set to true, health check failure events will always be logged. If set to false, only the
   // initial health check failure event will be logged.

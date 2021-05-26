@@ -178,16 +178,6 @@ func (m *HealthCheck) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetEventService()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetEventService()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetEventService(), target.GetEventService()) {
-			return false
-		}
-	}
-
 	if m.GetAlwaysLogHealthCheckFailures() != target.GetAlwaysLogHealthCheckFailures() {
 		return false
 	}
