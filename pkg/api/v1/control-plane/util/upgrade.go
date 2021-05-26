@@ -6,7 +6,7 @@ import (
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoy_api_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
-	_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
+	envoy_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 )
 
 func UpgradeDiscoveryRequest(req *envoy_api_v2.DiscoveryRequest) *envoy_service_discovery_v3.DiscoveryRequest {
@@ -124,7 +124,7 @@ func UpradeExtension(ext *envoy_api_v2_core.Extension) *envoy_config_core_v3.Ext
 	}
 }
 
-func UpgradeSemanticVersion(smv *_type.SemanticVersion) *envoy_type_v3.SemanticVersion {
+func UpgradeSemanticVersion(smv *envoy_type.SemanticVersion) *envoy_type_v3.SemanticVersion {
 	if smv == nil {
 		return nil
 	}
