@@ -46,8 +46,8 @@ require (
 	github.com/sam-heilbron/protoc-gen-openapi v0.0.0-20210521134209-c323189e7a9a
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.0.4
-	github.com/solo-io/go-utils v0.21.6-0.20210525213056-a63ad8750c56
-	github.com/solo-io/k8s-utils v0.0.8-0.20210525213538-c36d2ee1d56f
+	github.com/solo-io/go-utils v0.21.6
+	github.com/solo-io/k8s-utils v0.0.8
 	github.com/solo-io/protoc-gen-ext v0.0.13
 	github.com/spf13/afero v1.3.4 // indirect
 	go.opencensus.io v0.22.4
