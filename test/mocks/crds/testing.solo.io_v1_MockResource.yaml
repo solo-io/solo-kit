@@ -22,7 +22,8 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: Mock resources for goofin off This includes oneof, nested resources, and any other special cases that may cause issues during schemagen
+          description: Mock resources for goofin off This includes oneof, nested resources,
+            and any other special cases that may cause issues during schemagen
           properties:
             data.json:
               type: string

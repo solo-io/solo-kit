@@ -44,7 +44,7 @@ var _ = Describe("kube core cache tests", func() {
 			client = kubernetes.NewForConfigOrDie(cfg)
 		})
 
-		Context("all namesapces", func() {
+		Context("all namespaces", func() {
 
 			BeforeEach(func() {
 				var err error
@@ -81,7 +81,7 @@ var _ = Describe("kube core cache tests", func() {
 			})
 		})
 
-		Context("single namesapces", func() {
+		Context("single namespaces", func() {
 
 			BeforeEach(func() {
 				var err error
@@ -99,8 +99,8 @@ var _ = Describe("kube core cache tests", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
-		Context("2 namesapces", func() {
-			Context("valid namesapces", func() {
+		Context("2 namespaces", func() {
+			Context("valid namespaces", func() {
 				var (
 					testns  string
 					testns2 string
@@ -134,6 +134,7 @@ var _ = Describe("kube core cache tests", func() {
 					Expect(err).NotTo(HaveOccurred())
 					cfgMaps, err := cache.NamespacedConfigMapLister(testns).List(selectors)
 					Expect(err).NotTo(HaveOccurred())
+					cfgMaps = cleanConfigMaps(cfgMaps)
 					_, err = cache.NamespacedSecretLister(testns).List(selectors)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -142,6 +143,7 @@ var _ = Describe("kube core cache tests", func() {
 					Expect(err).NotTo(HaveOccurred())
 					cfgMaps2, err := cache.NamespacedConfigMapLister(testns2).List(selectors)
 					Expect(err).NotTo(HaveOccurred())
+					cfgMaps2 = cleanConfigMaps(cfgMaps2)
 					_, err = cache.NamespacedSecretLister(testns2).List(selectors)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -152,7 +154,7 @@ var _ = Describe("kube core cache tests", func() {
 				})
 			})
 
-			Context("Invalid namesapces", func() {
+			Context("Invalid namespaces", func() {
 				It("should error with invalid namespace config", func() {
 					var err error
 					_, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default", ""})
@@ -165,4 +167,15 @@ var _ = Describe("kube core cache tests", func() {
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+
+// remove the auto-generated kube-root-ca.crt ConfigMap, if it exists
+func cleanConfigMaps(configMaps []*v1.ConfigMap) []*v1.ConfigMap {
+	cleanedConfigMaps := make([]*v1.ConfigMap, 0, len(configMaps))
+	for _, cfgMap := range configMaps {
+		if cfgMap.GetName() != "kube-root-ca.crt" {
+			cleanedConfigMaps = append(cleanedConfigMaps, cfgMap)
+		}
+	}
+	return cleanedConfigMaps
 }
