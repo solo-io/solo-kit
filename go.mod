@@ -16,7 +16,7 @@ require (
 	github.com/getkin/kin-openapi v0.1.1-0.20190507152207-d3180292eead
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-test/deep v1.0.2
-	github.com/golang/mock v1.4.3
+	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
@@ -46,19 +46,18 @@ require (
 	github.com/sam-heilbron/protoc-gen-openapi v0.0.0-20210521134209-c323189e7a9a
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.0.4
-	github.com/solo-io/go-utils v0.20.2
-	github.com/solo-io/k8s-utils v0.0.1
+	github.com/solo-io/go-utils v0.21.6
+	github.com/solo-io/k8s-utils v0.0.8
 	github.com/solo-io/protoc-gen-ext v0.0.13
 	github.com/spf13/afero v1.3.4 // indirect
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/tools v0.0.0-20200811153730-74512f09e4b0 // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver v0.18.6
 	k8s.io/apimachinery v0.18.6
@@ -74,6 +73,11 @@ replace (
 	// version when updating.
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
+
+	// pin to the jwt-go fork to fix CVE.
+	// using the pseudo version of github.com/form3tech-oss/jwt-go@v3.2.3 instead of the version directly,
+	// to avoid error about it being used for two different module paths
+	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 
 	// consul

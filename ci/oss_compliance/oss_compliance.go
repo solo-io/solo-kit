@@ -18,6 +18,7 @@ func main() {
 		"github.com/mitchellh/go-homedir",
 		"github.com/containerd/continuity",
 		"golang.org/x/sys/unix",
+		"golang.org/x/sys",
 	}
 
 	app := license.Cli(glooPackages, macOnlyDependencies)

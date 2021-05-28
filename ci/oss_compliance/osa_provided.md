@@ -38,14 +38,14 @@ Name|Version|License
 [pseudomuto/protokit](https://github.com/pseudomuto/protokit)|v0.2.0|MIT License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.1.1|MIT License
 [afero/mem](https://github.com/spf13/afero)|v1.3.4|Apache License 2.0
-[x/crypto](https://golang.org/x/crypto)|v0.0.0-20200622213623-75b288015ac9|BSD 3-clause "New" or "Revised" License
-[x/net](https://golang.org/x/net)|v0.0.0-20200822124328-c89045814202|BSD 3-clause "New" or "Revised" License
+[x/crypto](https://golang.org/x/crypto)|v0.0.0-20210513164829-c07d793c2f9a|BSD 3-clause "New" or "Revised" License
+[x/net](https://golang.org/x/net)|v0.0.0-20210226172049-e18ecbb05110|BSD 3-clause "New" or "Revised" License
 [sync/errgroup](https://golang.org/x/sync/errgroup)|v0.0.0-20200625203802-6e8e738ad208|BSD 3-clause "New" or "Revised" License
 [x/text](https://golang.org/x/text)|v0.3.3|BSD 3-clause "New" or "Revised" License
 [xerrors/internal](https://golang.org/x/xerrors/internal)|v0.0.0-20200804184101-5ec99f83aff1|BSD 3-clause "New" or "Revised" License
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
 [gopkg.in/inf.v0](https://gopkg.in/inf.v0)|v0.9.1|BSD 3-clause "New" or "Revised" License
-[gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)|v2.3.0|Apache License 2.0
+[gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)|v2.4.0|Apache License 2.0
 [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3)|v3.0.0-20200313102051-9f266ea9e77c|MIT License
 [apiextensions-apiserver/pkg](https://k8s.io/apiextensions-apiserver/pkg)|v0.18.6|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.18.6|Apache License 2.0

@@ -22,7 +22,9 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: A SimpleMockResource defines a variety of baseline types to ensure that we can generate open api schemas properly. It intentionally avoids messages that include oneof and recursive schemas (like core.solo.io.Status)
+          description: A SimpleMockResource defines a variety of baseline types to
+            ensure that we can generate open api schemas properly. It intentionally
+            avoids messages that include oneof and recursive schemas (like core.solo.io.Status)
           properties:
             any:
               description: any comment
