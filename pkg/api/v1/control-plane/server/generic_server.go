@@ -26,9 +26,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	envoy_api_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
-	envoy_service_discovery_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/service/discovery/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+	gloo_discovery "github.com/solo-io/solo-kit/pkg/api/xds"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -222,7 +222,7 @@ func (s *server) StreamV2(
 type sendFunc func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error)
 
 func (s *server) sendV2(
-	stream envoy_service_discovery_v2.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
+	stream gloo_discovery.GlooDiscoveryService_StreamAggregatedResourcesServer,
 ) sendFunc {
 	return func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error) {
 		out, err := createResponse(&resp, typeURL)

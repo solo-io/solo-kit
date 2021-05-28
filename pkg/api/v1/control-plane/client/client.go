@@ -24,8 +24,8 @@ import (
 
 	v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
-	discovery "github.com/solo-io/solo-kit/pkg/api/external/envoy/service/discovery/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	gloo_discovery "github.com/solo-io/solo-kit/pkg/api/xds"
 
 	"google.golang.org/grpc"
 )
@@ -88,7 +88,7 @@ func NewClient(nodeinfo *envoy_api_v2_core.Node, rtype TypeRecord, apply func(ca
  */
 
 func (c *client) Start(ctx context.Context, cc *grpc.ClientConn) error {
-	client := discovery.NewAggregatedDiscoveryServiceClient(cc)
+	client := gloo_discovery.NewGlooDiscoveryServiceClient(cc)
 	resourceclient, err := client.StreamAggregatedResources(ctx)
 	if err != nil {
 		return err
