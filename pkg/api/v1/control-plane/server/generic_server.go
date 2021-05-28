@@ -25,10 +25,10 @@ import (
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
-	envoy_api_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
+	sk_discovery "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
-	gloo_discovery "github.com/solo-io/solo-kit/pkg/api/xds"
+	solo_discovery "github.com/solo-io/solo-kit/pkg/api/xds"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,39 +36,39 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
-type StreamV3 interface {
+type StreamEnvoyV3 interface {
 	Send(response *envoy_service_discovery_v3.DiscoveryResponse) error
 	Recv() (*envoy_service_discovery_v3.DiscoveryRequest, error)
 	grpc.ServerStream
 }
 
-type StreamV2 interface {
-	Send(response *envoy_api_v2.DiscoveryResponse) error
-	Recv() (*envoy_api_v2.DiscoveryRequest, error)
+type StreamGloo interface {
+	Send(response *sk_discovery.DiscoveryResponse) error
+	Recv() (*sk_discovery.DiscoveryRequest, error)
 	grpc.ServerStream
 }
 
 // Server is a collection of handlers for streaming discovery requests.
 type Server interface {
-	// StreamV3 is the V3 streaming method
-	StreamV3(
-		stream StreamV3,
+	// StreamEnvoyV3 is the streaming method for Evnoy V3 XDS
+	StreamEnvoyV3(
+		stream StreamEnvoyV3,
 		defaultTypeURL string,
 	) error
-	// StreamV2 is the V2 streaming method
-	StreamV2(
-		stream StreamV2,
+	// StreamGloo is the streaming method for Gloo discovery
+	StreamGloo(
+		stream StreamGloo,
 		defaultTypeURL string,
 	) error
 	// Fetch is the universal fetch method.
-	FetchV3(
+	FetchEnvoyV3(
 		context.Context,
 		*envoy_service_discovery_v3.DiscoveryRequest,
 	) (*envoy_service_discovery_v3.DiscoveryResponse, error)
-	FetchV2(
+	FetchGloo(
 		context.Context,
-		*envoy_api_v2.DiscoveryRequest,
-	) (*envoy_api_v2.DiscoveryResponse, error)
+		*sk_discovery.DiscoveryRequest,
+	) (*sk_discovery.DiscoveryResponse, error)
 }
 
 // Callbacks is a collection of callbacks inserted into the server operation.
@@ -159,8 +159,8 @@ type TypedResponse struct {
 	TypeUrl  string
 }
 
-func (s *server) StreamV3(
-	stream StreamV3,
+func (s *server) StreamEnvoyV3(
+	stream StreamEnvoyV3,
 	defaultTypeURL string,
 ) error {
 	// a channel for receiving incoming requests
@@ -180,7 +180,7 @@ func (s *server) StreamV3(
 		}
 	}()
 
-	err := s.process(stream.Context(), s.sendV3(stream), reqCh, defaultTypeURL)
+	err := s.process(stream.Context(), s.sendEnvoyV3(stream), reqCh, defaultTypeURL)
 
 	// prevents writing to a closed channel if send failed on blocked recv
 	// TODO(kuat) figure out how to unblock recv through gRPC API
@@ -189,8 +189,8 @@ func (s *server) StreamV3(
 	return err
 }
 
-func (s *server) StreamV2(
-	stream StreamV2,
+func (s *server) StreamGloo(
+	stream StreamGloo,
 	defaultTypeURL string,
 ) error {
 	// a channel for receiving incoming requests
@@ -210,7 +210,7 @@ func (s *server) StreamV2(
 		}
 	}()
 
-	err := s.process(stream.Context(), s.sendV2(stream), reqCh, defaultTypeURL)
+	err := s.process(stream.Context(), s.sendGloo(stream), reqCh, defaultTypeURL)
 
 	// prevents writing to a closed channel if send failed on blocked recv
 	// TODO(kuat) figure out how to unblock recv through gRPC API
@@ -221,8 +221,8 @@ func (s *server) StreamV2(
 
 type sendFunc func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error)
 
-func (s *server) sendV2(
-	stream gloo_discovery.GlooDiscoveryService_StreamAggregatedResourcesServer,
+func (s *server) sendGloo(
+	stream solo_discovery.SoloDiscoveryService_StreamAggregatedResourcesServer,
 ) sendFunc {
 	return func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error) {
 		out, err := createResponse(&resp, typeURL)
@@ -240,7 +240,7 @@ func (s *server) sendV2(
 	}
 }
 
-func (s *server) sendV3(
+func (s *server) sendEnvoyV3(
 	stream envoy_service_discovery_v3.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
 ) sendFunc {
 	return func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error) {
@@ -411,7 +411,7 @@ func (s *server) createWatch(responses chan<- TypedResponse, req *cache.Request)
 }
 
 // Fetch is the universal fetch method.
-func (s *server) FetchV3(
+func (s *server) FetchEnvoyV3(
 	ctx context.Context,
 	req *envoy_service_discovery_v3.DiscoveryRequest,
 ) (*envoy_service_discovery_v3.DiscoveryResponse, error) {
@@ -435,11 +435,11 @@ func (s *server) FetchV3(
 }
 
 // Fetch is the universal fetch method.
-func (s *server) FetchV2(
+func (s *server) FetchGloo(
 	ctx context.Context,
-	req *envoy_api_v2.DiscoveryRequest,
-) (*envoy_api_v2.DiscoveryResponse, error) {
+	req *sk_discovery.DiscoveryRequest,
+) (*sk_discovery.DiscoveryResponse, error) {
 	upgradedReq := util.UpgradeDiscoveryRequest(req)
-	out, err := s.FetchV3(ctx, upgradedReq)
+	out, err := s.FetchEnvoyV3(ctx, upgradedReq)
 	return util.DowngradeDiscoveryResponse(out), err
 }

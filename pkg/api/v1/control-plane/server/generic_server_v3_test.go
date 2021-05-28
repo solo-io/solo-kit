@@ -86,7 +86,7 @@ func (c *callbacks) OnFetchResponse(*discovery.DiscoveryRequest, *discovery.Disc
 	c.fetchResp++
 }
 
-type mockStreamV3 struct {
+type mockStreamEnvoyV3 struct {
 	t         *testing.T
 	ctx       context.Context
 	recv      chan *discovery.DiscoveryRequest
@@ -96,11 +96,11 @@ type mockStreamV3 struct {
 	grpc.ServerStream
 }
 
-func (stream *mockStreamV3) Context() context.Context {
+func (stream *mockStreamEnvoyV3) Context() context.Context {
 	return stream.ctx
 }
 
-func (stream *mockStreamV3) Send(resp *discovery.DiscoveryResponse) error {
+func (stream *mockStreamEnvoyV3) Send(resp *discovery.DiscoveryResponse) error {
 	// check that nonce is monotonically incrementing
 	stream.nonce = stream.nonce + 1
 	if resp.Nonce != fmt.Sprintf("%d", stream.nonce) {
@@ -130,7 +130,7 @@ func (stream *mockStreamV3) Send(resp *discovery.DiscoveryResponse) error {
 	return nil
 }
 
-func (stream *mockStreamV3) Recv() (*discovery.DiscoveryRequest, error) {
+func (stream *mockStreamEnvoyV3) Recv() (*discovery.DiscoveryRequest, error) {
 	req, more := <-stream.recv
 	if !more {
 		return nil, errors.New("empty")
@@ -138,8 +138,8 @@ func (stream *mockStreamV3) Recv() (*discovery.DiscoveryRequest, error) {
 	return req, nil
 }
 
-func makeMockStreamV3(t *testing.T) *mockStreamV3 {
-	return &mockStreamV3{
+func makeMockStreamEnvoyV3(t *testing.T) *mockStreamEnvoyV3 {
+	return &mockStreamEnvoyV3{
 		t:    t,
 		ctx:  context.Background(),
 		sent: make(chan *discovery.DiscoveryResponse, 10),
@@ -207,19 +207,19 @@ func TestServerShutdownV3(t *testing.T) {
 			s := server.NewServer(ctx, config, &callbacks{})
 
 			// make a request
-			resp := makeMockStreamV3(t)
+			resp := makeMockStreamEnvoyV3(t)
 			resp.recv <- &discovery.DiscoveryRequest{Node: nodeV3}
 			go func() {
 				var err error
 				switch typ {
 				case resource.EndpointTypeV3:
-					err = s.StreamV3(resp, resource.EndpointTypeV3)
+					err = s.StreamEnvoyV3(resp, resource.EndpointTypeV3)
 				case resource.ClusterTypeV3:
-					err = s.StreamV3(resp, resource.ClusterTypeV3)
+					err = s.StreamEnvoyV3(resp, resource.ClusterTypeV3)
 				case resource.RouteTypeV3:
-					err = s.StreamV3(resp, resource.RouteTypeV3)
+					err = s.StreamEnvoyV3(resp, resource.RouteTypeV3)
 				case resource.ListenerTypeV3:
-					err = s.StreamV3(resp, resource.ListenerTypeV3)
+					err = s.StreamEnvoyV3(resp, resource.ListenerTypeV3)
 				}
 				if err != nil {
 					t.Errorf("Stream() => got %v, want no error", err)
@@ -248,19 +248,19 @@ func TestResponseHandlersV3(t *testing.T) {
 			s := server.NewServer(context.Background(), config, &callbacks{})
 
 			// make a request
-			resp := makeMockStreamV3(t)
+			resp := makeMockStreamEnvoyV3(t)
 			resp.recv <- &discovery.DiscoveryRequest{Node: nodeV3}
 			go func() {
 				var err error
 				switch typ {
 				case resource.EndpointTypeV3:
-					err = s.StreamV3(resp, resource.EndpointTypeV3)
+					err = s.StreamEnvoyV3(resp, resource.EndpointTypeV3)
 				case resource.ClusterTypeV3:
-					err = s.StreamV3(resp, resource.ClusterTypeV3)
+					err = s.StreamEnvoyV3(resp, resource.ClusterTypeV3)
 				case resource.RouteTypeV3:
-					err = s.StreamV3(resp, resource.RouteTypeV3)
+					err = s.StreamEnvoyV3(resp, resource.RouteTypeV3)
 				case resource.ListenerTypeV3:
-					err = s.StreamV3(resp, resource.ListenerTypeV3)
+					err = s.StreamEnvoyV3(resp, resource.ListenerTypeV3)
 				}
 				if err != nil {
 					t.Errorf("Stream() => got %v, want no error", err)
@@ -281,30 +281,30 @@ func TestResponseHandlersV3(t *testing.T) {
 	}
 }
 
-func TestFetchV3(t *testing.T) {
+func TestFetchEnvoyV3(t *testing.T) {
 	config := makeMockConfigWatcherV3()
 	config.responses = makeResponsesV3()
 	cb := &callbacks{}
 	s := server.NewServer(context.Background(), config, cb)
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.EndpointTypeV3,
 	}); out == nil || err != nil {
 		t.Errorf("unexpected empty or error for endpoints: %v", err)
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.ClusterTypeV3,
 	}); out == nil || err != nil {
 		t.Errorf("unexpected empty or error for clusters: %v", err)
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.RouteTypeV3,
 	}); out == nil || err != nil {
 		t.Errorf("unexpected empty or error for routes: %v", err)
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.ListenerTypeV3,
 	}); out == nil || err != nil {
@@ -312,25 +312,25 @@ func TestFetchV3(t *testing.T) {
 	}
 
 	// try again and expect empty results
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.EndpointTypeV3,
 	}); out != nil {
 		t.Errorf("expected empty or error for endpoints: %v", err)
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.ClusterTypeV3,
 	}); out != nil {
 		t.Errorf("expected empty or error for clusters: %v", err)
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.RouteTypeV3,
 	}); out != nil {
 		t.Errorf("expected empty or error for routes: %v", err)
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.ListenerTypeV3,
 	}); out != nil {
@@ -338,31 +338,31 @@ func TestFetchV3(t *testing.T) {
 	}
 
 	// try empty requests: not valid in a real gRPC server
-	if out, err := s.FetchV3(context.Background(), nil); out != nil {
+	if out, err := s.FetchEnvoyV3(context.Background(), nil); out != nil {
 		t.Errorf("expected empty on empty request: %v", err)
 	}
 
 	// send error from callback
 	cb.callbackError = true
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.EndpointTypeV3,
 	}); out != nil || err == nil {
 		t.Errorf("expected empty or error due to callback error")
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.ClusterTypeV3,
 	}); out != nil || err == nil {
 		t.Errorf("expected empty or error due to callback error")
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.RouteTypeV3,
 	}); out != nil || err == nil {
 		t.Errorf("expected empty or error due to callback error")
 	}
-	if out, err := s.FetchV3(context.Background(), &discovery.DiscoveryRequest{
+	if out, err := s.FetchEnvoyV3(context.Background(), &discovery.DiscoveryRequest{
 		Node:    nodeV3,
 		TypeUrl: resource.ListenerTypeV3,
 	}); out != nil || err == nil {
@@ -386,14 +386,14 @@ func TestWatchClosedV3(t *testing.T) {
 			s := server.NewServer(context.Background(), config, &callbacks{})
 
 			// make a request
-			resp := makeMockStreamV3(t)
+			resp := makeMockStreamEnvoyV3(t)
 			resp.recv <- &discovery.DiscoveryRequest{
 				Node:    nodeV3,
 				TypeUrl: typ,
 			}
 
 			// check that response fails since watch gets closed
-			if err := s.StreamV3(resp, resource.AnyType); err == nil {
+			if err := s.StreamEnvoyV3(resp, resource.AnyType); err == nil {
 				t.Error("Stream() => got no error, want watch failed")
 			}
 
@@ -410,7 +410,7 @@ func TestSendErrorV3(t *testing.T) {
 			s := server.NewServer(context.Background(), config, &callbacks{})
 
 			// make a request
-			resp := makeMockStreamV3(t)
+			resp := makeMockStreamEnvoyV3(t)
 			resp.sendError = true
 			resp.recv <- &discovery.DiscoveryRequest{
 				Node:    nodeV3,
@@ -418,7 +418,7 @@ func TestSendErrorV3(t *testing.T) {
 			}
 
 			// check that response fails since send returns error
-			if err := s.StreamV3(resp, resource.AnyType); err == nil {
+			if err := s.StreamEnvoyV3(resp, resource.AnyType); err == nil {
 				t.Error("Stream() => got no error, want send error")
 			}
 
@@ -434,14 +434,14 @@ func TestStaleNonceV3(t *testing.T) {
 			config.responses = makeResponsesV3()
 			s := server.NewServer(context.Background(), config, &callbacks{})
 
-			resp := makeMockStreamV3(t)
+			resp := makeMockStreamEnvoyV3(t)
 			resp.recv <- &discovery.DiscoveryRequest{
 				Node:    nodeV3,
 				TypeUrl: typ,
 			}
 			stop := make(chan struct{})
 			go func() {
-				if err := s.StreamV3(resp, resource.AnyType); err != nil {
+				if err := s.StreamEnvoyV3(resp, resource.AnyType); err != nil {
 					t.Errorf("StreamAggregatedResources() => got %v, want no error", err)
 				}
 				// should be two watches called
@@ -477,7 +477,7 @@ func TestStaleNonceV3(t *testing.T) {
 func TestAggregatedHandlersV3(t *testing.T) {
 	config := makeMockConfigWatcherV3()
 	config.responses = makeResponsesV3()
-	resp := makeMockStreamV3(t)
+	resp := makeMockStreamEnvoyV3(t)
 
 	resp.recv <- &discovery.DiscoveryRequest{
 		Node:    nodeV3,
@@ -500,7 +500,7 @@ func TestAggregatedHandlersV3(t *testing.T) {
 
 	s := server.NewServer(context.Background(), config, &callbacks{})
 	go func() {
-		if err := s.StreamV3(resp, resource.AnyType); err != nil {
+		if err := s.StreamEnvoyV3(resp, resource.AnyType); err != nil {
 			t.Errorf("StreamAggregatedResources() => got %v, want no error", err)
 		}
 	}()
@@ -533,9 +533,9 @@ func TestAggregatedHandlersV3(t *testing.T) {
 func TestAggregateRequestTypeV3(t *testing.T) {
 	config := makeMockConfigWatcherV3()
 	s := server.NewServer(context.Background(), config, &callbacks{})
-	resp := makeMockStreamV3(t)
+	resp := makeMockStreamEnvoyV3(t)
 	resp.recv <- &discovery.DiscoveryRequest{Node: nodeV3}
-	if err := s.StreamV3(resp, resource.AnyType); err == nil {
+	if err := s.StreamEnvoyV3(resp, resource.AnyType); err == nil {
 		t.Error("StreamAggregatedResources() => got nil, want an error")
 	}
 }
@@ -548,14 +548,14 @@ func TestCallbackErrorV3(t *testing.T) {
 			s := server.NewServer(context.Background(), config, &callbacks{callbackError: true})
 
 			// make a request
-			resp := makeMockStreamV3(t)
+			resp := makeMockStreamEnvoyV3(t)
 			resp.recv <- &discovery.DiscoveryRequest{
 				Node:    nodeV3,
 				TypeUrl: typ,
 			}
 
 			// check that response fails since stream open returns error
-			if err := s.StreamV3(resp, resource.AnyType); err == nil {
+			if err := s.StreamEnvoyV3(resp, resource.AnyType); err == nil {
 				t.Error("Stream() => got no error, want error")
 			}
 

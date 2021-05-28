@@ -1,5 +1,5 @@
 changelog:
-  - type: NON_USER_FACING
+  - type: BREAKING_CHANGE
     description: >
       Remove Envoy v2 API direct references and code. This included copying in dependent Envoy protos
       into solo-kit, deleted unused v2 resources, removing all go-control-plane v2 references and 
