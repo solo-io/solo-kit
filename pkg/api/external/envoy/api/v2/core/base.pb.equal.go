@@ -62,100 +62,6 @@ func (m *Locality) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *BuildVersion) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*BuildVersion)
-	if !ok {
-		that2, ok := that.(BuildVersion)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetVersion()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetVersion()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetVersion(), target.GetVersion()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMetadata()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *Extension) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*Extension)
-	if !ok {
-		that2, ok := that.(Extension)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetName(), target.GetName()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetCategory(), target.GetCategory()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetTypeDescriptor(), target.GetTypeDescriptor()) != 0 {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetVersion()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetVersion()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetVersion(), target.GetVersion()) {
-			return false
-		}
-	}
-
-	if m.GetDisabled() != target.GetDisabled() {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
 func (m *Node) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -206,77 +112,6 @@ func (m *Node) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetBuildVersion(), target.GetBuildVersion()) != 0 {
 		return false
-	}
-
-	if strings.Compare(m.GetUserAgentName(), target.GetUserAgentName()) != 0 {
-		return false
-	}
-
-	if len(m.GetExtensions()) != len(target.GetExtensions()) {
-		return false
-	}
-	for idx, v := range m.GetExtensions() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetExtensions()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetExtensions()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	if len(m.GetClientFeatures()) != len(target.GetClientFeatures()) {
-		return false
-	}
-	for idx, v := range m.GetClientFeatures() {
-
-		if strings.Compare(v, target.GetClientFeatures()[idx]) != 0 {
-			return false
-		}
-
-	}
-
-	if len(m.GetListeningAddresses()) != len(target.GetListeningAddresses()) {
-		return false
-	}
-	for idx, v := range m.GetListeningAddresses() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetListeningAddresses()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetListeningAddresses()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	switch m.UserAgentVersionType.(type) {
-
-	case *Node_UserAgentVersion:
-
-		if strings.Compare(m.GetUserAgentVersion(), target.GetUserAgentVersion()) != 0 {
-			return false
-		}
-
-	case *Node_UserAgentBuildVersion:
-
-		if h, ok := interface{}(m.GetUserAgentBuildVersion()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetUserAgentBuildVersion()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetUserAgentBuildVersion(), target.GetUserAgentBuildVersion()) {
-				return false
-			}
-		}
-
 	}
 
 	return true
@@ -713,6 +548,62 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 			if !proto.Equal(m.GetTypedConfig(), target.GetTypedConfig()) {
 				return false
 			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SocketOption) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SocketOption)
+	if !ok {
+		that2, ok := that.(SocketOption)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetDescription(), target.GetDescription()) != 0 {
+		return false
+	}
+
+	if m.GetLevel() != target.GetLevel() {
+		return false
+	}
+
+	if m.GetName() != target.GetName() {
+		return false
+	}
+
+	if m.GetState() != target.GetState() {
+		return false
+	}
+
+	switch m.Value.(type) {
+
+	case *SocketOption_IntValue:
+
+		if m.GetIntValue() != target.GetIntValue() {
+			return false
+		}
+
+	case *SocketOption_BufValue:
+
+		if bytes.Compare(m.GetBufValue(), target.GetBufValue()) != 0 {
+			return false
 		}
 
 	}
