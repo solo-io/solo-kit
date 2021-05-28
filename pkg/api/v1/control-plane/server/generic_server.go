@@ -42,7 +42,7 @@ type StreamEnvoyV3 interface {
 	grpc.ServerStream
 }
 
-type StreamGloo interface {
+type StreamSolo interface {
 	Send(response *sk_discovery.DiscoveryResponse) error
 	Recv() (*sk_discovery.DiscoveryRequest, error)
 	grpc.ServerStream
@@ -55,9 +55,9 @@ type Server interface {
 		stream StreamEnvoyV3,
 		defaultTypeURL string,
 	) error
-	// StreamGloo is the streaming method for Gloo discovery
-	StreamGloo(
-		stream StreamGloo,
+	// StreamSolo is the streaming method for Solo discovery
+	StreamSolo(
+		stream StreamSolo,
 		defaultTypeURL string,
 	) error
 	// Fetch is the universal fetch method.
@@ -65,7 +65,7 @@ type Server interface {
 		context.Context,
 		*envoy_service_discovery_v3.DiscoveryRequest,
 	) (*envoy_service_discovery_v3.DiscoveryResponse, error)
-	FetchGloo(
+	FetchSolo(
 		context.Context,
 		*sk_discovery.DiscoveryRequest,
 	) (*sk_discovery.DiscoveryResponse, error)
@@ -189,8 +189,8 @@ func (s *server) StreamEnvoyV3(
 	return err
 }
 
-func (s *server) StreamGloo(
-	stream StreamGloo,
+func (s *server) StreamSolo(
+	stream StreamSolo,
 	defaultTypeURL string,
 ) error {
 	// a channel for receiving incoming requests
@@ -210,7 +210,7 @@ func (s *server) StreamGloo(
 		}
 	}()
 
-	err := s.process(stream.Context(), s.sendGloo(stream), reqCh, defaultTypeURL)
+	err := s.process(stream.Context(), s.sendSolo(stream), reqCh, defaultTypeURL)
 
 	// prevents writing to a closed channel if send failed on blocked recv
 	// TODO(kuat) figure out how to unblock recv through gRPC API
@@ -221,7 +221,7 @@ func (s *server) StreamGloo(
 
 type sendFunc func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error)
 
-func (s *server) sendGloo(
+func (s *server) sendSolo(
 	stream solo_discovery.SoloDiscoveryService_StreamAggregatedResourcesServer,
 ) sendFunc {
 	return func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error) {
@@ -435,7 +435,7 @@ func (s *server) FetchEnvoyV3(
 }
 
 // Fetch is the universal fetch method.
-func (s *server) FetchGloo(
+func (s *server) FetchSolo(
 	ctx context.Context,
 	req *sk_discovery.DiscoveryRequest,
 ) (*sk_discovery.DiscoveryResponse, error) {

@@ -88,7 +88,7 @@ func New{{ upper_camel .Name }}Server(genericServer server.Server) {{ upper_came
 }
 
 func (s *{{ lower_camel .Name }}Server) Stream{{ upper_camel .MessageType }}(stream {{ upper_camel .Name }}_Stream{{ upper_camel .MessageType }}Server) error {
-	return s.Server.StreaGloo(stream, {{ upper_camel .MessageType }}Type)
+	return s.Server.StreamSOlo(stream, {{ upper_camel .MessageType }}Type)
 }
 
 func (s *{{ lower_camel .Name }}Server) Fetch{{ upper_camel .MessageType }}(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -96,7 +96,7 @@ func (s *{{ lower_camel .Name }}Server) Fetch{{ upper_camel .MessageType }}(ctx 
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = {{ upper_camel .MessageType }}Type
-	return s.Server.FetcGloo(ctx, req)
+	return s.Server.FetchSolo(ctx, req)
 }
 
 func (s *{{ lower_camel .Name }}Server) Delta{{ upper_camel .MessageType }}(_ {{ upper_camel .Name }}_Delta{{ upper_camel .MessageType }}Server) error {
