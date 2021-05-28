@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	discovery "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	discovery "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
+	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -73,7 +73,7 @@ func NewMockXdsResourceDiscoveryServiceServer(genericServer server.Server) MockX
 }
 
 func (s *mockXdsResourceDiscoveryServiceServer) StreamMockXdsResourceConfig(stream MockXdsResourceDiscoveryService_StreamMockXdsResourceConfigServer) error {
-	return s.Server.StreamV2(stream, MockXdsResourceConfigType)
+	return s.Server.StreamSolo(stream, MockXdsResourceConfigType)
 }
 
 func (s *mockXdsResourceDiscoveryServiceServer) FetchMockXdsResourceConfig(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -81,7 +81,7 @@ func (s *mockXdsResourceDiscoveryServiceServer) FetchMockXdsResourceConfig(ctx c
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = MockXdsResourceConfigType
-	return s.Server.FetchV2(ctx, req)
+	return s.Server.FetchSolo(ctx, req)
 }
 
 func (s *mockXdsResourceDiscoveryServiceServer) DeltaMockXdsResourceConfig(_ MockXdsResourceDiscoveryService_DeltaMockXdsResourceConfigServer) error {

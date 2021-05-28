@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package solo.io.xds;
+
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+
+option go_package = "github.com/solo-io/solo-kit/pkg/api/xds";
+
+// Aggregated Discovery Service (based on Envoy's ADS)
+// See https://github.com/lyft/envoy-api#apis for a description of the role of
+// ADS and how it is intended to be used by a management server. ADS requests
+// have the same structure as their singleton xDS counterparts, but can
+// multiplex many resource types on a single stream. The type_url in the
+// DiscoveryRequest/DiscoveryResponse provides sufficient information to recover
+// the multiplexed singleton APIs at the Envoy instance and management server.
+service SoloDiscoveryService {
+  // This is a gRPC-only API.
+  rpc StreamAggregatedResources(stream .solo.io.envoy.api.v2.DiscoveryRequest)
+      returns (stream .solo.io.envoy.api.v2.DiscoveryResponse) {
+  }
+
+  rpc DeltaAggregatedResources(stream .solo.io.envoy.api.v2.DeltaDiscoveryRequest)
+      returns (stream .solo.io.envoy.api.v2.DeltaDiscoveryResponse) {
+  }
+}

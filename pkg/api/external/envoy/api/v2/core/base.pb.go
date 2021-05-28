@@ -210,58 +210,6 @@ func (TrafficDirection) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{2}
 }
 
-type SocketOption_SocketState int32
-
-const (
-	// Socket options are applied after socket creation but before binding the socket to a port
-	SocketOption_STATE_PREBIND SocketOption_SocketState = 0
-	// Socket options are applied after binding the socket to a port but before calling listen()
-	SocketOption_STATE_BOUND SocketOption_SocketState = 1
-	// Socket options are applied after calling listen()
-	SocketOption_STATE_LISTENING SocketOption_SocketState = 2
-)
-
-// Enum value maps for SocketOption_SocketState.
-var (
-	SocketOption_SocketState_name = map[int32]string{
-		0: "STATE_PREBIND",
-		1: "STATE_BOUND",
-		2: "STATE_LISTENING",
-	}
-	SocketOption_SocketState_value = map[string]int32{
-		"STATE_PREBIND":   0,
-		"STATE_BOUND":     1,
-		"STATE_LISTENING": 2,
-	}
-)
-
-func (x SocketOption_SocketState) Enum() *SocketOption_SocketState {
-	p := new(SocketOption_SocketState)
-	*p = x
-	return p
-}
-
-func (x SocketOption_SocketState) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SocketOption_SocketState) Descriptor() protoreflect.EnumDescriptor {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_enumTypes[3].Descriptor()
-}
-
-func (SocketOption_SocketState) Type() protoreflect.EnumType {
-	return &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_enumTypes[3]
-}
-
-func (x SocketOption_SocketState) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SocketOption_SocketState.Descriptor instead.
-func (SocketOption_SocketState) EnumDescriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{12, 0}
-}
-
 // Identifies location of where either Envoy runs or where upstream hosts run.
 type Locality struct {
 	state         protoimpl.MessageState
@@ -338,9 +286,165 @@ func (x *Locality) GetSubZone() string {
 	return ""
 }
 
+// BuildVersion combines SemVer version of extension with free-form build information
+// (i.e. 'alpha', 'private-build') as a set of strings.
+type BuildVersion struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// SemVer version of extension.
+	Version *_type.SemanticVersion `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	// Free-form build information.
+	// Envoy defines several well known keys in the source/common/version/version.h file
+	Metadata *_struct.Struct `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
+}
+
+func (x *BuildVersion) Reset() {
+	*x = BuildVersion{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BuildVersion) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildVersion) ProtoMessage() {}
+
+func (x *BuildVersion) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildVersion.ProtoReflect.Descriptor instead.
+func (*BuildVersion) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *BuildVersion) GetVersion() *_type.SemanticVersion {
+	if x != nil {
+		return x.Version
+	}
+	return nil
+}
+
+func (x *BuildVersion) GetMetadata() *_struct.Struct {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+// Version and identification for an Envoy extension.
+// [#next-free-field: 6]
+type Extension struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// This is the name of the Envoy filter as specified in the Envoy
+	// configuration, e.g. envoy.filters.http.router, com.acme.widget.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Category of the extension.
+	// Extension category names use reverse DNS notation. For instance "envoy.filters.listener"
+	// for Envoy's built-in listener filters or "com.acme.filters.http" for HTTP filters from
+	// acme.com vendor.
+	// [#comment:TODO(yanavlasov): Link to the doc with existing envoy category names.]
+	Category string `protobuf:"bytes,2,opt,name=category,proto3" json:"category,omitempty"`
+	// [#not-implemented-hide:] Type descriptor of extension configuration proto.
+	// [#comment:TODO(yanavlasov): Link to the doc with existing configuration protos.]
+	// [#comment:TODO(yanavlasov): Add tests when PR #9391 lands.]
+	TypeDescriptor string `protobuf:"bytes,3,opt,name=type_descriptor,json=typeDescriptor,proto3" json:"type_descriptor,omitempty"`
+	// The version is a property of the extension and maintained independently
+	// of other extensions and the Envoy API.
+	// This field is not set when extension did not provide version information.
+	Version *BuildVersion `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
+	// Indicates that the extension is present but was disabled via dynamic configuration.
+	Disabled bool `protobuf:"varint,5,opt,name=disabled,proto3" json:"disabled,omitempty"`
+}
+
+func (x *Extension) Reset() {
+	*x = Extension{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Extension) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Extension) ProtoMessage() {}
+
+func (x *Extension) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Extension.ProtoReflect.Descriptor instead.
+func (*Extension) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Extension) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Extension) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *Extension) GetTypeDescriptor() string {
+	if x != nil {
+		return x.TypeDescriptor
+	}
+	return ""
+}
+
+func (x *Extension) GetVersion() *BuildVersion {
+	if x != nil {
+		return x.Version
+	}
+	return nil
+}
+
+func (x *Extension) GetDisabled() bool {
+	if x != nil {
+		return x.Disabled
+	}
+	return false
+}
+
 // Identifies a specific Envoy instance. The node identifier is presented to the
 // management server, which may use this identifier to distinguish per Envoy
 // configuration for serving.
+// [#next-free-field: 12]
 type Node struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -348,21 +452,22 @@ type Node struct {
 
 	// An opaque node identifier for the Envoy node. This also provides the local
 	// service node name. It should be set if any of the following features are
-	// used: `statsd (arch_overview_statistics)`, `CDS
-	// (config_cluster_manager_cds)`, and `HTTP tracing
-	// (arch_overview_tracing)`, either in this message or via
+	// used: :ref:`statsd <arch_overview_statistics>`, :ref:`CDS
+	// <config_cluster_manager_cds>`, and :ref:`HTTP tracing
+	// <arch_overview_tracing>`, either in this message or via
 	// :option:`--service-node`.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Defines the local service cluster name where Envoy is running. Though
 	// optional, it should be set if any of the following features are used:
-	// `statsd (arch_overview_statistics)`, `health check cluster
-	// verification (envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name)`,
-	// `runtime override directory (envoy_api_msg_config.bootstrap.v2.Runtime)`,
-	// `user agent addition
-	// (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent)`,
-	// `HTTP global rate limiting (config_http_filters_rate_limit)`,
-	// `CDS (config_cluster_manager_cds)`, and `HTTP tracing
-	// (arch_overview_tracing)`, either in this message or via
+	// :ref:`statsd <arch_overview_statistics>`, :ref:`health check cluster
+	// verification
+	// <envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name_matcher>`,
+	// :ref:`runtime override directory <envoy_api_msg_config.bootstrap.v2.Runtime>`,
+	// :ref:`user agent addition
+	// <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent>`,
+	// :ref:`HTTP global rate limiting <config_http_filters_rate_limit>`,
+	// :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing
+	// <arch_overview_tracing>`, either in this message or via
 	// :option:`--service-cluster`.
 	Cluster string `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Opaque metadata extending the node identifier. Envoy will pass this
@@ -373,13 +478,36 @@ type Node struct {
 	// This is motivated by informing a management server during canary which
 	// version of Envoy is being tested in a heterogeneous fleet. This will be set
 	// by Envoy in management server RPCs.
+	// This field is deprecated in favor of the user_agent_name and user_agent_version values.
+	//
+	// Deprecated: Do not use.
 	BuildVersion string `protobuf:"bytes,5,opt,name=build_version,json=buildVersion,proto3" json:"build_version,omitempty"`
+	// Free-form string that identifies the entity requesting config.
+	// E.g. "envoy" or "grpc"
+	UserAgentName string `protobuf:"bytes,6,opt,name=user_agent_name,json=userAgentName,proto3" json:"user_agent_name,omitempty"`
+	// Types that are assignable to UserAgentVersionType:
+	//	*Node_UserAgentVersion
+	//	*Node_UserAgentBuildVersion
+	UserAgentVersionType isNode_UserAgentVersionType `protobuf_oneof:"user_agent_version_type"`
+	// List of extensions and their versions supported by the node.
+	Extensions []*Extension `protobuf:"bytes,9,rep,name=extensions,proto3" json:"extensions,omitempty"`
+	// Client feature support list. These are well known features described
+	// in the Envoy API repository for a given major version of an API. Client features
+	// use reverse DNS naming scheme, for example `com.acme.feature`.
+	// See :ref:`the list of features <client_features>` that xDS client may
+	// support.
+	ClientFeatures []string `protobuf:"bytes,10,rep,name=client_features,json=clientFeatures,proto3" json:"client_features,omitempty"`
+	// Known listening ports on the node as a generic hint to the management server
+	// for filtering :ref:`listeners <config_listeners>` to be returned. For example,
+	// if there is a listener bound to port 80, the list can optionally contain the
+	// SocketAddress `(0.0.0.0,80)`. The field is optional and just a hint.
+	ListeningAddresses []*Address `protobuf:"bytes,11,rep,name=listening_addresses,json=listeningAddresses,proto3" json:"listening_addresses,omitempty"`
 }
 
 func (x *Node) Reset() {
 	*x = Node{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[1]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -392,7 +520,7 @@ func (x *Node) String() string {
 func (*Node) ProtoMessage() {}
 
 func (x *Node) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[1]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -405,7 +533,7 @@ func (x *Node) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Node.ProtoReflect.Descriptor instead.
 func (*Node) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{1}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Node) GetId() string {
@@ -436,12 +564,81 @@ func (x *Node) GetLocality() *Locality {
 	return nil
 }
 
+// Deprecated: Do not use.
 func (x *Node) GetBuildVersion() string {
 	if x != nil {
 		return x.BuildVersion
 	}
 	return ""
 }
+
+func (x *Node) GetUserAgentName() string {
+	if x != nil {
+		return x.UserAgentName
+	}
+	return ""
+}
+
+func (m *Node) GetUserAgentVersionType() isNode_UserAgentVersionType {
+	if m != nil {
+		return m.UserAgentVersionType
+	}
+	return nil
+}
+
+func (x *Node) GetUserAgentVersion() string {
+	if x, ok := x.GetUserAgentVersionType().(*Node_UserAgentVersion); ok {
+		return x.UserAgentVersion
+	}
+	return ""
+}
+
+func (x *Node) GetUserAgentBuildVersion() *BuildVersion {
+	if x, ok := x.GetUserAgentVersionType().(*Node_UserAgentBuildVersion); ok {
+		return x.UserAgentBuildVersion
+	}
+	return nil
+}
+
+func (x *Node) GetExtensions() []*Extension {
+	if x != nil {
+		return x.Extensions
+	}
+	return nil
+}
+
+func (x *Node) GetClientFeatures() []string {
+	if x != nil {
+		return x.ClientFeatures
+	}
+	return nil
+}
+
+func (x *Node) GetListeningAddresses() []*Address {
+	if x != nil {
+		return x.ListeningAddresses
+	}
+	return nil
+}
+
+type isNode_UserAgentVersionType interface {
+	isNode_UserAgentVersionType()
+}
+
+type Node_UserAgentVersion struct {
+	// Free-form string that identifies the version of the entity requesting config.
+	// E.g. "1.12.2" or "abcd1234", or "SpecialEnvoyBuild"
+	UserAgentVersion string `protobuf:"bytes,7,opt,name=user_agent_version,json=userAgentVersion,proto3,oneof"`
+}
+
+type Node_UserAgentBuildVersion struct {
+	// Structured version of the entity requesting config.
+	UserAgentBuildVersion *BuildVersion `protobuf:"bytes,8,opt,name=user_agent_build_version,json=userAgentBuildVersion,proto3,oneof"`
+}
+
+func (*Node_UserAgentVersion) isNode_UserAgentVersionType() {}
+
+func (*Node_UserAgentBuildVersion) isNode_UserAgentVersionType() {}
 
 // Metadata provides additional inputs to filters based on matched listeners,
 // filter chains, routes and endpoints. It is structured as a map, usually from
@@ -477,7 +674,7 @@ type Metadata struct {
 func (x *Metadata) Reset() {
 	*x = Metadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[2]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -490,7 +687,7 @@ func (x *Metadata) String() string {
 func (*Metadata) ProtoMessage() {}
 
 func (x *Metadata) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[2]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,7 +700,7 @@ func (x *Metadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metadata.ProtoReflect.Descriptor instead.
 func (*Metadata) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{2}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Metadata) GetFilterMetadata() map[string]*_struct.Struct {
@@ -528,7 +725,7 @@ type RuntimeUInt32 struct {
 func (x *RuntimeUInt32) Reset() {
 	*x = RuntimeUInt32{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[3]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -541,7 +738,7 @@ func (x *RuntimeUInt32) String() string {
 func (*RuntimeUInt32) ProtoMessage() {}
 
 func (x *RuntimeUInt32) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[3]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -554,7 +751,7 @@ func (x *RuntimeUInt32) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuntimeUInt32.ProtoReflect.Descriptor instead.
 func (*RuntimeUInt32) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{3}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RuntimeUInt32) GetDefaultValue() uint32 {
@@ -588,7 +785,7 @@ type RuntimeFeatureFlag struct {
 func (x *RuntimeFeatureFlag) Reset() {
 	*x = RuntimeFeatureFlag{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[4]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -601,7 +798,7 @@ func (x *RuntimeFeatureFlag) String() string {
 func (*RuntimeFeatureFlag) ProtoMessage() {}
 
 func (x *RuntimeFeatureFlag) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[4]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -614,7 +811,7 @@ func (x *RuntimeFeatureFlag) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuntimeFeatureFlag.ProtoReflect.Descriptor instead.
 func (*RuntimeFeatureFlag) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{4}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *RuntimeFeatureFlag) GetDefaultValue() *wrappers.BoolValue {
@@ -650,7 +847,7 @@ type HeaderValue struct {
 func (x *HeaderValue) Reset() {
 	*x = HeaderValue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[5]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -663,7 +860,7 @@ func (x *HeaderValue) String() string {
 func (*HeaderValue) ProtoMessage() {}
 
 func (x *HeaderValue) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[5]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -676,7 +873,7 @@ func (x *HeaderValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeaderValue.ProtoReflect.Descriptor instead.
 func (*HeaderValue) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{5}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *HeaderValue) GetKey() string {
@@ -713,7 +910,7 @@ type HeaderValueOption struct {
 func (x *HeaderValueOption) Reset() {
 	*x = HeaderValueOption{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[6]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -726,7 +923,7 @@ func (x *HeaderValueOption) String() string {
 func (*HeaderValueOption) ProtoMessage() {}
 
 func (x *HeaderValueOption) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[6]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -739,7 +936,7 @@ func (x *HeaderValueOption) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeaderValueOption.ProtoReflect.Descriptor instead.
 func (*HeaderValueOption) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{6}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{8}
 }
 
 func (m *HeaderValueOption) GetHeaderOption() isHeaderValueOption_HeaderOption {
@@ -800,7 +997,7 @@ type HeaderMap struct {
 func (x *HeaderMap) Reset() {
 	*x = HeaderMap{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[7]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -813,7 +1010,7 @@ func (x *HeaderMap) String() string {
 func (*HeaderMap) ProtoMessage() {}
 
 func (x *HeaderMap) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[7]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -826,7 +1023,7 @@ func (x *HeaderMap) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeaderMap.ProtoReflect.Descriptor instead.
 func (*HeaderMap) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{7}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *HeaderMap) GetHeaders() []*HeaderValue {
@@ -852,7 +1049,7 @@ type DataSource struct {
 func (x *DataSource) Reset() {
 	*x = DataSource{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[8]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -865,7 +1062,7 @@ func (x *DataSource) String() string {
 func (*DataSource) ProtoMessage() {}
 
 func (x *DataSource) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[8]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -878,7 +1075,7 @@ func (x *DataSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource.ProtoReflect.Descriptor instead.
 func (*DataSource) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{8}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{10}
 }
 
 func (m *DataSource) GetSpecifier() isDataSource_Specifier {
@@ -949,7 +1146,7 @@ type RemoteDataSource struct {
 func (x *RemoteDataSource) Reset() {
 	*x = RemoteDataSource{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[9]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -962,7 +1159,7 @@ func (x *RemoteDataSource) String() string {
 func (*RemoteDataSource) ProtoMessage() {}
 
 func (x *RemoteDataSource) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[9]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -975,7 +1172,7 @@ func (x *RemoteDataSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoteDataSource.ProtoReflect.Descriptor instead.
 func (*RemoteDataSource) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{9}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *RemoteDataSource) GetHttpUri() *HttpUri {
@@ -1007,7 +1204,7 @@ type AsyncDataSource struct {
 func (x *AsyncDataSource) Reset() {
 	*x = AsyncDataSource{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[10]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1020,7 +1217,7 @@ func (x *AsyncDataSource) String() string {
 func (*AsyncDataSource) ProtoMessage() {}
 
 func (x *AsyncDataSource) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[10]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1033,7 +1230,7 @@ func (x *AsyncDataSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AsyncDataSource.ProtoReflect.Descriptor instead.
 func (*AsyncDataSource) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{10}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{12}
 }
 
 func (m *AsyncDataSource) GetSpecifier() isAsyncDataSource_Specifier {
@@ -1099,7 +1296,7 @@ type TransportSocket struct {
 func (x *TransportSocket) Reset() {
 	*x = TransportSocket{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[11]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1112,7 +1309,7 @@ func (x *TransportSocket) String() string {
 func (*TransportSocket) ProtoMessage() {}
 
 func (x *TransportSocket) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[11]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1125,7 +1322,7 @@ func (x *TransportSocket) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransportSocket.ProtoReflect.Descriptor instead.
 func (*TransportSocket) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{11}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *TransportSocket) GetName() string {
@@ -1172,128 +1369,6 @@ func (*TransportSocket_Config) isTransportSocket_ConfigType() {}
 
 func (*TransportSocket_TypedConfig) isTransportSocket_ConfigType() {}
 
-// Generic socket option message. This would be used to set socket options that
-// might not exist in upstream kernels or precompiled Envoy binaries.
-type SocketOption struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// An optional name to give this socket option for debugging, etc.
-	// Uniqueness is not required and no special meaning is assumed.
-	Description string `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
-	// Corresponding to the level value passed to setsockopt, such as IPPROTO_TCP
-	Level int64 `protobuf:"varint,2,opt,name=level,proto3" json:"level,omitempty"`
-	// The numeric name as passed to setsockopt
-	Name int64 `protobuf:"varint,3,opt,name=name,proto3" json:"name,omitempty"`
-	// Types that are assignable to Value:
-	//	*SocketOption_IntValue
-	//	*SocketOption_BufValue
-	Value isSocketOption_Value `protobuf_oneof:"value"`
-	// The state in which the option will be applied. When used in BindConfig
-	// STATE_PREBIND is currently the only valid value.
-	State SocketOption_SocketState `protobuf:"varint,6,opt,name=state,proto3,enum=solo.io.envoy.api.v2.core.SocketOption_SocketState" json:"state,omitempty"`
-}
-
-func (x *SocketOption) Reset() {
-	*x = SocketOption{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[12]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *SocketOption) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SocketOption) ProtoMessage() {}
-
-func (x *SocketOption) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[12]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SocketOption.ProtoReflect.Descriptor instead.
-func (*SocketOption) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *SocketOption) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *SocketOption) GetLevel() int64 {
-	if x != nil {
-		return x.Level
-	}
-	return 0
-}
-
-func (x *SocketOption) GetName() int64 {
-	if x != nil {
-		return x.Name
-	}
-	return 0
-}
-
-func (m *SocketOption) GetValue() isSocketOption_Value {
-	if m != nil {
-		return m.Value
-	}
-	return nil
-}
-
-func (x *SocketOption) GetIntValue() int64 {
-	if x, ok := x.GetValue().(*SocketOption_IntValue); ok {
-		return x.IntValue
-	}
-	return 0
-}
-
-func (x *SocketOption) GetBufValue() []byte {
-	if x, ok := x.GetValue().(*SocketOption_BufValue); ok {
-		return x.BufValue
-	}
-	return nil
-}
-
-func (x *SocketOption) GetState() SocketOption_SocketState {
-	if x != nil {
-		return x.State
-	}
-	return SocketOption_STATE_PREBIND
-}
-
-type isSocketOption_Value interface {
-	isSocketOption_Value()
-}
-
-type SocketOption_IntValue struct {
-	// Because many sockopts take an int value.
-	IntValue int64 `protobuf:"varint,4,opt,name=int_value,json=intValue,proto3,oneof"`
-}
-
-type SocketOption_BufValue struct {
-	// Otherwise it's a byte buffer.
-	BufValue []byte `protobuf:"bytes,5,opt,name=buf_value,json=bufValue,proto3,oneof"`
-}
-
-func (*SocketOption_IntValue) isSocketOption_Value() {}
-
-func (*SocketOption_BufValue) isSocketOption_Value() {}
-
 // Runtime derived FractionalPercent with defaults for when the numerator or denominator is not
 // specified via a runtime key.
 type RuntimeFractionalPercent struct {
@@ -1310,7 +1385,7 @@ type RuntimeFractionalPercent struct {
 func (x *RuntimeFractionalPercent) Reset() {
 	*x = RuntimeFractionalPercent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[13]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1323,7 +1398,7 @@ func (x *RuntimeFractionalPercent) String() string {
 func (*RuntimeFractionalPercent) ProtoMessage() {}
 
 func (x *RuntimeFractionalPercent) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[13]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1336,7 +1411,7 @@ func (x *RuntimeFractionalPercent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuntimeFractionalPercent.ProtoReflect.Descriptor instead.
 func (*RuntimeFractionalPercent) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{13}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RuntimeFractionalPercent) GetDefaultValue() *_type.FractionalPercent {
@@ -1368,7 +1443,7 @@ type ControlPlane struct {
 func (x *ControlPlane) Reset() {
 	*x = ControlPlane{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[14]
+		mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1381,7 +1456,7 @@ func (x *ControlPlane) String() string {
 func (*ControlPlane) ProtoMessage() {}
 
 func (x *ControlPlane) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[14]
+	mi := &file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1394,7 +1469,7 @@ func (x *ControlPlane) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ControlPlane.ProtoReflect.Descriptor instead.
 func (*ControlPlane) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{14}
+	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ControlPlane) GetIdentifier() string {
@@ -1418,40 +1493,96 @@ var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_r
 	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x73,
 	0x74, 0x72, 0x75, 0x63, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1e, 0x67, 0x6f, 0x6f,
 	0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x77, 0x72, 0x61,
-	0x70, 0x70, 0x65, 0x72, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x49, 0x67, 0x69, 0x74,
+	0x70, 0x70, 0x65, 0x72, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x48, 0x67, 0x69, 0x74,
 	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f,
 	0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x65, 0x78, 0x74,
 	0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2f, 0x61, 0x70, 0x69, 0x2f,
-	0x76, 0x32, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x68, 0x74, 0x74, 0x70, 0x5f, 0x75, 0x72, 0x69,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x41, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d,
-	0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c,
-	0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2f, 0x74, 0x79, 0x70, 0x65, 0x2f, 0x70, 0x65, 0x72, 0x63,
-	0x65, 0x6e, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x17, 0x76, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x1a, 0x12, 0x65, 0x78, 0x74, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x65, 0x78, 0x74,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d,
-	0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x72, 0x65, 0x66, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x22, 0x51, 0x0a, 0x08, 0x4c, 0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74, 0x79,
-	0x12, 0x16, 0x0a, 0x06, 0x72, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x06, 0x72, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x7a, 0x6f, 0x6e, 0x65,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x7a, 0x6f, 0x6e, 0x65, 0x12, 0x19, 0x0a, 0x08,
-	0x73, 0x75, 0x62, 0x5f, 0x7a, 0x6f, 0x6e, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
-	0x73, 0x75, 0x62, 0x5a, 0x6f, 0x6e, 0x65, 0x22, 0xcb, 0x01, 0x0a, 0x04, 0x4e, 0x6f, 0x64, 0x65,
-	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64,
-	0x12, 0x18, 0x0a, 0x07, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x07, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x12, 0x33, 0x0a, 0x08, 0x6d, 0x65,
-	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67,
-	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53,
-	0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12,
-	0x3f, 0x0a, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74, 0x79, 0x18, 0x04, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x23, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f,
-	0x79, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x4c, 0x6f,
-	0x63, 0x61, 0x6c, 0x69, 0x74, 0x79, 0x52, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74, 0x79,
-	0x12, 0x23, 0x0a, 0x0d, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f,
-	0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x65,
-	0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0xc8, 0x01, 0x0a, 0x08, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
+	0x76, 0x32, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x49, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b,
+	0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f,
+	0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x32, 0x2f, 0x63, 0x6f, 0x72,
+	0x65, 0x2f, 0x68, 0x74, 0x74, 0x70, 0x5f, 0x75, 0x72, 0x69, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x1a, 0x41, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c,
+	0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70,
+	0x69, 0x2f, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79,
+	0x2f, 0x74, 0x79, 0x70, 0x65, 0x2f, 0x70, 0x65, 0x72, 0x63, 0x65, 0x6e, 0x74, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x1a, 0x4a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74,
+	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e,
+	0x76, 0x6f, 0x79, 0x2f, 0x74, 0x79, 0x70, 0x65, 0x2f, 0x73, 0x65, 0x6d, 0x61, 0x6e, 0x74, 0x69,
+	0x63, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a,
+	0x17, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61,
+	0x74, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x12, 0x65, 0x78, 0x74, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x2f, 0x65, 0x78, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2c, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f,
+	0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31,
+	0x2f, 0x72, 0x65, 0x66, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x51, 0x0a, 0x08, 0x4c, 0x6f,
+	0x63, 0x61, 0x6c, 0x69, 0x74, 0x79, 0x12, 0x16, 0x0a, 0x06, 0x72, 0x65, 0x67, 0x69, 0x6f, 0x6e,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x72, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x12, 0x12,
+	0x0a, 0x04, 0x7a, 0x6f, 0x6e, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x7a, 0x6f,
+	0x6e, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x73, 0x75, 0x62, 0x5f, 0x7a, 0x6f, 0x6e, 0x65, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x73, 0x75, 0x62, 0x5a, 0x6f, 0x6e, 0x65, 0x22, 0x82, 0x01,
+	0x0a, 0x0c, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x3d,
+	0x0a, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x23, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e,
+	0x74, 0x79, 0x70, 0x65, 0x2e, 0x53, 0x65, 0x6d, 0x61, 0x6e, 0x74, 0x69, 0x63, 0x56, 0x65, 0x72,
+	0x73, 0x69, 0x6f, 0x6e, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x33, 0x0a,
+	0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
+	0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61,
+	0x74, 0x61, 0x22, 0xc3, 0x01, 0x0a, 0x09, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e,
+	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x63, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x79,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x63, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x79,
+	0x12, 0x27, 0x0a, 0x0f, 0x74, 0x79, 0x70, 0x65, 0x5f, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70,
+	0x74, 0x6f, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x74, 0x79, 0x70, 0x65, 0x44,
+	0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x12, 0x41, 0x0a, 0x07, 0x76, 0x65, 0x72,
+	0x73, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x73, 0x6f, 0x6c,
+	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76,
+	0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x65, 0x72, 0x73,
+	0x69, 0x6f, 0x6e, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x1a, 0x0a, 0x08,
+	0x64, 0x69, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08,
+	0x64, 0x69, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x22, 0xea, 0x04, 0x0a, 0x04, 0x4e, 0x6f, 0x64,
+	0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69,
+	0x64, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x07, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x12, 0x33, 0x0a, 0x08, 0x6d,
+	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
+	0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
+	0x12, 0x3f, 0x0a, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74, 0x79, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x23, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76,
+	0x6f, 0x79, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x4c,
+	0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74, 0x79, 0x52, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74,
+	0x79, 0x12, 0x27, 0x0a, 0x0d, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69,
+	0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x42, 0x02, 0x18, 0x01, 0x52, 0x0c, 0x62, 0x75,
+	0x69, 0x6c, 0x64, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x26, 0x0a, 0x0f, 0x75, 0x73,
+	0x65, 0x72, 0x5f, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x06, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0d, 0x75, 0x73, 0x65, 0x72, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x4e, 0x61,
+	0x6d, 0x65, 0x12, 0x2e, 0x0a, 0x12, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x61, 0x67, 0x65, 0x6e, 0x74,
+	0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00,
+	0x52, 0x10, 0x75, 0x73, 0x65, 0x72, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69,
+	0x6f, 0x6e, 0x12, 0x62, 0x0a, 0x18, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x61, 0x67, 0x65, 0x6e, 0x74,
+	0x5f, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x08,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65,
+	0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65,
+	0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x48, 0x00, 0x52,
+	0x15, 0x75, 0x73, 0x65, 0x72, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56,
+	0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x44, 0x0a, 0x0a, 0x65, 0x78, 0x74, 0x65, 0x6e, 0x73,
+	0x69, 0x6f, 0x6e, 0x73, 0x18, 0x09, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x24, 0x2e, 0x73, 0x6f, 0x6c,
+	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76,
+	0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e,
+	0x52, 0x0a, 0x65, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x27, 0x0a, 0x0f,
+	0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x66, 0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x73, 0x18,
+	0x0a, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0e, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x46, 0x65, 0x61,
+	0x74, 0x75, 0x72, 0x65, 0x73, 0x12, 0x53, 0x0a, 0x13, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x69,
+	0x6e, 0x67, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x65, 0x73, 0x18, 0x0b, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x22, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76,
+	0x6f, 0x79, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x41,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x12, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x69, 0x6e,
+	0x67, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x65, 0x73, 0x42, 0x19, 0x0a, 0x17, 0x75, 0x73,
+	0x65, 0x72, 0x5f, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e,
+	0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0xc8, 0x01, 0x0a, 0x08, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
 	0x74, 0x61, 0x12, 0x60, 0x0a, 0x0f, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x5f, 0x6d, 0x65, 0x74,
 	0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x37, 0x2e, 0x73, 0x6f,
 	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x61, 0x70, 0x69, 0x2e,
@@ -1543,63 +1674,43 @@ var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_r
 	0x14, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
 	0x66, 0x2e, 0x41, 0x6e, 0x79, 0x48, 0x00, 0x52, 0x0b, 0x74, 0x79, 0x70, 0x65, 0x64, 0x43, 0x6f,
 	0x6e, 0x66, 0x69, 0x67, 0x42, 0x0d, 0x0a, 0x0b, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x74,
-	0x79, 0x70, 0x65, 0x22, 0xc3, 0x02, 0x0a, 0x0c, 0x53, 0x6f, 0x63, 0x6b, 0x65, 0x74, 0x4f, 0x70,
-	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74,
-	0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72,
-	0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x65, 0x76, 0x65, 0x6c, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x6c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x12, 0x0a, 0x04,
-	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
-	0x12, 0x1d, 0x0a, 0x09, 0x69, 0x6e, 0x74, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x04, 0x20,
-	0x01, 0x28, 0x03, 0x48, 0x00, 0x52, 0x08, 0x69, 0x6e, 0x74, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12,
-	0x1d, 0x0a, 0x09, 0x62, 0x75, 0x66, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x05, 0x20, 0x01,
-	0x28, 0x0c, 0x48, 0x00, 0x52, 0x08, 0x62, 0x75, 0x66, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x53,
-	0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x33, 0x2e,
-	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x61, 0x70,
-	0x69, 0x2e, 0x76, 0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x6f, 0x63, 0x6b, 0x65, 0x74,
-	0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x53, 0x6f, 0x63, 0x6b, 0x65, 0x74, 0x53, 0x74, 0x61,
-	0x74, 0x65, 0x42, 0x08, 0xfa, 0x42, 0x05, 0x82, 0x01, 0x02, 0x10, 0x01, 0x52, 0x05, 0x73, 0x74,
-	0x61, 0x74, 0x65, 0x22, 0x46, 0x0a, 0x0b, 0x53, 0x6f, 0x63, 0x6b, 0x65, 0x74, 0x53, 0x74, 0x61,
-	0x74, 0x65, 0x12, 0x11, 0x0a, 0x0d, 0x53, 0x54, 0x41, 0x54, 0x45, 0x5f, 0x50, 0x52, 0x45, 0x42,
-	0x49, 0x4e, 0x44, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b, 0x53, 0x54, 0x41, 0x54, 0x45, 0x5f, 0x42,
-	0x4f, 0x55, 0x4e, 0x44, 0x10, 0x01, 0x12, 0x13, 0x0a, 0x0f, 0x53, 0x54, 0x41, 0x54, 0x45, 0x5f,
-	0x4c, 0x49, 0x53, 0x54, 0x45, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x42, 0x0c, 0x0a, 0x05, 0x76,
-	0x61, 0x6c, 0x75, 0x65, 0x12, 0x03, 0xf8, 0x42, 0x01, 0x22, 0x91, 0x01, 0x0a, 0x18, 0x52, 0x75,
-	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x46, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x50,
-	0x65, 0x72, 0x63, 0x65, 0x6e, 0x74, 0x12, 0x54, 0x0a, 0x0d, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c,
-	0x74, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x25, 0x2e,
-	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x74, 0x79,
-	0x70, 0x65, 0x2e, 0x46, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x50, 0x65, 0x72,
-	0x63, 0x65, 0x6e, 0x74, 0x42, 0x08, 0xfa, 0x42, 0x05, 0x8a, 0x01, 0x02, 0x10, 0x01, 0x52, 0x0c,
-	0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x1f, 0x0a, 0x0b,
-	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x6b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x0a, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x4b, 0x65, 0x79, 0x22, 0x2e, 0x0a,
-	0x0c, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x50, 0x6c, 0x61, 0x6e, 0x65, 0x12, 0x1e, 0x0a,
-	0x0a, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x0a, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72, 0x2a, 0x28, 0x0a,
-	0x0f, 0x52, 0x6f, 0x75, 0x74, 0x69, 0x6e, 0x67, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79,
-	0x12, 0x0b, 0x0a, 0x07, 0x44, 0x45, 0x46, 0x41, 0x55, 0x4c, 0x54, 0x10, 0x00, 0x12, 0x08, 0x0a,
-	0x04, 0x48, 0x49, 0x47, 0x48, 0x10, 0x01, 0x2a, 0x89, 0x01, 0x0a, 0x0d, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x12, 0x16, 0x0a, 0x12, 0x4d, 0x45, 0x54,
-	0x48, 0x4f, 0x44, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10,
-	0x00, 0x12, 0x07, 0x0a, 0x03, 0x47, 0x45, 0x54, 0x10, 0x01, 0x12, 0x08, 0x0a, 0x04, 0x48, 0x45,
-	0x41, 0x44, 0x10, 0x02, 0x12, 0x08, 0x0a, 0x04, 0x50, 0x4f, 0x53, 0x54, 0x10, 0x03, 0x12, 0x07,
-	0x0a, 0x03, 0x50, 0x55, 0x54, 0x10, 0x04, 0x12, 0x0a, 0x0a, 0x06, 0x44, 0x45, 0x4c, 0x45, 0x54,
-	0x45, 0x10, 0x05, 0x12, 0x0b, 0x0a, 0x07, 0x43, 0x4f, 0x4e, 0x4e, 0x45, 0x43, 0x54, 0x10, 0x06,
-	0x12, 0x0b, 0x0a, 0x07, 0x4f, 0x50, 0x54, 0x49, 0x4f, 0x4e, 0x53, 0x10, 0x07, 0x12, 0x09, 0x0a,
-	0x05, 0x54, 0x52, 0x41, 0x43, 0x45, 0x10, 0x08, 0x12, 0x09, 0x0a, 0x05, 0x50, 0x41, 0x54, 0x43,
-	0x48, 0x10, 0x09, 0x2a, 0x3e, 0x0a, 0x10, 0x54, 0x72, 0x61, 0x66, 0x66, 0x69, 0x63, 0x44, 0x69,
-	0x72, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0f, 0x0a, 0x0b, 0x55, 0x4e, 0x53, 0x50, 0x45,
-	0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x49, 0x4e, 0x42, 0x4f,
-	0x55, 0x4e, 0x44, 0x10, 0x01, 0x12, 0x0c, 0x0a, 0x08, 0x4f, 0x55, 0x54, 0x42, 0x4f, 0x55, 0x4e,
-	0x44, 0x10, 0x02, 0x42, 0x7e, 0x0a, 0x27, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x70,
-	0x72, 0x6f, 0x78, 0x79, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76,
-	0x6f, 0x79, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x42, 0x09,
-	0x42, 0x61, 0x73, 0x65, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3e, 0x67, 0x69, 0x74,
-	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f,
-	0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69,
-	0x2f, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2f,
-	0x61, 0x70, 0x69, 0x2f, 0x76, 0x32, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0xb8, 0xf5, 0x04, 0x01, 0xc0,
-	0xf5, 0x04, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x79, 0x70, 0x65, 0x22, 0x91, 0x01, 0x0a, 0x18, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x46,
+	0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x50, 0x65, 0x72, 0x63, 0x65, 0x6e, 0x74,
+	0x12, 0x54, 0x0a, 0x0d, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x5f, 0x76, 0x61, 0x6c, 0x75,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x25, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69,
+	0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x2e, 0x46, 0x72, 0x61,
+	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x50, 0x65, 0x72, 0x63, 0x65, 0x6e, 0x74, 0x42, 0x08,
+	0xfa, 0x42, 0x05, 0x8a, 0x01, 0x02, 0x10, 0x01, 0x52, 0x0c, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c,
+	0x74, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x1f, 0x0a, 0x0b, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x5f, 0x6b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x72, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x4b, 0x65, 0x79, 0x22, 0x2e, 0x0a, 0x0c, 0x43, 0x6f, 0x6e, 0x74, 0x72,
+	0x6f, 0x6c, 0x50, 0x6c, 0x61, 0x6e, 0x65, 0x12, 0x1e, 0x0a, 0x0a, 0x69, 0x64, 0x65, 0x6e, 0x74,
+	0x69, 0x66, 0x69, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x64, 0x65,
+	0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72, 0x2a, 0x28, 0x0a, 0x0f, 0x52, 0x6f, 0x75, 0x74, 0x69,
+	0x6e, 0x67, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x12, 0x0b, 0x0a, 0x07, 0x44, 0x45,
+	0x46, 0x41, 0x55, 0x4c, 0x54, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x48, 0x49, 0x47, 0x48, 0x10,
+	0x01, 0x2a, 0x89, 0x01, 0x0a, 0x0d, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x4d, 0x65, 0x74,
+	0x68, 0x6f, 0x64, 0x12, 0x16, 0x0a, 0x12, 0x4d, 0x45, 0x54, 0x48, 0x4f, 0x44, 0x5f, 0x55, 0x4e,
+	0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x47,
+	0x45, 0x54, 0x10, 0x01, 0x12, 0x08, 0x0a, 0x04, 0x48, 0x45, 0x41, 0x44, 0x10, 0x02, 0x12, 0x08,
+	0x0a, 0x04, 0x50, 0x4f, 0x53, 0x54, 0x10, 0x03, 0x12, 0x07, 0x0a, 0x03, 0x50, 0x55, 0x54, 0x10,
+	0x04, 0x12, 0x0a, 0x0a, 0x06, 0x44, 0x45, 0x4c, 0x45, 0x54, 0x45, 0x10, 0x05, 0x12, 0x0b, 0x0a,
+	0x07, 0x43, 0x4f, 0x4e, 0x4e, 0x45, 0x43, 0x54, 0x10, 0x06, 0x12, 0x0b, 0x0a, 0x07, 0x4f, 0x50,
+	0x54, 0x49, 0x4f, 0x4e, 0x53, 0x10, 0x07, 0x12, 0x09, 0x0a, 0x05, 0x54, 0x52, 0x41, 0x43, 0x45,
+	0x10, 0x08, 0x12, 0x09, 0x0a, 0x05, 0x50, 0x41, 0x54, 0x43, 0x48, 0x10, 0x09, 0x2a, 0x3e, 0x0a,
+	0x10, 0x54, 0x72, 0x61, 0x66, 0x66, 0x69, 0x63, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x12, 0x0f, 0x0a, 0x0b, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44,
+	0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x49, 0x4e, 0x42, 0x4f, 0x55, 0x4e, 0x44, 0x10, 0x01, 0x12,
+	0x0c, 0x0a, 0x08, 0x4f, 0x55, 0x54, 0x42, 0x4f, 0x55, 0x4e, 0x44, 0x10, 0x02, 0x42, 0x7e, 0x0a,
+	0x27, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x2e, 0x73,
+	0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x61, 0x70, 0x69,
+	0x2e, 0x76, 0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x42, 0x09, 0x42, 0x61, 0x73, 0x65, 0x50, 0x72,
+	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b,
+	0x69, 0x74, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x65, 0x78, 0x74, 0x65, 0x72,
+	0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x32,
+	0x2f, 0x63, 0x6f, 0x72, 0x65, 0xb8, 0xf5, 0x04, 0x01, 0xc0, 0xf5, 0x04, 0x01, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1614,58 +1725,65 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescData
 }
 
-var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_goTypes = []interface{}{
 	(RoutingPriority)(0),             // 0: solo.io.envoy.api.v2.core.RoutingPriority
 	(RequestMethod)(0),               // 1: solo.io.envoy.api.v2.core.RequestMethod
 	(TrafficDirection)(0),            // 2: solo.io.envoy.api.v2.core.TrafficDirection
-	(SocketOption_SocketState)(0),    // 3: solo.io.envoy.api.v2.core.SocketOption.SocketState
-	(*Locality)(nil),                 // 4: solo.io.envoy.api.v2.core.Locality
-	(*Node)(nil),                     // 5: solo.io.envoy.api.v2.core.Node
-	(*Metadata)(nil),                 // 6: solo.io.envoy.api.v2.core.Metadata
-	(*RuntimeUInt32)(nil),            // 7: solo.io.envoy.api.v2.core.RuntimeUInt32
-	(*RuntimeFeatureFlag)(nil),       // 8: solo.io.envoy.api.v2.core.RuntimeFeatureFlag
-	(*HeaderValue)(nil),              // 9: solo.io.envoy.api.v2.core.HeaderValue
-	(*HeaderValueOption)(nil),        // 10: solo.io.envoy.api.v2.core.HeaderValueOption
-	(*HeaderMap)(nil),                // 11: solo.io.envoy.api.v2.core.HeaderMap
-	(*DataSource)(nil),               // 12: solo.io.envoy.api.v2.core.DataSource
-	(*RemoteDataSource)(nil),         // 13: solo.io.envoy.api.v2.core.RemoteDataSource
-	(*AsyncDataSource)(nil),          // 14: solo.io.envoy.api.v2.core.AsyncDataSource
-	(*TransportSocket)(nil),          // 15: solo.io.envoy.api.v2.core.TransportSocket
-	(*SocketOption)(nil),             // 16: solo.io.envoy.api.v2.core.SocketOption
+	(*Locality)(nil),                 // 3: solo.io.envoy.api.v2.core.Locality
+	(*BuildVersion)(nil),             // 4: solo.io.envoy.api.v2.core.BuildVersion
+	(*Extension)(nil),                // 5: solo.io.envoy.api.v2.core.Extension
+	(*Node)(nil),                     // 6: solo.io.envoy.api.v2.core.Node
+	(*Metadata)(nil),                 // 7: solo.io.envoy.api.v2.core.Metadata
+	(*RuntimeUInt32)(nil),            // 8: solo.io.envoy.api.v2.core.RuntimeUInt32
+	(*RuntimeFeatureFlag)(nil),       // 9: solo.io.envoy.api.v2.core.RuntimeFeatureFlag
+	(*HeaderValue)(nil),              // 10: solo.io.envoy.api.v2.core.HeaderValue
+	(*HeaderValueOption)(nil),        // 11: solo.io.envoy.api.v2.core.HeaderValueOption
+	(*HeaderMap)(nil),                // 12: solo.io.envoy.api.v2.core.HeaderMap
+	(*DataSource)(nil),               // 13: solo.io.envoy.api.v2.core.DataSource
+	(*RemoteDataSource)(nil),         // 14: solo.io.envoy.api.v2.core.RemoteDataSource
+	(*AsyncDataSource)(nil),          // 15: solo.io.envoy.api.v2.core.AsyncDataSource
+	(*TransportSocket)(nil),          // 16: solo.io.envoy.api.v2.core.TransportSocket
 	(*RuntimeFractionalPercent)(nil), // 17: solo.io.envoy.api.v2.core.RuntimeFractionalPercent
 	(*ControlPlane)(nil),             // 18: solo.io.envoy.api.v2.core.ControlPlane
 	nil,                              // 19: solo.io.envoy.api.v2.core.Metadata.FilterMetadataEntry
-	(*_struct.Struct)(nil),           // 20: google.protobuf.Struct
-	(*wrappers.BoolValue)(nil),       // 21: google.protobuf.BoolValue
-	(*core.ResourceRef)(nil),         // 22: core.solo.io.ResourceRef
-	(*HttpUri)(nil),                  // 23: solo.io.envoy.api.v2.core.HttpUri
-	(*any.Any)(nil),                  // 24: google.protobuf.Any
-	(*_type.FractionalPercent)(nil),  // 25: solo.io.envoy.type.FractionalPercent
+	(*_type.SemanticVersion)(nil),    // 20: solo.io.envoy.type.SemanticVersion
+	(*_struct.Struct)(nil),           // 21: google.protobuf.Struct
+	(*Address)(nil),                  // 22: solo.io.envoy.api.v2.core.Address
+	(*wrappers.BoolValue)(nil),       // 23: google.protobuf.BoolValue
+	(*core.ResourceRef)(nil),         // 24: core.solo.io.ResourceRef
+	(*HttpUri)(nil),                  // 25: solo.io.envoy.api.v2.core.HttpUri
+	(*any.Any)(nil),                  // 26: google.protobuf.Any
+	(*_type.FractionalPercent)(nil),  // 27: solo.io.envoy.type.FractionalPercent
 }
 var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_depIdxs = []int32{
-	20, // 0: solo.io.envoy.api.v2.core.Node.metadata:type_name -> google.protobuf.Struct
-	4,  // 1: solo.io.envoy.api.v2.core.Node.locality:type_name -> solo.io.envoy.api.v2.core.Locality
-	19, // 2: solo.io.envoy.api.v2.core.Metadata.filter_metadata:type_name -> solo.io.envoy.api.v2.core.Metadata.FilterMetadataEntry
-	21, // 3: solo.io.envoy.api.v2.core.RuntimeFeatureFlag.default_value:type_name -> google.protobuf.BoolValue
-	9,  // 4: solo.io.envoy.api.v2.core.HeaderValueOption.header:type_name -> solo.io.envoy.api.v2.core.HeaderValue
-	22, // 5: solo.io.envoy.api.v2.core.HeaderValueOption.header_secret_ref:type_name -> core.solo.io.ResourceRef
-	21, // 6: solo.io.envoy.api.v2.core.HeaderValueOption.append:type_name -> google.protobuf.BoolValue
-	9,  // 7: solo.io.envoy.api.v2.core.HeaderMap.headers:type_name -> solo.io.envoy.api.v2.core.HeaderValue
-	23, // 8: solo.io.envoy.api.v2.core.RemoteDataSource.http_uri:type_name -> solo.io.envoy.api.v2.core.HttpUri
-	12, // 9: solo.io.envoy.api.v2.core.AsyncDataSource.local:type_name -> solo.io.envoy.api.v2.core.DataSource
-	13, // 10: solo.io.envoy.api.v2.core.AsyncDataSource.remote:type_name -> solo.io.envoy.api.v2.core.RemoteDataSource
-	20, // 11: solo.io.envoy.api.v2.core.TransportSocket.config:type_name -> google.protobuf.Struct
-	24, // 12: solo.io.envoy.api.v2.core.TransportSocket.typed_config:type_name -> google.protobuf.Any
-	3,  // 13: solo.io.envoy.api.v2.core.SocketOption.state:type_name -> solo.io.envoy.api.v2.core.SocketOption.SocketState
-	25, // 14: solo.io.envoy.api.v2.core.RuntimeFractionalPercent.default_value:type_name -> solo.io.envoy.type.FractionalPercent
-	20, // 15: solo.io.envoy.api.v2.core.Metadata.FilterMetadataEntry.value:type_name -> google.protobuf.Struct
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	20, // 0: solo.io.envoy.api.v2.core.BuildVersion.version:type_name -> solo.io.envoy.type.SemanticVersion
+	21, // 1: solo.io.envoy.api.v2.core.BuildVersion.metadata:type_name -> google.protobuf.Struct
+	4,  // 2: solo.io.envoy.api.v2.core.Extension.version:type_name -> solo.io.envoy.api.v2.core.BuildVersion
+	21, // 3: solo.io.envoy.api.v2.core.Node.metadata:type_name -> google.protobuf.Struct
+	3,  // 4: solo.io.envoy.api.v2.core.Node.locality:type_name -> solo.io.envoy.api.v2.core.Locality
+	4,  // 5: solo.io.envoy.api.v2.core.Node.user_agent_build_version:type_name -> solo.io.envoy.api.v2.core.BuildVersion
+	5,  // 6: solo.io.envoy.api.v2.core.Node.extensions:type_name -> solo.io.envoy.api.v2.core.Extension
+	22, // 7: solo.io.envoy.api.v2.core.Node.listening_addresses:type_name -> solo.io.envoy.api.v2.core.Address
+	19, // 8: solo.io.envoy.api.v2.core.Metadata.filter_metadata:type_name -> solo.io.envoy.api.v2.core.Metadata.FilterMetadataEntry
+	23, // 9: solo.io.envoy.api.v2.core.RuntimeFeatureFlag.default_value:type_name -> google.protobuf.BoolValue
+	10, // 10: solo.io.envoy.api.v2.core.HeaderValueOption.header:type_name -> solo.io.envoy.api.v2.core.HeaderValue
+	24, // 11: solo.io.envoy.api.v2.core.HeaderValueOption.header_secret_ref:type_name -> core.solo.io.ResourceRef
+	23, // 12: solo.io.envoy.api.v2.core.HeaderValueOption.append:type_name -> google.protobuf.BoolValue
+	10, // 13: solo.io.envoy.api.v2.core.HeaderMap.headers:type_name -> solo.io.envoy.api.v2.core.HeaderValue
+	25, // 14: solo.io.envoy.api.v2.core.RemoteDataSource.http_uri:type_name -> solo.io.envoy.api.v2.core.HttpUri
+	13, // 15: solo.io.envoy.api.v2.core.AsyncDataSource.local:type_name -> solo.io.envoy.api.v2.core.DataSource
+	14, // 16: solo.io.envoy.api.v2.core.AsyncDataSource.remote:type_name -> solo.io.envoy.api.v2.core.RemoteDataSource
+	21, // 17: solo.io.envoy.api.v2.core.TransportSocket.config:type_name -> google.protobuf.Struct
+	26, // 18: solo.io.envoy.api.v2.core.TransportSocket.typed_config:type_name -> google.protobuf.Any
+	27, // 19: solo.io.envoy.api.v2.core.RuntimeFractionalPercent.default_value:type_name -> solo.io.envoy.type.FractionalPercent
+	21, // 20: solo.io.envoy.api.v2.core.Metadata.FilterMetadataEntry.value:type_name -> google.protobuf.Struct
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_init() }
@@ -1673,6 +1791,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 	if File_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto != nil {
 		return
 	}
+	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_address_proto_init()
 	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_http_uri_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
@@ -1688,7 +1807,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Node); i {
+			switch v := v.(*BuildVersion); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1700,7 +1819,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Metadata); i {
+			switch v := v.(*Extension); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1712,7 +1831,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RuntimeUInt32); i {
+			switch v := v.(*Node); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1724,7 +1843,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RuntimeFeatureFlag); i {
+			switch v := v.(*Metadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1736,7 +1855,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HeaderValue); i {
+			switch v := v.(*RuntimeUInt32); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1748,7 +1867,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HeaderValueOption); i {
+			switch v := v.(*RuntimeFeatureFlag); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1760,7 +1879,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HeaderMap); i {
+			switch v := v.(*HeaderValue); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1772,7 +1891,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DataSource); i {
+			switch v := v.(*HeaderValueOption); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1784,7 +1903,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RemoteDataSource); i {
+			switch v := v.(*HeaderMap); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1796,7 +1915,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AsyncDataSource); i {
+			switch v := v.(*DataSource); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1808,7 +1927,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TransportSocket); i {
+			switch v := v.(*RemoteDataSource); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1820,7 +1939,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SocketOption); i {
+			switch v := v.(*AsyncDataSource); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1832,7 +1951,7 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RuntimeFractionalPercent); i {
+			switch v := v.(*TransportSocket); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1844,6 +1963,18 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RuntimeFractionalPercent); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ControlPlane); i {
 			case 0:
 				return &v.state
@@ -1856,34 +1987,34 @@ func file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_
 			}
 		}
 	}
-	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[6].OneofWrappers = []interface{}{
+	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[3].OneofWrappers = []interface{}{
+		(*Node_UserAgentVersion)(nil),
+		(*Node_UserAgentBuildVersion)(nil),
+	}
+	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[8].OneofWrappers = []interface{}{
 		(*HeaderValueOption_Header)(nil),
 		(*HeaderValueOption_HeaderSecretRef)(nil),
 	}
-	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[8].OneofWrappers = []interface{}{
+	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[10].OneofWrappers = []interface{}{
 		(*DataSource_Filename)(nil),
 		(*DataSource_InlineBytes)(nil),
 		(*DataSource_InlineString)(nil),
 	}
-	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[10].OneofWrappers = []interface{}{
+	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[12].OneofWrappers = []interface{}{
 		(*AsyncDataSource_Local)(nil),
 		(*AsyncDataSource_Remote)(nil),
 	}
-	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[11].OneofWrappers = []interface{}{
+	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[13].OneofWrappers = []interface{}{
 		(*TransportSocket_Config)(nil),
 		(*TransportSocket_TypedConfig)(nil),
-	}
-	file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_msgTypes[12].OneofWrappers = []interface{}{
-		(*SocketOption_IntValue)(nil),
-		(*SocketOption_BufValue)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDesc,
-			NumEnums:      4,
-			NumMessages:   16,
+			NumEnums:      3,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

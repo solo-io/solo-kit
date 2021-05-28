@@ -28,7 +28,6 @@ type DefaultProtocExecutor struct {
 
 var defaultGoArgs = []string{
 	"plugins=grpc",
-	"Mgithub.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2",
 }
 
 func (d *DefaultProtocExecutor) Execute(protoFile string, toFile string, imports []string) error {

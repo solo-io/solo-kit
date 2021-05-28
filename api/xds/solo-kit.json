@@ -1,0 +1,5 @@
+{
+  "version": "v1",
+  "name": "xds.solo.io",
+  "go_package": "github.com/solo-io/solo-kit/pkg/xds"
+}

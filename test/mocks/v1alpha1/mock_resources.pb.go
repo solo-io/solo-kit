@@ -18,9 +18,9 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	_ "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

@@ -93,7 +93,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	out.TypeUrl = typeURL
 
 	// fetch results
-	res, err := h.Server.FetchV3(req.Context(), out)
+	res, err := h.Server.FetchEnvoyV3(req.Context(), out)
 	if err != nil {
 		h.Log.Debugf("fetch error: " + err.Error())
 		if err == cache.VersionUpToDateError {

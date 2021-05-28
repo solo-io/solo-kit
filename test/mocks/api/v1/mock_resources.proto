@@ -119,14 +119,14 @@ message MockXdsResourceConfig {
 @solo-kit:resource.xds-enabled
 */
 service MockXdsResourceDiscoveryService {
-    rpc StreamMockXdsResourceConfig(stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+    rpc StreamMockXdsResourceConfig(stream .solo.io.envoy.api.v2.DiscoveryRequest) returns (stream .solo.io.envoy.api.v2.DiscoveryResponse) {
     }
 
-    rpc DeltaMockXdsResourceConfig(stream envoy.api.v2.DeltaDiscoveryRequest)
-        returns (stream envoy.api.v2.DeltaDiscoveryResponse) {
+    rpc DeltaMockXdsResourceConfig(stream .solo.io.envoy.api.v2.DeltaDiscoveryRequest)
+        returns (stream .solo.io.envoy.api.v2.DeltaDiscoveryResponse) {
     }
 
-    rpc FetchMockXdsResourceConfig(envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
+    rpc FetchMockXdsResourceConfig(.solo.io.envoy.api.v2.DiscoveryRequest) returns (.solo.io.envoy.api.v2.DiscoveryResponse) {
         option (google.api.http) = {
         post: "/v2/discovery:mockxdsresourceconfig"
         body: "*"
