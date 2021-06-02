@@ -31,7 +31,7 @@ root level `generate.go` file.
 
 ## upgrading to v0.12.0 (solo-kit with go.mod)
 
-As of go 1.11, go began introducing support for go modules, it's dependency management system.
+As of go 1.11, go began introducing support for go modules, its dependency management system.
 As of solo-kit 0.12.0 we will officially support running solo-kit with go.mod outside of the GOPATH.
 
 This change has been a lot time coming, but it also means a few changes to solo-kit.
