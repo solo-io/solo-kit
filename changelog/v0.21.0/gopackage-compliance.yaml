@@ -1,4 +1,4 @@
 changelog:
-  - type: FIX
+  - type: BREAKING_CHANGE
     description: Update `go_package` field of external protos to comply with latest `protoc-gen-go` requirements.
     issueLink: https://github.com/solo-io/solo-kit/issues/427
