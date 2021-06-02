@@ -1,0 +1,3 @@
+changelog:
+  - type: FIX
+    description: Update `go_path` field of external protos to comply with latest `protoc-gen-go` requirements..
