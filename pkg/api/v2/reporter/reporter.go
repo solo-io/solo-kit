@@ -282,6 +282,11 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 			resourceToWrite.SetStatus(status)
 		}
 	}
+	resourceToWrite.SetStatus(&core.Status{
+		State:      2,
+		Reason:     "test",
+		ReportedBy: "mitchaman",
+	})
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
 		return updatedResource, resourceToWrite, nil
