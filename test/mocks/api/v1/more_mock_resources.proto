@@ -25,6 +25,7 @@ message AnotherMockResource {
 
     // comments that go above the basic field in our docs
     string basic_field = 2;
+    core.solo.io.ReporterStatus reporter_status = 7 [(extproto.skip_hashing) = true];
 
 }
 
@@ -37,5 +38,6 @@ message ClusterResource {
 
     // comments that go above the basic field in our docs
     string basic_field = 2;
+    core.solo.io.ReporterStatus reporter_status = 7 [(extproto.skip_hashing) = true];
 
 }

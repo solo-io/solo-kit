@@ -57,6 +57,16 @@ spec:
               type: string
             oneofTwo:
               type: boolean
+            reporterStatus:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  description: Mapping from reporter (Status.reported_by) to that
+                    reporter's Status
+                  type: object
+              type: object
             someDumbField:
               type: string
             status:

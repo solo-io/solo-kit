@@ -238,6 +238,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			continue
 		}
 		resourceToWrite.SetStatus(status)
+		resourceToWrite.SetReporterStatus(status.GetReportedBy(), status)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
@@ -280,6 +281,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 			status := resourceToWrite.GetStatus()
 			resourceToWrite = inputResourceFromRead
 			resourceToWrite.SetStatus(status)
+			resourceToWrite.SetReporterStatus(status.GetReportedBy(), status)
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -305,6 +307,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
 	resourceToWriteUpdated.SetStatus(resourceToWrite.GetStatus())
+	resourceToWriteUpdated.SetReporterStatus(resourceToWrite.GetStatus().GetReportedBy(), resourceToWrite.GetStatus())
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 

@@ -47,6 +47,7 @@ type {{ .Name }} struct {
 
 {{- if .HasStatus }}
 	Status core.Status {{ backtick }}json:"status,omitempty" protobuf:"bytes,3,opt,name=status"{{ backtick }}
+	ReporterStatus core.ReporterStatus {{ backtick }}json:"reporter_status,omitempty" protobuf:"bytes,4,opt,name=reporter_status"{{ backtick }}
 {{- end }}
 }
 
@@ -59,6 +60,7 @@ func (o *{{ .Name }}) MarshalJSON() ([]byte, error) {
 	delete(spec, "metadata")
 {{- if .HasStatus }}
 	delete(spec, "status")
+	delete(spec, "reporter_status")
 {{- end }}
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
@@ -66,6 +68,7 @@ func (o *{{ .Name }}) MarshalJSON() ([]byte, error) {
 		"kind":       o.TypeMeta.Kind,
 {{- if .HasStatus }}
 		"status":     o.Status,
+		"reporter_status": o.ReporterStatus,
 {{- end }}
 		"spec":       spec,
 	}
@@ -91,6 +94,10 @@ func (o *{{ .Name }}) UnmarshalJSON(data []byte) error {
 	if spec.Status != nil {
 		o.Status = *spec.Status
 		o.Spec.Status = nil
+	}
+	if spec.ReporterStatus != nil {
+		o.ReporterStatus = *spec.ReporterStatus
+		o.Spec.ReporterStatus = nil
 	}
 {{- end }}
 

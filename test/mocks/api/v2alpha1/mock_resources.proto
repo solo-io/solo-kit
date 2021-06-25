@@ -21,6 +21,7 @@ message MockResource {
 
     core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
     core.solo.io.Metadata metadata = 7;
+    core.solo.io.ReporterStatus reporter_status = 8 [(extproto.skip_hashing) = true];
 
     oneof we_stuck_it_in_a_oneof {
         string some_dumb_field = 100 [(extproto.skip_hashing) = true];

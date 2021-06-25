@@ -31,6 +31,17 @@ func (r *AnotherMockResource) SetStatus(status *core.Status) {
 	r.Status = status
 }
 
+func (r *AnotherMockResource) SetReporterStatus(reportedBy string, status *core.Status) {
+	log.Printf("SetReporterStatus[%v] = %v", reportedBy, status)
+	if r.ReporterStatus == nil {
+		r.ReporterStatus = &core.ReporterStatus{}
+	}
+	if r.ReporterStatus.Statuses == nil {
+		r.ReporterStatus.Statuses = make(map[string]*core.Status)
+	}
+	r.ReporterStatus.Statuses[reportedBy] = status
+}
+
 func (r *AnotherMockResource) MustHash() uint64 {
 	hashVal, err := r.Hash(nil)
 	if err != nil {
