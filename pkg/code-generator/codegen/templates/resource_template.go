@@ -90,15 +90,19 @@ func (r *{{ .Name }}) SetStatus(status *core.Status) {
 	r.Status = status
 }
 
-func (r *{{ .Name }}) SetReporterStatus(reportedBy string, status *core.Status) {
-	log.Printf("SetReporterStatus[%v] = %v", reportedBy, status)
+func (r *{{ .Name }}) SetReporterStatus(status *core.Status) {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace == "" {
+		log.Fatalln("Must have non-empty POD_NAMESPACE environment variable")
+	}
+	log.Printf("SetReporterStatus[%v] = %v", podNamespace, status)
 	if r.ReporterStatus == nil {
 		r.ReporterStatus = &core.ReporterStatus{}
 	}
-	if (r.ReporterStatus.Statuses == nil) {
+	if r.ReporterStatus.Statuses == nil {
 		r.ReporterStatus.Statuses = make(map[string]*core.Status)
 	}
-	r.ReporterStatus.Statuses[reportedBy] = status
+	r.ReporterStatus.Statuses[podNamespace] = status
 }
 {{- end }}
 

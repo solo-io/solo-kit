@@ -63,8 +63,8 @@ spec:
                   additionalProperties:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
-                  description: Mapping from reporter (Status.reported_by) to that
-                    reporter's Status
+                  description: Mapping from reporter namespace to that reporter's
+                    Status
                   type: object
               type: object
             someDumbField:

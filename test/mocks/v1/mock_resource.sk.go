@@ -4,6 +4,7 @@ package v1
 
 import (
 	"log"
+	"os"
 	"sort"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -31,15 +32,19 @@ func (r *MockResource) SetStatus(status *core.Status) {
 	r.Status = status
 }
 
-func (r *MockResource) SetReporterStatus(reportedBy string, status *core.Status) {
-	log.Printf("SetReporterStatus[%v] = %v", reportedBy, status)
+func (r *MockResource) SetReporterStatus(status *core.Status) {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace == "" {
+		log.Fatalln("Must have non-empty POD_NAMESPACE environment variable")
+	}
+	log.Printf("SetReporterStatus[%v] = %v", podNamespace, status)
 	if r.ReporterStatus == nil {
 		r.ReporterStatus = &core.ReporterStatus{}
 	}
 	if r.ReporterStatus.Statuses == nil {
 		r.ReporterStatus.Statuses = make(map[string]*core.Status)
 	}
-	r.ReporterStatus.Statuses[reportedBy] = status
+	r.ReporterStatus.Statuses[podNamespace] = status
 }
 
 func (r *MockResource) MustHash() uint64 {

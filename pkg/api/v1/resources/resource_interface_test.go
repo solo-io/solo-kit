@@ -37,6 +37,14 @@ type mockResources struct {
 	Name string
 }
 
+func (m *mockResources) GetReporterStatus() *core.ReporterStatus {
+	panic("implement me")
+}
+
+func (m *mockResources) SetReporterStatus(status *core.Status) {
+	panic("implement me")
+}
+
 func (m *mockResources) GetMetadata() *core.Metadata {
 	return &core.Metadata{
 		Name:      m.Name,

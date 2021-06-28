@@ -12,7 +12,7 @@ import "google/protobuf/struct.proto";
  * ReporterStatus indicates the Status of a resource according to each reporter
  */
 message ReporterStatus {
-    // Mapping from reporter (Status.reported_by) to that reporter's Status
+    // Mapping from reporter namespace to that reporter's Status
     map<string, Status> statuses = 1;
 }
 

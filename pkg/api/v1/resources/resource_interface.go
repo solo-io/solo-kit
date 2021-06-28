@@ -47,7 +47,7 @@ type InputResource interface {
 	GetStatus() *core.Status
 	SetStatus(status *core.Status)
 	GetReporterStatus() *core.ReporterStatus
-	SetReporterStatus(reportedBy string, status *core.Status)
+	SetReporterStatus(status *core.Status)
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control
@@ -457,7 +457,7 @@ func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) e
 		return err
 	}
 	resource.SetStatus(status)
-	resource.SetReporterStatus(status.ReportedBy, status)
+	resource.SetReporterStatus(status)
 	return nil
 }
 
