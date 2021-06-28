@@ -34,17 +34,15 @@ func (r *MockResource) SetStatus(status *core.Status) {
 
 func (r *MockResource) SetReporterStatus(status *core.Status) {
 	podNamespace := os.Getenv("POD_NAMESPACE")
-	if podNamespace == "" {
-		log.Fatalln("Must have non-empty POD_NAMESPACE environment variable")
+	if podNamespace != "" {
+		if r.ReporterStatus == nil {
+			r.ReporterStatus = &core.ReporterStatus{}
+		}
+		if r.ReporterStatus.Statuses == nil {
+			r.ReporterStatus.Statuses = make(map[string]*core.Status)
+		}
+		r.ReporterStatus.Statuses[podNamespace] = status
 	}
-	log.Printf("SetReporterStatus[%v] = %v", podNamespace, status)
-	if r.ReporterStatus == nil {
-		r.ReporterStatus = &core.ReporterStatus{}
-	}
-	if r.ReporterStatus.Statuses == nil {
-		r.ReporterStatus.Statuses = make(map[string]*core.Status)
-	}
-	r.ReporterStatus.Statuses[podNamespace] = status
 }
 
 func (r *MockResource) MustHash() uint64 {

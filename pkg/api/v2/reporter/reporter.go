@@ -278,6 +278,9 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
+			// TODO(mitchaman): remove logging
+			logger := contextutils.LoggerFrom(ctx)
+			logger.Infof("inputResourceFromRead.ReporterStatus: %v", inputResourceFromRead.GetReporterStatus())
 			status := resourceToWrite.GetStatus()
 			resourceToWrite = inputResourceFromRead
 			resourceToWrite.SetStatus(status)
