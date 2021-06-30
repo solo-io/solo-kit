@@ -58,12 +58,8 @@ type CustomInputResource interface {
 	InputResource
 	UnmarshalSpec(spec v1.Spec) error
 	UnmarshalStatus(status v1.Status) error
-	// TODO(mitchaman): Use this function
-	UnmarshalReporterStatus(status v1.Status) error
 	MarshalSpec() (v1.Spec, error)
 	MarshalStatus() (v1.Status, error)
-	// TODO(mitchaman): Use this function
-	MarshalReporterStatus() (v1.Status, error)
 }
 
 type ResourceList []Resource
