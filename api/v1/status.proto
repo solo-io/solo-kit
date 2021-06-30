@@ -12,8 +12,9 @@ import "google/protobuf/struct.proto";
  * ReporterStatus indicates the Status of a resource according to each reporter
  */
 message ReporterStatus {
-    // Mapping from reporter namespace to that reporter's Status
-    map<string, Status> statuses = 1;
+  // Mapping from reporter to that reporter's Status.
+  // Key format: ${POD_NAMESPACE}:${Status.ReportedBy} (i.e. gloo-system:gloo, gloo-system:gateway, etc)
+  map<string, Status> statuses = 1;
 }
 
 /**
@@ -21,27 +22,27 @@ message ReporterStatus {
  * Statuses are meant to be read-only by users
  */
 message Status {
-    enum State {
-        // Pending status indicates the resource has not yet been validated
-        Pending = 0;
-        // Accepted indicates the resource has been validated
-        Accepted = 1;
-        // Rejected indicates an invalid configuration by the user
-        // Rejected resources may be propagated to the xDS server depending on their severity
-        Rejected = 2;
-        // Warning indicates a partially invalid configuration by the user
-        // Resources with Warnings may be partially accepted by a controller, depending on the implementation
-        Warning = 3;
-    }
-    // State is the enum indicating the state of the resource
-    State state = 1;
-    // Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty
-    string reason = 2;
-    // Reference to the reporter who wrote this status
-    string reported_by = 3;
-    // Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource
-    map<string, Status> subresource_statuses = 4;
+  enum State {
+    // Pending status indicates the resource has not yet been validated
+    Pending = 0;
+    // Accepted indicates the resource has been validated
+    Accepted = 1;
+    // Rejected indicates an invalid configuration by the user
+    // Rejected resources may be propagated to the xDS server depending on their severity
+    Rejected = 2;
+    // Warning indicates a partially invalid configuration by the user
+    // Resources with Warnings may be partially accepted by a controller, depending on the implementation
+    Warning = 3;
+  }
+  // State is the enum indicating the state of the resource
+  State state = 1;
+  // Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty
+  string reason = 2;
+  // Reference to the reporter who wrote this status
+  string reported_by = 3;
+  // Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource
+  map<string, Status> subresource_statuses = 4;
 
-    // Opaque details about status results
-    google.protobuf.Struct details = 5;
+  // Opaque details about status results
+  google.protobuf.Struct details = 5;
 }

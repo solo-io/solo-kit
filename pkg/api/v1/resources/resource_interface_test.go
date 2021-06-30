@@ -41,7 +41,11 @@ func (m *mockResources) GetReporterStatus() *core.ReporterStatus {
 	panic("implement me")
 }
 
-func (m *mockResources) SetReporterStatus(status *core.Status) {
+func (m *mockResources) SetReporterStatus(status *core.ReporterStatus) {
+	panic("implement me")
+}
+
+func (m *mockResources) AddToReporterStatus(status *core.Status) {
 	panic("implement me")
 }
 

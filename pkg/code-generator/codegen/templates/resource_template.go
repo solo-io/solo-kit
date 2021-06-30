@@ -90,7 +90,11 @@ func (r *{{ .Name }}) SetStatus(status *core.Status) {
 	r.Status = status
 }
 
-func (r *{{ .Name }}) SetReporterStatus(status *core.Status) {
+func (r *{{ .Name }}) SetReporterStatus(status *core.ReporterStatus) {
+	r.ReporterStatus = status
+}
+
+func (r *{{ .Name }}) AddToReporterStatus(status *core.Status) {
 	podNamespace := os.Getenv("POD_NAMESPACE")
 	if podNamespace != "" {
 		if r.ReporterStatus == nil {

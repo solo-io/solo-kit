@@ -182,6 +182,7 @@ func MapStringInterfaceToMapStringString(interfaceMap map[string]interface{}) (m
 }
 
 // convert raw Kube JSON to a Solo-Kit resource
+// TODO(mitchaman): ReporterStatus unmarshal
 func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	var resourceCrd v1.Resource
 	if err := json.Unmarshal(kubeJson, &resourceCrd); err != nil {

@@ -32,7 +32,11 @@ func (r *MockResource) SetStatus(status *core.Status) {
 	r.Status = status
 }
 
-func (r *MockResource) SetReporterStatus(status *core.Status) {
+func (r *MockResource) SetReporterStatus(status *core.ReporterStatus) {
+	r.ReporterStatus = status
+}
+
+func (r *MockResource) AddToReporterStatus(status *core.Status) {
 	podNamespace := os.Getenv("POD_NAMESPACE")
 	if podNamespace != "" {
 		if r.ReporterStatus == nil {

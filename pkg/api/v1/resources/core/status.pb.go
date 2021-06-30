@@ -93,7 +93,8 @@ type ReporterStatus struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Mapping from reporter namespace to that reporter's Status
+	// Mapping from reporter to that reporter's Status.
+	// Key format: ${POD_NAMESPACE}:${Status.ReportedBy} (i.e. gloo-system:gloo, gloo-system:gateway, etc)
 	Statuses map[string]*Status `protobuf:"bytes,1,rep,name=statuses,proto3" json:"statuses,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 

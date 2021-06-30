@@ -47,7 +47,7 @@ type InputResource interface {
 	GetStatus() *core.Status
 	SetStatus(status *core.Status)
 	GetReporterStatus() *core.ReporterStatus
-	SetReporterStatus(status *core.Status)
+	SetReporterStatus(status *core.ReporterStatus)
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control
@@ -56,8 +56,12 @@ type CustomInputResource interface {
 	InputResource
 	UnmarshalSpec(spec v1.Spec) error
 	UnmarshalStatus(status v1.Status) error
+	// TODO(mitchaman): Use this function
+	UnmarshalReporterStatus(status v1.Status) error
 	MarshalSpec() (v1.Spec, error)
 	MarshalStatus() (v1.Status, error)
+	// TODO(mitchaman): Use this function
+	MarshalReporterStatus() (v1.Status, error)
 }
 
 type ResourceList []Resource
@@ -450,6 +454,7 @@ func UpdateListMetadata(resources ResourceList, updateFunc func(meta *core.Metad
 	}
 }
 
+// TODO(mitchaman): Create analogous function for ReporterStatus
 func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) error) error {
 	status := resource.GetStatus()
 	err := updateFunc(status)
@@ -457,7 +462,6 @@ func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) e
 		return err
 	}
 	resource.SetStatus(status)
-	resource.SetReporterStatus(status)
 	return nil
 }
 

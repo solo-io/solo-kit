@@ -212,6 +212,7 @@ func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) 
 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
+// TODO(mitchaman): Adjust logic in this function to update ReporterStatus
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
@@ -238,7 +239,6 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			continue
 		}
 		resourceToWrite.SetStatus(status)
-		resourceToWrite.SetReporterStatus(status)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
@@ -265,6 +265,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
+// TODO(mitchaman): Adjust logic in this function to update ReporterStatus
 func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
@@ -278,13 +279,9 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
-			// TODO(mitchaman): remove logging
-			logger := contextutils.LoggerFrom(ctx)
-			logger.Infof("inputResourceFromRead.ReporterStatus: %v", inputResourceFromRead.GetReporterStatus())
 			status := resourceToWrite.GetStatus()
 			resourceToWrite = inputResourceFromRead
 			resourceToWrite.SetStatus(status)
-			resourceToWrite.SetReporterStatus(status)
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -310,7 +307,6 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
 	resourceToWriteUpdated.SetStatus(resourceToWrite.GetStatus())
-	resourceToWriteUpdated.SetReporterStatus(resourceToWrite.GetStatus())
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 

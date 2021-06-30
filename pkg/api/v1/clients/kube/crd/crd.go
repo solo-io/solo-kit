@@ -75,6 +75,7 @@ func NewCrd(
 	return c
 }
 
+// TODO(mitchaman): ReporterStatus marshalling
 func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error) {
 	var (
 		spec   v1.Spec

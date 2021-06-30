@@ -422,6 +422,7 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 
 }
 
+// TODO(mitchaman): Adjust logic in this function to unmarshal ReporterStatus
 func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resources.Resource, error) {
 	resource := rc.NewResource()
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
