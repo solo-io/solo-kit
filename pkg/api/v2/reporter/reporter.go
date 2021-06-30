@@ -212,7 +212,6 @@ func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) 
 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
-// TODO(mitchaman): Adjust logic in this function to update ReporterStatus
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
@@ -234,15 +233,15 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
-		if status.Equal(resource.GetStatus()) {
+
+		if status.Equal(resource.GetStatusForReporter(status.GetReportedBy())) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
-		resourceToWrite.SetStatus(status)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			updatedResource, resourceToWrite, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite)
+			updatedResource, resourceToWrite, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite, status)
 			return writeErr
 		})
 
@@ -265,8 +264,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-// TODO(mitchaman): Adjust logic in this function to update ReporterStatus
-func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, status *core.Status) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
@@ -279,9 +277,8 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
-			status := resourceToWrite.GetStatus()
 			resourceToWrite = inputResourceFromRead
-			resourceToWrite.SetStatus(status)
+			resourceToWrite.AddToReporterStatus(status)
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -306,7 +303,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWrite, nil
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	resourceToWriteUpdated.SetStatus(resourceToWrite.GetStatus())
+	resourceToWriteUpdated.AddToReporterStatus(resourceToWrite.GetStatus())
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 

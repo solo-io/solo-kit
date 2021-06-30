@@ -75,7 +75,6 @@ func NewCrd(
 	return c
 }
 
-// TODO(mitchaman): ReporterStatus marshalling
 func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error) {
 	var (
 		spec   v1.Spec
@@ -107,13 +106,13 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 		delete(data, "status")
 		spec = data
 
-		if resource.GetStatus() != nil {
-			statusProto := resource.GetStatus()
-			statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
+		if resource.GetReporterStatus() != nil {
+			reporterStatusProto := resource.GetReporterStatus()
+			reporterStatusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(reporterStatusProto)
 			if err != nil {
-				return nil, MarshalErr(err, "resource status to map")
+				return nil, MarshalErr(err, "resource reporter_status to map")
 			}
-			status = statusMap
+			status = reporterStatusMap
 		}
 	}
 

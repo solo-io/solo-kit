@@ -50,6 +50,21 @@ func (r *MockResource) AddToReporterStatus(status *core.Status) {
 	}
 }
 
+func (r *MockResource) GetStatusForReporter(reportedBy string) *core.Status {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace != "" {
+		key := podNamespace + ":" + reportedBy
+		if r.ReporterStatus == nil {
+			return nil
+		}
+		if r.ReporterStatus.Statuses == nil {
+			return nil
+		}
+		return r.ReporterStatus.Statuses[key]
+	}
+	return nil
+}
+
 func (r *MockResource) MustHash() uint64 {
 	hashVal, err := r.Hash(nil)
 	if err != nil {

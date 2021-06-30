@@ -107,6 +107,22 @@ func (r *{{ .Name }}) AddToReporterStatus(status *core.Status) {
 		r.ReporterStatus.Statuses[key] = status
 	}
 }
+
+func (r *{{ .Name }}) GetStatusForReporter(reportedBy string) *core.Status {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace != "" {
+		key := podNamespace + ":" + reportedBy
+		if r.ReporterStatus == nil {
+			return nil
+		}
+		if r.ReporterStatus.Statuses == nil {
+			return nil
+		}
+		return r.ReporterStatus.Statuses[key]
+	}
+	return nil
+}
+
 {{- end }}
 
 {{- end }}
