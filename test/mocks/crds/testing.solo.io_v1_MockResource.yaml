@@ -57,6 +57,17 @@ spec:
               type: string
             oneofTwo:
               type: boolean
+            reporterStatus:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  description: 'Mapping from reporter to that reporter''s Status.
+                    Key format: ${POD_NAMESPACE}:${Status.ReportedBy} (i.e. gloo-system:gloo,
+                    gloo-system:gateway, etc)'
+                  type: object
+              type: object
             someDumbField:
               type: string
             status:

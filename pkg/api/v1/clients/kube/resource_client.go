@@ -445,19 +445,19 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
 			// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
-			withStatus.SetStatus(&core.Status{})
-			updateFunc := func(status *core.Status) error {
+			withStatus.SetReporterStatus(&core.ReporterStatus{})
+			updateReporterStatusFunc := func(status *core.ReporterStatus) error {
 				if status == nil {
 					return nil
 				}
-				typedStatus := core.Status{}
+				typedStatus := core.ReporterStatus{}
 				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
 					return err
 				}
 				*status = typedStatus
 				return nil
 			}
-			if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
+			if err := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); err != nil {
 				return nil, err
 			}
 		}

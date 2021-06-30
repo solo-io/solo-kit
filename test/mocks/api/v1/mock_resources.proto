@@ -67,6 +67,7 @@ message MockResource {
         // oneof comment
         NestedOneOf oneof_nestedoneof = 12;
     }
+    core.solo.io.ReporterStatus reporter_status = 8 [(extproto.skip_hashing) = true];
 }
 
 // A NestedOneOf message

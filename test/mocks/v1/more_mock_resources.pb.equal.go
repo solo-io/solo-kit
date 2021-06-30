@@ -70,6 +70,16 @@ func (m *AnotherMockResource) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetReporterStatus()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReporterStatus()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReporterStatus(), target.GetReporterStatus()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -116,6 +126,16 @@ func (m *ClusterResource) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetBasicField(), target.GetBasicField()) != 0 {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetReporterStatus()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReporterStatus()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReporterStatus(), target.GetReporterStatus()) {
+			return false
+		}
 	}
 
 	return true

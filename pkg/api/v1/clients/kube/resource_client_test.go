@@ -119,6 +119,13 @@ var _ = Describe("Test Kube ResourceClient", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 		client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(ctx), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
+		err := os.Setenv("POD_NAMESPACE", "test-ns")
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		err := os.Setenv("POD_NAMESPACE", "")
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("integrations tests", func() {
@@ -156,10 +163,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 		It("Can maintain status when written and read from storage", func() {
 			mockResource := &v1.MockResource{
-				Status: &core.Status{
-					State:      2,
-					Reason:     "test",
-					ReportedBy: "me",
+				ReporterStatus: &core.ReporterStatus{
+					Statuses: map[string]*core.Status{
+						"test-ns:me": {
+							State:      2,
+							Reason:     "test",
+							ReportedBy: "me",
+						},
+					},
 				},
 				Metadata: &core.Metadata{
 					Name:      "test",
@@ -175,7 +186,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clients.ReadOpts{},
 			)
 
-			Expect(mockResource.GetStatus()).To(matchers.MatchProto(read.(resources.InputResource).GetStatus()))
+			Expect(mockResource.GetStatusForReporter("me")).To(matchers.MatchProto(read.(resources.InputResource).GetStatusForReporter("me")))
 		})
 	})
 

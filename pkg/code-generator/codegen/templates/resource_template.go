@@ -89,6 +89,40 @@ func (r *{{ .Name }}) SetMetadata(meta *core.Metadata) {
 func (r *{{ .Name }}) SetStatus(status *core.Status) {
 	r.Status = status
 }
+
+func (r *{{ .Name }}) SetReporterStatus(status *core.ReporterStatus) {
+	r.ReporterStatus = status
+}
+
+func (r *{{ .Name }}) AddToReporterStatus(status *core.Status) {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace != "" {
+		if r.ReporterStatus == nil {
+			r.ReporterStatus = &core.ReporterStatus{}
+		}
+		if r.ReporterStatus.Statuses == nil {
+			r.ReporterStatus.Statuses = make(map[string]*core.Status)
+		}
+		key := podNamespace + ":" + status.GetReportedBy()
+		r.ReporterStatus.Statuses[key] = status
+	}
+}
+
+func (r *{{ .Name }}) GetStatusForReporter(reportedBy string) *core.Status {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace != "" {
+		key := podNamespace + ":" + reportedBy
+		if r.ReporterStatus == nil {
+			return nil
+		}
+		if r.ReporterStatus.Statuses == nil {
+			return nil
+		}
+		return r.ReporterStatus.Statuses[key]
+	}
+	return nil
+}
+
 {{- end }}
 
 {{- end }}

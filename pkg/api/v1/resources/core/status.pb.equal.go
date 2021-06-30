@@ -26,6 +26,47 @@ var (
 )
 
 // Equal function
+func (m *ReporterStatus) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ReporterStatus)
+	if !ok {
+		that2, ok := that.(ReporterStatus)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetStatuses()) != len(target.GetStatuses()) {
+		return false
+	}
+	for k, v := range m.GetStatuses() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetStatuses()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetStatuses()[k]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Status) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil

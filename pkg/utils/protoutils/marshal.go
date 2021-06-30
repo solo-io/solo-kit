@@ -190,20 +190,20 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
 	if withStatus, ok := resource.(resources.InputResource); ok {
 
-		updateFunc := func(status *core.Status) error {
-			if status == nil {
+		updateReporterStatusFunc := func(reporterStatus *core.ReporterStatus) error {
+			if reporterStatus == nil {
 				return nil
 			}
-			typedStatus := core.Status{}
-			err := UnmarshalMapToProto(resourceCrd.Status, &typedStatus)
+			typedReporterStatus := core.ReporterStatus{}
+			err := UnmarshalMapToProto(resourceCrd.Status, &typedReporterStatus)
 			if err != nil {
 				return err
 			}
-			*status = typedStatus
+			*reporterStatus = typedReporterStatus
 			return nil
 		}
 
-		if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
+		if err := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); err != nil {
 			return err
 		}
 	}
