@@ -99,7 +99,8 @@ func (r *{{ .Name }}) SetReporterStatus(status *core.Status) {
 		if r.ReporterStatus.Statuses == nil {
 			r.ReporterStatus.Statuses = make(map[string]*core.Status)
 		}
-		r.ReporterStatus.Statuses[podNamespace] = status
+		key := podNamespace + ":" + status.GetReportedBy()
+		r.ReporterStatus.Statuses[key] = status
 	}
 }
 {{- end }}
