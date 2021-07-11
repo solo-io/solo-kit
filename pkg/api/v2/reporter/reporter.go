@@ -215,6 +215,9 @@ func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) 
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
+	logger.Errorf("SOLO KIT RESOURCE REPORTER")
+	logger.Errorf("resourceErrs: %v", resourceErrs)
+	logger.Errorf("subresourceStatuses: %v", subresourceStatuses)
 
 	var merr *multierror.Error
 
@@ -252,9 +255,9 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			continue
 		}
 		if updatedResource != nil {
-			logger.Debugf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
+			logger.Errorf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
 		} else {
-			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
+			logger.Errorf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
 			delete(resourceErrs, resource)
 		}
 	}
@@ -266,6 +269,9 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
 func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
 	var readErr error
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Errorf("ATTEMPT UPDATE STATUS: %s", resourceToWrite.GetMetadata().GetName())
+	logger.Errorf("resource to write: %s", resourceToWrite)
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
 		return nil, resourceToWrite, nil
@@ -284,6 +290,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
+		logger.Errorf("updated resource: %v", updatedResource)
 		return updatedResource, resourceToWrite, nil
 	}
 	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
@@ -305,6 +312,8 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
 	resourceToWriteUpdated.SetStatus(resourceToWrite.GetStatus())
+
+	logger.Errorf("updated resource (later): %v", updatedResource)
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
