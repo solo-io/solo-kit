@@ -84,17 +84,25 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 			continue
 		}
 		resourceToWrite.SetStatus(status)
+		logger.Error("reporter.WRITE REPORTS")
+		logger.Errorf("new status: %v", status)
+		logger.Errorf("resourceToWrite: %v", resourceToWrite)
 		res, writeErr := client.Write(resourceToWrite, clients.WriteOpts{
 			Ctx:               ctx,
 			OverwriteExisting: true,
 		})
 		if writeErr != nil && errors.IsResourceVersion(writeErr) {
+			logger.Error("WriteErr occurred, IS RESOURCE VERSION!")
 			updatedRes, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{
 				Ctx: ctx,
 			})
 			if readErr == nil {
+				logger.Errorf("updatedRes: %v", updatedRes)
+				logger.Errorf("resourceToWrite: %v", resourceToWrite)
+
 				equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
 				if equal {
+					logger.Errorf("hashes equal, re-write!")
 					// same hash, s	omething not important was done, try again:
 					updatedRes.(resources.InputResource).SetStatus(status)
 					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
@@ -103,12 +111,12 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 					})
 				}
 			} else {
-				logger.Warnw("error reading client to compare conflict when writing status", "error", readErr)
+				logger.Error("error reading client to compare conflict when writing status", "error", readErr)
 			}
 		}
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
-			logger.Warn(err)
+			logger.Error(err)
 			merr = multierror.Append(merr, err)
 			continue
 		}
