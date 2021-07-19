@@ -23,6 +23,13 @@ type ValidationSchemaOptions struct {
 	// Tool used to generate JsonSchemas, defaults to protoc
 	JsonSchemaTool string
 
+	// Whether to remove descriptions from validation schemas
+	// Default: false
+	//
+	// NOTE: I'd prefer a positive field name (ie includeDescriptions)
+	//	but I wanted to avoid changing the default behavior
+	RemoveDescriptionsFromSchema bool
+
 	// The maximum number of characters to include in a description
 	// A 0 value will be interpreted as "include all characters"
 	// Default: 0

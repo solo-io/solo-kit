@@ -17,8 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-const maxDescriptionCharacters = 20
-
 var _ = Describe("schemagen", func() {
 
 	Context("JSONSchemaGenerator", func() {
@@ -35,26 +33,12 @@ var _ = Describe("schemagen", func() {
 			cueGenerator    schemagen.JsonSchemaGenerator
 			protocGenerator schemagen.JsonSchemaGenerator
 
-			project *model.Project
-
-			validationSchemaOptions = &schemagen.ValidationSchemaOptions{
-				MaxDescriptionCharacters: maxDescriptionCharacters,
-			}
+			project                 *model.Project
+			simpleMockResourceGVK   schema.GroupVersionKind
+			validationSchemaOptions *schemagen.ValidationSchemaOptions
 		)
 
 		BeforeEach(func() {
-			soloKitGoMod, err := modutils.GetCurrentModPackageFile()
-			Expect(err).NotTo(HaveOccurred())
-			soloKitRoot := filepath.Dir(soloKitGoMod)
-
-			commonImports := []string{
-				filepath.Join(soloKitRoot, anyvendor.DefaultDepDir),
-			}
-			importsCollector := collector.NewCollector([]string{}, commonImports)
-
-			cueGenerator = schemagen.NewCueGenerator(importsCollector, soloKitRoot)
-			protocGenerator = schemagen.NewProtocGenerator(importsCollector, soloKitRoot, validationSchemaOptions)
-
 			// This is a modified Project model, to only include the SimpleMockResource type
 			project = &model.Project{
 				ProjectConfig: model.ProjectConfig{
@@ -76,6 +60,29 @@ var _ = Describe("schemagen", func() {
 				},
 				ProtoPackage: "testing.solo.io.v1",
 			}
+
+			// This is the resource we've configured to test various schemagen behaviors
+			simpleMockResourceGVK = schema.GroupVersionKind{
+				Group:   "testing.solo.io.v1",
+				Version: "v1",
+				Kind:    "SimpleMockResource",
+			}
+
+			validationSchemaOptions = &schemagen.ValidationSchemaOptions{}
+		})
+
+		JustBeforeEach(func() {
+			soloKitGoMod, err := modutils.GetCurrentModPackageFile()
+			Expect(err).NotTo(HaveOccurred())
+			soloKitRoot := filepath.Dir(soloKitGoMod)
+
+			commonImports := []string{
+				filepath.Join(soloKitRoot, anyvendor.DefaultDepDir),
+			}
+			importsCollector := collector.NewCollector([]string{}, commonImports)
+
+			cueGenerator = schemagen.NewCueGenerator(importsCollector, soloKitRoot)
+			protocGenerator = schemagen.NewProtocGenerator(importsCollector, soloKitRoot, validationSchemaOptions)
 		})
 
 		ExpectSchemaPropertiesAreEqual := func(cue, protoc *v1beta1.JSONSchemaProps, property string) {
@@ -158,36 +165,56 @@ var _ = Describe("schemagen", func() {
 			protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
 			Expect(err).NotTo(HaveOccurred())
 
-			simpleMockResourceGVK := schema.GroupVersionKind{
-				Group:   "testing.solo.io.v1",
-				Version: "v1",
-				Kind:    "SimpleMockResource",
-			}
-
 			cueSchema := cueSchemas[simpleMockResourceGVK]
 			protocSchema := protocSchemas[simpleMockResourceGVK]
 
 			ExpectJsonSchemasToMatch(cueSchema, protocSchema)
 		})
 
-		It("Descriptions for SimpleMockResource created by protoc can be truncated", func() {
-			protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
-			Expect(err).NotTo(HaveOccurred())
+		Context("Descriptions for SimpleMockResource can be truncated", func() {
 
-			simpleMockResourceGVK := schema.GroupVersionKind{
-				Group:   "testing.solo.io.v1",
-				Version: "v1",
-				Kind:    "SimpleMockResource",
-			}
+			const maxDescriptionCharacters = 20
 
-			protocSchema := protocSchemas[simpleMockResourceGVK]
+			BeforeEach(func() {
+				validationSchemaOptions = &schemagen.ValidationSchemaOptions{
+					MaxDescriptionCharacters: maxDescriptionCharacters,
+				}
+			})
 
-			fieldNameWithLongComment := "dataWithLongComment"
-			fieldWithLongComment := protocSchema.Properties[fieldNameWithLongComment]
+			It("using protoc", func() {
+				protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
+				Expect(err).NotTo(HaveOccurred())
 
-			// When we generate a description that is truncated, we included an ellipsis
-			ellipsisLength := 3
-			Expect(fieldWithLongComment.Description).To(HaveLen(maxDescriptionCharacters + ellipsisLength))
+				protocSchema := protocSchemas[simpleMockResourceGVK]
+
+				fieldNameWithLongComment := "dataWithLongComment"
+				fieldWithLongComment := protocSchema.Properties[fieldNameWithLongComment]
+
+				// When we generate a description that is truncated, we included an ellipsis
+				ellipsisLength := 3
+				Expect(fieldWithLongComment.Description).To(HaveLen(maxDescriptionCharacters + ellipsisLength))
+			})
+		})
+
+		Context("Descriptions for SimpleMockResource can be removed", func() {
+
+			BeforeEach(func() {
+				validationSchemaOptions = &schemagen.ValidationSchemaOptions{
+					RemoveDescriptionsFromSchema: true,
+				}
+			})
+
+			It("using protoc", func() {
+				protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
+				Expect(err).NotTo(HaveOccurred())
+
+				protocSchema := protocSchemas[simpleMockResourceGVK]
+
+				fieldNameWithLongComment := "dataWithLongComment"
+				fieldWithLongComment := protocSchema.Properties[fieldNameWithLongComment]
+
+				Expect(fieldWithLongComment.Description).To(HaveLen(0))
+			})
 		})
 
 	})

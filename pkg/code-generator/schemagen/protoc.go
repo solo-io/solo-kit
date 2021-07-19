@@ -52,8 +52,9 @@ func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[s
 
 	// The Executor used to compile protos
 	protocExecutor := &collector.OpenApiProtocExecutor{
-		OutputDir:                tmpOutputDir,
-		MaxDescriptionCharacters: p.validationSchemaOptions.MaxDescriptionCharacters,
+		OutputDir:                   tmpOutputDir,
+		IncludeDescriptionsInSchema: !p.validationSchemaOptions.RemoveDescriptionsFromSchema,
+		MaxDescriptionCharacters:    p.validationSchemaOptions.MaxDescriptionCharacters,
 	}
 
 	// 1. Generate the openApiSchemas for the project, writing them to a temp directory (schemaOutputDir)
