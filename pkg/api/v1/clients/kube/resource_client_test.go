@@ -163,20 +163,43 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 		It("Can maintain status when written and read from storage", func() {
 			mockResource := &v1.MockResource{
-				ReporterStatus: &core.ReporterStatus{
-					Statuses: map[string]*core.Status{
-						"test-ns:me": {
-							State:      2,
-							Reason:     "test",
-							ReportedBy: "me",
-						},
-					},
-				},
 				Metadata: &core.Metadata{
 					Name:      "test",
 					Namespace: ns1,
 				},
 			}
+			mockResource.SetStatus(&core.Status{
+				State:      2,
+				Reason:     "test",
+				ReportedBy: "me",
+			})
+			_, err := client.Write(mockResource, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			read, err := client.Read(
+				mockResource.GetMetadata().GetNamespace(),
+				mockResource.GetMetadata().GetName(),
+				clients.ReadOpts{},
+			)
+
+			Expect(mockResource.GetStatus()).To(matchers.MatchProto(read.(resources.InputResource).GetStatus()))
+		})
+
+		It("Can maintain ReporterStatus when written and read from storage", func() {
+			mockResource := &v1.MockResource{
+				Metadata: &core.Metadata{
+					Name:      "test",
+					Namespace: ns1,
+				},
+			}
+			mockResource.SetReporterStatus(&core.ReporterStatus{
+				Statuses: map[string]*core.Status{
+					"test-ns:me": {
+						State:      2,
+						Reason:     "test",
+						ReportedBy: "me",
+					},
+				},
+			})
 			_, err := client.Write(mockResource, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 

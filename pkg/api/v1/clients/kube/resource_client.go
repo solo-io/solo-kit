@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
@@ -445,7 +447,18 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
 			// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
-			withStatus.SetReporterStatus(&core.ReporterStatus{})
+			withStatus.SetStatus(&core.Status{})
+			updateStatusFunc := func(status *core.Status) error {
+				if status == nil {
+					return nil
+				}
+				typedStatus := core.Status{}
+				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
+					return err
+				}
+				*status = typedStatus
+				return nil
+			}
 			updateReporterStatusFunc := func(status *core.ReporterStatus) error {
 				if status == nil {
 					return nil
@@ -457,8 +470,13 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 				*status = typedStatus
 				return nil
 			}
-			if err := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); err != nil {
-				return nil, err
+			if statusErr := resources.UpdateStatus(withStatus, updateStatusFunc); statusErr != nil {
+				if reporterStatusErr := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); reporterStatusErr != nil {
+					var multiErr *multierror.Error
+					multiErr = multierror.Append(multiErr, reporterStatusErr)
+					multiErr = multierror.Append(multiErr, statusErr)
+					return nil, multiErr
+				}
 			}
 		}
 		if resourceCrd.Spec != nil {

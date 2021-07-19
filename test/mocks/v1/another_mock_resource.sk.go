@@ -29,40 +29,65 @@ func (r *AnotherMockResource) SetMetadata(meta *core.Metadata) {
 }
 
 func (r *AnotherMockResource) SetStatus(status *core.Status) {
-	r.Status = status
+	r.StatusOneof = &AnotherMockResource_Status{Status: status}
 }
 
 func (r *AnotherMockResource) SetReporterStatus(status *core.ReporterStatus) {
-	r.ReporterStatus = status
+	r.StatusOneof = &AnotherMockResource_ReporterStatus{ReporterStatus: status}
 }
 
+// AddToReporterStatus inserts the specified status into the ReporterStatus.Statuses map for the
+// controller specified by status.ReportedBy.  If the resource does not yet have a ReporterStatus,
+// one will be created.
+// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 func (r *AnotherMockResource) AddToReporterStatus(status *core.Status) {
 	podNamespace := os.Getenv("POD_NAMESPACE")
 	if podNamespace != "" {
-		if r.ReporterStatus == nil {
-			r.ReporterStatus = &core.ReporterStatus{}
+		if r.GetReporterStatus() == nil {
+			r.SetReporterStatus(&core.ReporterStatus{})
 		}
-		if r.ReporterStatus.Statuses == nil {
-			r.ReporterStatus.Statuses = make(map[string]*core.Status)
+		if r.GetReporterStatus().Statuses == nil {
+			r.GetReporterStatus().Statuses = make(map[string]*core.Status)
 		}
 		key := podNamespace + ":" + status.GetReportedBy()
-		r.ReporterStatus.Statuses[key] = status
+		r.GetReporterStatus().Statuses[key] = status
 	}
 }
 
+// GetStatusForReporter returns the status stored in the ReporterStatus.Statuses map for the
+// controller specified by reportedBy, or nil if no status exists for that controller.
+// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 func (r *AnotherMockResource) GetStatusForReporter(reportedBy string) *core.Status {
 	podNamespace := os.Getenv("POD_NAMESPACE")
 	if podNamespace != "" {
 		key := podNamespace + ":" + reportedBy
-		if r.ReporterStatus == nil {
+		if r.GetReporterStatus() == nil {
 			return nil
 		}
-		if r.ReporterStatus.Statuses == nil {
+		if r.GetReporterStatus().Statuses == nil {
 			return nil
 		}
-		return r.ReporterStatus.Statuses[key]
+		return r.GetReporterStatus().Statuses[key]
 	}
 	return nil
+}
+
+func (r *AnotherMockResource) HasReporterStatus() bool {
+	switch r.StatusOneof.(type) {
+	case *AnotherMockResource_ReporterStatus:
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *AnotherMockResource) HasStatus() bool {
+	switch r.StatusOneof.(type) {
+	case *AnotherMockResource_Status:
+		return true
+	default:
+		return false
+	}
 }
 
 func (r *AnotherMockResource) MustHash() uint64 {

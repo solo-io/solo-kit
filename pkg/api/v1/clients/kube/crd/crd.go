@@ -106,7 +106,16 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 		delete(data, "status")
 		spec = data
 
-		if resource.GetReporterStatus() != nil {
+		if resource.HasStatus() {
+			statusProto := resource.GetStatus()
+			statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
+			if err != nil {
+				return nil, MarshalErr(err, "resource status to map")
+			}
+			status = statusMap
+		}
+
+		if resource.HasReporterStatus() {
 			reporterStatusProto := resource.GetReporterStatus()
 			reporterStatusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(reporterStatusProto)
 			if err != nil {

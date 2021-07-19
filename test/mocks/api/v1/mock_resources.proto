@@ -51,7 +51,10 @@ message MockResource {
     option (core.solo.io.resource).plural_name = "mocks";
 
     // The status field comment
-    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+    oneof status_oneof {
+        core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+        core.solo.io.ReporterStatus reporter_status = 8 [(extproto.skip_hashing) = true];
+    }
     core.solo.io.Metadata metadata = 7;
 
     string data = 1 [json_name="data.json"];
@@ -67,7 +70,6 @@ message MockResource {
         // oneof comment
         NestedOneOf oneof_nestedoneof = 12;
     }
-    core.solo.io.ReporterStatus reporter_status = 8 [(extproto.skip_hashing) = true];
 }
 
 // A NestedOneOf message

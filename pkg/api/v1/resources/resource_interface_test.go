@@ -41,11 +41,15 @@ func (m *mockResources) GetReporterStatus() *core.ReporterStatus {
 	panic("implement me")
 }
 
-func (m *mockResources) GetStatusForReporter(reportedBy string) *core.Status {
+func (m *mockResources) SetReporterStatus(status *core.ReporterStatus) {
 	panic("implement me")
 }
 
-func (m *mockResources) SetReporterStatus(status *core.ReporterStatus) {
+func (m *mockResources) HasReporterStatus() bool {
+	panic("implement me")
+}
+
+func (m *mockResources) GetStatusForReporter(reportedBy string) *core.Status {
 	panic("implement me")
 }
 
@@ -76,4 +80,8 @@ func (m *mockResources) GetStatus() *core.Status {
 
 func (m *mockResources) SetStatus(status *core.Status) {
 	// Not need in this test
+}
+
+func (m *mockResources) HasStatus() bool {
+	panic("implement me")
 }

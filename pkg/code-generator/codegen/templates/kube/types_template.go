@@ -91,13 +91,13 @@ func (o *{{ .Name }}) UnmarshalJSON(data []byte) error {
 		Spec:       spec,
 	}
 {{- if .HasStatus }}
-	if spec.Status != nil {
-		o.Status = *spec.Status
-		o.Spec.Status = nil
+	if spec.GetStatus() != nil {
+		o.Status = *spec.GetStatus()
+		o.Spec.SetStatus(nil)
 	}
-	if spec.ReporterStatus != nil {
-		o.ReporterStatus = *spec.ReporterStatus
-		o.Spec.ReporterStatus = nil
+	if spec.GetReporterStatus() != nil {
+		o.ReporterStatus = *spec.GetReporterStatus()
+		o.Spec.SetReporterStatus(nil)
 	}
 {{- end }}
 

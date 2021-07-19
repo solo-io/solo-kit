@@ -56,6 +56,14 @@ func (m *AnotherMockResource) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	switch m.StatusOneof.(type) {
+
+	case *AnotherMockResource_Status:
+
+	case *AnotherMockResource_ReporterStatus:
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -88,6 +96,14 @@ func (m *ClusterResource) Hash(hasher hash.Hash64) (uint64, error) {
 
 	if _, err = hasher.Write([]byte(m.GetBasicField())); err != nil {
 		return 0, err
+	}
+
+	switch m.StatusOneof.(type) {
+
+	case *ClusterResource_Status:
+
+	case *ClusterResource_ReporterStatus:
+
 	}
 
 	return hasher.Sum64(), nil

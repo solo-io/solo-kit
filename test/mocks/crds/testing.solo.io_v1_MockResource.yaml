@@ -71,12 +71,10 @@ spec:
             someDumbField:
               type: string
             status:
-              description: The status field comment
               type: object
               x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
-          description: The status field comment
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object

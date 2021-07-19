@@ -10,6 +10,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -190,6 +191,19 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
 	if withStatus, ok := resource.(resources.InputResource); ok {
 
+		updateStatusFunc := func(status *core.Status) error {
+			if status == nil {
+				return nil
+			}
+			typedStatus := core.Status{}
+			err := UnmarshalMapToProto(resourceCrd.Status, &typedStatus)
+			if err != nil {
+				return err
+			}
+			*status = typedStatus
+			return nil
+		}
+
 		updateReporterStatusFunc := func(reporterStatus *core.ReporterStatus) error {
 			if reporterStatus == nil {
 				return nil
@@ -203,8 +217,13 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 			return nil
 		}
 
-		if err := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); err != nil {
-			return err
+		if statusErr := resources.UpdateStatus(withStatus, updateStatusFunc); statusErr != nil {
+			if reporterStatusErr := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); reporterStatusErr != nil {
+				var multiErr *multierror.Error
+				multiErr = multierror.Append(multiErr, reporterStatusErr)
+				multiErr = multierror.Append(multiErr, statusErr)
+				return multiErr
+			}
 		}
 	}
 

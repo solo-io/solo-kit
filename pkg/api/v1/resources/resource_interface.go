@@ -46,9 +46,11 @@ type InputResource interface {
 	Resource
 	GetStatus() *core.Status
 	SetStatus(status *core.Status)
+	HasStatus() bool
 	GetReporterStatus() *core.ReporterStatus
-	GetStatusForReporter(reportedBy string) *core.Status
 	SetReporterStatus(status *core.ReporterStatus)
+	HasReporterStatus() bool
+	GetStatusForReporter(reportedBy string) *core.Status
 	AddToReporterStatus(status *core.Status)
 }
 

@@ -19,9 +19,11 @@ message MockResource {
     option (core.solo.io.resource).short_name = "mk";
     option (core.solo.io.resource).plural_name = "mocks";
 
-    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+    oneof status_oneof {
+        core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+        core.solo.io.ReporterStatus reporter_status = 8 [(extproto.skip_hashing) = true];
+    }
     core.solo.io.Metadata metadata = 7;
-    core.solo.io.ReporterStatus reporter_status = 8 [(extproto.skip_hashing) = true];
 
     oneof we_stuck_it_in_a_oneof {
         string some_dumb_field = 100 [(extproto.skip_hashing) = true];

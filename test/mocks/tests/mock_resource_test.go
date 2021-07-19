@@ -89,7 +89,8 @@ var _ = Describe("MockResource", func() {
 
 	Context("AddToReporterStatus", func() {
 		It("Should format map keys correctly", func() {
-			mockRes := v1.MockResource{ReporterStatus: &ReporterStatus{}}
+			mockRes := v1.MockResource{}
+			mockRes.SetReporterStatus(&ReporterStatus{})
 			SimulateInPodNamespace("test-ns", func() {
 				mockRes.AddToReporterStatus(&Status{
 					State:      Status_Accepted,
@@ -102,7 +103,8 @@ var _ = Describe("MockResource", func() {
 		})
 
 		It("Should replace an existing status by the same reporter", func() {
-			mockRes := v1.MockResource{ReporterStatus: &ReporterStatus{}}
+			mockRes := v1.MockResource{}
+			mockRes.SetReporterStatus(&ReporterStatus{})
 			SimulateInPodNamespace("test-ns", func() {
 				initStatus := Status{
 					State:      Status_Pending,

@@ -52,6 +52,14 @@ func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	switch m.StatusOneof.(type) {
+
+	case *MockResource_Status:
+
+	case *MockResource_ReporterStatus:
+
+	}
+
 	switch m.WeStuckItInAOneof.(type) {
 
 	case *MockResource_SomeDumbField:
