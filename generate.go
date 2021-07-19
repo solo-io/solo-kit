@@ -27,8 +27,9 @@ func main() {
 		},
 		ValidationSchemaOptions: &schemagen.ValidationSchemaOptions{
 			// Path to where test CRDs are stored
-			CrdDirectory:   "test/mocks/crds",
-			JsonSchemaTool: "protoc",
+			CrdDirectory:             "test/mocks/crds",
+			JsonSchemaTool:           "protoc",
+			MaxDescriptionCharacters: 20,
 		},
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)

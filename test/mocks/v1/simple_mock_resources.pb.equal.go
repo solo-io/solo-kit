@@ -82,6 +82,14 @@ func (m *SimpleMockResource) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetInt64Data() != target.GetInt64Data() {
+		return false
+	}
+
+	if m.GetDataWithLongComment() != target.GetDataWithLongComment() {
+		return false
+	}
+
 	if h, ok := interface{}(m.GetNestedMessage()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetNestedMessage()) {
 			return false

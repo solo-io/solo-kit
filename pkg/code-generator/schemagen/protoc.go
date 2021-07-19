@@ -24,17 +24,19 @@ import (
 
 // Implementation of JsonSchemaGenerator that uses a plugin for the protocol buffer compiler
 type protocGenerator struct {
+	validationSchemaOptions *ValidationSchemaOptions
 	// The Collector used to extract imports for proto files
 	importsCollector collector.Collector
 	absoluteRoot     string
 	protoDir         string
 }
 
-func NewProtocGenerator(importsCollector collector.Collector, absoluteRoot string) *protocGenerator {
+func NewProtocGenerator(importsCollector collector.Collector, absoluteRoot string, validationSchemaOptions *ValidationSchemaOptions) *protocGenerator {
 	return &protocGenerator{
-		importsCollector: importsCollector,
-		absoluteRoot:     absoluteRoot,
-		protoDir:         anyvendor.DefaultDepDir,
+		validationSchemaOptions: validationSchemaOptions,
+		importsCollector:        importsCollector,
+		absoluteRoot:            absoluteRoot,
+		protoDir:                anyvendor.DefaultDepDir,
 	}
 }
 
@@ -50,7 +52,8 @@ func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[s
 
 	// The Executor used to compile protos
 	protocExecutor := &collector.OpenApiProtocExecutor{
-		OutputDir: tmpOutputDir,
+		OutputDir:                tmpOutputDir,
+		MaxDescriptionCharacters: p.validationSchemaOptions.MaxDescriptionCharacters,
 	}
 
 	// 1. Generate the openApiSchemas for the project, writing them to a temp directory (schemaOutputDir)

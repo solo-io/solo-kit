@@ -22,6 +22,12 @@ type ValidationSchemaOptions struct {
 
 	// Tool used to generate JsonSchemas, defaults to protoc
 	JsonSchemaTool string
+
+	// The maximum number of characters to include in a description
+	// If RemoveDescriptionsFromSchema is set to true, this will be ignored
+	// A 0 value will be interpreted as "include all characters"
+	// Default: 0
+	MaxDescriptionCharacters int
 }
 
 type JsonSchemaGenerator interface {
@@ -56,9 +62,9 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 	case "cue":
 		jsonSchemaGenerator = NewCueGenerator(importsCollector, absoluteRoot)
 	case "protoc":
-		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot)
+		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot, options)
 	default:
-		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot)
+		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot, options)
 	}
 
 	jsonSchemasByGVK, err := jsonSchemaGenerator.GetJsonSchemaForProject(project)

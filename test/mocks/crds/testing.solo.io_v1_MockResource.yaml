@@ -22,8 +22,7 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: Mock resources for goofin off This includes oneof, nested resources,
-            and any other special cases that may cause issues during schemagen
+          description: Mock resources for g...
           properties:
             data.json:
               type: string
@@ -60,12 +59,12 @@ spec:
             someDumbField:
               type: string
             status:
-              description: The status field comment
+              description: The status field com...
               type: object
               x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
-          description: The status field comment
+          description: The status field com...
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object

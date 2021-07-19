@@ -17,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+const maxDescriptionCharacters = 20
+
 var _ = Describe("schemagen", func() {
 
 	Context("JSONSchemaGenerator", func() {
@@ -34,6 +36,10 @@ var _ = Describe("schemagen", func() {
 			protocGenerator schemagen.JsonSchemaGenerator
 
 			project *model.Project
+
+			validationSchemaOptions = &schemagen.ValidationSchemaOptions{
+				MaxDescriptionCharacters: maxDescriptionCharacters,
+			}
 		)
 
 		BeforeEach(func() {
@@ -47,7 +53,7 @@ var _ = Describe("schemagen", func() {
 			importsCollector := collector.NewCollector([]string{}, commonImports)
 
 			cueGenerator = schemagen.NewCueGenerator(importsCollector, soloKitRoot)
-			protocGenerator = schemagen.NewProtocGenerator(importsCollector, soloKitRoot)
+			protocGenerator = schemagen.NewProtocGenerator(importsCollector, soloKitRoot, validationSchemaOptions)
 
 			// This is a modified Project model, to only include the SimpleMockResource type
 			project = &model.Project{
@@ -75,6 +81,11 @@ var _ = Describe("schemagen", func() {
 		ExpectSchemaPropertiesAreEqual := func(cue, protoc *v1beta1.JSONSchemaProps, property string) {
 			cueSchema := cue.Properties[property]
 			protocSchema := protoc.Properties[property]
+
+			// Do not compare descriptions
+			cueSchema.Description = ""
+			protocSchema.Description = ""
+
 			ExpectWithOffset(2, cueSchema).To(Equal(protocSchema))
 		}
 
@@ -107,6 +118,13 @@ var _ = Describe("schemagen", func() {
 			fieldName = "struct"
 			cueSchema = cue.Properties[fieldName]
 			cueSchema.XPreserveUnknownFields = pointer.BoolPtr(true) // cue doesn't preserve unknown fields for structs by default
+			protocSchema = protoc.Properties[fieldName]
+			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
+
+			// type: int64
+			fieldName = "int64Data"
+			cueSchema = cue.Properties[fieldName]
+			cueSchema.XIntOrString = true // cue doesn't set x-int-or-string by default
 			protocSchema = protoc.Properties[fieldName]
 			ExpectWithOffset(1, cueSchema).To(Equal(protocSchema))
 
@@ -150,6 +168,26 @@ var _ = Describe("schemagen", func() {
 			protocSchema := protocSchemas[simpleMockResourceGVK]
 
 			ExpectJsonSchemasToMatch(cueSchema, protocSchema)
+		})
+
+		It("Descriptions for SimpleMockResource created by protoc can be truncated", func() {
+			protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
+			Expect(err).NotTo(HaveOccurred())
+
+			simpleMockResourceGVK := schema.GroupVersionKind{
+				Group:   "testing.solo.io.v1",
+				Version: "v1",
+				Kind:    "SimpleMockResource",
+			}
+
+			protocSchema := protocSchemas[simpleMockResourceGVK]
+
+			fieldNameWithLongComment := "dataWithLongComment"
+			fieldWithLongComment := protocSchema.Properties[fieldNameWithLongComment]
+
+			// When we generate a description that is truncated, we included an ellipsis
+			ellipsisLength := 3
+			Expect(fieldWithLongComment.Description).To(HaveLen(maxDescriptionCharacters + ellipsisLength))
 		})
 
 	})
