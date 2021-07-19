@@ -24,7 +24,6 @@ type ValidationSchemaOptions struct {
 	JsonSchemaTool string
 
 	// The maximum number of characters to include in a description
-	// If RemoveDescriptionsFromSchema is set to true, this will be ignored
 	// A 0 value will be interpreted as "include all characters"
 	// Default: 0
 	MaxDescriptionCharacters int

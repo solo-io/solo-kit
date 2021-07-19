@@ -37,9 +37,7 @@ spec:
               type: string
             dataWithLongComment:
               description: this comment is very...
-              format: int64
-              type: integer
-              x-kubernetes-int-or-string: true
+              type: string
             doubleValue:
               description: double_value comment
               nullable: true

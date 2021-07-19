@@ -70,7 +70,6 @@ type OpenApiProtocExecutor struct {
 	OutputDir string
 
 	// The maximum number of characters to include in a description
-	// If IncludeDescriptionsInSchema is set to false, this will be ignored
 	// A 0 value will be interpreted as "include all characters"
 	// Default: 0
 	MaxDescriptionCharacters int

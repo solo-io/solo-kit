@@ -86,7 +86,7 @@ func (m *SimpleMockResource) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetDataWithLongComment() != target.GetDataWithLongComment() {
+	if strings.Compare(m.GetDataWithLongComment(), target.GetDataWithLongComment()) != 0 {
 		return false
 	}
 
