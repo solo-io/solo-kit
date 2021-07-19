@@ -22,7 +22,9 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: A SimpleMockResource...
+          description: A SimpleMockResource defines a variety of baseline types to
+            ensure that we can generate open api schemas properly. It intentionally
+            avoids messages that include oneof and recursive schemas (like core.solo.io.Status)
           properties:
             any:
               description: any comment
@@ -36,7 +38,8 @@ spec:
               description: data comment
               type: string
             dataWithLongComment:
-              description: this comment is very...
+              description: this comment is very long. It should be truncated by the
+                schema generator to avoid generating absurdly large CRDs
               type: string
             doubleValue:
               description: double_value comment
@@ -85,10 +88,10 @@ spec:
               additionalProperties:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              description: mapped_struct commen...
+              description: mapped_struct comment
               type: object
             nestedMessage:
-              description: nested_message comme...
+              description: nested_message comment
               properties:
                 optionBool:
                   type: boolean
@@ -96,9 +99,9 @@ spec:
                   type: string
               type: object
             nestedMessageList:
-              description: nested_message_list ...
+              description: nested_message_list comment
               items:
-                description: NestedMessage type c...
+                description: NestedMessage type comment
                 properties:
                   optionBool:
                     type: boolean
