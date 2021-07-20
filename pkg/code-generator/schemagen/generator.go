@@ -31,6 +31,7 @@ type ValidationSchemaOptions struct {
 	RemoveDescriptionsFromSchema bool
 
 	// The maximum number of characters to include in a description
+	// If RemoveDescriptionsFromSchema is true, this will be ignored
 	// A 0 value will be interpreted as "include all characters"
 	// Default: 0
 	MaxDescriptionCharacters int
