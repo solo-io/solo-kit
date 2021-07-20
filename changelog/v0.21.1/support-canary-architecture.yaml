@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Add support for statuses from multiple reporters.
-    issueLink: https://github.com/solo-io/solo-kit/issues/430
