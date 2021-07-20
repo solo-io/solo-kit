@@ -43,6 +43,13 @@ message SimpleMockResource {
   // list comment
   repeated bool list = 3;
 
+  // int64 comment
+  int64 int64_data = 6;
+
+  // this comment is very long. It should be truncated by the schema generator to avoid
+  // generating absurdly large CRDs
+  string data_with_long_comment = 7;
+
   // nested_message comment
   NestedMessage nested_message = 4;
 

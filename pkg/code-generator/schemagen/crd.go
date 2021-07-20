@@ -66,7 +66,7 @@ func getFilenameForCRD(crd apiextv1beta1.CustomResourceDefinition) string {
 	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Version, crd.Spec.Names.Kind)
 }
 
-func getCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDefinition, error) {
+func GetCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDefinition, error) {
 	var crds []apiextv1beta1.CustomResourceDefinition
 
 	err := filepath.Walk(crdDirectory, func(crdFile string, info os.FileInfo, err error) error {
@@ -81,7 +81,7 @@ func getCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDe
 			return nil
 		}
 
-		crdFromFile, err := getCRDFromFile(crdFile)
+		crdFromFile, err := GetCRDFromFile(crdFile)
 		if err != nil {
 			log.Fatalf("failed to get crd from file: %v", err)
 			return err
@@ -94,7 +94,7 @@ func getCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDe
 	return crds, err
 }
 
-func getCRDFromFile(pathToFile string) (apiextv1beta1.CustomResourceDefinition, error) {
+func GetCRDFromFile(pathToFile string) (apiextv1beta1.CustomResourceDefinition, error) {
 	crd := apiextv1beta1.CustomResourceDefinition{}
 
 	r, err := os.Open(pathToFile)

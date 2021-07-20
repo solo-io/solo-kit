@@ -84,6 +84,15 @@ func (m *SimpleMockResource) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetInt64Data())
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetDataWithLongComment())); err != nil {
+		return 0, err
+	}
+
 	if h, ok := interface{}(m.GetNestedMessage()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
