@@ -68,6 +68,14 @@ func (d *DefaultProtocExecutor) Execute(protoFile string, toFile string, imports
 
 type OpenApiProtocExecutor struct {
 	OutputDir string
+
+	// Whether to include descriptions in validation schemas
+	IncludeDescriptionsInSchema bool
+
+	// The maximum number of characters to include in a description
+	// A 0 value will be interpreted as "include all characters"
+	// Default: 0
+	MaxDescriptionCharacters int
 }
 
 func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports []string) error {
@@ -94,7 +102,8 @@ func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports
 	_ = os.Mkdir(directoryPath, os.ModePerm)
 
 	cmd.Args = append(cmd.Args,
-		fmt.Sprintf("--openapi_out=yaml=true,single_file=false:%s", directoryPath),
+		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,max_description_characters=%d,include_description=%v:%s",
+			o.MaxDescriptionCharacters, o.IncludeDescriptionsInSchema, directoryPath),
 	)
 
 	cmd.Args = append(cmd.Args,

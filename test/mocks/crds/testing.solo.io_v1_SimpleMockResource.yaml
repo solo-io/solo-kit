@@ -37,6 +37,10 @@ spec:
             data:
               description: data comment
               type: string
+            dataWithLongComment:
+              description: this comment is very long. It should be truncated by the
+                schema generator to avoid generating absurdly large CRDs
+              type: string
             doubleValue:
               description: double_value comment
               nullable: true
@@ -65,6 +69,11 @@ spec:
               minimum: -2147483648
               nullable: true
               type: integer
+            int64Data:
+              description: int64 comment
+              format: int64
+              type: integer
+              x-kubernetes-int-or-string: true
             list:
               description: list comment
               items:

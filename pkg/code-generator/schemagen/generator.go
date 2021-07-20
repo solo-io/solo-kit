@@ -22,6 +22,19 @@ type ValidationSchemaOptions struct {
 
 	// Tool used to generate JsonSchemas, defaults to protoc
 	JsonSchemaTool string
+
+	// Whether to remove descriptions from validation schemas
+	// Default: false
+	//
+	// NOTE: I'd prefer a positive field name (ie includeDescriptions)
+	//	but I wanted to avoid changing the default behavior
+	RemoveDescriptionsFromSchema bool
+
+	// The maximum number of characters to include in a description
+	// If RemoveDescriptionsFromSchema is true, this will be ignored
+	// A 0 value will be interpreted as "include all characters"
+	// Default: 0
+	MaxDescriptionCharacters int
 }
 
 type JsonSchemaGenerator interface {
@@ -40,7 +53,7 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 	}
 
 	// Extract the CRDs from the directory
-	crds, err := getCRDsFromDirectory(options.CrdDirectory)
+	crds, err := GetCRDsFromDirectory(options.CrdDirectory)
 	if err != nil {
 		return err
 	}
@@ -56,9 +69,9 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 	case "cue":
 		jsonSchemaGenerator = NewCueGenerator(importsCollector, absoluteRoot)
 	case "protoc":
-		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot)
+		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot, options)
 	default:
-		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot)
+		jsonSchemaGenerator = NewProtocGenerator(importsCollector, absoluteRoot, options)
 	}
 
 	jsonSchemasByGVK, err := jsonSchemaGenerator.GetJsonSchemaForProject(project)
