@@ -87,7 +87,7 @@ func (r *{{ .Name }}) SetMetadata(meta *core.Metadata) {
 {{- if $.HasStatus }}
 
 func (r *{{ .Name }}) SetStatus(status *core.Status) {
-	r.StatusOneof = &{{ .Name }}_Status{Status: status}
+	r.AddToReporterStatus(status)
 }
 
 func (r *{{ .Name }}) SetReporterStatus(status *core.ReporterStatus) {

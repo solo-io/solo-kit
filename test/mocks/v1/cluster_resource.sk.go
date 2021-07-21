@@ -29,7 +29,7 @@ func (r *ClusterResource) SetMetadata(meta *core.Metadata) {
 }
 
 func (r *ClusterResource) SetStatus(status *core.Status) {
-	r.StatusOneof = &ClusterResource_Status{Status: status}
+	r.AddToReporterStatus(status)
 }
 
 func (r *ClusterResource) SetReporterStatus(status *core.ReporterStatus) {

@@ -95,7 +95,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 			if readErr == nil {
 				equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
 				if equal {
-					// same hash, s	omething not important was done, try again:
+					// same hash, something not important was done, try again:
 					updatedRes.(resources.InputResource).SetStatus(status)
 					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
 						Ctx:               ctx,

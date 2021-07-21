@@ -29,7 +29,7 @@ func (r *AnotherMockResource) SetMetadata(meta *core.Metadata) {
 }
 
 func (r *AnotherMockResource) SetStatus(status *core.Status) {
-	r.StatusOneof = &AnotherMockResource_Status{Status: status}
+	r.AddToReporterStatus(status)
 }
 
 func (r *AnotherMockResource) SetReporterStatus(status *core.ReporterStatus) {
