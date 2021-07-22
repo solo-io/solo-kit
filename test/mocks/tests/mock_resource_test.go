@@ -12,7 +12,7 @@ import (
 var _ = Describe("MockResource", func() {
 
 	AfterEach(func() {
-		Expect(os.Setenv("POD_NAMESPACE", "")).NotTo(HaveOccurred())
+		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
 	})
 
 	Context("Set and Get ReporterStatus", func() {
@@ -149,5 +149,5 @@ var _ = Describe("MockResource", func() {
 func SimulateInPodNamespace(namespace string, body func()) {
 	Expect(os.Setenv("POD_NAMESPACE", namespace)).NotTo(HaveOccurred())
 	body()
-	Expect(os.Setenv("POD_NAMESPACE", "")).NotTo(HaveOccurred())
+	Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
 }

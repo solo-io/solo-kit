@@ -23,11 +23,11 @@ var _ = Describe("Reporter", func() {
 	)
 
 	BeforeEach(func() {
-		os.Setenv("POD_NAMESPACE", "gloo-system")
+		Expect(os.Setenv("POD_NAMESPACE", "gloo-system")).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		os.Setenv("POD_NAMESPACE", "")
+		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
 	})
 
 	JustBeforeEach(func() {

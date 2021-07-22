@@ -124,8 +124,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 	})
 
 	AfterEach(func() {
-		err := os.Setenv("POD_NAMESPACE", "")
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
 	})
 
 	Context("integrations tests", func() {

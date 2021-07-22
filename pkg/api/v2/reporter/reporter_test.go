@@ -29,13 +29,11 @@ var _ = Describe("Reporter", func() {
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", mockResourceClient, fakeResourceClient)
 
-		err := os.Setenv("POD_NAMESPACE", "test-ns")
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv("POD_NAMESPACE", "test-ns")).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		err := os.Setenv("POD_NAMESPACE", "")
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
 	})
 
 	It("reports errors for resources", func() {
