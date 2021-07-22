@@ -1,6 +1,8 @@
 package reporter_test
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -19,6 +21,15 @@ var _ = Describe("Reporter", func() {
 		reporter                               rep.Reporter
 		mockResourceClient, fakeResourceClient clients.ResourceClient
 	)
+
+	BeforeEach(func() {
+		os.Setenv("POD_NAMESPACE", "gloo-system")
+	})
+
+	AfterEach(func() {
+		os.Setenv("POD_NAMESPACE", "")
+	})
+
 	JustBeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
@@ -42,12 +53,15 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r2, err = mockResourceClient.Read(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(r1.(*v1.MockResource).GetStatus()).To(Equal(&core.Status{
-			State:      2,
-			Reason:     "everyone makes mistakes",
-			ReportedBy: "test",
-		}))
-		Expect(r2.(*v1.MockResource).GetStatus()).To(Equal(&core.Status{
+		fmt.Println(r1.(*v1.MockResource).GetReporterStatus().String())
+
+		r1Status := r1.(*v1.MockResource).GetStatusForReporter("test")
+		Expect(r1Status.GetState()).To(Equal(core.Status_Rejected))
+		Expect(r1Status.GetReason()).To(Equal("everyone makes mistakes"))
+		Expect(r1Status.GetReportedBy()).To(Equal("test"))
+
+		r2Status := r2.(*v1.MockResource).GetStatusForReporter("test")
+		Expect(r2Status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "try your best",
 			ReportedBy: "test",
