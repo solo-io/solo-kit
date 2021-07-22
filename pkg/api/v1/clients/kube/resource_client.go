@@ -470,8 +470,12 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 				*status = typedStatus
 				return nil
 			}
+			// First attempt to unmarshal Status
 			if statusErr := resources.UpdateStatus(withStatus, updateStatusFunc); statusErr != nil {
-				if reporterStatusErr := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); reporterStatusErr != nil {
+				// If unmarshalling Status failed, the resource likely has a ReporterStatus instead.
+				reporterStatusErr := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc)
+				if reporterStatusErr != nil {
+					// There's actually something wrong if either status can't be unmarshalled.
 					var multiErr *multierror.Error
 					multiErr = multierror.Append(multiErr, reporterStatusErr)
 					multiErr = multierror.Append(multiErr, statusErr)
