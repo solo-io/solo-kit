@@ -1,8 +1,6 @@
 name: PR Auto Labeling
 on:
-  pull_request:
-    types:
-      - opened
+  pull_request: {}
 jobs:
   add-label:
     name: Add `keep pr updated` Label
