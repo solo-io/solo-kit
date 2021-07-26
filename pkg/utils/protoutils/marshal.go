@@ -217,8 +217,8 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 			return nil
 		}
 
-		if statusErr := resources.UpdateStatus(withStatus, updateStatusFunc); statusErr != nil {
-			if reporterStatusErr := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); reporterStatusErr != nil {
+		if reporterStatusErr := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); reporterStatusErr != nil {
+			if statusErr := resources.UpdateStatus(withStatus, updateStatusFunc); statusErr != nil {
 				var multiErr *multierror.Error
 				multiErr = multierror.Append(multiErr, reporterStatusErr)
 				multiErr = multierror.Append(multiErr, statusErr)
