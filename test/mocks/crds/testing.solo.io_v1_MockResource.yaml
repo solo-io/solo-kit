@@ -63,9 +63,8 @@ spec:
                   additionalProperties:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
-                  description: 'Mapping from reporter to that reporter''s Status.
-                    Key format: ${POD_NAMESPACE}:${Status.ReportedBy} (i.e. gloo-system:gloo,
-                    gloo-system:gateway, etc)'
+                  description: Mapping from namespace to the Status written by the
+                    controller running in that namespace.
                   type: object
               type: object
             someDumbField:

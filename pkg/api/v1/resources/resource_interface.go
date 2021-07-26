@@ -44,14 +44,16 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 
 type InputResource interface {
 	Resource
+	// Deprecated: statuses are now written to a ReporterStatus, use GetNamespacedStatus() or
+	// GetReporterStatus() instead.
 	GetStatus() *core.Status
 	SetStatus(status *core.Status)
 	HasStatus() bool
 	GetReporterStatus() *core.ReporterStatus
 	SetReporterStatus(status *core.ReporterStatus)
 	HasReporterStatus() bool
-	GetStatusForReporter(reportedBy string) *core.Status
-	AddToReporterStatus(status *core.Status)
+	GetNamespacedStatus() *core.Status
+	UpsertReporterStatus(status *core.Status)
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control

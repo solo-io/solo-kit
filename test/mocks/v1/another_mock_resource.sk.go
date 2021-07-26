@@ -29,18 +29,18 @@ func (r *AnotherMockResource) SetMetadata(meta *core.Metadata) {
 }
 
 func (r *AnotherMockResource) SetStatus(status *core.Status) {
-	r.AddToReporterStatus(status)
+	r.UpsertReporterStatus(status)
 }
 
 func (r *AnotherMockResource) SetReporterStatus(status *core.ReporterStatus) {
 	r.StatusOneof = &AnotherMockResource_ReporterStatus{ReporterStatus: status}
 }
 
-// AddToReporterStatus inserts the specified status into the ReporterStatus.Statuses map for the
-// controller specified by status.ReportedBy.  If the resource does not yet have a ReporterStatus,
-// one will be created.
+// UpsertReporterStatus inserts the specified status into the ReporterStatus.Statuses map for the
+// current namespace (as specified by POD_NAMESPACE env var).  If the resource does not yet have
+// a ReporterStatus, one will be created.
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
-func (r *AnotherMockResource) AddToReporterStatus(status *core.Status) {
+func (r *AnotherMockResource) UpsertReporterStatus(status *core.Status) {
 	podNamespace := os.Getenv("POD_NAMESPACE")
 	if podNamespace != "" {
 		if r.GetReporterStatus() == nil {
@@ -49,25 +49,24 @@ func (r *AnotherMockResource) AddToReporterStatus(status *core.Status) {
 		if r.GetReporterStatus().Statuses == nil {
 			r.GetReporterStatus().Statuses = make(map[string]*core.Status)
 		}
-		key := podNamespace + ":" + status.GetReportedBy()
-		r.GetReporterStatus().Statuses[key] = status
+		r.GetReporterStatus().Statuses[podNamespace] = status
 	}
 }
 
-// GetStatusForReporter returns the status stored in the ReporterStatus.Statuses map for the
-// controller specified by reportedBy, or nil if no status exists for that controller.
+// GetNamespacedStatus returns the status stored in the ReporterStatus.Statuses map for the
+// controller specified by the POD_NAMESPACE env var, or nil if no status exists for that
+// controller.
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
-func (r *AnotherMockResource) GetStatusForReporter(reportedBy string) *core.Status {
+func (r *AnotherMockResource) GetNamespacedStatus() *core.Status {
 	podNamespace := os.Getenv("POD_NAMESPACE")
 	if podNamespace != "" {
-		key := podNamespace + ":" + reportedBy
 		if r.GetReporterStatus() == nil {
 			return nil
 		}
 		if r.GetReporterStatus().Statuses == nil {
 			return nil
 		}
-		return r.GetReporterStatus().Statuses[key]
+		return r.GetReporterStatus().Statuses[podNamespace]
 	}
 	return nil
 }

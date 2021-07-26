@@ -110,7 +110,7 @@ func updateDesiredResourceVersionAndStatus(desired, original resources.Resource)
 	})
 	if desiredInput, ok := desired.(resources.InputResource); ok {
 		// TODO(mitchaman): remove hardcoded gateway
-		desiredInput.AddToReporterStatus(&core.Status{State: core.Status_Pending, ReportedBy: "gateway"})
+		desiredInput.UpsertReporterStatus(&core.Status{State: core.Status_Pending, ReportedBy: "gateway"})
 	}
 	return desired
 }

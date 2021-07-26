@@ -55,12 +55,12 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Println(r1.(*v1.MockResource).GetReporterStatus().String())
 
-		r1Status := r1.(*v1.MockResource).GetStatusForReporter("test")
+		r1Status := r1.(*v1.MockResource).GetNamespacedStatus()
 		Expect(r1Status.GetState()).To(Equal(core.Status_Rejected))
 		Expect(r1Status.GetReason()).To(Equal("everyone makes mistakes"))
 		Expect(r1Status.GetReportedBy()).To(Equal("test"))
 
-		r2Status := r2.(*v1.MockResource).GetStatusForReporter("test")
+		r2Status := r2.(*v1.MockResource).GetNamespacedStatus()
 		Expect(r2Status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "try your best",

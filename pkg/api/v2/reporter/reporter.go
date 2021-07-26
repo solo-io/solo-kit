@@ -234,7 +234,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 
-		if status.Equal(resource.GetStatusForReporter(status.GetReportedBy())) {
+		if status.Equal(resource.GetNamespacedStatus()) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
@@ -278,7 +278,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite = inputResourceFromRead
-			resourceToWrite.AddToReporterStatus(status)
+			resourceToWrite.UpsertReporterStatus(status)
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -303,7 +303,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWrite, nil
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	resourceToWriteUpdated.AddToReporterStatus(resourceToWrite.GetStatus())
+	resourceToWriteUpdated.UpsertReporterStatus(resourceToWrite.GetStatus())
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 

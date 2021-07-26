@@ -20,11 +20,11 @@ var _ = Describe("MockResource", func() {
 			mockRes := v1.MockResource{}
 			reporterStatus := &ReporterStatus{
 				Statuses: map[string]*Status{
-					"test-ns1:gloo": {
+					"test-ns1": {
 						State:      Status_Accepted,
 						ReportedBy: "gloo",
 					},
-					"test-ns2:gloo": {
+					"test-ns2": {
 						State:      Status_Pending,
 						ReportedBy: "gloo",
 					},
@@ -54,7 +54,7 @@ var _ = Describe("MockResource", func() {
 		})
 	})
 
-	Context("GetStatusForReporter", func() {
+	Context("GetNamespacedStatus", func() {
 		It("Should return the correct status with respect to the POD_NAMESPACE", func() {
 			mockRes := v1.MockResource{}
 			ns1Status := Status{
@@ -67,55 +67,32 @@ var _ = Describe("MockResource", func() {
 			}
 			reporterStatus := &ReporterStatus{
 				Statuses: map[string]*Status{
-					"test-ns1:gloo": &ns1Status,
-					"test-ns2:gloo": &ns2Status,
+					"test-ns1": &ns1Status,
+					"test-ns2": &ns2Status,
 				},
 			}
 			mockRes.SetReporterStatus(reporterStatus)
 
 			SimulateInPodNamespace("test-ns1", func() {
-				Expect(mockRes.GetStatusForReporter("gloo")).To(BeEquivalentTo(&ns1Status))
+				Expect(mockRes.GetNamespacedStatus()).To(BeEquivalentTo(&ns1Status))
 			})
 			SimulateInPodNamespace("test-ns2", func() {
-				Expect(mockRes.GetStatusForReporter("gloo")).To(BeEquivalentTo(&ns2Status))
-			})
-		})
-
-		It("Should return the correct status with respect to the Status.ReportedBy", func() {
-			mockRes := v1.MockResource{}
-			glooStatus := Status{
-				State:      Status_Accepted,
-				ReportedBy: "gloo",
-			}
-			gatewayStatus := Status{
-				State:      Status_Pending,
-				ReportedBy: "gateway",
-			}
-			mockRes.SetReporterStatus(&ReporterStatus{
-				Statuses: map[string]*Status{
-					"test-ns:gloo":    &glooStatus,
-					"test-ns:gateway": &gatewayStatus,
-				},
-			})
-
-			SimulateInPodNamespace("test-ns", func() {
-				Expect(mockRes.GetStatusForReporter("gloo")).To(BeEquivalentTo(&glooStatus))
-				Expect(mockRes.GetStatusForReporter("gateway")).To(BeEquivalentTo(&gatewayStatus))
+				Expect(mockRes.GetNamespacedStatus()).To(BeEquivalentTo(&ns2Status))
 			})
 		})
 	})
 
-	Context("AddToReporterStatus", func() {
-		It("Should format map keys correctly", func() {
+	Context("UpsertReporterStatus", func() {
+		It("Should use POD_NAMESPACE environment variable for map keys", func() {
 			mockRes := v1.MockResource{}
 			mockRes.SetReporterStatus(&ReporterStatus{})
 			SimulateInPodNamespace("test-ns", func() {
-				mockRes.AddToReporterStatus(&Status{
+				mockRes.UpsertReporterStatus(&Status{
 					State:      Status_Accepted,
 					ReportedBy: "gloo",
 				})
 				for key := range mockRes.GetReporterStatus().GetStatuses() {
-					Expect(key).To(BeEquivalentTo("test-ns:gloo"))
+					Expect(key).To(BeEquivalentTo("test-ns"))
 				}
 			})
 		})
@@ -132,11 +109,11 @@ var _ = Describe("MockResource", func() {
 					State:      Status_Accepted,
 					ReportedBy: "gloo",
 				}
-				mockRes.AddToReporterStatus(&initStatus)
+				mockRes.UpsertReporterStatus(&initStatus)
 				for _, status := range mockRes.GetReporterStatus().GetStatuses() {
 					Expect(status).To(BeEquivalentTo(&initStatus))
 				}
-				mockRes.AddToReporterStatus(&changedStatus)
+				mockRes.UpsertReporterStatus(&changedStatus)
 				Expect(mockRes.GetReporterStatus().GetStatuses()).To(HaveLen(1))
 				for _, status := range mockRes.GetReporterStatus().GetStatuses() {
 					Expect(status).To(BeEquivalentTo(&changedStatus))

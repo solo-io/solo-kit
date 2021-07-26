@@ -17,8 +17,7 @@ import "google/protobuf/struct.proto";
  * https://developers.google.com/protocol-buffers/docs/proto3#updating.
  */
 message ReporterStatus {
-  // Mapping from reporter to that reporter's Status.
-  // Key format: ${POD_NAMESPACE}:${Status.ReportedBy} (i.e. gloo-system:gloo, gloo-system:gateway, etc)
+  // Mapping from namespace to the Status written by the controller running in that namespace.
   map<string, Status> statuses = 1;
 }
 

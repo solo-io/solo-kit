@@ -49,11 +49,11 @@ func (m *mockResources) HasReporterStatus() bool {
 	panic("implement me")
 }
 
-func (m *mockResources) GetStatusForReporter(reportedBy string) *core.Status {
+func (m *mockResources) GetNamespacedStatus() *core.Status {
 	panic("implement me")
 }
 
-func (m *mockResources) AddToReporterStatus(status *core.Status) {
+func (m *mockResources) UpsertReporterStatus(status *core.Status) {
 	panic("implement me")
 }
 
