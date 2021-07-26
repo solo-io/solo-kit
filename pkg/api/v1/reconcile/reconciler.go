@@ -109,8 +109,7 @@ func updateDesiredResourceVersionAndStatus(desired, original resources.Resource)
 		meta.ResourceVersion = original.GetMetadata().ResourceVersion
 	})
 	if desiredInput, ok := desired.(resources.InputResource); ok {
-		// TODO(mitchaman): remove hardcoded gateway
-		desiredInput.UpsertReporterStatus(&core.Status{State: core.Status_Pending, ReportedBy: "gateway"})
+		desiredInput.UpsertReporterStatus(&core.Status{State: core.Status_Pending})
 	}
 	return desired
 }
