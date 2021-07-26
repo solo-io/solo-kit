@@ -63,14 +63,14 @@ func (o *{{ .Name }}) MarshalJSON() ([]byte, error) {
 	delete(spec, "reporter_status")
 {{- end }}
 	asMap := map[string]interface{}{
-		"metadata":   o.ObjectMeta,
-		"apiVersion": o.TypeMeta.APIVersion,
-		"kind":       o.TypeMeta.Kind,
+		"metadata":        o.ObjectMeta,
+		"apiVersion":      o.TypeMeta.APIVersion,
+		"kind":            o.TypeMeta.Kind,
 {{- if .HasStatus }}
-		"status":     o.Status,
+		"status":          o.Status,
 		"reporter_status": o.ReporterStatus,
 {{- end }}
-		"spec":       spec,
+		"spec":            spec,
 	}
 	return json.Marshal(asMap)
 }
