@@ -53,7 +53,6 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r2, err = mockResourceClient.Read(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		fmt.Println(r1.(*v1.MockResource).GetReporterStatus().String())
 
 		r1Status := r1.(*v1.MockResource).GetNamespacedStatus()
 		Expect(r1Status.GetState()).To(Equal(core.Status_Rejected))
