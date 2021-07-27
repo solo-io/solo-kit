@@ -48,10 +48,8 @@ type InputResource interface {
 	// GetReporterStatus() instead.
 	GetStatus() *core.Status
 	SetStatus(status *core.Status)
-	HasStatus() bool
 	GetReporterStatus() *core.ReporterStatus
 	SetReporterStatus(status *core.ReporterStatus)
-	HasReporterStatus() bool
 	GetNamespacedStatus() (*core.Status, error)
 	UpsertReporterStatus(status *core.Status) error
 }

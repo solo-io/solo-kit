@@ -75,24 +75,6 @@ func (r *AnotherMockResource) GetNamespacedStatus() (*core.Status, error) {
 	return r.GetReporterStatus().Statuses[podNamespace], nil
 }
 
-func (r *AnotherMockResource) HasReporterStatus() bool {
-	switch r.StatusOneof.(type) {
-	case *AnotherMockResource_ReporterStatus:
-		return true
-	default:
-		return false
-	}
-}
-
-func (r *AnotherMockResource) HasStatus() bool {
-	switch r.StatusOneof.(type) {
-	case *AnotherMockResource_Status:
-		return true
-	default:
-		return false
-	}
-}
-
 func (r *AnotherMockResource) MustHash() uint64 {
 	hashVal, err := r.Hash(nil)
 	if err != nil {

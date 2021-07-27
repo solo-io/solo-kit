@@ -106,22 +106,21 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 		delete(data, "status")
 		spec = data
 
-		if resource.HasStatus() {
-			statusProto := resource.GetStatus()
-			statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
-			if err != nil {
-				return nil, MarshalErr(err, "resource status to map")
-			}
-			status = statusMap
-		}
-
-		if resource.HasReporterStatus() {
-			reporterStatusProto := resource.GetReporterStatus()
+		if reporterStatusProto := resource.GetReporterStatus(); reporterStatusProto != nil {
 			reporterStatusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(reporterStatusProto)
 			if err != nil {
 				return nil, MarshalErr(err, "resource reporter_status to map")
 			}
 			status = reporterStatusMap
+		} else { // No ReporterStatus, Marshal Status instead
+			statusProto := resource.GetStatus()
+			if statusProto != nil {
+				statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
+				if err != nil {
+					return nil, MarshalErr(err, "resource status to map")
+				}
+				status = statusMap
+			}
 		}
 	}
 

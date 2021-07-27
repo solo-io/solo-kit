@@ -45,10 +45,6 @@ func (m *mockResources) SetReporterStatus(status *core.ReporterStatus) {
 	panic("implement me")
 }
 
-func (m *mockResources) HasReporterStatus() bool {
-	panic("implement me")
-}
-
 func (m *mockResources) GetNamespacedStatus() (*core.Status, error) {
 	panic("implement me")
 }
@@ -80,8 +76,4 @@ func (m *mockResources) GetStatus() *core.Status {
 
 func (m *mockResources) SetStatus(status *core.Status) {
 	// Not need in this test
-}
-
-func (m *mockResources) HasStatus() bool {
-	panic("implement me")
 }

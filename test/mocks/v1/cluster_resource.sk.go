@@ -75,24 +75,6 @@ func (r *ClusterResource) GetNamespacedStatus() (*core.Status, error) {
 	return r.GetReporterStatus().Statuses[podNamespace], nil
 }
 
-func (r *ClusterResource) HasReporterStatus() bool {
-	switch r.StatusOneof.(type) {
-	case *ClusterResource_ReporterStatus:
-		return true
-	default:
-		return false
-	}
-}
-
-func (r *ClusterResource) HasStatus() bool {
-	switch r.StatusOneof.(type) {
-	case *ClusterResource_Status:
-		return true
-	default:
-		return false
-	}
-}
-
 func (r *ClusterResource) MustHash() uint64 {
 	hashVal, err := r.Hash(nil)
 	if err != nil {

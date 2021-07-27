@@ -38,24 +38,6 @@ var _ = Describe("MockResource", func() {
 		})
 	})
 
-	Context("HasReporterStatus", func() {
-		It("Should be false when there is no reporter status", func() {
-			mockRes := &v1.MockResource{}
-			Expect(mockRes.HasReporterStatus()).To(BeFalse())
-		})
-
-		It("Should be true when there is a reporter status", func() {
-			mockRes := &v1.MockResource{}
-			mockRes.SetReporterStatus(&ReporterStatus{Statuses: map[string]*Status{
-				"gloo-system": {
-					State:      Status_Accepted,
-					ReportedBy: "gloo",
-				},
-			}})
-			Expect(mockRes.HasReporterStatus()).To(BeTrue())
-		})
-	})
-
 	Context("GetNamespacedStatus", func() {
 		It("Should return the correct status with respect to the POD_NAMESPACE", func() {
 			mockRes := v1.MockResource{}

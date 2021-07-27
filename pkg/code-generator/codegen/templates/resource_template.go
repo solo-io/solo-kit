@@ -132,25 +132,6 @@ func (r *{{ .Name }}) GetNamespacedStatus() (*core.Status, error) {
 	}
 	return r.GetReporterStatus().Statuses[podNamespace], nil
 }
-
-func (r *{{ .Name }}) HasReporterStatus() bool {
-	switch r.StatusOneof.(type) {
-	case *{{ .Name }}_ReporterStatus:
-		return true
-	default:
-		return false
-	}
-}
-
-func (r *{{ .Name }}) HasStatus() bool {
-	switch r.StatusOneof.(type) {
-	case *{{ .Name }}_Status:
-		return true
-	default:
-		return false
-	}
-}
-
 {{- end }}
 
 {{- end }}
