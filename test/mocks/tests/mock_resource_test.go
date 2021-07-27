@@ -76,11 +76,33 @@ var _ = Describe("MockResource", func() {
 			mockRes.SetReporterStatus(reporterStatus)
 
 			SimulateInPodNamespace("test-ns1", func() {
-				Expect(mockRes.GetNamespacedStatus()).To(BeEquivalentTo(&ns1Status))
+				status, err := mockRes.GetNamespacedStatus()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(status).To(BeEquivalentTo(&ns1Status))
 			})
 			SimulateInPodNamespace("test-ns2", func() {
-				Expect(mockRes.GetNamespacedStatus()).To(BeEquivalentTo(&ns2Status))
+				status, err := mockRes.GetNamespacedStatus()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(status).To(BeEquivalentTo(&ns2Status))
 			})
+		})
+
+		It("Should return a podNamespaceErr if POD_NAMESPACE is not set.", func() {
+			mockRes := v1.MockResource{}
+			status := Status{
+				State:      Status_Accepted,
+				ReportedBy: "gloo",
+			}
+			reporterStatus := &ReporterStatus{
+				Statuses: map[string]*Status{
+					"test-ns1": &status,
+				},
+			}
+			mockRes.SetReporterStatus(reporterStatus)
+
+			_, err := mockRes.GetNamespacedStatus()
+			Expect(err).To(HaveOccurred())
+			Expect(errors.IsPodNamespace(err)).To(BeTrue())
 		})
 	})
 

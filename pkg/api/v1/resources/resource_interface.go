@@ -52,7 +52,7 @@ type InputResource interface {
 	GetReporterStatus() *core.ReporterStatus
 	SetReporterStatus(status *core.ReporterStatus)
 	HasReporterStatus() bool
-	GetNamespacedStatus() *core.Status
+	GetNamespacedStatus() (*core.Status, error)
 	UpsertReporterStatus(status *core.Status) error
 }
 

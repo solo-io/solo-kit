@@ -60,18 +60,19 @@ func (r *ClusterResource) UpsertReporterStatus(status *core.Status) error {
 // controller specified by the POD_NAMESPACE env var, or nil if no status exists for that
 // controller.
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
-func (r *ClusterResource) GetNamespacedStatus() *core.Status {
+// If unset, a podNamespaceErr is returned.
+func (r *ClusterResource) GetNamespacedStatus() (*core.Status, error) {
 	podNamespace := os.Getenv("POD_NAMESPACE")
-	if podNamespace != "" {
-		if r.GetReporterStatus() == nil {
-			return nil
-		}
-		if r.GetReporterStatus().Statuses == nil {
-			return nil
-		}
-		return r.GetReporterStatus().Statuses[podNamespace]
+	if podNamespace == "" {
+		return nil, errors.NewPodNamespaceErr()
 	}
-	return nil
+	if r.GetReporterStatus() == nil {
+		return nil, nil
+	}
+	if r.GetReporterStatus().Statuses == nil {
+		return nil, nil
+	}
+	return r.GetReporterStatus().Statuses[podNamespace], nil
 }
 
 func (r *ClusterResource) HasReporterStatus() bool {

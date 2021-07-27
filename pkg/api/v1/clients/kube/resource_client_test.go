@@ -208,7 +208,9 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clients.ReadOpts{},
 			)
 
-			Expect(mockResource.GetNamespacedStatus()).To(matchers.MatchProto(read.(resources.InputResource).GetNamespacedStatus()))
+			actualStatus, _ := mockResource.GetNamespacedStatus()
+			expectedStatus, _ := read.(resources.InputResource).GetNamespacedStatus()
+			Expect(actualStatus).To(matchers.MatchProto(expectedStatus))
 		})
 	})
 

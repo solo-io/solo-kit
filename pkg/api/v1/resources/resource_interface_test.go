@@ -49,7 +49,7 @@ func (m *mockResources) HasReporterStatus() bool {
 	panic("implement me")
 }
 
-func (m *mockResources) GetNamespacedStatus() *core.Status {
+func (m *mockResources) GetNamespacedStatus() (*core.Status, error) {
 	panic("implement me")
 }
 

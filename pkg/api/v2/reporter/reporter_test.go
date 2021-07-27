@@ -57,17 +57,23 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r3, err = mockResourceClient.Read(r3.GetMetadata().Namespace, r3.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(r1.(*v1.MockResource).GetNamespacedStatus()).To(Equal(&core.Status{
+		r1Status, r1Err := r1.(*v1.MockResource).GetNamespacedStatus()
+		Expect(r1Err).NotTo(HaveOccurred())
+		Expect(r1Status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "everyone makes mistakes",
 			ReportedBy: "test",
 		}))
-		Expect(r2.(*v1.MockResource).GetNamespacedStatus()).To(Equal(&core.Status{
+		r2Status, r2Err := r2.(*v1.MockResource).GetNamespacedStatus()
+		Expect(r2Err).NotTo(HaveOccurred())
+		Expect(r2Status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "try your best",
 			ReportedBy: "test",
 		}))
-		Expect(r3.(*v1.MockResource).GetNamespacedStatus()).To(Equal(&core.Status{
+		r3Status, r3Err := r3.(*v1.MockResource).GetNamespacedStatus()
+		Expect(r3Err).NotTo(HaveOccurred())
+		Expect(r3Status).To(Equal(&core.Status{
 			State:      core.Status_Warning,
 			Reason:     "warning: \n  didn't somebody ever tell ya\nit's not gonna be easy?",
 			ReportedBy: "test",
