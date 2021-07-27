@@ -88,7 +88,11 @@ func attemptSyncResource(ctx context.Context, desired, original resources.Resour
 func writeDesiredResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc) error {
 	if original != nil {
 		// this is an update: update resource version, set status to 0, needs to be re-processed
-		desired = updateDesiredResourceVersionAndStatus(desired, original)
+		var err error
+		desired, err = updateDesiredResourceVersionAndStatus(desired, original)
+		if err != nil {
+			return err
+		}
 		if transition == nil {
 			transition = defaultTransition
 		}
@@ -104,14 +108,16 @@ func writeDesiredResource(ctx context.Context, desired, original resources.Resou
 	return writeErr
 }
 
-func updateDesiredResourceVersionAndStatus(desired, original resources.Resource) resources.Resource {
+func updateDesiredResourceVersionAndStatus(desired, original resources.Resource) (resources.Resource, error) {
 	resources.UpdateMetadata(desired, func(meta *core.Metadata) {
 		meta.ResourceVersion = original.GetMetadata().ResourceVersion
 	})
 	if desiredInput, ok := desired.(resources.InputResource); ok {
-		desiredInput.UpsertReporterStatus(&core.Status{State: core.Status_Pending})
+		if err := desiredInput.UpsertReporterStatus(&core.Status{State: core.Status_Pending}); err != nil {
+			return nil, err
+		}
 	}
-	return desired
+	return desired, nil
 }
 
 // default transition policy: only perform an update if the Hash has changed

@@ -1,6 +1,8 @@
 package reconcile_test
 
 import (
+	"os"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,10 +24,17 @@ var _ = Describe("Reconciler", func() {
 		mockReconciler     Reconciler
 		mockResourceClient clients.ResourceClient
 	)
+
 	BeforeEach(func() {
+		Expect(os.Setenv("POD_NAMESPACE", namespace)).NotTo(HaveOccurred())
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		mockReconciler = NewReconciler(mockResourceClient)
 	})
+
+	AfterEach(func() {
+		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
+	})
+
 	It("does the crudding for you so you can sip a nice coconut", func() {
 		desiredMockResources := resources.ResourceList{
 			v1.NewMockResource(namespace, "a1-barry"),

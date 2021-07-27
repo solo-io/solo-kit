@@ -3,6 +3,8 @@ package tests
 import (
 	"os"
 
+	"github.com/solo-io/solo-kit/pkg/errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -87,10 +89,10 @@ var _ = Describe("MockResource", func() {
 			mockRes := v1.MockResource{}
 			mockRes.SetReporterStatus(&ReporterStatus{})
 			SimulateInPodNamespace("test-ns", func() {
-				mockRes.UpsertReporterStatus(&Status{
+				Expect(mockRes.UpsertReporterStatus(&Status{
 					State:      Status_Accepted,
 					ReportedBy: "gloo",
-				})
+				})).NotTo(HaveOccurred())
 				for key := range mockRes.GetReporterStatus().GetStatuses() {
 					Expect(key).To(BeEquivalentTo("test-ns"))
 				}
@@ -109,16 +111,28 @@ var _ = Describe("MockResource", func() {
 					State:      Status_Accepted,
 					ReportedBy: "gloo",
 				}
-				mockRes.UpsertReporterStatus(&initStatus)
+				Expect(mockRes.UpsertReporterStatus(&initStatus)).NotTo(HaveOccurred())
 				for _, status := range mockRes.GetReporterStatus().GetStatuses() {
 					Expect(status).To(BeEquivalentTo(&initStatus))
 				}
-				mockRes.UpsertReporterStatus(&changedStatus)
+				Expect(mockRes.UpsertReporterStatus(&changedStatus)).NotTo(HaveOccurred())
 				Expect(mockRes.GetReporterStatus().GetStatuses()).To(HaveLen(1))
 				for _, status := range mockRes.GetReporterStatus().GetStatuses() {
 					Expect(status).To(BeEquivalentTo(&changedStatus))
 				}
 			})
+		})
+
+		It("Should return a podNamespaceErr if POD_NAMESPACE is not set.", func() {
+			mockRes := v1.MockResource{}
+			status := Status{
+				State:      Status_Pending,
+				ReportedBy: "gloo",
+			}
+
+			err := mockRes.UpsertReporterStatus(&status)
+			Expect(err).To(HaveOccurred())
+			Expect(errors.IsPodNamespace(err)).To(BeTrue())
 		})
 	})
 })

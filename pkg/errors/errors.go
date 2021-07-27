@@ -94,6 +94,24 @@ func IsResourceVersion(err error) bool {
 	return false
 }
 
+type podNamespaceErr struct{}
+
+func (err *podNamespaceErr) Error() string {
+	return fmt.Sprintf("POD_NAMESPACE environment variable is not set")
+}
+
+func NewPodNamespaceErr() *podNamespaceErr {
+	return &podNamespaceErr{}
+}
+
+func IsPodNamespace(err error) bool {
+	switch err.(type) {
+	case *podNamespaceErr:
+		return true
+	}
+	return false
+}
+
 // RetryOnConflict executes the function function repeatedly, retrying if the server returns a conflicting
 func RetryOnConflict(backoff wait.Backoff, fn func() error) error {
 	return retry.OnError(backoff, IsResourceVersion, fn)

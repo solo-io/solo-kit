@@ -278,7 +278,9 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite = inputResourceFromRead
-			resourceToWrite.UpsertReporterStatus(status)
+			if upsertErr := resourceToWrite.UpsertReporterStatus(status); upsertErr != nil {
+				return nil, nil, upsertErr
+			}
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -303,7 +305,9 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWrite, nil
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	resourceToWriteUpdated.UpsertReporterStatus(resourceToWrite.GetStatus())
+	if upsertErr := resourceToWriteUpdated.UpsertReporterStatus(resourceToWrite.GetStatus()); upsertErr != nil {
+		return nil, nil, upsertErr
+	}
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 

@@ -53,7 +53,7 @@ type InputResource interface {
 	SetReporterStatus(status *core.ReporterStatus)
 	HasReporterStatus() bool
 	GetNamespacedStatus() *core.Status
-	UpsertReporterStatus(status *core.Status)
+	UpsertReporterStatus(status *core.Status) error
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control

@@ -53,7 +53,7 @@ func (m *mockResources) GetNamespacedStatus() *core.Status {
 	panic("implement me")
 }
 
-func (m *mockResources) UpsertReporterStatus(status *core.Status) {
+func (m *mockResources) UpsertReporterStatus(status *core.Status) error {
 	panic("implement me")
 }
 

@@ -40,17 +40,20 @@ func (r *ClusterResource) SetReporterStatus(status *core.ReporterStatus) {
 // current namespace (as specified by POD_NAMESPACE env var).  If the resource does not yet have
 // a ReporterStatus, one will be created.
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
-func (r *ClusterResource) UpsertReporterStatus(status *core.Status) {
+// If unset, a podNamespaceErr is returned.
+func (r *ClusterResource) UpsertReporterStatus(status *core.Status) error {
 	podNamespace := os.Getenv("POD_NAMESPACE")
-	if podNamespace != "" {
-		if r.GetReporterStatus() == nil {
-			r.SetReporterStatus(&core.ReporterStatus{})
-		}
-		if r.GetReporterStatus().Statuses == nil {
-			r.GetReporterStatus().Statuses = make(map[string]*core.Status)
-		}
-		r.GetReporterStatus().Statuses[podNamespace] = status
+	if podNamespace == "" {
+		return errors.NewPodNamespaceErr()
 	}
+	if r.GetReporterStatus() == nil {
+		r.SetReporterStatus(&core.ReporterStatus{})
+	}
+	if r.GetReporterStatus().Statuses == nil {
+		r.GetReporterStatus().Statuses = make(map[string]*core.Status)
+	}
+	r.GetReporterStatus().Statuses[podNamespace] = status
+	return nil
 }
 
 // GetNamespacedStatus returns the status stored in the ReporterStatus.Statuses map for the
