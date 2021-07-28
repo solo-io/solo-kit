@@ -183,14 +183,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			Expect(mockResource.GetStatus()).To(matchers.MatchProto(read.(resources.InputResource).GetStatus()))
 		})
 
-		It("Can maintain ReporterStatus when written and read from storage", func() {
+		It("Can maintain NamespacedStatuses when written and read from storage", func() {
 			mockResource := &v1.MockResource{
 				Metadata: &core.Metadata{
 					Name:      "test",
 					Namespace: ns1,
 				},
 			}
-			mockResource.SetReporterStatus(&core.ReporterStatus{
+			mockResource.SetNamespacedStatuses(&core.NamespacedStatuses{
 				Statuses: map[string]*core.Status{
 					"test-ns:me": {
 						State:      2,

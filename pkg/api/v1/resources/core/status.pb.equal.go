@@ -26,14 +26,14 @@ var (
 )
 
 // Equal function
-func (m *ReporterStatus) Equal(that interface{}) bool {
+func (m *NamespacedStatuses) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ReporterStatus)
+	target, ok := that.(*NamespacedStatuses)
 	if !ok {
-		that2, ok := that.(ReporterStatus)
+		that2, ok := that.(NamespacedStatuses)
 		if ok {
 			target = &that2
 		} else {

@@ -459,25 +459,25 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 				*status = typedStatus
 				return nil
 			}
-			updateReporterStatusFunc := func(status *core.ReporterStatus) error {
+			updateNamespacedStatusesFunc := func(status *core.NamespacedStatuses) error {
 				if status == nil {
 					return nil
 				}
-				typedStatus := core.ReporterStatus{}
+				typedStatus := core.NamespacedStatuses{}
 				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
 					return err
 				}
 				*status = typedStatus
 				return nil
 			}
-			// First attempt to unmarshal ReporterStatus
-			if reporterStatusErr := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); reporterStatusErr != nil {
-				// If unmarshalling ReporterStatus failed, the resource likely has a Status instead.
+			// First attempt to unmarshal NamespacedStatuses
+			if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
+				// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.
 				statusErr := resources.UpdateStatus(withStatus, updateStatusFunc)
 				if statusErr != nil {
 					// There's actually something wrong if either status can't be unmarshalled.
 					var multiErr *multierror.Error
-					multiErr = multierror.Append(multiErr, reporterStatusErr)
+					multiErr = multierror.Append(multiErr, namespacedStatusesErr)
 					multiErr = multierror.Append(multiErr, statusErr)
 					return nil, multiErr
 				}

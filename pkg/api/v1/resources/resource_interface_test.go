@@ -37,11 +37,11 @@ type mockResources struct {
 	Name string
 }
 
-func (m *mockResources) GetReporterStatus() *core.ReporterStatus {
+func (m *mockResources) GetNamespacedStatuses() *core.NamespacedStatuses {
 	panic("implement me")
 }
 
-func (m *mockResources) SetReporterStatus(status *core.ReporterStatus) {
+func (m *mockResources) SetNamespacedStatuses(status *core.NamespacedStatuses) {
 	panic("implement me")
 }
 
@@ -49,7 +49,7 @@ func (m *mockResources) GetNamespacedStatus() (*core.Status, error) {
 	panic("implement me")
 }
 
-func (m *mockResources) UpsertReporterStatus(status *core.Status) error {
+func (m *mockResources) UpsertNamespacedStatus(status *core.Status) error {
 	panic("implement me")
 }
 

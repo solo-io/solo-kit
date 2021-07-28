@@ -78,14 +78,14 @@ func (m *MockResource) Equal(that interface{}) bool {
 			}
 		}
 
-	case *MockResource_ReporterStatus:
+	case *MockResource_NamespacedStatuses:
 
-		if h, ok := interface{}(m.GetReporterStatus()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetReporterStatus()) {
+		if h, ok := interface{}(m.GetNamespacedStatuses()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetNamespacedStatuses()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetReporterStatus(), target.GetReporterStatus()) {
+			if !proto.Equal(m.GetNamespacedStatuses(), target.GetNamespacedStatuses()) {
 				return false
 			}
 		}

@@ -17,10 +17,10 @@ var _ = Describe("MockResource", func() {
 		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
 	})
 
-	Context("Set and Get ReporterStatus", func() {
-		It("Should return the same ReporterStatus that was Set", func() {
+	Context("Set and Get NamespacedStatuses", func() {
+		It("Should return the same NamespacedStatuses that was Set", func() {
 			mockRes := v1.MockResource{}
-			reporterStatus := &ReporterStatus{
+			namespacedStatuses := &NamespacedStatuses{
 				Statuses: map[string]*Status{
 					"test-ns1": {
 						State:      Status_Accepted,
@@ -32,9 +32,9 @@ var _ = Describe("MockResource", func() {
 					},
 				},
 			}
-			mockRes.SetReporterStatus(reporterStatus)
+			mockRes.SetNamespacedStatuses(namespacedStatuses)
 
-			Expect(mockRes.GetReporterStatus()).To(BeEquivalentTo(reporterStatus))
+			Expect(mockRes.GetNamespacedStatuses()).To(BeEquivalentTo(namespacedStatuses))
 		})
 	})
 
@@ -49,13 +49,13 @@ var _ = Describe("MockResource", func() {
 				State:      Status_Pending,
 				ReportedBy: "gloo",
 			}
-			reporterStatus := &ReporterStatus{
+			namespacedStatuses := &NamespacedStatuses{
 				Statuses: map[string]*Status{
 					"test-ns1": &ns1Status,
 					"test-ns2": &ns2Status,
 				},
 			}
-			mockRes.SetReporterStatus(reporterStatus)
+			mockRes.SetNamespacedStatuses(namespacedStatuses)
 
 			SimulateInPodNamespace("test-ns1", func() {
 				status, err := mockRes.GetNamespacedStatus()
@@ -75,12 +75,12 @@ var _ = Describe("MockResource", func() {
 				State:      Status_Accepted,
 				ReportedBy: "gloo",
 			}
-			reporterStatus := &ReporterStatus{
+			namespacedStatuses := &NamespacedStatuses{
 				Statuses: map[string]*Status{
 					"test-ns1": &status,
 				},
 			}
-			mockRes.SetReporterStatus(reporterStatus)
+			mockRes.SetNamespacedStatuses(namespacedStatuses)
 
 			_, err := mockRes.GetNamespacedStatus()
 			Expect(err).To(HaveOccurred())
@@ -88,16 +88,16 @@ var _ = Describe("MockResource", func() {
 		})
 	})
 
-	Context("UpsertReporterStatus", func() {
+	Context("UpsertNamespacedStatus", func() {
 		It("Should use POD_NAMESPACE environment variable for map keys", func() {
 			mockRes := v1.MockResource{}
-			mockRes.SetReporterStatus(&ReporterStatus{})
+			mockRes.SetNamespacedStatuses(&NamespacedStatuses{})
 			SimulateInPodNamespace("test-ns", func() {
-				Expect(mockRes.UpsertReporterStatus(&Status{
+				Expect(mockRes.UpsertNamespacedStatus(&Status{
 					State:      Status_Accepted,
 					ReportedBy: "gloo",
 				})).NotTo(HaveOccurred())
-				for key := range mockRes.GetReporterStatus().GetStatuses() {
+				for key := range mockRes.GetNamespacedStatuses().GetStatuses() {
 					Expect(key).To(BeEquivalentTo("test-ns"))
 				}
 			})
@@ -105,7 +105,7 @@ var _ = Describe("MockResource", func() {
 
 		It("Should replace an existing status by the same reporter", func() {
 			mockRes := v1.MockResource{}
-			mockRes.SetReporterStatus(&ReporterStatus{})
+			mockRes.SetNamespacedStatuses(&NamespacedStatuses{})
 			SimulateInPodNamespace("test-ns", func() {
 				initStatus := Status{
 					State:      Status_Pending,
@@ -115,13 +115,13 @@ var _ = Describe("MockResource", func() {
 					State:      Status_Accepted,
 					ReportedBy: "gloo",
 				}
-				Expect(mockRes.UpsertReporterStatus(&initStatus)).NotTo(HaveOccurred())
-				for _, status := range mockRes.GetReporterStatus().GetStatuses() {
+				Expect(mockRes.UpsertNamespacedStatus(&initStatus)).NotTo(HaveOccurred())
+				for _, status := range mockRes.GetNamespacedStatuses().GetStatuses() {
 					Expect(status).To(BeEquivalentTo(&initStatus))
 				}
-				Expect(mockRes.UpsertReporterStatus(&changedStatus)).NotTo(HaveOccurred())
-				Expect(mockRes.GetReporterStatus().GetStatuses()).To(HaveLen(1))
-				for _, status := range mockRes.GetReporterStatus().GetStatuses() {
+				Expect(mockRes.UpsertNamespacedStatus(&changedStatus)).NotTo(HaveOccurred())
+				Expect(mockRes.GetNamespacedStatuses().GetStatuses()).To(HaveLen(1))
+				for _, status := range mockRes.GetNamespacedStatuses().GetStatuses() {
 					Expect(status).To(BeEquivalentTo(&changedStatus))
 				}
 			})
@@ -134,7 +134,7 @@ var _ = Describe("MockResource", func() {
 				ReportedBy: "gloo",
 			}
 
-			err := mockRes.UpsertReporterStatus(&status)
+			err := mockRes.UpsertNamespacedStatus(&status)
 			Expect(err).To(HaveOccurred())
 			Expect(errors.IsPodNamespace(err)).To(BeTrue())
 		})

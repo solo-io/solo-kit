@@ -26,7 +26,7 @@ var (
 )
 
 // Hash function
-func (m *ReporterStatus) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *NamespacedStatuses) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -34,7 +34,7 @@ func (m *ReporterStatus) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.ReporterStatus")); err != nil {
+	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.NamespacedStatuses")); err != nil {
 		return 0, err
 	}
 

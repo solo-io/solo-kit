@@ -113,7 +113,7 @@ func updateDesiredResourceVersionAndStatus(desired, original resources.Resource)
 		meta.ResourceVersion = original.GetMetadata().ResourceVersion
 	})
 	if desiredInput, ok := desired.(resources.InputResource); ok {
-		if err := desiredInput.UpsertReporterStatus(&core.Status{State: core.Status_Pending}); err != nil {
+		if err := desiredInput.UpsertNamespacedStatus(&core.Status{State: core.Status_Pending}); err != nil {
 			return nil, err
 		}
 	}

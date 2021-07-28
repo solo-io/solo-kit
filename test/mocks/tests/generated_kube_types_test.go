@@ -59,7 +59,7 @@ var _ = Describe("Generated Kube Code", func() {
 		res := &v2alpha1.MockResource{
 			ObjectMeta: v1.ObjectMeta{Name: "foo", Namespace: "default"},
 			Spec: skv1alpha2.MockResource{
-				StatusOneof: &skv1alpha2.MockResource_ReporterStatus{},
+				StatusOneof: &skv1alpha2.MockResource_NamespacedStatuses{},
 				WeStuckItInAOneof: &skv1alpha2.MockResource_SomeDumbField{
 					SomeDumbField: "we did it",
 				},

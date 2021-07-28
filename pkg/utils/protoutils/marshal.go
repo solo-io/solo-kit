@@ -204,23 +204,23 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 			return nil
 		}
 
-		updateReporterStatusFunc := func(reporterStatus *core.ReporterStatus) error {
-			if reporterStatus == nil {
+		updateNamespacedStatusesFunc := func(namespacedStatuses *core.NamespacedStatuses) error {
+			if namespacedStatuses == nil {
 				return nil
 			}
-			typedReporterStatus := core.ReporterStatus{}
-			err := UnmarshalMapToProto(resourceCrd.Status, &typedReporterStatus)
+			typedNamespacedStatuses := core.NamespacedStatuses{}
+			err := UnmarshalMapToProto(resourceCrd.Status, &typedNamespacedStatuses)
 			if err != nil {
 				return err
 			}
-			*reporterStatus = typedReporterStatus
+			*namespacedStatuses = typedNamespacedStatuses
 			return nil
 		}
 
-		if reporterStatusErr := resources.UpdateReporterStatus(withStatus, updateReporterStatusFunc); reporterStatusErr != nil {
+		if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
 			if statusErr := resources.UpdateStatus(withStatus, updateStatusFunc); statusErr != nil {
 				var multiErr *multierror.Error
-				multiErr = multierror.Append(multiErr, reporterStatusErr)
+				multiErr = multierror.Append(multiErr, namespacedStatusesErr)
 				multiErr = multierror.Append(multiErr, statusErr)
 				return multiErr
 			}

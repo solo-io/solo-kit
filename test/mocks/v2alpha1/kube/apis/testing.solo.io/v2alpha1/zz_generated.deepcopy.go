@@ -91,7 +91,7 @@ func (in *MockResource) DeepCopyInto(out *MockResource) {
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
 	in.Status.DeepCopyInto(&out.Status)
-	in.ReporterStatus.DeepCopyInto(&out.ReporterStatus)
+	in.NamespacedStatuses.DeepCopyInto(&out.NamespacedStatuses)
 	return
 }
 

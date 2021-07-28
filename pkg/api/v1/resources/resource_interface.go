@@ -44,14 +44,14 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 
 type InputResource interface {
 	Resource
-	// Deprecated: statuses are now written to a ReporterStatus, use GetNamespacedStatus() or
-	// GetReporterStatus() instead.
+	// Deprecated: statuses are now written to a NamespacedStatuses, use GetNamespacedStatus() or
+	// GetNamespacedStatuses() instead.
 	GetStatus() *core.Status
 	SetStatus(status *core.Status)
-	GetReporterStatus() *core.ReporterStatus
-	SetReporterStatus(status *core.ReporterStatus)
+	GetNamespacedStatuses() *core.NamespacedStatuses
+	SetNamespacedStatuses(status *core.NamespacedStatuses)
 	GetNamespacedStatus() (*core.Status, error)
-	UpsertReporterStatus(status *core.Status) error
+	UpsertNamespacedStatus(status *core.Status) error
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control
@@ -464,13 +464,13 @@ func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) e
 	return nil
 }
 
-func UpdateReporterStatus(resource InputResource, updateFunc func(reporterStatus *core.ReporterStatus) error) error {
-	reporterStatus := resource.GetReporterStatus()
-	err := updateFunc(reporterStatus)
+func UpdateNamespacedStatuses(resource InputResource, updateFunc func(namespacedStatuses *core.NamespacedStatuses) error) error {
+	namespacedStatuses := resource.GetNamespacedStatuses()
+	err := updateFunc(namespacedStatuses)
 	if err != nil {
 		return err
 	}
-	resource.SetReporterStatus(reporterStatus)
+	resource.SetNamespacedStatuses(namespacedStatuses)
 	return nil
 }
 

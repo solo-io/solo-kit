@@ -175,7 +175,7 @@ func yamlType(longType, label string) string {
 			return longType
 		case "Status":
 			fallthrough
-		case "ReporterStatus":
+		case "NamespacedStatuses":
 			return "(read only)"
 		}
 		return "{" + longType + "}"

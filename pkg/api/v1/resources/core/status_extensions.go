@@ -36,8 +36,8 @@ func (s Status) DeepCopyInto(out *Status) {
 	*out = *clone
 }
 
-func (s ReporterStatus) DeepCopyInto(out *ReporterStatus) {
-	clone := proto.Clone(&s).(*ReporterStatus)
+func (s NamespacedStatuses) DeepCopyInto(out *NamespacedStatuses) {
+	clone := proto.Clone(&s).(*NamespacedStatuses)
 	*out = *clone
 }
 

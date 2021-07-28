@@ -48,7 +48,7 @@ message MockResource {
 
     oneof status_oneof {
         core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
-        core.solo.io.ReporterStatus reporter_status = 8 [(extproto.skip_hashing) = true];
+        core.solo.io.NamespacedStatuses namespaced_statuses = 8 [(extproto.skip_hashing) = true];
     }
     core.solo.io.Metadata metadata = 7;
 

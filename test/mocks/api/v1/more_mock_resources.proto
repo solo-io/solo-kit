@@ -23,7 +23,7 @@ message AnotherMockResource {
     core.solo.io.Metadata metadata = 1;
     oneof status_oneof {
         core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
-        core.solo.io.ReporterStatus reporter_status = 7 [(extproto.skip_hashing) = true];
+        core.solo.io.NamespacedStatuses namespaced_statuses = 7 [(extproto.skip_hashing) = true];
     }
 
     // comments that go above the basic field in our docs
@@ -38,7 +38,7 @@ message ClusterResource {
     core.solo.io.Metadata metadata = 1;
     oneof status_oneof {
         core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
-        core.solo.io.ReporterStatus reporter_status = 7 [(extproto.skip_hashing) = true];
+        core.solo.io.NamespacedStatuses namespaced_statuses = 7 [(extproto.skip_hashing) = true];
     }
 
     // comments that go above the basic field in our docs

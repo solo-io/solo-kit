@@ -60,7 +60,7 @@ func (m *AnotherMockResource) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *AnotherMockResource_Status:
 
-	case *AnotherMockResource_ReporterStatus:
+	case *AnotherMockResource_NamespacedStatuses:
 
 	}
 
@@ -102,7 +102,7 @@ func (m *ClusterResource) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *ClusterResource_Status:
 
-	case *ClusterResource_ReporterStatus:
+	case *ClusterResource_NamespacedStatuses:
 
 	}
 
