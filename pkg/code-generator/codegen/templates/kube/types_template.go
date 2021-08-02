@@ -47,7 +47,6 @@ type {{ .Name }} struct {
 
 {{- if .HasStatus }}
 	Status core.Status {{ backtick }}json:"status,omitempty" protobuf:"bytes,3,opt,name=status"{{ backtick }}
-	NamespacedStatuses core.NamespacedStatuses {{ backtick }}json:"namespaced_statuses,omitempty" protobuf:"bytes,4,opt,name=namespaced_statuses"{{ backtick }}
 {{- end }}
 }
 
@@ -60,7 +59,6 @@ func (o *{{ .Name }}) MarshalJSON() ([]byte, error) {
 	delete(spec, "metadata")
 {{- if .HasStatus }}
 	delete(spec, "status")
-	delete(spec, "namespaced_statuses")
 {{- end }}
 	asMap := map[string]interface{}{
 		"metadata":            o.ObjectMeta,
@@ -68,7 +66,6 @@ func (o *{{ .Name }}) MarshalJSON() ([]byte, error) {
 		"kind":                o.TypeMeta.Kind,
 {{- if .HasStatus }}
 		"status":              o.Status,
-		"namespaced_statuses": o.NamespacedStatuses,
 {{- end }}
 		"spec":                spec,
 	}
@@ -94,10 +91,6 @@ func (o *{{ .Name }}) UnmarshalJSON(data []byte) error {
 	if spec.GetStatus() != nil {
 		o.Status = *spec.GetStatus()
 		o.Spec.SetStatus(nil)
-	}
-	if spec.GetNamespacedStatuses() != nil {
-		o.NamespacedStatuses = *spec.GetNamespacedStatuses()
-		o.Spec.SetNamespacedStatuses(nil)
 	}
 {{- end }}
 
