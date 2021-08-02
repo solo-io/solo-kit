@@ -104,6 +104,7 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 
 		delete(data, "metadata")
 		delete(data, "status")
+		delete(data, "namespaced_statuses")
 		spec = data
 
 		if namespacedStatusesProto := resource.GetNamespacedStatuses(); namespacedStatusesProto != nil {
