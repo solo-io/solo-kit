@@ -2,6 +2,7 @@ package kube
 
 import (
 	"context"
+	"log"
 	"reflect"
 	"sort"
 	"strings"
@@ -185,6 +186,8 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 }
 
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+	log.Printf("ResourceClient.Write")
+	log.Printf("%v", resource)
 	opts = opts.WithDefaults()
 	if err := resources.Validate(resource); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
@@ -199,6 +202,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	clone := resources.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
 	resourceCrd, err := rc.crd.KubeResource(clone)
+	log.Printf("%v", resourceCrd)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +251,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// return a read object to update the resource version
-	return rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{Ctx: opts.Ctx})
+	res, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{Ctx: opts.Ctx})
+	log.Printf("%v", res)
+	log.Printf("\n\n\n")
+	return res, err
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
