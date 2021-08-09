@@ -16,8 +16,9 @@ import (
 const (
 	// solo-kit types
 	// required fields
-	metadataTypeName = ".core.solo.io.Metadata"
-	statusTypeName   = ".core.solo.io.Status"
+	metadataTypeName           = ".core.solo.io.Metadata"
+	statusTypeName             = ".core.solo.io.Status"
+	namespacedStatusesTypeName = ".core.solo.io.NamespacedStatuses"
 
 	// magic comments
 	// Deprecated, use Message Option (core.solo.io.resource).short_name
@@ -228,6 +229,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 	pluralName = strcase.ToCamel(pluralName)
 
 	hasStatus := hasField(msg, "status", statusTypeName)
+	hasNamespacedStatuses := hasField(msg, "namespaced_statuses", namespacedStatusesTypeName)
 
 	oneofs := collectOneofs(msg)
 
@@ -237,7 +239,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 		GoPackage:              messageWrapper.GoPackage,
 		ShortName:              shortName,
 		PluralName:             pluralName,
-		HasStatus:              hasStatus,
+		HasStatus:              hasStatus && hasNamespacedStatuses,
 		Oneofs:                 oneofs,
 		ClusterScoped:          clusterScoped,
 		SkipHashingAnnotations: skipHashingAnnotations,

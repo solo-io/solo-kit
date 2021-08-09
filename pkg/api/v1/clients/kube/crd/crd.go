@@ -103,7 +103,7 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 		}
 
 		delete(data, "metadata")
-		delete(data, "status")
+		// delete(data, "status")
 		spec = data
 
 		if resource.GetStatus() != nil {

@@ -52,6 +52,7 @@ message MockResource {
 
     // The status field comment
     core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+    core.solo.io.NamespacedStatuses namespaced_statuses = 16 [(extproto.skip_hashing) = true];
     core.solo.io.Metadata metadata = 7;
 
     string data = 1 [json_name="data.json"];

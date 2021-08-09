@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
@@ -190,7 +192,7 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
 	if withStatus, ok := resource.(resources.InputResource); ok {
 
-		updateFunc := func(status *core.Status) error {
+		updateStatusFunc := func(status *core.Status) error {
 			if status == nil {
 				return nil
 			}
@@ -203,8 +205,26 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 			return nil
 		}
 
-		if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
-			return err
+		updateNamespacedStatusesFunc := func(namespacedStatuses *core.NamespacedStatuses) error {
+			if namespacedStatuses == nil {
+				return nil
+			}
+			typedNamespacedStatuses := core.NamespacedStatuses{}
+			err := UnmarshalMapToProto(resourceCrd.Status, &typedNamespacedStatuses)
+			if err != nil {
+				return err
+			}
+			*namespacedStatuses = typedNamespacedStatuses
+			return nil
+		}
+
+		if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
+			if statusErr := resources.UpdateStatus(withStatus, updateStatusFunc); statusErr != nil {
+				var multiErr *multierror.Error
+				multiErr = multierror.Append(multiErr, namespacedStatusesErr)
+				multiErr = multierror.Append(multiErr, statusErr)
+				return multiErr
+			}
 		}
 	}
 

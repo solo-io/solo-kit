@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
@@ -453,7 +455,8 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 		if withStatus, ok := resource.(resources.InputResource); ok {
 			// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
 			withStatus.SetStatus(&core.Status{})
-			updateFunc := func(status *core.Status) error {
+
+			updateStatusFunc := func(status *core.Status) error {
 				if status == nil {
 					return nil
 				}
@@ -464,8 +467,28 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 				*status = typedStatus
 				return nil
 			}
-			if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
-				return nil, err
+			updateNamespacedStatusesFunc := func(status *core.NamespacedStatuses) error {
+				if status == nil {
+					return nil
+				}
+				typedStatus := core.NamespacedStatuses{}
+				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
+					return err
+				}
+				*status = typedStatus
+				return nil
+			}
+			// First attempt to unmarshal NamespacedStatuses
+			if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
+				// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.
+				statusErr := resources.UpdateStatus(withStatus, updateStatusFunc)
+				if statusErr != nil {
+					// There's actually something wrong if either status can't be unmarshalled.
+					var multiErr *multierror.Error
+					multiErr = multierror.Append(multiErr, namespacedStatusesErr)
+					multiErr = multierror.Append(multiErr, statusErr)
+					return nil, multiErr
+				}
 			}
 		}
 		if resourceCrd.Spec != nil {

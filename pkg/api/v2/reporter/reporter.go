@@ -214,6 +214,7 @@ func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
+	log.Printf("WriteReports")
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -234,15 +235,26 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
-		if status.Equal(resource.GetStatus()) {
+		log.Printf("reporter.resourceToWrite: %v", resourceToWrite)
+
+		var resourceStatus *core.Status
+		var err error
+		if resourceStatus, err = resource.GetStatusForNamespace(); err != nil {
+			return err
+		}
+
+		if status.Equal(resourceStatus) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
-		resourceToWrite.SetStatus(status)
+
+		if upsertErr := resourceToWrite.SetStatusForNamespace(status); upsertErr != nil {
+			return upsertErr
+		}
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			updatedResource, resourceToWrite, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite)
+			updatedResource, resourceToWrite, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite, status)
 			return writeErr
 		})
 
@@ -265,7 +277,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
 	log.Printf("attemptUpdateStatus")
 	log.Printf("%v", resourceToWrite)
 	var readErr error
@@ -280,9 +292,11 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
-			status := resourceToWrite.GetStatus()
 			resourceToWrite = inputResourceFromRead
-			resourceToWrite.SetStatus(status)
+			if upsertErr := resourceToWrite.SetStatusForNamespace(statusToWrite); upsertErr != nil {
+				return nil, nil, upsertErr
+			}
+
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -309,7 +323,10 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWrite, nil
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	resourceToWriteUpdated.SetStatus(resourceToWrite.GetStatus())
+	if err := resources.CopyStatusForNamespace(resourceToWrite, resourceToWriteUpdated); err != nil {
+		return updatedResource, resourceToWriteUpdated, err
+	}
+
 	return returnResourcesWithLogs(updatedResource, resourceToWriteUpdated, writeErr)
 	//return updatedResource, resourceToWriteUpdated, writeErr
 }
@@ -319,6 +336,7 @@ func returnResourcesWithLogs(r resources.Resource, i resources.InputResource, e 
 	log.Printf("resource: %v ", r)
 	log.Printf("inputResource: %v ", i)
 	log.Printf("err: %v", e)
+	log.Printf("\n\n\n")
 	return r, i, e
 }
 
