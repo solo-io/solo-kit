@@ -27,10 +27,6 @@ func (r *ClusterResource) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *ClusterResource) SetStatus(status *core.Status) {
-	r.Status = status
-}
-
 func (r *ClusterResource) MustHash() uint64 {
 	hashVal, err := r.Hash(nil)
 	if err != nil {
@@ -56,14 +52,6 @@ func (list ClusterResourceList) Find(namespace, name string) (*ClusterResource, 
 
 func (list ClusterResourceList) AsResources() resources.ResourceList {
 	var ress resources.ResourceList
-	for _, clusterResource := range list {
-		ress = append(ress, clusterResource)
-	}
-	return ress
-}
-
-func (list ClusterResourceList) AsInputResources() resources.InputResourceList {
-	var ress resources.InputResourceList
 	for _, clusterResource := range list {
 		ress = append(ress, clusterResource)
 	}

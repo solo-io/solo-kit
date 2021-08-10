@@ -4,6 +4,7 @@ package v2alpha1
 
 import (
 	"log"
+	"os"
 	"sort"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -29,6 +30,46 @@ func (r *MockResource) SetMetadata(meta *core.Metadata) {
 
 func (r *MockResource) SetStatus(status *core.Status) {
 	r.Status = status
+	r.SetStatusForNamespace(status)
+}
+
+// SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for
+// the current namespace (as specified by POD_NAMESPACE env var).  If the resource does not yet
+// have a NamespacedStatuses, one will be created.
+// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
+// If unset, a podNamespaceErr is returned.
+func (r *MockResource) SetStatusForNamespace(status *core.Status) error {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace == "" {
+		return errors.NewPodNamespaceErr()
+	}
+	if r.GetNamespacedStatuses() == nil {
+		r.SetNamespacedStatuses(&core.NamespacedStatuses{})
+	}
+	if r.GetNamespacedStatuses().Statuses == nil {
+		r.GetNamespacedStatuses().Statuses = make(map[string]*core.Status)
+	}
+	r.GetNamespacedStatuses().Statuses[podNamespace] = status
+	return nil
+}
+
+// GetStatusForNamespace returns the status stored in the NamespacedStatuses.Statuses map for the
+// controller specified by the POD_NAMESPACE env var, or nil if no status exists for that
+// controller.
+// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
+// If unset, a podNamespaceErr is returned.
+func (r *MockResource) GetStatusForNamespace() (*core.Status, error) {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace == "" {
+		return nil, errors.NewPodNamespaceErr()
+	}
+	if r.GetNamespacedStatuses() == nil {
+		return nil, nil
+	}
+	if r.GetNamespacedStatuses().Statuses == nil {
+		return nil, nil
+	}
+	return r.GetNamespacedStatuses().Statuses[podNamespace], nil
 }
 
 func (r *MockResource) MustHash() uint64 {

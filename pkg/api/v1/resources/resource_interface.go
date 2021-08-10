@@ -454,14 +454,16 @@ func UpdateListMetadata(resources ResourceList, updateFunc func(meta *core.Metad
 	}
 }
 
-func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) error) error {
-	status := resource.GetStatus()
-	err := updateFunc(status)
+func UpdateStatusForNamespace(resource InputResource, updateFunc func(status *core.Status) error) error {
+	statusForNamespace, err := resource.GetStatusForNamespace()
 	if err != nil {
 		return err
 	}
-	resource.SetStatus(status)
-	return nil
+	err = updateFunc(statusForNamespace)
+	if err != nil {
+		return err
+	}
+	return resource.SetStatusForNamespace(statusForNamespace)
 }
 
 func UpdateNamespacedStatuses(resource InputResource, updateFunc func(namespacedStatuses *core.NamespacedStatuses) error) error {

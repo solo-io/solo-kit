@@ -168,7 +168,7 @@ func (p *Propagator) syncStatuses(parents, children resources.ResourceList, opts
 			// no-op
 			continue
 		}
-		_ = resources.UpdateStatus(parent, func(status *core.Status) error {
+		_ = resources.UpdateStatusForNamespace(parent, func(status *core.Status) error {
 			status.SubresourceStatuses = childStatuses
 			return nil
 		})

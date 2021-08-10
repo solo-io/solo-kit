@@ -27,10 +27,6 @@ func (r *AnotherMockResource) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *AnotherMockResource) SetStatus(status *core.Status) {
-	r.Status = status
-}
-
 func (r *AnotherMockResource) MustHash() uint64 {
 	hashVal, err := r.Hash(nil)
 	if err != nil {
@@ -56,14 +52,6 @@ func (list AnotherMockResourceList) Find(namespace, name string) (*AnotherMockRe
 
 func (list AnotherMockResourceList) AsResources() resources.ResourceList {
 	var ress resources.ResourceList
-	for _, anotherMockResource := range list {
-		ress = append(ress, anotherMockResource)
-	}
-	return ress
-}
-
-func (list AnotherMockResourceList) AsInputResources() resources.InputResourceList {
-	var ress resources.InputResourceList
 	for _, anotherMockResource := range list {
 		ress = append(ress, anotherMockResource)
 	}

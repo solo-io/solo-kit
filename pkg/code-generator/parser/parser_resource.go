@@ -17,7 +17,7 @@ const (
 	// solo-kit types
 	// required fields
 	metadataTypeName           = ".core.solo.io.Metadata"
-	statusTypeName             = ".core.solo.io.Status"
+	statusTypeName             = ".core.solo.io.Status" // TODO -remove
 	namespacedStatusesTypeName = ".core.solo.io.NamespacedStatuses"
 
 	// magic comments
@@ -228,7 +228,8 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 	// always make it upper camel
 	pluralName = strcase.ToCamel(pluralName)
 
-	hasStatus := hasField(msg, "status", statusTypeName)
+	// TODO - sam-heilbron
+	//hasStatus := hasField(msg, "status", statusTypeName)
 	hasNamespacedStatuses := hasField(msg, "namespaced_statuses", namespacedStatusesTypeName)
 
 	oneofs := collectOneofs(msg)
@@ -239,7 +240,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 		GoPackage:              messageWrapper.GoPackage,
 		ShortName:              shortName,
 		PluralName:             pluralName,
-		HasStatus:              hasStatus && hasNamespacedStatuses,
+		HasStatus:              hasNamespacedStatuses,
 		Oneofs:                 oneofs,
 		ClusterScoped:          clusterScoped,
 		SkipHashingAnnotations: skipHashingAnnotations,

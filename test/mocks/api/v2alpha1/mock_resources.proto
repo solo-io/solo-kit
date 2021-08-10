@@ -20,6 +20,7 @@ message MockResource {
     option (core.solo.io.resource).plural_name = "mocks";
 
     core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+    core.solo.io.NamespacedStatuses namespaced_statuses = 16 [(extproto.skip_hashing) = true];
     core.solo.io.Metadata metadata = 7;
 
     oneof we_stuck_it_in_a_oneof {

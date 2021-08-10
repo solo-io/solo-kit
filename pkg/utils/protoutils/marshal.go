@@ -219,7 +219,7 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 		}
 
 		if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
-			if statusErr := resources.UpdateStatus(withStatus, updateStatusFunc); statusErr != nil {
+			if statusErr := resources.UpdateStatusForNamespace(withStatus, updateStatusFunc); statusErr != nil {
 				var multiErr *multierror.Error
 				multiErr = multierror.Append(multiErr, namespacedStatusesErr)
 				multiErr = multierror.Append(multiErr, statusErr)

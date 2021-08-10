@@ -454,7 +454,9 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
 			// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
-			withStatus.SetStatus(&core.Status{})
+			if err := withStatus.SetStatusForNamespace(&core.Status{}); err != nil {
+				return nil, err
+			}
 
 			updateStatusFunc := func(status *core.Status) error {
 				if status == nil {
@@ -478,10 +480,20 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 				*status = typedStatus
 				return nil
 			}
-			// First attempt to unmarshal NamespacedStatuses
+
+			// Unmarshal the status from the Resource
+			// To support Resources that have Statuses either of type core.Status or core.NamespacedStatuses
+			//	we perform this unmarshalling in a couple of steps:
+			//
+			// 1. Attempt to unmarshal the status as a core.NamespacedStatus. Resources will be persisted with this type
+			//	moving forward, so we attempt this unmarshalling first.
+			// 2. If we are successful, complete
+			// 3. If we are not successful, attempt to unmarshal the status as a core.Status.
+			// 4. If we are successful, update the Status for this namespace
+			// 5. If we are not successful, an error has occurred.
 			if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
 				// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.
-				statusErr := resources.UpdateStatus(withStatus, updateStatusFunc)
+				statusErr := resources.UpdateStatusForNamespace(withStatus, updateStatusFunc)
 				if statusErr != nil {
 					// There's actually something wrong if either status can't be unmarshalled.
 					var multiErr *multierror.Error

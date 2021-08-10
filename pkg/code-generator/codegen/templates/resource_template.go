@@ -11,6 +11,7 @@ import (
 	"hash"
 	"hash/fnv"
 	"log"
+	"os"
 	"sort"
 
 {{- if $.IsCustom }}
@@ -90,9 +91,16 @@ func (r *{{ .Name }}) SetStatus(status *core.Status) {
 	r.SetStatusForNamespace(status)
 }
 
-func (r *{{ .Name }}) GetStatus() status *core.Status {
-	s, err := r.GetStatusForNamespace()
-	return s
+func (r *{{ .Name }}) GetStatus() *core.Status {
+	if r != nil {
+		s, _ := r.GetStatusForNamespace()
+		return s
+	}
+	return nil
+}
+
+func (r *{{ .Name }}) SetNamespacedStatuses(statuses *core.NamespacedStatuses) {
+	r.NamespacedStatuses = statuses
 }
 
 // SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for
