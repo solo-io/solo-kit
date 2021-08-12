@@ -28,9 +28,22 @@ func (r *MockResource) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
+// Deprecated
 func (r *MockResource) SetStatus(status *core.Status) {
-	r.Status = status
 	r.SetStatusForNamespace(status)
+}
+
+// Deprecated
+func (r *MockResource) GetStatus() *core.Status {
+	if r != nil {
+		s, _ := r.GetStatusForNamespace()
+		return s
+	}
+	return nil
+}
+
+func (r *MockResource) SetNamespacedStatuses(statuses *core.NamespacedStatuses) {
+	r.NamespacedStatuses = statuses
 }
 
 // SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for

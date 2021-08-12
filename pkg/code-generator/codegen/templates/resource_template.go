@@ -87,10 +87,12 @@ func (r *{{ .Name }}) SetMetadata(meta *core.Metadata) {
 
 {{- if $.HasStatus }}
 
+// Deprecated
 func (r *{{ .Name }}) SetStatus(status *core.Status) {
 	r.SetStatusForNamespace(status)
 }
 
+// Deprecated
 func (r *{{ .Name }}) GetStatus() *core.Status {
 	if r != nil {
 		s, _ := r.GetStatusForNamespace()

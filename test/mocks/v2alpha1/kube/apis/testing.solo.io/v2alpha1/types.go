@@ -85,7 +85,6 @@ type MockResource struct {
 	// Spec defines the implementation of this definition.
 	// +optional
 	Spec               api.MockResource        `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status             core.Status             `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 	NamespacedStatuses core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=namespaced_statuses"`
 }
 
@@ -101,7 +100,6 @@ func (o *MockResource) MarshalJSON() ([]byte, error) {
 		"metadata":           o.ObjectMeta,
 		"apiVersion":         o.TypeMeta.APIVersion,
 		"kind":               o.TypeMeta.Kind,
-		"status":             o.Status,
 		"namespacedStatuses": o.NamespacedStatuses,
 		"spec":               spec,
 	}
@@ -122,10 +120,6 @@ func (o *MockResource) UnmarshalJSON(data []byte) error {
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-	}
-	if spec.Status != nil {
-		o.Status = *spec.Status
-		o.Spec.Status = nil
 	}
 	if spec.NamespacedStatuses != nil {
 		o.NamespacedStatuses = *spec.NamespacedStatuses
