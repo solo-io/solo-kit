@@ -84,8 +84,8 @@ type MockResource struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec               api.MockResource        `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	NamespacedStatuses core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=namespaced_statuses"`
+	Spec   api.MockResource        `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 func (o *MockResource) MarshalJSON() ([]byte, error) {
@@ -95,13 +95,12 @@ func (o *MockResource) MarshalJSON() ([]byte, error) {
 	}
 	delete(spec, "metadata")
 	delete(spec, "status")
-	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
-		"metadata":           o.ObjectMeta,
-		"apiVersion":         o.TypeMeta.APIVersion,
-		"kind":               o.TypeMeta.Kind,
-		"namespacedStatuses": o.NamespacedStatuses,
-		"spec":               spec,
+		"metadata":   o.ObjectMeta,
+		"apiVersion": o.TypeMeta.APIVersion,
+		"kind":       o.TypeMeta.Kind,
+		"status":     o.NamespacedStatuses,
+		"spec":       spec,
 	}
 	return json.Marshal(asMap)
 }
@@ -122,8 +121,8 @@ func (o *MockResource) UnmarshalJSON(data []byte) error {
 		Spec:       spec,
 	}
 	if spec.NamespacedStatuses != nil {
-		o.NamespacedStatuses = *spec.NamespacedStatuses
-		o.Spec.Status = nil
+		o.Status = *spec.NamespacedStatuses
+		o.Spec.NamespacedStatuses = nil
 	}
 
 	return nil

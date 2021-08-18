@@ -28,6 +28,8 @@ spec:
             data.json:
               type: string
             namespacedStatuses:
+              description: The status field comment core.solo.io.Status status = 6
+                [(extproto.skip_hashing) = true];
               properties:
                 statuses:
                   additionalProperties:
@@ -69,13 +71,8 @@ spec:
               type: boolean
             someDumbField:
               type: string
-            status:
-              description: The status field comment
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
-          description: The status field comment
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object

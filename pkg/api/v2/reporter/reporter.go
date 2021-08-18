@@ -214,7 +214,7 @@ func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
-	log.Printf("WriteReports")
+	log.Printf("\nUpdated WriteReports")
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -260,6 +260,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
+			log.Printf("writeErr: %v", err)
 			logger.Error(err)
 			merr = multierror.Append(merr, err)
 			continue
@@ -278,8 +279,6 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
 func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
-	log.Printf("attemptUpdateStatus")
-	log.Printf("%v", resourceToWrite)
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
@@ -301,8 +300,8 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
-		return returnResourcesWithLogs(updatedResource, resourceToWrite, nil)
-		//return updatedResource, resourceToWrite, nil
+		//return returnResourcesWithLogs(updatedResource, resourceToWrite, nil)
+		return updatedResource, resourceToWrite, nil
 	}
 	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil {
@@ -311,8 +310,8 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
 			return nil, resourceToWrite, errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict; readErr %v", readErr)
 		}
-		return returnResourcesWithLogs(nil, resourceToWrite, writeErr)
-		//return nil, resourceToWrite, writeErr
+		//return returnResourcesWithLogs(nil, resourceToWrite, writeErr)
+		return nil, resourceToWrite, writeErr
 	}
 
 	// we successfully read an updated version of the resource we are
@@ -327,16 +326,19 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWriteUpdated, err
 	}
 
-	return returnResourcesWithLogs(updatedResource, resourceToWriteUpdated, writeErr)
-	//return updatedResource, resourceToWriteUpdated, writeErr
+	//return returnResourcesWithLogs(updatedResource, resourceToWriteUpdated, writeErr)
+	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
 func returnResourcesWithLogs(r resources.Resource, i resources.InputResource, e error) (resources.Resource, resources.InputResource, error) {
-	log.Printf("return attempt update status")
-	log.Printf("resource: %v ", r)
-	log.Printf("inputResource: %v ", i)
-	log.Printf("err: %v", e)
-	log.Printf("\n\n\n")
+	if e != nil {
+		log.Printf("return attempt update status")
+		log.Printf("resource: %v ", r)
+		log.Printf("inputResource: %v ", i)
+		log.Printf("err: %v", e)
+		log.Printf("\n\n\n")
+	}
+
 	return r, i, e
 }
 

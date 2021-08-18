@@ -188,8 +188,6 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 }
 
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
-	log.Printf("ResourceClient.Write")
-	log.Printf("%v", resource)
 	opts = opts.WithDefaults()
 	if err := resources.Validate(resource); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
@@ -323,7 +321,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 		}
 		resource, err := rc.convertCrdToResource(resourceCrd)
 		if err != nil {
-			return nil, errors.Wrapf(err, "converting output crd")
+			return nil, errors.Wrapf(err, "(RC.LIST) converting output crd")
 		}
 		resourceList = append(resourceList, resource)
 	}
@@ -492,13 +490,16 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 			// 4. If we are successful, update the Status for this namespace
 			// 5. If we are not successful, an error has occurred.
 			if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
+				log.Printf("namespacedStatusesErr: %v", namespacedStatusesErr)
 				// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.
 				statusErr := resources.UpdateStatusForNamespace(withStatus, updateStatusFunc)
+				log.Printf("statusErr: %v", statusErr)
 				if statusErr != nil {
 					// There's actually something wrong if either status can't be unmarshalled.
 					var multiErr *multierror.Error
 					multiErr = multierror.Append(multiErr, namespacedStatusesErr)
 					multiErr = multierror.Append(multiErr, statusErr)
+					log.Printf("multiError: %v", multiErr)
 					return nil, multiErr
 				}
 			}
@@ -509,6 +510,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 			}
 		}
 	}
+	log.Printf("\n------- \n\n")
 	return resource, nil
 }
 

@@ -46,16 +46,6 @@ func (m *MockResource) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetStatus()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetStatus()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetStatus(), target.GetStatus()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetNamespacedStatuses()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetNamespacedStatuses()) {
 			return false
