@@ -2,7 +2,6 @@ package kube
 
 import (
 	"context"
-	"log"
 	"reflect"
 	"sort"
 	"strings"
@@ -202,7 +201,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	clone := resources.Clone(resource).(resources.InputResource)
 	clone.SetMetadata(meta)
 	resourceCrd, err := rc.crd.KubeResource(clone)
-	log.Printf("%v", resourceCrd)
 	if err != nil {
 		return nil, err
 	}
@@ -251,10 +249,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// return a read object to update the resource version
-	res, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{Ctx: opts.Ctx})
-	log.Printf("%v", res)
-	log.Printf("\n\n\n")
-	return res, err
+	return rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{Ctx: opts.Ctx})
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
@@ -490,16 +485,13 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 			// 4. If we are successful, update the Status for this namespace
 			// 5. If we are not successful, an error has occurred.
 			if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
-				log.Printf("namespacedStatusesErr: %v", namespacedStatusesErr)
 				// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.
 				statusErr := resources.UpdateStatusForNamespace(withStatus, updateStatusFunc)
-				log.Printf("statusErr: %v", statusErr)
 				if statusErr != nil {
 					// There's actually something wrong if either status can't be unmarshalled.
 					var multiErr *multierror.Error
 					multiErr = multierror.Append(multiErr, namespacedStatusesErr)
 					multiErr = multierror.Append(multiErr, statusErr)
-					log.Printf("multiError: %v", multiErr)
 					return nil, multiErr
 				}
 			}
@@ -510,7 +502,6 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 			}
 		}
 	}
-	log.Printf("\n------- \n\n")
 	return resource, nil
 }
 

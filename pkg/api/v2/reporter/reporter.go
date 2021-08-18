@@ -2,7 +2,6 @@ package reporter
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"k8s.io/client-go/util/retry"
@@ -214,7 +213,6 @@ func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
 func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
-	log.Printf("\nUpdated WriteReports")
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -235,7 +233,6 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
-		log.Printf("reporter.resourceToWrite: %v", resourceToWrite)
 
 		var resourceStatus *core.Status
 		var err error
@@ -260,7 +257,6 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
-			log.Printf("writeErr: %v", err)
 			logger.Error(err)
 			merr = multierror.Append(merr, err)
 			continue
@@ -300,7 +296,6 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
-		//return returnResourcesWithLogs(updatedResource, resourceToWrite, nil)
 		return updatedResource, resourceToWrite, nil
 	}
 	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
@@ -310,7 +305,6 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
 			return nil, resourceToWrite, errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict; readErr %v", readErr)
 		}
-		//return returnResourcesWithLogs(nil, resourceToWrite, writeErr)
 		return nil, resourceToWrite, writeErr
 	}
 
@@ -326,20 +320,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWriteUpdated, err
 	}
 
-	//return returnResourcesWithLogs(updatedResource, resourceToWriteUpdated, writeErr)
 	return updatedResource, resourceToWriteUpdated, writeErr
-}
-
-func returnResourcesWithLogs(r resources.Resource, i resources.InputResource, e error) (resources.Resource, resources.InputResource, error) {
-	if e != nil {
-		log.Printf("return attempt update status")
-		log.Printf("resource: %v ", r)
-		log.Printf("inputResource: %v ", i)
-		log.Printf("err: %v", e)
-		log.Printf("\n\n\n")
-	}
-
-	return r, i, e
 }
 
 func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
