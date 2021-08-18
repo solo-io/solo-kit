@@ -155,17 +155,18 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		})
 
 		It("Can maintain status when written and read from storage", func() {
+
 			mockResource := &v1.MockResource{
-				Status: &core.Status{
-					State:      2,
-					Reason:     "test",
-					ReportedBy: "me",
-				},
 				Metadata: &core.Metadata{
 					Name:      "test",
 					Namespace: ns1,
 				},
 			}
+			mockResource.SetStatusForNamespace(&core.Status{
+				State:      2,
+				Reason:     "test",
+				ReportedBy: "me",
+			})
 			_, err := client.Write(mockResource, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 

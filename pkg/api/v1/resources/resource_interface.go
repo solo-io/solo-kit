@@ -44,14 +44,14 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 
 type InputResource interface {
 	Resource
-	// Deprecated: statuses are now written to a NamespacedStatuses, use SetStatusForNamespace() or
-	// GetStatusForNamespace() instead.
+	// Deprecated: prefer GetStatusForNamespace()
 	GetStatus() *core.Status
+	// Deprecated: prefer SetStatusForNamespace()
 	SetStatus(status *core.Status)
-	GetNamespacedStatuses() *core.NamespacedStatuses
-	SetNamespacedStatuses(status *core.NamespacedStatuses)
 	GetStatusForNamespace() (*core.Status, error)
 	SetStatusForNamespace(status *core.Status) error
+	GetNamespacedStatuses() *core.NamespacedStatuses
+	SetNamespacedStatuses(status *core.NamespacedStatuses)
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control

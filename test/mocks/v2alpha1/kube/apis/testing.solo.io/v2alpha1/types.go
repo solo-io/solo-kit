@@ -94,12 +94,12 @@ func (o *MockResource) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "status")
+	delete(spec, "namespaced_statuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
 		"kind":       o.TypeMeta.Kind,
-		"status":     o.NamespacedStatuses,
+		"status":     o.Status,
 		"spec":       spec,
 	}
 	return json.Marshal(asMap)
