@@ -89,6 +89,7 @@ var _ = Describe("Base", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
 		Expect(cm.Data["data.json"]).To(ContainSubstring("'hello: goodbye'"))
+		generic.DeleteMockResource(client, input)
 	})
 
 	Context("multiple namespaces", func() {
@@ -186,6 +187,9 @@ var _ = Describe("Base", func() {
 			}()
 
 			Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r2))))
+			generic.DeleteResource(client, r1)
+			generic.DeleteResource(client, r2)
+
 		})
 	})
 })
