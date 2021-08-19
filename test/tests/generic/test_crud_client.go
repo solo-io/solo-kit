@@ -222,6 +222,10 @@ Loop:
 	)
 
 	DeleteMockResource(client, input)
+	DeleteResource(client, r1)
+	DeleteResource(client, r2)
+	DeleteResource(client, r3)
+
 }
 
 func postList(callbacks []Callback, list resources.ResourceList) {
@@ -254,6 +258,11 @@ type Callback struct {
 func DeleteMockResource(client clients.ResourceClient, obj *v1.MockResource) {
 	err := client.Delete(obj.GetMetadata().GetNamespace(), obj.GetMetadata().GetName(), clients.DeleteOpts{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	//EventuallyWithOffset(1, func() error{
+	//	_, err = client.Read(obj.GetMetadata().GetNamespace(), obj.GetMetadata().GetName(), clients.ReadOpts{})
+	//	return err
+	//}).Should(HaveOccurred())
 }
 
 func DeleteResource(client clients.ResourceClient, obj resources.Resource) {
