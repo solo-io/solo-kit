@@ -2,4 +2,4 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5193
     resolvesIssue: false
-    description: Add `keep pr updated` label to solo-kit.
+    description: Fix oneof docsgen comment
