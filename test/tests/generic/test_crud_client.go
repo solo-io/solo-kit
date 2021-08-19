@@ -1,6 +1,7 @@
 package generic
 
 import (
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -35,6 +36,9 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	// list with no resources should return empty list, not err
 	list, err := client.List("", clients.ListOpts{})
 	Expect(err).NotTo(HaveOccurred())
+	if len(list) != 0 {
+		fmt.Printf("Non empty List: %+v\n", list)
+	}
 	Expect(list).To(BeEmpty())
 
 	r1, err := client.Write(input, clients.WriteOpts{})
