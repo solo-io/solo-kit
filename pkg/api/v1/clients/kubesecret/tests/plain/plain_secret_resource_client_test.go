@@ -104,6 +104,7 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
 		generic.DeleteMockResource(client, input)
+
 	})
 	// no string escape
 })
