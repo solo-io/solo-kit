@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5193
+    resolvesIssue: false
+    description: Fix oneof docsgen comment
