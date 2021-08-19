@@ -48,7 +48,9 @@ var (
 	client     *kube.ResourceClient
 	clientset  *versioned.Clientset
 	lock       *clusterlock.TestClusterLocker
+	namespace  = helpers.RandString(5)
 )
+
 var _ = SynchronizedBeforeSuite(func() []byte {
 	ctx := context.Background()
 	cfg, err := kubeutils.GetConfig("", "")
@@ -80,11 +82,17 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
 	Expect(err).NotTo(HaveOccurred())
+
+	err = os.Setenv("POD_NAMESPACE", namespace)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	err := setup.DeleteCrd(v1.MockResourceCrd.FullName())
 	Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
+
+	err = os.Unsetenv("POD_NAMESPACE")
 	Expect(err).NotTo(HaveOccurred())
 })
 
