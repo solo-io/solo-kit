@@ -3,6 +3,8 @@ package tests_test
 import (
 	"context"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/matchers"
 
@@ -59,6 +61,7 @@ var _ = Describe("Generated Kube Code", func() {
 		res := &v2alpha1.MockResource{
 			ObjectMeta: v1.ObjectMeta{Name: "foo", Namespace: "default"},
 			Spec: skv1alpha2.MockResource{
+				NamespacedStatuses: &core.NamespacedStatuses{},
 				WeStuckItInAOneof: &skv1alpha2.MockResource_SomeDumbField{
 					SomeDumbField: "we did it",
 				},

@@ -15,17 +15,18 @@ import (
 )
 
 var _ = Describe("Reporter", func() {
+
 	var (
 		reporter                               rep.Reporter
 		mockResourceClient, fakeResourceClient clients.ResourceClient
 	)
+
 	JustBeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", mockResourceClient, fakeResourceClient)
 	})
-	JustAfterEach(func() {
-	})
+
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -42,12 +43,18 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r2, err = mockResourceClient.Read(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(r1.(*v1.MockResource).GetStatus()).To(Equal(&core.Status{
+
+		status, err := r1.(*v1.MockResource).GetStatusForNamespace()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "everyone makes mistakes",
 			ReportedBy: "test",
 		}))
-		Expect(r2.(*v1.MockResource).GetStatus()).To(Equal(&core.Status{
+
+		status, err = r2.(*v1.MockResource).GetStatusForNamespace()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "try your best",
 			ReportedBy: "test",

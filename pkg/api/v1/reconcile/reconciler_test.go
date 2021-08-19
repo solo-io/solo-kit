@@ -11,21 +11,22 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/matchers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
 var _ = Describe("Reconciler", func() {
+
 	var (
-		namespace          = helpers.RandString(5)
 		mockReconciler     Reconciler
 		mockResourceClient clients.ResourceClient
 	)
+
 	BeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		mockReconciler = NewReconciler(mockResourceClient)
 	})
+
 	It("does the crudding for you so you can sip a nice coconut", func() {
 		desiredMockResources := resources.ResourceList{
 			v1.NewMockResource(namespace, "a1-barry"),

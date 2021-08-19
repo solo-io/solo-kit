@@ -162,12 +162,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Namespace: ns1,
 				},
 			}
-			mockResource.SetStatusForNamespace(&core.Status{
+			err := mockResource.SetStatusForNamespace(&core.Status{
 				State:      2,
 				Reason:     "test",
 				ReportedBy: "me",
 			})
-			_, err := client.Write(mockResource, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = client.Write(mockResource, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			read, err := client.Read(
@@ -176,7 +178,12 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clients.ReadOpts{},
 			)
 
-			Expect(mockResource.GetStatus()).To(matchers.MatchProto(read.(resources.InputResource).GetStatus()))
+			mockResourceStatus, err := mockResource.GetStatusForNamespace()
+			Expect(err).NotTo(HaveOccurred())
+			readResourceStatus, readErr := read.(resources.InputResource).GetStatusForNamespace()
+			Expect(readErr).NotTo(HaveOccurred())
+
+			Expect(mockResourceStatus).To(matchers.MatchProto(readResourceStatus))
 		})
 	})
 

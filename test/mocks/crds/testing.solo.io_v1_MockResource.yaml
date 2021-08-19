@@ -28,8 +28,7 @@ spec:
             data.json:
               type: string
             namespacedStatuses:
-              description: The status field comment core.solo.io.Status status = 6
-                [(extproto.skip_hashing) = true];
+              description: The NamespacedStatuses field comment
               properties:
                 statuses:
                   additionalProperties:

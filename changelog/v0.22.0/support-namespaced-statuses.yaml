@@ -1,0 +1,5 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: Add support for statuses from multiple reporters.
+    issueLink: https://github.com/solo-io/solo-kit/issues/430
+    resolvesIssue: false
