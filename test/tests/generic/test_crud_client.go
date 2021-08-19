@@ -245,13 +245,12 @@ type Callback struct {
 	PostWriteFunc func(res resources.Resource)
 }
 
-
 func DeleteMockResource(client clients.ResourceClient, obj *v1.MockResource) {
 	err := client.Delete(obj.GetMetadata().GetNamespace(), obj.GetMetadata().GetName(), clients.DeleteOpts{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 
-func DeleteResource(client clients.ResourceClient, obj resources.Resource){
+func DeleteResource(client clients.ResourceClient, obj resources.Resource) {
 	err := client.Delete(obj.GetMetadata().GetNamespace(), obj.GetMetadata().GetName(), clients.DeleteOpts{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
