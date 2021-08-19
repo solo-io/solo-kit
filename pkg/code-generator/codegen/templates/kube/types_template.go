@@ -58,7 +58,7 @@ func (o *{{ .Name }}) MarshalJSON() ([]byte, error) {
 	}
 	delete(spec, "metadata")
 {{- if .HasStatus }}
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 {{- end }}
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
@@ -88,7 +88,7 @@ func (o *{{ .Name }}) UnmarshalJSON(data []byte) error {
 		Spec:       spec,
 	}
 {{- if .HasStatus }}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}

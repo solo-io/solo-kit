@@ -316,7 +316,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 		}
 		resource, err := rc.convertCrdToResource(resourceCrd)
 		if err != nil {
-			return nil, errors.Wrapf(err, "(RC.LIST) converting output crd")
+			return nil, errors.Wrapf(err, "converting output crd")
 		}
 		resourceList = append(resourceList, resource)
 	}

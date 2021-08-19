@@ -257,14 +257,14 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
-			logger.Error(err)
+			logger.Warn(err)
 			merr = multierror.Append(merr, err)
 			continue
 		}
 		if updatedResource != nil {
-			logger.Errorf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
+			logger.Warnf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
 		} else {
-			logger.Errorf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
+			logger.Warnf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
 			delete(resourceErrs, resource)
 		}
 	}

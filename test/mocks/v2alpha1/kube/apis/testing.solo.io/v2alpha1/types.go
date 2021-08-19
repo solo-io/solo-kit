@@ -94,7 +94,7 @@ func (o *MockResource) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -120,7 +120,7 @@ func (o *MockResource) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}
