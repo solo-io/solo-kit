@@ -46,18 +46,18 @@ var _ = Describe("MockResource", func() {
 	Context("GetStatusForNamespace", func() {
 		It("Should return the correct status with respect to the POD_NAMESPACE", func() {
 			mockRes := v1.MockResource{}
-			ns1Status := Status{
+			blueNamespaceStatus := Status{
 				State:      Status_Accepted,
 				ReportedBy: "gloo",
 			}
-			ns2Status := Status{
+			greenNamespaceStatus := Status{
 				State:      Status_Pending,
 				ReportedBy: "gloo",
 			}
 			namespacedStatuses := &NamespacedStatuses{
 				Statuses: map[string]*Status{
-					blueNamespace:  &ns1Status,
-					greenNamespace: &ns2Status,
+					blueNamespace:  &blueNamespaceStatus,
+					greenNamespace: &greenNamespaceStatus,
 				},
 			}
 			mockRes.SetNamespacedStatuses(namespacedStatuses)
@@ -65,24 +65,24 @@ var _ = Describe("MockResource", func() {
 			SimulateInPodNamespace(blueNamespace, func() {
 				status, err := mockRes.GetStatusForNamespace()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(status).To(BeEquivalentTo(&ns1Status))
+				Expect(status).To(BeEquivalentTo(&blueNamespaceStatus))
 			})
 			SimulateInPodNamespace(greenNamespace, func() {
 				status, err := mockRes.GetStatusForNamespace()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(status).To(BeEquivalentTo(&ns2Status))
+				Expect(status).To(BeEquivalentTo(&greenNamespaceStatus))
 			})
 		})
 
 		It("Should return a podNamespaceErr if POD_NAMESPACE is not set.", func() {
 			mockRes := v1.MockResource{}
-			status := Status{
+			blueNamespaceStatus := Status{
 				State:      Status_Accepted,
 				ReportedBy: "gloo",
 			}
 			namespacedStatuses := &NamespacedStatuses{
 				Statuses: map[string]*Status{
-					blueNamespace: &status,
+					blueNamespace: &blueNamespaceStatus,
 				},
 			}
 			mockRes.SetNamespacedStatuses(namespacedStatuses)

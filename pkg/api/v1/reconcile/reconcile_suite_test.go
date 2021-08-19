@@ -4,8 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/solo-io/solo-kit/test/helpers"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -13,7 +11,7 @@ import (
 var namespace string
 
 var _ = BeforeSuite(func() {
-	namespace = helpers.RandString(5)
+	namespace = "reconcile-suite-test-ns"
 
 	err := os.Setenv("POD_NAMESPACE", namespace)
 	Expect(err).NotTo(HaveOccurred())

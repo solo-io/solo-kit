@@ -48,7 +48,7 @@ var (
 	client     *kube.ResourceClient
 	clientset  *versioned.Clientset
 	lock       *clusterlock.TestClusterLocker
-	namespace  = helpers.RandString(5)
+	namespace  = "resource-client-test-ns"
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {

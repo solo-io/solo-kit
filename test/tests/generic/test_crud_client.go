@@ -17,6 +17,8 @@ import (
 
 // Call within "It"
 func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
+	testOffset := 1
+
 	selectors := opts.Selector
 	foo := "foo"
 	input := v1.NewMockResource(namespace1, foo)
@@ -30,32 +32,32 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	input.Metadata.Labels = labels
 
 	err := client.Register()
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	// list with no resources should return empty list, not err
 	list, err := client.List("", clients.ListOpts{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(BeEmpty())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, list).To(BeEmpty())
 
 	r1, err := client.Write(input, clients.WriteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	postWrite(callbacks, r1)
 
 	_, err = client.Write(input, clients.WriteOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsExist(err)).To(BeTrue())
 
-	Expect(r1).To(BeAssignableToTypeOf(&v1.MockResource{}))
-	Expect(r1.GetMetadata().Name).To(Equal(foo))
-	Expect(r1.GetMetadata().Namespace).To(Equal(namespace1))
-	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(""))
-	Expect(r1.(*v1.MockResource).Data).To(Equal(data))
+	ExpectWithOffset(testOffset, r1).To(BeAssignableToTypeOf(&v1.MockResource{}))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Name).To(Equal(foo))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Namespace).To(Equal(namespace1))
+	ExpectWithOffset(testOffset, r1.GetMetadata().ResourceVersion).NotTo(Equal(""))
+	ExpectWithOffset(testOffset, r1.(*v1.MockResource).Data).To(Equal(data))
 
 	// if exists and resource ver was not updated, error
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	Expect(err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
 
 	resources.UpdateMetadata(input, func(meta *core.Metadata) {
 		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
@@ -68,19 +70,19 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	read, err := client.Read(namespace1, foo, clients.ReadOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	postRead(callbacks, read)
 
 	// it should update the resource version on the new write
-	Expect(read.GetMetadata().ResourceVersion).NotTo(Equal(oldRv))
-	Expect(read).To(matchers.MatchProto(r1.(resources.ProtoResource)))
+	ExpectWithOffset(testOffset, read.GetMetadata().ResourceVersion).NotTo(Equal(oldRv))
+	ExpectWithOffset(testOffset, read).To(matchers.MatchProto(r1.(resources.ProtoResource)))
 
 	_, err = client.Read("doesntexist", foo, clients.ReadOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsNotExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsNotExist(err)).To(BeTrue())
 
 	boo := "boo"
 	input = &v1.MockResource{
@@ -92,23 +94,23 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 		},
 	}
 	r2, err := client.Write(input, clients.WriteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	// with labels
 	list, err = client.List("", clients.ListOpts{
 		Selector: labels,
 	})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(matchers.ContainProto(r1.(resources.ProtoResource)))
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, list).To(matchers.ContainProto(r1.(resources.ProtoResource)))
 	postList(callbacks, list)
-	Expect(list).NotTo(ContainElement(r2))
+	ExpectWithOffset(testOffset, list).NotTo(ContainElement(r2))
 
 	// without
 	list, err = client.List("", clients.ListOpts{
 		Selector: selectors,
 	})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(And(
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, list).To(And(
 		matchers.ContainProto(r1.(resources.ProtoResource)), matchers.ContainProto(r2.(resources.ProtoResource)),
 	))
 	postList(callbacks, list)
@@ -118,38 +120,38 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 		meta.ResourceVersion = ""
 	})
 	_, err = client.Write(r2, clients.WriteOpts{OverwriteExisting: true})
-	Expect(err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
 
 	err = client.Delete(namespace1, "adsfw", clients.DeleteOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsNotExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsNotExist(err)).To(BeTrue())
 
 	err = client.Delete(namespace1, "adsfw", clients.DeleteOpts{
 		IgnoreNotExist: true,
 	})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	err = client.Delete(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	Eventually(func() resources.ResourceList {
 		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
 		})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(matchers.ContainProto(r1.(resources.ProtoResource)))
 	Eventually(func() resources.ResourceList {
 		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
 		})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
 
 	// watch works on all namespaces
 	w, errs, err := client.Watch("", opts)
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	var r3 resources.Resource
 	wait := make(chan struct{})
@@ -162,7 +164,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 			meta.ResourceVersion = ""
 		})
 		r2, err = client.Write(r2, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 		input = &v1.MockResource{
 			Data: data,
@@ -173,7 +175,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 			},
 		}
 		r3, err = client.Write(input, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	}()
 	select {
 	case <-wait:
@@ -187,7 +189,7 @@ Loop:
 	for {
 		select {
 		case err := <-errs:
-			Expect(err).NotTo(HaveOccurred())
+			ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		case list = <-w:
 		case <-after:
 			if list == nil {
@@ -202,7 +204,7 @@ Loop:
 		for {
 			select {
 			case err := <-errs:
-				Expect(err).NotTo(HaveOccurred())
+				ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 			case <-time.After(time.Second / 4):
 				return
 			}
@@ -211,7 +213,7 @@ Loop:
 
 	postList(callbacks, list)
 
-	Expect(list).To(matchers.ConsistOfProtos(
+	ExpectWithOffset(testOffset, list).To(matchers.ConsistOfProtos(
 		r1.(resources.ProtoResource),
 		r2.(resources.ProtoResource),
 		r3.(resources.ProtoResource)),
