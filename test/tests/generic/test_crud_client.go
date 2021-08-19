@@ -220,6 +220,8 @@ Loop:
 		r2.(resources.ProtoResource),
 		r3.(resources.ProtoResource)),
 	)
+
+	DeleteMockResource(client, input)
 }
 
 func postList(callbacks []Callback, list resources.ResourceList) {

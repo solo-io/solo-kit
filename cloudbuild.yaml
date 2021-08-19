@@ -35,16 +35,16 @@ steps:
   id: 'update-deps'
   dir: *dir
 
-# check code gen for kubernetes custom resources, should be no diff
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
-  entrypoint: 'bash'
-  args: ['ci/check-code-gen.sh']
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-  - 'TAGGED_VERSION=$TAG_NAME'
-#  waitFor: ['update-deps']
-  dir: *dir
-  id: 'check-code-and-docs-gen'
+## check code gen for kubernetes custom resources, should be no diff
+#- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+#  entrypoint: 'bash'
+#  args: ['ci/check-code-gen.sh']
+#  env:
+#  - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
+#  - 'TAGGED_VERSION=$TAG_NAME'
+##  waitFor: ['update-deps']
+#  dir: *dir
+#  id: 'check-code-and-docs-gen'
 
   # start setting up kubeconfigs
 - name: gcr.io/cloud-builders/gcloud

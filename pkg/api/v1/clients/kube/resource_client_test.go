@@ -530,6 +530,15 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(rc.Register()).NotTo(HaveOccurred())
 			})
 
+			AfterEach(func() {
+				Expect(util.DeleteMockResource(ctx, clientset, namespace1, "res-1")).NotTo(HaveOccurred())
+				Expect(util.DeleteMockResource(ctx, clientset, namespace1, "res-2")).NotTo(HaveOccurred())
+				Expect(util.DeleteMockResource(ctx, clientset, namespace1, "res-3")).NotTo(HaveOccurred())
+				Expect(util.DeleteMockResource(ctx, clientset, namespace2, "res-4")).NotTo(HaveOccurred())
+				Expect(util.DeleteMockResource(ctx, clientset, namespace2, "res-5")).NotTo(HaveOccurred())
+
+			})
+
 			It("lists the correct resources for the given namespace", func() {
 				list, err := rc.List(namespace1, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
