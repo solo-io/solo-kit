@@ -83,7 +83,7 @@ var _ = Describe("PlainConfigmap", func() {
 		cm, err := kube.CoreV1().ConfigMaps(input.Metadata.Namespace).Get(ctx, input.Metadata.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
-		Expect(string(cm.Data["data.json"])).To(Equal("hello: goodbye"))
+		Expect(cm.Data["data.json"]).To(Equal("hello: goodbye"))
 	})
 	It("emits empty fields", func() {
 		foo := "test-data-keys"
