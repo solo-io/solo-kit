@@ -176,6 +176,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			)
 
 			Expect(mockResource.GetStatus()).To(matchers.MatchProto(read.(resources.InputResource).GetStatus()))
+			generic.DeleteMockResource(client, mockResource)
 		})
 	})
 
@@ -441,6 +442,11 @@ var _ = Describe("Test Kube ResourceClient", func() {
 						r.ObjectMeta.OwnerReferences = []metav1.OwnerReference{ownerRef}
 					},
 				}
+			})
+
+			AfterEach(func() {
+				err := util.DeleteMockResource(ctx, clientset, namespace1, resourceToUpdate.Metadata.Name)
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			Context("resource does not exist", func() {

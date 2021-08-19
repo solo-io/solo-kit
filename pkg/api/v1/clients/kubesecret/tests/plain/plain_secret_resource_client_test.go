@@ -84,6 +84,7 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
 		Expect(string(cm.Data["data.json"])).To(Equal("hello: goodbye"))
+		generic.DeleteMockResource(client, input)
 	})
 	It("emits empty fields", func() {
 		foo := "test-data-keys"
@@ -102,6 +103,7 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 		cm, err := kube.CoreV1().Secrets(input.Metadata.Namespace).Get(ctx, input.Metadata.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cm.Data).To(HaveKey("data.json"))
+		generic.DeleteMockResource(client, input)
 	})
 	// no string escape
 })
