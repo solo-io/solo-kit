@@ -2,6 +2,7 @@ package struct_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -117,7 +118,7 @@ var _ = Describe("Base", func() {
 			selectors := map[string]string{helpers.TestLabel: localTestLabel}
 			boo := "hoo"
 			goo := "goo"
-			data := "hi"
+			data := "hi resource client test"
 
 			err := client.Register()
 			Expect(err).NotTo(HaveOccurred())
@@ -193,7 +194,7 @@ var _ = Describe("Base", func() {
 			Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r2))))
 			generic.DeleteResource(client, r1)
 			generic.DeleteResource(client, r2)
-
+			fmt.Printf("Log: Deleted resource %+v\n", r1)
 		})
 	})
 })

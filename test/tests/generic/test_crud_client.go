@@ -64,7 +64,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	resources.UpdateMetadata(input, func(meta *core.Metadata) {
 		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
 	})
-	data = "asdf: qwer"
+	data = "asdf: qwert"
 	input.Data = data
 
 	oldRv := r1.GetMetadata().ResourceVersion
@@ -234,6 +234,8 @@ Loop:
 	DeleteResource(client, r2)
 	DeleteResource(client, r3)
 
+	fmt.Printf("Deleted resources %+v | %+v | %+v", r1, r2, r3)
+
 }
 
 func postList(callbacks []Callback, list resources.ResourceList) {
@@ -265,6 +267,11 @@ type Callback struct {
 
 func DeleteMockResource(client clients.ResourceClient, obj *v1.MockResource) {
 	_ = client.Delete(obj.GetMetadata().GetNamespace(), obj.GetMetadata().GetName(), clients.DeleteOpts{})
+	EventuallyWithOffset(1, func() resources.Resource{
+		res, _ :=  client.Read(obj.GetMetadata().GetNamespace(), obj.GetMetadata().GetName(), clients.ReadOpts{})
+		return res
+	}, time.Second * 15).Should(BeNil())
+	fmt.Printf("I DELETED THIS RESOURCE FROM DeleteMockResource %+v\n", obj)
 	//ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	//EventuallyWithOffset(1, func() error{
@@ -275,5 +282,10 @@ func DeleteMockResource(client clients.ResourceClient, obj *v1.MockResource) {
 
 func DeleteResource(client clients.ResourceClient, obj resources.Resource) {
 	_ = client.Delete(obj.GetMetadata().GetNamespace(), obj.GetMetadata().GetName(), clients.DeleteOpts{})
+	EventuallyWithOffset(1, func() resources.Resource{
+		res, _ :=  client.Read(obj.GetMetadata().GetNamespace(), obj.GetMetadata().GetName(), clients.ReadOpts{})
+		return res
+	}, time.Second * 15).Should(BeNil())
+	fmt.Printf("I DELETED THIS RESOURCE FROM DELETERESOURCE %+v\n", obj)
 	//ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
