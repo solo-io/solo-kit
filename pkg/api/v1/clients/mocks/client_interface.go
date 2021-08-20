@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	"fmt"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -133,6 +134,7 @@ func (mr *MockResourceClientMockRecorder) Read(namespace, name, opts interface{}
 
 // Write mocks base method
 func (m *MockResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+	fmt.Printf("WRITING MOCK RESOURCE %+v\n", resource)
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", resource, opts)
 	ret0, _ := ret[0].(resources.Resource)
@@ -148,6 +150,7 @@ func (mr *MockResourceClientMockRecorder) Write(resource, opts interface{}) *gom
 
 // Delete mocks base method
 func (m *MockResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+	fmt.Printf("DELETING MOCK RESOURCE %s.%s\n", namespace, name )
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", namespace, name, opts)
 	ret0, _ := ret[0].(error)
