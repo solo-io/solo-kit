@@ -153,7 +153,11 @@ var _ = Describe("Base", func() {
 			}
 
 			go func() {
-				defer GinkgoRecover()
+				defer func() {
+					GinkgoRecover()
+					generic.DeleteResource(client, r1)
+					generic.DeleteResource(client, r2)
+				}()
 				for {
 					select {
 					case err := <-errs:
