@@ -145,6 +145,8 @@ var _ = Describe("Base", func() {
 			select {
 			case err := <-errs:
 				Expect(err).NotTo(HaveOccurred())
+				generic.DeleteResource(client, r1)
+				generic.DeleteResource(client, r2)
 			case list = <-w:
 			case <-time.After(time.Millisecond * 5):
 				Fail("expected a message in channel")
@@ -156,6 +158,8 @@ var _ = Describe("Base", func() {
 					select {
 					case err := <-errs:
 						Expect(err).NotTo(HaveOccurred())
+						generic.DeleteResource(client, r1)
+						generic.DeleteResource(client, r2)
 					case <-time.After(time.Second / 4):
 						return
 					}

@@ -192,6 +192,10 @@ Loop:
 		select {
 		case err := <-errs:
 			ExpectWithOffset(1,err).NotTo(HaveOccurred())
+			DeleteMockResource(client, input)
+			DeleteResource(client, r1)
+			DeleteResource(client, r2)
+			DeleteResource(client, r3)
 		case list = <-w:
 		case <-after:
 			DeleteMockResource(client, input)
