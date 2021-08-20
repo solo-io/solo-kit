@@ -4,6 +4,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -70,6 +71,8 @@ func (client *mockResourceClient) Read(namespace, name string, opts clients.Read
 }
 
 func (client *mockResourceClient) Write(mockResource *MockResource, opts clients.WriteOpts) (*MockResource, error) {
+	fmt.Printf("v1alpha1 writing mock resource %+v\n", mockResource)
+
 	opts = opts.WithDefaults()
 	resource, err := client.rc.Write(mockResource, opts)
 	if err != nil {
