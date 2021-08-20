@@ -64,7 +64,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	resources.UpdateMetadata(input, func(meta *core.Metadata) {
 		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
 	})
-	data = "asdf: qwert"
+	data = "im changing this completely"
 	input.Data = data
 
 	oldRv := r1.GetMetadata().ResourceVersion
