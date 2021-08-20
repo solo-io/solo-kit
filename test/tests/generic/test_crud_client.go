@@ -18,8 +18,8 @@ import (
 
 // Call within "It"
 func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
-	client.Delete("5qtxn5v6-1629393173-1", "foo", clients.DeleteOpts{})
-	client.Delete("n8lmmisw-1629393173-14", "hoo", clients.DeleteOpts{})
+	client.Delete("ugiam0ef-1629489179-10", "test-data-keys", clients.DeleteOpts{})
+	client.Delete("zi0kjk5v-1629489179-26", "test-data-keys", clients.DeleteOpts{})
 	selectors := opts.Selector
 	foo := "foo"
 	input := v1.NewMockResource(namespace1, foo)
