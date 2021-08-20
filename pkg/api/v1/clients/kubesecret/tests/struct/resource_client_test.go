@@ -94,7 +94,7 @@ var _ = Describe("Base", func() {
 			selectors := map[string]string{helpers.TestLabel: localTestLabel}
 			boo := "hoo"
 			goo := "goo"
-			data := "hi"
+			data := "hi wsup"
 
 			err := client.Register()
 			Expect(err).NotTo(HaveOccurred())
