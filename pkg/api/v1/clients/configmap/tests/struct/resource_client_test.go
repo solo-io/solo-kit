@@ -187,6 +187,8 @@ var _ = Describe("Base", func() {
 			}()
 
 			Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r2))))
+			generic.DeleteResource(client, r1)
+			generic.DeleteResource(client, r2)
 		})
 	})
 })
