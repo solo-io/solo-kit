@@ -2,6 +2,7 @@ package tests_test
 
 import (
 	"context"
+	"os"
 
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/matchers"
@@ -50,9 +51,13 @@ var _ = Describe("Generated Kube Code", func() {
 			SharedCache: kube.NewKubeCache(context.TODO()),
 		})
 
+		Expect(os.Setenv("POD_NAMESPACE", "gloo-system")).NotTo(HaveOccurred())
 	})
+
 	AfterEach(func() {
 		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, skv1alpha2.MockResourceCrd.FullName(), v1.DeleteOptions{})
+
+		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
 	})
 
 	It("can read and write a solo kit resource as a typed kube object", func() {
