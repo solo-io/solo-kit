@@ -20,8 +20,8 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	testOffset := 1
 
 	selectors := opts.Selector
-	foo := "foo"
-	input := v1.NewMockResource(namespace1, foo)
+	inputResourceName := "foo"
+	input := v1.NewMockResource(namespace1, inputResourceName)
 	data := "hello: goodbye"
 	input.Data = data
 	labels := map[string]string{"pickme": helpers.RandString(8)}
@@ -35,7 +35,12 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	// list with no resources should return empty list, not err
-	list, err := client.List("", clients.ListOpts{})
+	list, err := client.List(namespace1, clients.ListOpts{})
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, list).To(BeEmpty())
+
+	// list with no resources should return empty list, not err
+	list, err = client.List(namespace2, clients.ListOpts{})
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	ExpectWithOffset(testOffset, list).To(BeEmpty())
 
@@ -48,7 +53,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	ExpectWithOffset(testOffset, errors.IsExist(err)).To(BeTrue())
 
 	ExpectWithOffset(testOffset, r1).To(BeAssignableToTypeOf(&v1.MockResource{}))
-	ExpectWithOffset(testOffset, r1.GetMetadata().Name).To(Equal(foo))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Name).To(Equal(inputResourceName))
 	ExpectWithOffset(testOffset, r1.GetMetadata().Namespace).To(Equal(namespace1))
 	ExpectWithOffset(testOffset, r1.GetMetadata().ResourceVersion).NotTo(Equal(""))
 	ExpectWithOffset(testOffset, r1.(*v1.MockResource).Data).To(Equal(data))
@@ -72,7 +77,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	})
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
-	read, err := client.Read(namespace1, foo, clients.ReadOpts{})
+	read, err := client.Read(namespace1, inputResourceName, clients.ReadOpts{})
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	postRead(callbacks, read)
 
@@ -80,7 +85,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	ExpectWithOffset(testOffset, read.GetMetadata().ResourceVersion).NotTo(Equal(oldRv))
 	ExpectWithOffset(testOffset, read).To(matchers.MatchProto(r1.(resources.ProtoResource)))
 
-	_, err = client.Read("doesntexist", foo, clients.ReadOpts{})
+	_, err = client.Read("doesntexist", inputResourceName, clients.ReadOpts{})
 	ExpectWithOffset(testOffset, err).To(HaveOccurred())
 	ExpectWithOffset(testOffset, errors.IsNotExist(err)).To(BeTrue())
 

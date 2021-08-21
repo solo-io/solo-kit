@@ -3,6 +3,7 @@ package file_test
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -18,24 +19,40 @@ import (
 )
 
 var _ = Describe("Base", func() {
+
 	var (
-		client *ResourceClient
-		tmpDir string
+		client     *ResourceClient
+		tmpDir     string
+		namespace1 = "ns1"
+		namespace2 = "ns2"
 	)
+
 	JustBeforeEach(func() {
 		var err error
+
 		tmpDir, err = ioutil.TempDir("", "base_test")
 		Expect(err).NotTo(HaveOccurred())
+
+		// Create a directory per namespace inside the tmpDir.
+		// These will be cleaned up when the tmpDir is cleaned up
+		// The underlying TestCrudClient relies on these folders existing
+		err = os.Mkdir(filepath.Join(tmpDir, namespace1), os.ModePerm)
+		Expect(err).NotTo(HaveOccurred())
+		err = os.Mkdir(filepath.Join(tmpDir, namespace2), os.ModePerm)
+		Expect(err).NotTo(HaveOccurred())
+
 		client = NewResourceClient(tmpDir, &v1.MockResource{})
 	})
+
 	JustAfterEach(func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	})
+
 	It("CRUDs resources", func() {
 		selector := map[string]string{
 			helpers.TestLabel: helpers.RandString(8),
 		}
-		generic.TestCrudClient("ns1", "ns2", client, clients.WatchOpts{
+		generic.TestCrudClient(namespace1, namespace2, client, clients.WatchOpts{
 			Selector:    selector,
 			Ctx:         context.TODO(),
 			RefreshRate: time.Millisecond,
