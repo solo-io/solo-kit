@@ -93,26 +93,16 @@ var _ = Describe("V1Emitter", func() {
 		fakeResourceClient, err = NewFakeResourceClient(ctx, fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// AnotherMockResource Constructor
-		anotherMockResourceClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         AnotherMockResourceCrd,
-			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(context.TODO()),
+		anotherMockResourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
 		}
-
-		err = helpers.AddAndRegisterCrd(ctx, AnotherMockResourceCrd, clientset)
-		Expect(err).NotTo(HaveOccurred())
 
 		anotherMockResourceClient, err = NewAnotherMockResourceClient(ctx, anotherMockResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// ClusterResource Constructor
-		clusterResourceClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         ClusterResourceCrd,
-			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(context.TODO()),
+		clusterResourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
 		}
-
-		err = helpers.AddAndRegisterCrd(ctx, ClusterResourceCrd, clientset)
-		Expect(err).NotTo(HaveOccurred())
 
 		clusterResourceClient, err = NewClusterResourceClient(ctx, clusterResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())

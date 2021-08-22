@@ -34,11 +34,13 @@ var _ = Describe("CustomResourceDefinitionClient", func() {
 				client, err = NewCustomResourceDefinitionClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
+
 			AfterEach(func() {
 				client.Delete(name1, clients.DeleteOpts{})
 				client.Delete(name2, clients.DeleteOpts{})
 				client.Delete(name3, clients.DeleteOpts{})
 			})
+
 			It("CRUDs CustomResourceDefinitions "+test.Description(), func() {
 				CustomResourceDefinitionClientTest(client, name1, name2, name3)
 			})
@@ -47,28 +49,31 @@ var _ = Describe("CustomResourceDefinitionClient", func() {
 })
 
 func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, name1, name2, name3 string) {
+
+	testOffset := 1
+
 	err := client.Register()
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	name := name1
 	input := NewCustomResourceDefinition("", name)
 
 	r1, err := client.Write(input, clients.WriteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	_, err = client.Write(input, clients.WriteOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsExist(err)).To(BeTrue())
 
-	Expect(r1).To(BeAssignableToTypeOf(&CustomResourceDefinition{}))
-	Expect(r1.GetMetadata().Name).To(Equal(name))
-	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
-	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
+	ExpectWithOffset(testOffset, r1).To(BeAssignableToTypeOf(&CustomResourceDefinition{}))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Name).To(Equal(name))
+	ExpectWithOffset(testOffset, r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	Expect(err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
 
 	resources.UpdateMetadata(input, func(meta *core.Metadata) {
 		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
@@ -76,10 +81,10 @@ func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, n
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	read, err := client.Read(name, clients.ReadOpts{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(read).To(Equal(r1))
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, read).To(Equal(r1))
 
 	name = name2
 	input = &CustomResourceDefinition{}
@@ -89,35 +94,35 @@ func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, n
 	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	list, err := client.List(clients.ListOpts{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, list).To(ContainElement(r1))
+	ExpectWithOffset(testOffset, list).To(ContainElement(r2))
 	err = client.Delete("adsfw", clients.DeleteOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsNotExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsNotExist(err)).To(BeTrue())
 	err = client.Delete("adsfw", clients.DeleteOpts{
 		IgnoreNotExist: true,
 	})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	err = client.Delete(r2.GetMetadata().Name, clients.DeleteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	Eventually(func() CustomResourceDefinitionList {
 		list, err = client.List(clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(ContainElement(r1))
 	Eventually(func() CustomResourceDefinitionList {
 		list, err = client.List(clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
 	w, errs, err := client.Watch(clients.WatchOpts{
 		RefreshRate: time.Hour,
 	})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	var r3 resources.Resource
 	wait := make(chan struct{})
@@ -129,23 +134,23 @@ func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, n
 			meta.ResourceVersion = ""
 		})
 		r2, err = client.Write(r2, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 		name = name3
 		input = &CustomResourceDefinition{}
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		input.SetMetadata(&core.Metadata{
 			Name: name,
 		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	}()
 	<-wait
 
 	select {
 	case err := <-errs:
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	case list = <-w:
 	case <-time.After(time.Millisecond * 5):
 		Fail("expected a message in channel")
@@ -156,7 +161,7 @@ func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, n
 		for {
 			select {
 			case err := <-errs:
-				Expect(err).NotTo(HaveOccurred())
+				ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 			case <-time.After(time.Second / 4):
 				return
 			}

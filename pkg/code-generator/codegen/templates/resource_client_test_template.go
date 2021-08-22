@@ -60,11 +60,13 @@ var _ = Describe("{{ .Name }}Client", func() {
 				client, err = New{{ .Name }}Client(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
+
 			AfterEach(func() {
 				client.Delete(name1, clients.DeleteOpts{})
 				client.Delete(name2, clients.DeleteOpts{})
 				client.Delete(name3, clients.DeleteOpts{})
 			})
+
 			It("CRUDs {{ .Name }}s "+test.Description(), func() {
 				{{ .Name }}ClientTest(client, name1, name2, name3)
 			})
@@ -100,7 +102,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 	testOffset := 1
 
 	err := client.Register()
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	name := name1
 
@@ -111,30 +113,30 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- end }}
 
 	r1, err := client.Write(input, clients.WriteOpts{})
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	_, err = client.Write(input, clients.WriteOpts{})
-	ExpectWithOffset(testOffset,err).To(HaveOccurred())
-	ExpectWithOffset(testOffset,errors.IsExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsExist(err)).To(BeTrue())
 
-	ExpectWithOffset(testOffset,r1).To(BeAssignableToTypeOf(&{{ .Name }}{}))
-	ExpectWithOffset(testOffset,r1.GetMetadata().Name).To(Equal(name))
+	ExpectWithOffset(testOffset, r1).To(BeAssignableToTypeOf(&{{ .Name }}{}))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Name).To(Equal(name))
 
 {{- if (not .ClusterScoped) }}
-	ExpectWithOffset(testOffset,r1.GetMetadata().Namespace).To(Equal(namespace))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Namespace).To(Equal(namespace))
 {{- end }}
-	ExpectWithOffset(testOffset,r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
-	ExpectWithOffset(testOffset,r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
+	ExpectWithOffset(testOffset, r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 	{{- range .Fields }}
 		{{- if and (not (eq .Name "metadata")) (not .IsOneof) }}
-	ExpectWithOffset(testOffset,r1.{{ upper_camel .Name }}).To(Equal(input.{{ upper_camel .Name }}))
+	ExpectWithOffset(testOffset, r1.{{ upper_camel .Name }}).To(Equal(input.{{ upper_camel .Name }}))
 		{{- end }}
 	{{- end }}
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	ExpectWithOffset(testOffset,err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
 
 	resources.UpdateMetadata(input, func(meta *core.Metadata) {
 		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
@@ -142,7 +144,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 
 {{- if .ClusterScoped }}
@@ -150,14 +152,14 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- else }}
 	read, err := client.Read(namespace, name, clients.ReadOpts{})
 {{- end }}
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
-	ExpectWithOffset(testOffset,read).To(Equal(r1))
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, read).To(Equal(r1))
 
 
 {{- if (not .ClusterScoped) }}
 	_, err = client.Read("doesntexist", name, clients.ReadOpts{})
-	ExpectWithOffset(testOffset,err).To(HaveOccurred())
-	ExpectWithOffset(testOffset,errors.IsNotExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsNotExist(err)).To(BeTrue())
 {{- end }}
 
 	name = name2
@@ -171,7 +173,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 
 {{- if .ClusterScoped }}
@@ -179,9 +181,9 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- else }}
 	list, err := client.List(namespace, clients.ListOpts{})
 {{- end }}
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
-	ExpectWithOffset(testOffset,list).To(ContainElement(r1))
-	ExpectWithOffset(testOffset,list).To(ContainElement(r2))
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, list).To(ContainElement(r1))
+	ExpectWithOffset(testOffset, list).To(ContainElement(r2))
 
 
 {{- if .ClusterScoped }}
@@ -189,8 +191,8 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- else }}
 	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{})
 {{- end }}
-	ExpectWithOffset(testOffset,err).To(HaveOccurred())
-	ExpectWithOffset(testOffset,errors.IsNotExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsNotExist(err)).To(BeTrue())
 
 
 {{- if .ClusterScoped }}
@@ -200,7 +202,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- end }}
 		IgnoreNotExist: true,
 	})
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 
 {{- if .ClusterScoped }}
@@ -208,7 +210,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- else }}
 	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 {{- end }}
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	Eventually(func() {{ .Name }}List {
 {{- if .ClusterScoped }}
@@ -216,7 +218,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- else }}
 		list, err = client.List(namespace, clients.ListOpts{})
 {{- end }}
-		ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second * 10).Should(ContainElement(r1))
 	Eventually(func() {{ .Name }}List {
@@ -225,7 +227,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- else }}
 		list, err = client.List(namespace, clients.ListOpts{})
 {{- end }}
-		ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second * 10).ShouldNot(ContainElement(r2))
 
@@ -236,7 +238,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 {{- end }}
 		RefreshRate: time.Hour,
 	})
-	ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	var r3 resources.Resource
 	wait := make(chan struct{})
@@ -248,11 +250,11 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 			meta.ResourceVersion = ""
 		})
 		r2, err = client.Write(r2, clients.WriteOpts{})
-		ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 		name = name3
 		input = &{{ .Name }}{}
-		ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		input.SetMetadata(&core.Metadata{
 			Name:      name,
 {{- if (not .ClusterScoped) }}
@@ -261,13 +263,13 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
-		ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	}()
 	<-wait
 
 	select {
 	case err := <-errs:
-		ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	case list = <-w:
 	case <-time.After(time.Millisecond * 5):
 		Fail("expected a message in channel")
@@ -278,7 +280,7 @@ func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, na
 		for {
 			select {
 			case err := <-errs:
-				ExpectWithOffset(testOffset,err).NotTo(HaveOccurred())
+				ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 			case <-time.After(time.Second / 4):
 				return
 			}
