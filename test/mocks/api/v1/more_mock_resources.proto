@@ -21,7 +21,9 @@ message AnotherMockResource {
     option (core.solo.io.resource).short_name = "amr";
     option (core.solo.io.resource).plural_name = "anothermockresources";
     core.solo.io.Metadata metadata = 1;
-    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+
+    reserved 6;
+    core.solo.io.NamespacedStatuses namespaced_statuses = 7 [(extproto.skip_hashing) = true];
 
     // comments that go above the basic field in our docs
     string basic_field = 2;
@@ -33,7 +35,9 @@ message ClusterResource {
     option (core.solo.io.resource).plural_name = "clusterresources";
     option (core.solo.io.resource).cluster_scoped = true;
     core.solo.io.Metadata metadata = 1;
-    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+
+    reserved 6;
+    core.solo.io.NamespacedStatuses namespaced_statuses = 7 [(extproto.skip_hashing) = true];
 
     // comments that go above the basic field in our docs
     string basic_field = 2;

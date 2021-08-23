@@ -4,6 +4,7 @@ package v1
 
 import (
 	"log"
+	"os"
 	"sort"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -25,6 +26,63 @@ func NewAnotherMockResource(namespace, name string) *AnotherMockResource {
 
 func (r *AnotherMockResource) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
+}
+
+// Deprecated
+func (r *AnotherMockResource) SetStatus(status *core.Status) {
+	r.SetStatusForNamespace(status)
+}
+
+// Deprecated
+func (r *AnotherMockResource) GetStatus() *core.Status {
+	if r != nil {
+		s, _ := r.GetStatusForNamespace()
+		return s
+	}
+	return nil
+}
+
+func (r *AnotherMockResource) SetNamespacedStatuses(statuses *core.NamespacedStatuses) {
+	r.NamespacedStatuses = statuses
+}
+
+// SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for
+// the current namespace (as specified by POD_NAMESPACE env var).  If the resource does not yet
+// have a NamespacedStatuses, one will be created.
+// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
+// If unset, a podNamespaceErr is returned.
+func (r *AnotherMockResource) SetStatusForNamespace(status *core.Status) error {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace == "" {
+		return errors.NewPodNamespaceErr()
+	}
+	if r.GetNamespacedStatuses() == nil {
+		r.SetNamespacedStatuses(&core.NamespacedStatuses{})
+	}
+	if r.GetNamespacedStatuses().GetStatuses() == nil {
+		r.GetNamespacedStatuses().Statuses = make(map[string]*core.Status)
+	}
+	r.GetNamespacedStatuses().GetStatuses()[podNamespace] = status
+	return nil
+}
+
+// GetStatusForNamespace returns the status stored in the NamespacedStatuses.Statuses map for the
+// controller specified by the POD_NAMESPACE env var, or nil if no status exists for that
+// controller.
+// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
+// If unset, a podNamespaceErr is returned.
+func (r *AnotherMockResource) GetStatusForNamespace() (*core.Status, error) {
+	podNamespace := os.Getenv("POD_NAMESPACE")
+	if podNamespace == "" {
+		return nil, errors.NewPodNamespaceErr()
+	}
+	if r.GetNamespacedStatuses() == nil {
+		return nil, nil
+	}
+	if r.GetNamespacedStatuses().GetStatuses() == nil {
+		return nil, nil
+	}
+	return r.GetNamespacedStatuses().GetStatuses()[podNamespace], nil
 }
 
 func (r *AnotherMockResource) MustHash() uint64 {
@@ -52,6 +110,14 @@ func (list AnotherMockResourceList) Find(namespace, name string) (*AnotherMockRe
 
 func (list AnotherMockResourceList) AsResources() resources.ResourceList {
 	var ress resources.ResourceList
+	for _, anotherMockResource := range list {
+		ress = append(ress, anotherMockResource)
+	}
+	return ress
+}
+
+func (list AnotherMockResourceList) AsInputResources() resources.InputResourceList {
+	var ress resources.InputResourceList
 	for _, anotherMockResource := range list {
 		ress = append(ress, anotherMockResource)
 	}
