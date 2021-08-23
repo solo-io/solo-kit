@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Fix `oneof` docs gen issue where not all one of fields are included in markdown descriptions.
+    issueLink: https://github.com/solo-io/gloo/issues/5193
+

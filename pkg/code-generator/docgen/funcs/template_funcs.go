@@ -218,7 +218,7 @@ func getOneofMessage(field *protokit.FieldDescriptor) string {
 		return fmt.Sprintf("Only one of %s or %s can be set.", sameOneOf[0], sameOneOf[1])
 	}
 
-	joinedOneofNames := strings.Join(sameOneOf[:len(sameOneOf)-2], ", ")
+	joinedOneofNames := strings.Join(sameOneOf[:len(sameOneOf)-1], ", ")
 	joinedOneofNames += ", or " + sameOneOf[len(sameOneOf)-1]
 	return fmt.Sprintf("Only one of %s can be set.", joinedOneofNames)
 }
