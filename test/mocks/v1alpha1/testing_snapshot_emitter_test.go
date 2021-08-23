@@ -46,11 +46,14 @@ var _ = Describe("V1Alpha1Emitter", func() {
 	)
 
 	BeforeEach(func() {
+		err := os.Setenv("POD_NAMESPACE", "default")
+		Expect(err).NotTo(HaveOccurred())
+
 		ctx = context.Background()
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
+		err = kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
@@ -72,9 +75,13 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		emitter = NewTestingEmitter(mockResourceClient)
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
+		err := os.Unsetenv("POD_NAMESPACE")
+		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -145,6 +152,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 
 		assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
 	})
+
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
 		err := emitter.Register()

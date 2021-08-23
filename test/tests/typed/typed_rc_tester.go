@@ -62,11 +62,17 @@ func (rct *KubeRcTester) Skip() bool {
 }
 
 func (rct *KubeRcTester) Setup(ctx context.Context, namespace string) factory.ResourceClientFactory {
+	podNamespace := "default"
+
 	if namespace != "" {
+		podNamespace = namespace
 		kubeClient := helpers.MustKubeClient()
 		err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	}
+	err := os.Setenv("POD_NAMESPACE", podNamespace)
+	Expect(err).NotTo(HaveOccurred())
+
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	factory := &factory.KubeResourceClientFactory{
@@ -84,8 +90,11 @@ func (rct *KubeRcTester) Setup(ctx context.Context, namespace string) factory.Re
 }
 
 func (rct *KubeRcTester) Teardown(ctx context.Context, namespace string) {
+	err := os.Unsetenv("POD_NAMESPACE")
+	Expect(err).NotTo(HaveOccurred())
+
 	kubeClient := helpers.MustKubeClient()
-	err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, namespace)
+	err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 }
 

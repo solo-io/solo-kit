@@ -42,11 +42,14 @@ var _ = Describe("V1Emitter", func() {
 	)
 
 	BeforeEach(func() {
+		err := os.Setenv("POD_NAMESPACE", "default")
+		Expect(err).NotTo(HaveOccurred())
+
 		ctx = context.Background()
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
+		err = kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		// KubeConfig Constructor
 		kubeConfigClientFactory := &factory.MemoryResourceClientFactory{
@@ -58,9 +61,13 @@ var _ = Describe("V1Emitter", func() {
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
+		err := os.Unsetenv("POD_NAMESPACE")
+		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -131,6 +138,7 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotkubeconfigs(nil, KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b})
 	})
+
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
 		err := emitter.Register()
