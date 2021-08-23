@@ -58,7 +58,6 @@ var _ = Describe("JobClient", func() {
 })
 
 func JobClientTest(namespace string, client JobClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

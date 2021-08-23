@@ -58,7 +58,6 @@ var _ = Describe("PodClient", func() {
 })
 
 func PodClientTest(namespace string, client PodClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

@@ -49,7 +49,6 @@ var _ = Describe("CustomResourceDefinitionClient", func() {
 })
 
 func CustomResourceDefinitionClientTest(client CustomResourceDefinitionClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

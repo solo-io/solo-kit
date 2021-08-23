@@ -59,7 +59,6 @@ var _ = Describe("SimpleMockResourceClient", func() {
 })
 
 func SimpleMockResourceClientTest(namespace string, client SimpleMockResourceClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

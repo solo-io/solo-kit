@@ -93,7 +93,7 @@ var _ = Describe("MockResource", func() {
 		})
 	})
 
-	Context("UpsertNamespacedStatus", func() {
+	Context("SetStatusForNamespace", func() {
 		It("Should use POD_NAMESPACE environment variable for map keys", func() {
 			mockRes := v1.MockResource{}
 			mockRes.SetNamespacedStatuses(&NamespacedStatuses{})
@@ -147,11 +147,14 @@ var _ = Describe("MockResource", func() {
 })
 
 func SimulateInPodNamespace(namespace string, body func()) {
-	err := os.Setenv("POD_NAMESPACE", namespace)
+	podNamespaceEnvName := "POD_NAMESPACE"
+	originalPodNamespace := os.Getenv(podNamespaceEnvName)
+
+	err := os.Setenv(podNamespaceEnvName, namespace)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	defer func() {
-		err := os.Unsetenv("POD_NAMESPACE")
+		err := os.Setenv(podNamespaceEnvName, originalPodNamespace)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}()
 

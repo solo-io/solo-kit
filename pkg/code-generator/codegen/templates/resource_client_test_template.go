@@ -98,7 +98,6 @@ func {{ .Name }}ClientTest(client {{ .Name }}Client, name1, name2, name3 string)
 {{- else }}
 func {{ .Name }}ClientTest(namespace string, client {{ .Name }}Client, name1, name2, name3 string) {
 {{- end }}
-
 	testOffset := 1
 
 	err := client.Register()

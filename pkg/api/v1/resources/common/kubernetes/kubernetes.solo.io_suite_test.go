@@ -29,11 +29,14 @@ var (
 	cfg  *rest.Config
 
 	_ = SynchronizedAfterSuite(func() {}, func() {
+		var err error
+		err = os.Unsetenv("POD_NAMESPACE")
+		Expect(err).NotTo(HaveOccurred())
+
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
 			return
 		}
 		ctx := context.Background()
-		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		clientset, err := apiexts.NewForConfig(cfg)
@@ -54,10 +57,14 @@ var (
 	})
 
 	_ = SynchronizedBeforeSuite(func() []byte {
+		var err error
+		err = os.Setenv("POD_NAMESPACE", "default")
+		Expect(err).NotTo(HaveOccurred())
+
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
 			return nil
 		}
-		var err error
+
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		clientset, err := kubernetes.NewForConfig(cfg)

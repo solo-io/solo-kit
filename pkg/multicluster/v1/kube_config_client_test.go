@@ -58,7 +58,6 @@ var _ = Describe("KubeConfigClient", func() {
 })
 
 func KubeConfigClientTest(namespace string, client KubeConfigClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

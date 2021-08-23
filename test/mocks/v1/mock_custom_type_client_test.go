@@ -58,7 +58,6 @@ var _ = Describe("MockCustomTypeClient", func() {
 })
 
 func MockCustomTypeClientTest(namespace string, client MockCustomTypeClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

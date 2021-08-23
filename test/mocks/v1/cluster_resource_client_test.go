@@ -51,7 +51,6 @@ var _ = Describe("ClusterResourceClient", func() {
 })
 
 func ClusterResourceClientTest(client ClusterResourceClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

@@ -58,7 +58,6 @@ var _ = Describe("DeploymentClient", func() {
 })
 
 func DeploymentClientTest(namespace string, client DeploymentClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

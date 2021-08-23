@@ -59,7 +59,6 @@ var _ = Describe("FrequentlyChangingAnnotationsResourceClient", func() {
 })
 
 func FrequentlyChangingAnnotationsResourceClientTest(namespace string, client FrequentlyChangingAnnotationsResourceClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

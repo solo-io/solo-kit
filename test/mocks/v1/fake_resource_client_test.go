@@ -59,7 +59,6 @@ var _ = Describe("FakeResourceClient", func() {
 })
 
 func FakeResourceClientTest(namespace string, client FakeResourceClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()

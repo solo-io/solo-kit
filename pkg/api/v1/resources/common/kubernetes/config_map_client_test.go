@@ -58,7 +58,6 @@ var _ = Describe("ConfigMapClient", func() {
 })
 
 func ConfigMapClientTest(namespace string, client ConfigMapClient, name1, name2, name3 string) {
-
 	testOffset := 1
 
 	err := client.Register()
