@@ -76,6 +76,10 @@ type OpenApiProtocExecutor struct {
 	// A 0 value will be interpreted as "include all characters"
 	// Default: 0
 	MaxDescriptionCharacters int
+
+	// Whether to assign Enum fields the `x-kubernetes-int-or-string` property
+	// which allows the value to either be an integer or a string
+	EnumAsIntOrString bool
 }
 
 func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports []string) error {
@@ -102,8 +106,8 @@ func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports
 	_ = os.Mkdir(directoryPath, os.ModePerm)
 
 	cmd.Args = append(cmd.Args,
-		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,max_description_characters=%d,include_description=%v:%s",
-			o.MaxDescriptionCharacters, o.IncludeDescriptionsInSchema, directoryPath),
+		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,max_description_characters=%d,include_description=%v,enum_as_int_or_string=%v:%s",
+			o.MaxDescriptionCharacters, o.IncludeDescriptionsInSchema, o.EnumAsIntOrString, directoryPath),
 	)
 
 	cmd.Args = append(cmd.Args,

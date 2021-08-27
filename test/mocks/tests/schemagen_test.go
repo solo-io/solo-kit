@@ -217,6 +217,48 @@ var _ = Describe("schemagen", func() {
 			})
 		})
 
+		Context("Enums for SimpleMockResource can contain only strings", func() {
+
+			BeforeEach(func() {
+				validationSchemaOptions = &schemagen.ValidationSchemaOptions{
+					EnumAsIntOrString: false,
+				}
+			})
+
+			It("using protoc", func() {
+				protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
+				Expect(err).NotTo(HaveOccurred())
+
+				protocSchema := protocSchemas[simpleMockResourceGVK]
+
+				enumFieldName := "enumOptions"
+				enumField := protocSchema.Properties[enumFieldName]
+
+				Expect(enumField.XIntOrString).To(BeFalse())
+			})
+		})
+
+		Context("Enums for SimpleMockResource can contain strings or integers", func() {
+
+			BeforeEach(func() {
+				validationSchemaOptions = &schemagen.ValidationSchemaOptions{
+					EnumAsIntOrString: true,
+				}
+			})
+
+			It("using protoc", func() {
+				protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
+				Expect(err).NotTo(HaveOccurred())
+
+				protocSchema := protocSchemas[simpleMockResourceGVK]
+
+				enumFieldName := "enumOptions"
+				enumField := protocSchema.Properties[enumFieldName]
+
+				Expect(enumField.XIntOrString).To(BeTrue())
+			})
+		})
+
 	})
 
 })
