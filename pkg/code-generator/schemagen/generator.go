@@ -35,6 +35,12 @@ type ValidationSchemaOptions struct {
 	// A 0 value will be interpreted as "include all characters"
 	// Default: 0
 	MaxDescriptionCharacters int
+
+	// Whether to assign Enum fields the `x-kubernetes-int-or-string` property
+	// which allows the value to either be an integer or a string
+	// If this is false, only string values are allowed
+	// Default: false
+	EnumAsIntOrString bool
 }
 
 type JsonSchemaGenerator interface {
