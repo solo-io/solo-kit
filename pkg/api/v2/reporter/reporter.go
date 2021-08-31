@@ -262,9 +262,9 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			continue
 		}
 		if updatedResource != nil {
-			logger.Warnf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
+			logger.Debugf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
 		} else {
-			logger.Warnf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
+			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
 			delete(resourceErrs, resource)
 		}
 	}
