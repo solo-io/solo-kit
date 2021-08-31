@@ -12,6 +12,7 @@ import (
 
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
 	"github.com/solo-io/solo-kit/test/testutils"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +31,7 @@ var (
 
 	_ = SynchronizedAfterSuite(func() {}, func() {
 		var err error
-		err = os.Unsetenv("POD_NAMESPACE")
+		err = os.Unsetenv(envutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
@@ -58,7 +59,7 @@ var (
 
 	_ = SynchronizedBeforeSuite(func() []byte {
 		var err error
-		err = os.Setenv("POD_NAMESPACE", "default")
+		err = os.Setenv(envutils.PodNamespaceEnvName, "default")
 		Expect(err).NotTo(HaveOccurred())
 
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {

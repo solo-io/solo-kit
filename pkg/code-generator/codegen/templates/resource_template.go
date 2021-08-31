@@ -111,7 +111,7 @@ func (r *{{ .Name }}) SetNamespacedStatuses(statuses *core.NamespacedStatuses) {
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 // If unset, a podNamespaceErr is returned.
 func (r *{{ .Name }}) SetStatusForNamespace(status *core.Status) error {
-	podNamespace := os.Getenv("POD_NAMESPACE")
+	podNamespace := os.Getenv(envutils.PodNamespaceEnvName)
 	if podNamespace == "" {
 		return errors.NewPodNamespaceErr()
 	}
@@ -131,7 +131,7 @@ func (r *{{ .Name }}) SetStatusForNamespace(status *core.Status) error {
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 // If unset, a podNamespaceErr is returned.
 func (r *{{ .Name }}) GetStatusForNamespace() (*core.Status, error) {
-	podNamespace := os.Getenv("POD_NAMESPACE")
+	podNamespace := os.Getenv(envutils.PodNamespaceEnvName)
 	if podNamespace == "" {
 		return nil, errors.NewPodNamespaceErr()
 	}

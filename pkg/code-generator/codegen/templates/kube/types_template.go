@@ -65,7 +65,7 @@ func (o *{{ .Name }}) MarshalJSON() ([]byte, error) {
 		"apiVersion": o.TypeMeta.APIVersion,
 		"kind":       o.TypeMeta.Kind,
 {{- if .HasStatus }}
-		"status": o.Status,
+		"status":     o.Status,
 {{- end }}
 		"spec":       spec,
 	}

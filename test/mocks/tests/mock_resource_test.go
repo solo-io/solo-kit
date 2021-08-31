@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,7 +20,7 @@ const (
 var _ = Describe("MockResource", func() {
 
 	AfterEach(func() {
-		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(envutils.PodNamespaceEnvName)).NotTo(HaveOccurred())
 	})
 
 	Context("Set and Get NamespacedStatuses", func() {
@@ -147,7 +148,7 @@ var _ = Describe("MockResource", func() {
 })
 
 func SimulateInPodNamespace(namespace string, body func()) {
-	podNamespaceEnvName := "POD_NAMESPACE"
+	podNamespaceEnvName := envutils.PodNamespaceEnvName
 	originalPodNamespace := os.Getenv(podNamespaceEnvName)
 
 	err := os.Setenv(podNamespaceEnvName, namespace)

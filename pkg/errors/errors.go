@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
@@ -97,7 +99,7 @@ func IsResourceVersion(err error) bool {
 type podNamespaceErr struct{}
 
 func (err *podNamespaceErr) Error() string {
-	return fmt.Sprintf("POD_NAMESPACE environment variable is not set")
+	return fmt.Sprintf("%s environment variable is not set", envutils.PodNamespaceEnvName)
 }
 
 func NewPodNamespaceErr() *podNamespaceErr {
