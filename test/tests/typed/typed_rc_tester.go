@@ -9,7 +9,7 @@ import (
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -71,7 +71,7 @@ func (rct *KubeRcTester) Setup(ctx context.Context, namespace string) factory.Re
 		err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	}
-	err := os.Setenv(envutils.PodNamespaceEnvName, podNamespace)
+	err := os.Setenv(statusutils.PodNamespaceEnvName, podNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -91,7 +91,7 @@ func (rct *KubeRcTester) Setup(ctx context.Context, namespace string) factory.Re
 }
 
 func (rct *KubeRcTester) Teardown(ctx context.Context, namespace string) {
-	err := os.Unsetenv(envutils.PodNamespaceEnvName)
+	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 
 	kubeClient := helpers.MustKubeClient()

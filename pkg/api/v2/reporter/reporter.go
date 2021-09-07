@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"k8s.io/client-go/util/retry"
 
 	"github.com/hashicorp/go-multierror"
@@ -316,7 +318,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWrite, nil
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	if err := resources.CopyStatusForNamespace(resourceToWrite, resourceToWriteUpdated); err != nil {
+	if err := statusutils.CopyStatusForNamespace(resourceToWrite, resourceToWriteUpdated); err != nil {
 		return updatedResource, resourceToWriteUpdated, err
 	}
 

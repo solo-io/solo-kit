@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
 	"github.com/solo-io/go-utils/stringutils"
@@ -443,7 +445,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 		// Default unmarshalling
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
-			if err := resources.UnmarshalInputResourceStatus(resourceCrd.Status, withStatus, protoutils.UnmarshalMapToProto); err != nil {
+			if err := statusutils.UnmarshalInputResourceStatus(resourceCrd.Status, withStatus, protoutils.UnmarshalMapToProto); err != nil {
 				return nil, err
 			}
 		}

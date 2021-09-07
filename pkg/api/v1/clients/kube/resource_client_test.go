@@ -7,7 +7,7 @@ import (
 
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/matchers"
 	"github.com/solo-io/solo-kit/test/setup"
 
@@ -84,7 +84,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = os.Setenv(envutils.PodNamespaceEnvName, namespace)
+	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 })
 
@@ -93,7 +93,7 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 	Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
 	Expect(err).NotTo(HaveOccurred())
 
-	err = os.Unsetenv(envutils.PodNamespaceEnvName)
+	err = os.Unsetenv(statusutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 })
 

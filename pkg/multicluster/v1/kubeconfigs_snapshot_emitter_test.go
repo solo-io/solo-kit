@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"k8s.io/client-go/kubernetes"
 
@@ -43,7 +43,7 @@ var _ = Describe("V1Emitter", func() {
 	)
 
 	BeforeEach(func() {
-		err := os.Setenv(envutils.PodNamespaceEnvName, "default")
+		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx = context.Background()
@@ -62,7 +62,7 @@ var _ = Describe("V1Emitter", func() {
 		emitter = NewKubeconfigsEmitter(kubeConfigClient)
 	})
 	AfterEach(func() {
-		err := os.Unsetenv(envutils.PodNamespaceEnvName)
+		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
 		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)

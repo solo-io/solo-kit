@@ -69,7 +69,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 	)
 
 	BeforeEach(func() {
-		err := os.Setenv(envutils.PodNamespaceEnvName, "default")
+		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx = context.Background()
@@ -111,7 +111,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		emitter = New{{ .GoName }}Emitter({{ $clients }})
 	})
 	AfterEach(func() {
-		err := os.Unsetenv(envutils.PodNamespaceEnvName)
+		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
 		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
