@@ -6,8 +6,6 @@ import (
 	"sort"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -479,9 +477,11 @@ func UpdateNamespacedStatuses(resource InputResource, updateFunc func(namespaced
 	return nil
 }
 
-func UnmarshalInputResourceStatus(inputResource InputResource, resourceStatus map[string]interface{}) error {
+type UnmarshalMapToProto func(m map[string]interface{}, into proto.Message) error
+
+func UnmarshalInputResourceStatus(resourceStatus map[string]interface{}, into InputResource, unmarshalMapToProto UnmarshalMapToProto) error {
 	// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
-	if err := inputResource.SetStatusForNamespace(&core.Status{}); err != nil {
+	if err := into.SetStatusForNamespace(&core.Status{}); err != nil {
 		return err
 	}
 
@@ -490,7 +490,7 @@ func UnmarshalInputResourceStatus(inputResource InputResource, resourceStatus ma
 			return nil
 		}
 		typedStatus := core.Status{}
-		if err := protoutils.UnmarshalMapToProto(resourceStatus, &typedStatus); err != nil {
+		if err := unmarshalMapToProto(resourceStatus, &typedStatus); err != nil {
 			return err
 		}
 		*status = typedStatus
@@ -502,7 +502,7 @@ func UnmarshalInputResourceStatus(inputResource InputResource, resourceStatus ma
 			return nil
 		}
 		typedStatus := core.NamespacedStatuses{}
-		if err := protoutils.UnmarshalMapToProto(resourceStatus, &typedStatus); err != nil {
+		if err := unmarshalMapToProto(resourceStatus, &typedStatus); err != nil {
 			return err
 		}
 		*status = typedStatus
@@ -519,9 +519,9 @@ func UnmarshalInputResourceStatus(inputResource InputResource, resourceStatus ma
 	// 3. If we are not successful, attempt to unmarshal the status as a core.Status.
 	// 4. If we are successful, update the Status for this namespace
 	// 5. If we are not successful, an error has occurred.
-	if namespacedStatusesErr := UpdateNamespacedStatuses(inputResource, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
+	if namespacedStatusesErr := UpdateNamespacedStatuses(into, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
 		// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.
-		statusErr := UpdateStatusForNamespace(inputResource, updateStatusFunc)
+		statusErr := UpdateStatusForNamespace(into, updateStatusFunc)
 		if statusErr != nil {
 			// There's actually something wrong if either status can't be unmarshalled.
 			var multiErr *multierror.Error

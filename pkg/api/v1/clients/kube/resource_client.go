@@ -443,7 +443,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 		// Default unmarshalling
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
-			if err := resources.UnmarshalInputResourceStatus(withStatus, resourceCrd.Status); err != nil {
+			if err := resources.UnmarshalInputResourceStatus(resourceCrd.Status, withStatus, protoutils.UnmarshalMapToProto); err != nil {
 				return nil, err
 			}
 		}
