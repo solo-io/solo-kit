@@ -114,7 +114,7 @@ func (r *{{ .Name }}) SetNamespacedStatuses(statuses *core.NamespacedStatuses) {
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 // If unset, a podNamespaceErr is returned.
 func (r *{{ .Name }}) SetStatusForNamespace(status *core.Status) error {
-	return statusutils.SetStatusForNamespace(r, status)
+	return statusutils.SetStatusForPodNamespace(r, status)
 }
 
 // GetStatusForNamespace returns the status stored in the NamespacedStatuses.Statuses map for the
@@ -123,7 +123,7 @@ func (r *{{ .Name }}) SetStatusForNamespace(status *core.Status) error {
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 // If unset, a podNamespaceErr is returned.
 func (r *{{ .Name }}) GetStatusForNamespace() (*core.Status, error) {
-	return statusutils.GetStatusForNamespace(r)
+	return statusutils.GetStatusForPodNamespace(r)
 }
 
 {{- end }}

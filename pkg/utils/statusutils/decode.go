@@ -51,7 +51,7 @@ func UnmarshalInputResourceStatus(resourceStatus map[string]interface{}, into re
 	// 5. If we are not successful, an error has occurred.
 	if namespacedStatusesErr := UpdateNamespacedStatuses(into, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
 		// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.
-		statusErr := UpdateStatusForNamespace(into, updateStatusFunc)
+		statusErr := UpdateStatusForPodNamespace(into, updateStatusFunc)
 		if statusErr != nil {
 			// There's actually something wrong if either status can't be unmarshalled.
 			var multiErr *multierror.Error

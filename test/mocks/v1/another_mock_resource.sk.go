@@ -52,7 +52,7 @@ func (r *AnotherMockResource) SetNamespacedStatuses(statuses *core.NamespacedSta
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 // If unset, a podNamespaceErr is returned.
 func (r *AnotherMockResource) SetStatusForNamespace(status *core.Status) error {
-	return statusutils.SetStatusForNamespace(r, status)
+	return statusutils.SetStatusForPodNamespace(r, status)
 }
 
 // GetStatusForNamespace returns the status stored in the NamespacedStatuses.Statuses map for the
@@ -61,7 +61,7 @@ func (r *AnotherMockResource) SetStatusForNamespace(status *core.Status) error {
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 // If unset, a podNamespaceErr is returned.
 func (r *AnotherMockResource) GetStatusForNamespace() (*core.Status, error) {
-	return statusutils.GetStatusForNamespace(r)
+	return statusutils.GetStatusForPodNamespace(r)
 }
 
 func (r *AnotherMockResource) MustHash() uint64 {

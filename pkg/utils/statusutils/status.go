@@ -12,49 +12,40 @@ import (
 // to associate a resource status with the appropriate controller namespace
 const PodNamespaceEnvName = "POD_NAMESPACE"
 
-func SetStatusForNamespace(r resources.InputResource, status *core.Status) error {
+func SetStatusForPodNamespace(r resources.InputResource, status *core.Status) error {
 	podNamespace := os.Getenv(PodNamespaceEnvName)
 	if podNamespace == "" {
 		return errors.NewPodNamespaceErr()
 	}
 
-	statuses := r.GetNamespacedStatuses().GetStatuses()
-	if statuses == nil {
-		r.SetNamespacedStatuses(
-			&core.NamespacedStatuses{
-				Statuses: map[string]*core.Status{podNamespace: status},
-			})
-	} else {
-		statuses[podNamespace] = status
-	}
-
-	return nil
+	return setStatusForNamespace(r, status, podNamespace)
 }
 
-func GetStatusForNamespace(r resources.InputResource) (*core.Status, error) {
+func GetStatusForPodNamespace(r resources.InputResource) (*core.Status, error) {
 	podNamespace := os.Getenv(PodNamespaceEnvName)
 	if podNamespace == "" {
 		return nil, errors.NewPodNamespaceErr()
 	}
 
-	statuses := r.GetNamespacedStatuses().GetStatuses()
-	if statuses == nil {
-		return nil, nil
-	}
-
-	return statuses[podNamespace], nil
+	return getStatusForNamespace(r, podNamespace)
 }
 
-func UpdateStatusForNamespace(resource resources.InputResource, updateFunc func(status *core.Status) error) error {
-	statusForNamespace, err := resource.GetStatusForNamespace()
-	if err != nil {
-		return err
+func UpdateStatusForPodNamespace(resource resources.InputResource, updateFunc func(status *core.Status) error) error {
+	podNamespace := os.Getenv(PodNamespaceEnvName)
+	if podNamespace == "" {
+		return errors.NewPodNamespaceErr()
 	}
-	err = updateFunc(statusForNamespace)
-	if err != nil {
-		return err
+
+	return updateStatusForNamespace(resource, updateFunc, podNamespace)
+}
+
+func CopyStatusForPodNamespace(source, destination resources.InputResource) error {
+	podNamespace := os.Getenv(PodNamespaceEnvName)
+	if podNamespace == "" {
+		return errors.NewPodNamespaceErr()
 	}
-	return resource.SetStatusForNamespace(statusForNamespace)
+
+	return copyStatusForNamespace(source, destination, podNamespace)
 }
 
 func UpdateNamespacedStatuses(resource resources.InputResource, updateFunc func(namespacedStatuses *core.NamespacedStatuses) error) error {
@@ -67,10 +58,45 @@ func UpdateNamespacedStatuses(resource resources.InputResource, updateFunc func(
 	return nil
 }
 
-func CopyStatusForNamespace(source, destination resources.InputResource) error {
-	statusForNamespace, err := source.GetStatusForNamespace()
+func setStatusForNamespace(r resources.InputResource, status *core.Status, namespace string) error {
+	statuses := r.GetNamespacedStatuses().GetStatuses()
+	if statuses == nil {
+		r.SetNamespacedStatuses(
+			&core.NamespacedStatuses{
+				Statuses: map[string]*core.Status{namespace: status},
+			})
+	} else {
+		statuses[namespace] = status
+	}
+
+	return nil
+}
+
+func getStatusForNamespace(r resources.InputResource, namespace string) (*core.Status, error) {
+	statuses := r.GetNamespacedStatuses().GetStatuses()
+	if statuses == nil {
+		return nil, nil
+	}
+
+	return statuses[namespace], nil
+}
+
+func updateStatusForNamespace(resource resources.InputResource, updateFunc func(status *core.Status) error, namespace string) error {
+	statusForNamespace, err := getStatusForNamespace(resource, namespace)
 	if err != nil {
 		return err
 	}
-	return destination.SetStatusForNamespace(statusForNamespace)
+	err = updateFunc(statusForNamespace)
+	if err != nil {
+		return err
+	}
+	return setStatusForNamespace(resource, statusForNamespace, namespace)
+}
+
+func copyStatusForNamespace(source, destination resources.InputResource, namespace string) error {
+	statusForNamespace, err := getStatusForNamespace(source, namespace)
+	if err != nil {
+		return err
+	}
+	return setStatusForNamespace(destination, statusForNamespace, namespace)
 }

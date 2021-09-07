@@ -318,7 +318,7 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWrite, nil
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	if err := statusutils.CopyStatusForNamespace(resourceToWrite, resourceToWriteUpdated); err != nil {
+	if err := statusutils.CopyStatusForPodNamespace(resourceToWrite, resourceToWriteUpdated); err != nil {
 		return updatedResource, resourceToWriteUpdated, err
 	}
 
