@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -16,7 +16,6 @@ import (
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"sigs.k8s.io/yaml"
 )
@@ -192,39 +191,8 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
 	if withStatus, ok := resource.(resources.InputResource); ok {
 
-		updateStatusFunc := func(status *core.Status) error {
-			if status == nil {
-				return nil
-			}
-			typedStatus := core.Status{}
-			err := UnmarshalMapToProto(resourceCrd.Status, &typedStatus)
-			if err != nil {
-				return err
-			}
-			*status = typedStatus
-			return nil
-		}
-
-		updateNamespacedStatusesFunc := func(namespacedStatuses *core.NamespacedStatuses) error {
-			if namespacedStatuses == nil {
-				return nil
-			}
-			typedNamespacedStatuses := core.NamespacedStatuses{}
-			err := UnmarshalMapToProto(resourceCrd.Status, &typedNamespacedStatuses)
-			if err != nil {
-				return err
-			}
-			*namespacedStatuses = typedNamespacedStatuses
-			return nil
-		}
-
-		if namespacedStatusesErr := resources.UpdateNamespacedStatuses(withStatus, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
-			if statusErr := resources.UpdateStatusForNamespace(withStatus, updateStatusFunc); statusErr != nil {
-				var multiErr *multierror.Error
-				multiErr = multierror.Append(multiErr, namespacedStatusesErr)
-				multiErr = multierror.Append(multiErr, statusErr)
-				return multiErr
-			}
+		if err := statusutils.UnmarshalInputResourceStatus(resourceCrd.Status, withStatus, UnmarshalMapToProto); err != nil {
+			return err
 		}
 	}
 
