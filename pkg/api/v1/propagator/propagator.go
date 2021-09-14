@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -168,7 +170,7 @@ func (p *Propagator) syncStatuses(parents, children resources.ResourceList, opts
 			// no-op
 			continue
 		}
-		_ = resources.UpdateStatusForNamespace(parent, func(status *core.Status) error {
+		_ = statusutils.UpdateStatusForPodNamespace(parent, func(status *core.Status) error {
 			status.SubresourceStatuses = childStatuses
 			return nil
 		})
