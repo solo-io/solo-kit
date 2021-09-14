@@ -19,6 +19,11 @@ const (
 	metadataTypeName           = ".core.solo.io.Metadata"
 	namespacedStatusesTypeName = ".core.solo.io.NamespacedStatuses"
 
+	// the names of fields for required solo-kit types
+	// these fields must be defined on proto messages for solo-kit types
+	metadataFieldName           = "metadata"
+	namespacedStatusesFieldName = "namespaced_statuses"
+
 	// magic comments
 	// Deprecated, use Message Option (core.solo.io.resource).short_name
 	shortNameDeclaration = "@solo-kit:resource.short_name="
@@ -186,7 +191,7 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, error) {
 	msg := messageWrapper.Message
 	// not a solo kit resource, or you messed up!
-	if !hasField(msg, "metadata", metadataTypeName) {
+	if !hasField(msg, metadataFieldName, metadataTypeName) {
 		return nil, nil
 	}
 
@@ -227,7 +232,7 @@ func describeResource(messageWrapper ProtoMessageWrapper) (*model.Resource, erro
 	// always make it upper camel
 	pluralName = strcase.ToCamel(pluralName)
 
-	hasNamespacedStatuses := hasField(msg, "namespaced_statuses", namespacedStatusesTypeName)
+	hasNamespacedStatuses := hasField(msg, namespacedStatusesFieldName, namespacedStatusesTypeName)
 
 	oneofs := collectOneofs(msg)
 
