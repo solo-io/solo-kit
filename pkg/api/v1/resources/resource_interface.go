@@ -48,10 +48,10 @@ type InputResource interface {
 	GetStatus() *core.Status
 	// Deprecated: prefer SetStatusForNamespace()
 	SetStatus(status *core.Status)
-	GetStatusForNamespace() (*core.Status, error)
-	SetStatusForNamespace(status *core.Status) error
+	GetStatusForNamespace(namespace string) *core.Status
+	SetStatusForNamespace(namespace string, status *core.Status)
 	GetNamespacedStatuses() *core.NamespacedStatuses
-	SetNamespacedStatuses(status *core.NamespacedStatuses)
+	SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses)
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control

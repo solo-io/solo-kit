@@ -44,15 +44,14 @@ var _ = Describe("Reporter", func() {
 		r2, err = mockResourceClient.Read(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		status, err := r1.(*v1.MockResource).GetStatusForNamespace()
-		Expect(err).NotTo(HaveOccurred())
+		status := r1.(*v1.MockResource).GetStatusForNamespace("")
 		Expect(status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "everyone makes mistakes",
 			ReportedBy: "test",
 		}))
 
-		status, err = r2.(*v1.MockResource).GetStatusForNamespace()
+		status = r2.(*v1.MockResource).GetStatusForNamespace("")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(status).To(Equal(&core.Status{
 			State:      2,

@@ -19,14 +19,16 @@ import (
 )
 
 var _ = Describe("Reporter", func() {
+
 	var (
 		reporter                               rep.Reporter
 		mockResourceClient, fakeResourceClient clients.ResourceClient
 	)
+
 	BeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
-		reporter = rep.NewReporter("test", mockResourceClient, fakeResourceClient)
+		reporter = rep.NewReporter(&core.ResourceRef{Name: "test", Namespace: namespace}, mockResourceClient, fakeResourceClient)
 	})
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
@@ -50,24 +52,21 @@ var _ = Describe("Reporter", func() {
 		r3, err = mockResourceClient.Read(r3.GetMetadata().Namespace, r3.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		status, err := r1.(*v1.MockResource).GetStatusForNamespace()
-		Expect(err).NotTo(HaveOccurred())
+		status := r1.(*v1.MockResource).GetStatusForNamespace(namespace)
 		Expect(status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "everyone makes mistakes",
 			ReportedBy: "test",
 		}))
 
-		status, err = r2.(*v1.MockResource).GetStatusForNamespace()
-		Expect(err).NotTo(HaveOccurred())
+		status = r2.(*v1.MockResource).GetStatusForNamespace(namespace)
 		Expect(status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "try your best",
 			ReportedBy: "test",
 		}))
 
-		status, err = r3.(*v1.MockResource).GetStatusForNamespace()
-		Expect(err).NotTo(HaveOccurred())
+		status = r3.(*v1.MockResource).GetStatusForNamespace(namespace)
 		Expect(status).To(Equal(&core.Status{
 			State:      core.Status_Warning,
 			Reason:     "warning: \n  didn't somebody ever tell ya\nit's not gonna be easy?",
@@ -277,7 +276,7 @@ var _ = Describe("Reporter", func() {
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockedResourceClient = mocks.NewMockResourceClient(mockCtrl)
 			mockedResourceClient.EXPECT().Kind().Return("*v1.MockResource")
-			reporter = rep.NewReporter("test", mockedResourceClient)
+			reporter = rep.NewReporter(&core.ResourceRef{Name: "test", Namespace: namespace}, mockedResourceClient)
 		})
 
 		It("checks to make sure a resource exists before writing to it", func() {
