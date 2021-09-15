@@ -6,11 +6,10 @@ package mocks
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	rest "k8s.io/client-go/rest"
+	reflect "reflect"
 )
 
 // MockClusterClientFactory is a mock of ClusterClientFactory interface
