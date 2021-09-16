@@ -36,6 +36,9 @@ var _ = Describe("Generated Kube Code", func() {
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
+		err = os.Setenv(statusutils.PodNamespaceEnvName, "default")
+		Expect(err).NotTo(HaveOccurred())
+
 		// Create the CRD in the cluster
 		apiExts, err = apiext.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
@@ -51,8 +54,7 @@ var _ = Describe("Generated Kube Code", func() {
 			Cfg:         cfg,
 			SharedCache: kube.NewKubeCache(context.TODO()),
 		})
-
-		Expect(os.Setenv(statusutils.PodNamespaceEnvName, "gloo-system")).NotTo(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
