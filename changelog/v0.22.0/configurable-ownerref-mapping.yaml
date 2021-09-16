@@ -1,6 +1,6 @@
 changelog:
   - type: BREAKING_CHANGE
-    issueLink: https://github.com/solo-io/gloo/issues/5193
+    issueLink: https://github.com/solo-io/solo-kit/issues/448
     description: Add ability to map or not map ownerReferences
       FromKubeMeta(meta metav1.ObjectMeta) has been replaced with FromKubeMeta(meta metav1.ObjectMeta, copyOwnerReferences bool)
 
