@@ -1,3 +1,6 @@
 changelog:
-  - type: NON_USER_FACING
-    description: Add ability to map or not map ownerReferences 
+  - type: BREAKING_CHANGE
+    description: Add ability to map or not map ownerReferences
+      FromKubeMeta(meta metav1.ObjectMeta) has been replaced with FromKubeMeta(meta metav1.ObjectMeta, copyOwnerReferences bool)
+      
+    
