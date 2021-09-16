@@ -53,7 +53,7 @@ func (rc *ResourceClient) FromKubeSecret(secret *v1.Secret) (resources.Resource,
 	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
 		return nil, errors.Wrapf(err, "reading secret data into %v", rc.Kind())
 	}
-	resource.SetMetadata(kubeutils.FromKubeMeta(secret.ObjectMeta))
+	resource.SetMetadata(kubeutils.FromKubeMeta(secret.ObjectMeta, true))
 	return resource, nil
 }
 

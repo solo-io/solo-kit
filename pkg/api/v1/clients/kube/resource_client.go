@@ -428,7 +428,7 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 
 func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resources.Resource, error) {
 	resource := rc.NewResource()
-	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
+	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
 
 	if customResource, ok := resource.(resources.CustomInputResource); ok {
 		// Handle custom spec/status unmarshalling
