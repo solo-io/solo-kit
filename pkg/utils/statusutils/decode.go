@@ -7,20 +7,21 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-type UnmarshalMapToProto func(m map[string]interface{}, into proto.Message) error
+type InputResourceStatusUnmarshaler struct {
+	UnmarshalMapToProto     func(m map[string]interface{}, into proto.Message) error
+	StatusReporterNamespace string
+}
 
-func UnmarshalInputResourceStatus(resourceStatus map[string]interface{}, into resources.InputResource, unmarshalMapToProto UnmarshalMapToProto) error {
+func (i *InputResourceStatusUnmarshaler) UnmarshalStatus(resourceStatus map[string]interface{}, into resources.InputResource) error {
 	// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
-	if err := into.SetStatusForNamespace(&core.Status{}); err != nil {
-		return err
-	}
+	into.SetStatusForNamespace(i.StatusReporterNamespace, &core.Status{})
 
 	updateStatusFunc := func(status *core.Status) error {
 		if status == nil {
 			return nil
 		}
 		typedStatus := core.Status{}
-		if err := unmarshalMapToProto(resourceStatus, &typedStatus); err != nil {
+		if err := i.UnmarshalMapToProto(resourceStatus, &typedStatus); err != nil {
 			return err
 		}
 		*status = typedStatus
@@ -32,7 +33,7 @@ func UnmarshalInputResourceStatus(resourceStatus map[string]interface{}, into re
 			return nil
 		}
 		typedStatus := core.NamespacedStatuses{}
-		if err := unmarshalMapToProto(resourceStatus, &typedStatus); err != nil {
+		if err := i.UnmarshalMapToProto(resourceStatus, &typedStatus); err != nil {
 			return err
 		}
 		*status = typedStatus
@@ -51,7 +52,7 @@ func UnmarshalInputResourceStatus(resourceStatus map[string]interface{}, into re
 	// 5. If we are not successful, an error has occurred.
 	if namespacedStatusesErr := UpdateNamespacedStatuses(into, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
 		// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.
-		statusErr := UpdateStatusForPodNamespace(into, updateStatusFunc)
+		statusErr := UpdateStatusForNamespace(into, updateStatusFunc, i.StatusReporterNamespace)
 		if statusErr != nil {
 			// There's actually something wrong if either status can't be unmarshalled.
 			var multiErr *multierror.Error

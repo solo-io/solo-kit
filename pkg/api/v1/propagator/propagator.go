@@ -170,10 +170,10 @@ func (p *Propagator) syncStatuses(parents, children resources.ResourceList, opts
 			// no-op
 			continue
 		}
-		_ = statusutils.UpdateStatusForPodNamespace(parent, func(status *core.Status) error {
+		_ = statusutils.UpdateStatusForNamespace(parent, func(status *core.Status) error {
 			status.SubresourceStatuses = childStatuses
 			return nil
-		})
+		}, "")
 		rc, err := p.resourceClients.ForResource(parent)
 		if err != nil {
 			return errors.Wrapf(err, "resource client for parent not found")

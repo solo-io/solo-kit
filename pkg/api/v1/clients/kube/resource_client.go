@@ -101,13 +101,14 @@ var _ clients.StorageWriteOpts = new(KubeWriteOpts)
 // lazy start in list & watch
 // register informers in register
 type ResourceClient struct {
-	crd                crd.Crd
-	crdClientset       versioned.Interface
-	resourceName       string
-	resourceType       resources.InputResource
-	sharedCache        SharedCache
-	namespaceWhitelist []string // Will contain at least metaV1.NamespaceAll ("")
-	resyncPeriod       time.Duration
+	crd                            crd.Crd
+	crdClientset                   versioned.Interface
+	resourceName                   string
+	resourceType                   resources.InputResource
+	sharedCache                    SharedCache
+	namespaceWhitelist             []string // Will contain at least metaV1.NamespaceAll ("")
+	resyncPeriod                   time.Duration
+	inputResourceStatusUnmarshaler *statusutils.InputResourceStatusUnmarshaler
 }
 
 func NewResourceClient(
@@ -117,6 +118,7 @@ func NewResourceClient(
 	resourceType resources.InputResource,
 	namespaceWhitelist []string,
 	resyncPeriod time.Duration,
+	inputResourceStatusUnmarshaler *statusutils.InputResourceStatusUnmarshaler,
 ) *ResourceClient {
 
 	typeof := reflect.TypeOf(resourceType)
@@ -124,13 +126,14 @@ func NewResourceClient(
 	resourceName = strings.Replace(resourceName, ".", "", -1)
 
 	return &ResourceClient{
-		crd:                crd,
-		crdClientset:       clientset,
-		resourceName:       resourceName,
-		resourceType:       resourceType,
-		sharedCache:        sharedCache,
-		namespaceWhitelist: namespaceWhitelist,
-		resyncPeriod:       resyncPeriod,
+		crd:                            crd,
+		crdClientset:                   clientset,
+		resourceName:                   resourceName,
+		resourceType:                   resourceType,
+		sharedCache:                    sharedCache,
+		namespaceWhitelist:             namespaceWhitelist,
+		resyncPeriod:                   resyncPeriod,
+		inputResourceStatusUnmarshaler: inputResourceStatusUnmarshaler,
 	}
 }
 
@@ -445,7 +448,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 		// Default unmarshalling
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
-			if err := statusutils.UnmarshalInputResourceStatus(resourceCrd.Status, withStatus, protoutils.UnmarshalMapToProto); err != nil {
+			if err := rc.inputResourceStatusUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus); err != nil {
 				return nil, err
 			}
 		}

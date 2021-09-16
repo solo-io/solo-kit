@@ -12,10 +12,10 @@ import (
 // to associate a resource status with the appropriate controller namespace
 const PodNamespaceEnvName = "POD_NAMESPACE"
 
-func GetStatusReporterIdFromPodNamespace() (string, error) {
+func GetStatusReporterNamespaceFromEnv() (string, error) {
 	podNamespace := os.Getenv(PodNamespaceEnvName)
 	if podNamespace == "" {
-		return "", errors.NewPodNamespaceErr()
+		return podNamespace, errors.NewPodNamespaceErr()
 	}
 	return podNamespace, nil
 }
