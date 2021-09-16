@@ -8,6 +8,8 @@ package xds
 
 import (
 	context "context"
+	reflect "reflect"
+
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
@@ -16,7 +18,6 @@ import (
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
 )
 
 const (

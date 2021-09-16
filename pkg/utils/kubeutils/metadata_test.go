@@ -11,8 +11,8 @@ import (
 var _ = Describe("owner ref conversion", func() {
 
 	var (
-		skRef *core.Metadata_OwnerReference
-		ref   metav1.OwnerReference
+		skRef    *core.Metadata_OwnerReference
+		ref      metav1.OwnerReference
 		kubeMeta metav1.ObjectMeta
 	)
 
@@ -32,12 +32,12 @@ var _ = Describe("owner ref conversion", func() {
 		}
 
 		kubeMeta = metav1.ObjectMeta{
-			Name: "test",
-			Namespace: "test",
+			Name:            "test",
+			Namespace:       "test",
 			ResourceVersion: "1",
-			Labels: nil,
-			Annotations: nil,
-			Generation: 1,
+			Labels:          nil,
+			Annotations:     nil,
+			Generation:      1,
 			OwnerReferences: []metav1.OwnerReference{ref},
 		}
 
