@@ -21,7 +21,7 @@ func (p *CustomResourceDefinition) Clone() *CustomResourceDefinition {
 }
 
 func (p *CustomResourceDefinition) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(p.ObjectMeta)
+	return kubeutils.FromKubeMeta(p.ObjectMeta, true)
 }
 
 func (p *CustomResourceDefinition) SetMetadata(meta *core.Metadata) {

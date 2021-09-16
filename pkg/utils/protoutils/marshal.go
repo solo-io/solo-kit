@@ -188,7 +188,7 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	if err := json.Unmarshal(kubeJson, &resourceCrd); err != nil {
 		return errors.Wrapf(err, "unmarshalling from raw json")
 	}
-	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta))
+	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
 	if withStatus, ok := resource.(resources.InputResource); ok {
 
 		if err := statusutils.UnmarshalInputResourceStatus(resourceCrd.Status, withStatus, UnmarshalMapToProto); err != nil {

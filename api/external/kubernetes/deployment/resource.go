@@ -21,7 +21,7 @@ func (p *Deployment) Clone() *Deployment {
 }
 
 func (p *Deployment) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(p.ObjectMeta)
+	return kubeutils.FromKubeMeta(p.ObjectMeta, true)
 }
 
 func (p *Deployment) SetMetadata(meta *core.Metadata) {
