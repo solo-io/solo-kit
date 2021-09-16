@@ -8,16 +8,22 @@ import (
 	kubetypes "k8s.io/apimachinery/pkg/types"
 )
 
-func FromKubeMeta(meta metav1.ObjectMeta) *core.Metadata {
-	return &core.Metadata{
-		Name:            meta.Name,
-		Namespace:       meta.Namespace,
-		ResourceVersion: meta.ResourceVersion,
-		Labels:          copyMap(meta.Labels),
-		Annotations:     copyMap(meta.Annotations),
-		Generation:      meta.Generation,
-		OwnerReferences: copyKubernetesOwnerReferences(meta.OwnerReferences),
+func FromKubeMeta(meta metav1.ObjectMeta, copyOwnerReferences bool) *core.Metadata {
+
+	var metaData = &core.Metadata{}
+	metaData.Name = meta.Name
+	metaData.Namespace = meta.Namespace
+	metaData.ResourceVersion = meta.ResourceVersion
+	metaData.Labels = copyMap(meta.Labels)
+	metaData.Annotations = copyMap(meta.Annotations)
+	metaData.Generation = meta.Generation
+
+	if copyOwnerReferences {
+		metaData.OwnerReferences = copyKubernetesOwnerReferences(meta.OwnerReferences)
 	}
+
+	return metaData
+
 }
 
 func ToKubeMeta(meta *core.Metadata) metav1.ObjectMeta {

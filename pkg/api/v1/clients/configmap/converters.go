@@ -34,7 +34,7 @@ func (cc *structConverter) FromKubeConfigMap(ctx context.Context, rc *ResourceCl
 	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
 		return nil, errors.Wrapf(err, "reading configmap data into %v", rc.Kind())
 	}
-	resource.SetMetadata(kubeutils.FromKubeMeta(configMap.ObjectMeta))
+	resource.SetMetadata(kubeutils.FromKubeMeta(configMap.ObjectMeta, true))
 
 	return resource, nil
 }
@@ -79,7 +79,7 @@ func (cc *plainConverter) FromKubeConfigMap(ctx context.Context, rc *ResourceCli
 	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
 		return nil, errors.Wrapf(err, "reading configmap data into %v", rc.Kind())
 	}
-	resource.SetMetadata(kubeutils.FromKubeMeta(configMap.ObjectMeta))
+	resource.SetMetadata(kubeutils.FromKubeMeta(configMap.ObjectMeta, true))
 
 	return resource, nil
 }

@@ -35,7 +35,7 @@ func (p *plainSecret) FromKubeSecret(ctx context.Context, rc *ResourceClient, se
 	if err := protoutils.UnmarshalMap(resourceMap, resource); err != nil {
 		return nil, eris.Wrapf(err, "reading secret data into %v", rc.Kind())
 	}
-	resource.SetMetadata(kubeutils.FromKubeMeta(secret.ObjectMeta))
+	resource.SetMetadata(kubeutils.FromKubeMeta(secret.ObjectMeta, true))
 	return resource, nil
 }
 
