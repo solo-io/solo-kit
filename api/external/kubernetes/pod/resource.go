@@ -21,7 +21,7 @@ func (p *Pod) Clone() *Pod {
 }
 
 func (p *Pod) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(p.ObjectMeta)
+	return kubeutils.FromKubeMeta(p.ObjectMeta, true)
 }
 
 func (p *Pod) SetMetadata(meta *core.Metadata) {

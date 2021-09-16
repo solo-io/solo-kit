@@ -21,7 +21,7 @@ func (p *Job) Clone() *Job {
 }
 
 func (p *Job) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(p.ObjectMeta)
+	return kubeutils.FromKubeMeta(p.ObjectMeta, true)
 }
 
 func (p *Job) SetMetadata(meta *core.Metadata) {
