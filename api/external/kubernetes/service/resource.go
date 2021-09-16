@@ -17,7 +17,7 @@ type Service struct {
 var _ resources.Resource = new(Service)
 
 func NewService(kubeSvc kubev1.Service) *Service {
-	meta := kubeutils.FromKubeMeta(kubeSvc.ObjectMeta)
+	meta := kubeutils.FromKubeMeta(kubeSvc.ObjectMeta, true)
 	var s Service
 	s.cachedMeta = meta
 	s.Service = kubeSvc
@@ -36,7 +36,7 @@ func (p *Service) Clone() *Service {
 
 func (p *Service) GetMetadata() *core.Metadata {
 	if p.cachedMeta == nil {
-		meta := kubeutils.FromKubeMeta(p.ObjectMeta)
+		meta := kubeutils.FromKubeMeta(p.ObjectMeta, true)
 		p.cachedMeta = meta
 	}
 	return p.cachedMeta
@@ -45,7 +45,7 @@ func (p *Service) GetMetadata() *core.Metadata {
 func (p *Service) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 	// copy so we own everything
-	meta = kubeutils.FromKubeMeta(p.ObjectMeta)
+	meta = kubeutils.FromKubeMeta(p.ObjectMeta, true)
 	p.cachedMeta = meta
 }
 

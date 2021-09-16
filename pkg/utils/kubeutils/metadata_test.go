@@ -11,8 +11,9 @@ import (
 var _ = Describe("owner ref conversion", func() {
 
 	var (
-		skRef *core.Metadata_OwnerReference
-		ref   metav1.OwnerReference
+		skRef    *core.Metadata_OwnerReference
+		ref      metav1.OwnerReference
+		kubeMeta metav1.ObjectMeta
 	)
 
 	BeforeEach(func() {
@@ -29,6 +30,17 @@ var _ = Describe("owner ref conversion", func() {
 			Name:       "test",
 			UID:        "uuid",
 		}
+
+		kubeMeta = metav1.ObjectMeta{
+			Name:            "test",
+			Namespace:       "test",
+			ResourceVersion: "1",
+			Labels:          nil,
+			Annotations:     nil,
+			Generation:      1,
+			OwnerReferences: []metav1.OwnerReference{ref},
+		}
+
 	})
 	Context("kube -> solo-kit", func() {
 		It("can copy over all string fields properly", func() {
@@ -51,6 +63,21 @@ var _ = Describe("owner ref conversion", func() {
 			skRefs := copyKubernetesOwnerReferences([]metav1.OwnerReference{ref})
 			Expect(skRefs).To(HaveLen(1))
 			Expect(skRefs[0]).To(BeEquivalentTo(skRef))
+		})
+
+		It("can convert kube meta to core meta with owner references", func() {
+			coreMeta := FromKubeMeta(kubeMeta, true)
+			Expect(coreMeta).NotTo(BeNil())
+			Expect(coreMeta.OwnerReferences).NotTo(BeNil())
+			Expect(coreMeta.OwnerReferences).To(HaveLen(1))
+			Expect(coreMeta.OwnerReferences[0]).To(BeEquivalentTo(skRef))
+		})
+
+		It("can convert kube meta to core meta without owner references", func() {
+			coreMeta := FromKubeMeta(kubeMeta, false)
+			Expect(coreMeta).NotTo(BeNil())
+			Expect(coreMeta.OwnerReferences).To(BeNil())
+			Expect(coreMeta.OwnerReferences).To(HaveLen(0))
 		})
 	})
 
