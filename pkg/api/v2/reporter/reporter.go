@@ -236,9 +236,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 
-		var resourceStatus *core.Status
-		resourceStatus = resource.GetStatusForNamespace(r.ref.GetNamespace())
-
+		resourceStatus := resource.GetStatusForNamespace(r.ref.GetNamespace())
 		if status.Equal(resourceStatus) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue

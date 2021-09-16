@@ -88,7 +88,6 @@ func attemptSyncResource(ctx context.Context, desired, original resources.Resour
 func writeDesiredResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc) error {
 	if original != nil {
 		// this is an update: update resource version, set status to 0, needs to be re-processed
-		var err error
 		desired = updateDesiredResourceVersionAndStatus(desired, original)
 		if transition == nil {
 			transition = defaultTransition
