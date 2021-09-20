@@ -24,7 +24,7 @@ func ClientForClientsetAndResource(clientset *fake.Clientset, cache kube.SharedC
 		res,
 		namespaces,
 		0,
-		&statusutils.InputResourceStatusUnmarshaler{
+		&statusutils.NamespacedStatusesUnmarshaler{
 			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
 			StatusReporterNamespace: podNamespace,
 		})
@@ -38,7 +38,7 @@ func MockClientForNamespace(cache kube.SharedCache, namespaces []string, podName
 		&v1.MockResource{},
 		namespaces,
 		0,
-		&statusutils.InputResourceStatusUnmarshaler{
+		&statusutils.NamespacedStatusesUnmarshaler{
 			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
 			StatusReporterNamespace: podNamespace,
 		})

@@ -95,7 +95,7 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 			return nil, errors.Wrapf(err, "getting status reporter namespace")
 		}
 
-		inputResourceStatusUnmarshaler := &statusutils.InputResourceStatusUnmarshaler{
+		inputResourceStatusUnmarshaler := &statusutils.NamespacedStatusesUnmarshaler{
 			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
 			StatusReporterNamespace: statusReporterNamespace,
 		}

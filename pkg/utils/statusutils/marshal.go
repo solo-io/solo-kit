@@ -3,16 +3,19 @@ package statusutils
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hashicorp/go-multierror"
+	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-type InputResourceStatusUnmarshaler struct {
+var _ resources.StatusUnmarshaler = new(NamespacedStatusesUnmarshaler)
+
+type NamespacedStatusesUnmarshaler struct {
 	UnmarshalMapToProto     func(m map[string]interface{}, into proto.Message) error
 	StatusReporterNamespace string
 }
 
-func (i *InputResourceStatusUnmarshaler) UnmarshalStatus(resourceStatus map[string]interface{}, into resources.InputResource) error {
+func (i *NamespacedStatusesUnmarshaler) UnmarshalStatus(resourceStatus v1.Status, into resources.InputResource) error {
 	// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
 	into.SetStatusForNamespace(i.StatusReporterNamespace, &core.Status{})
 

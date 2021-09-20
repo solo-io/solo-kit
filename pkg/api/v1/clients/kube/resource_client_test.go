@@ -126,7 +126,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			},
 		}
 
-		inputResourceStatusUnmarshaler = &statusutils.InputResourceStatusUnmarshaler{
+		inputResourceStatusUnmarshaler = &statusutils.NamespacedStatusesUnmarshaler{
 			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
 			StatusReporterNamespace: namespace,
 		}
