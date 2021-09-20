@@ -12,6 +12,18 @@ import (
 // to associate a resource status with the appropriate controller namespace
 const PodNamespaceEnvName = "POD_NAMESPACE"
 
+type StatusReporter struct {
+	statusReporterNamespace string
+}
+
+func (s *StatusReporter) GetStatus(resource resources.InputResource) *core.Status {
+	return resource.GetStatusForNamespace(s.statusReporterNamespace)
+}
+
+func (s *StatusReporter) SetStatus(resource resources.InputResource, status *core.Status) {
+	resource.SetStatusForNamespace(s.statusReporterNamespace, status)
+}
+
 func GetStatusReporterNamespaceFromEnv() (string, error) {
 	podNamespace := os.Getenv(PodNamespaceEnvName)
 	if podNamespace == "" {
