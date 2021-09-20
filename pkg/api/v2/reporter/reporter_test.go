@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
@@ -23,12 +25,14 @@ var _ = Describe("Reporter", func() {
 	var (
 		reporter                               rep.Reporter
 		mockResourceClient, fakeResourceClient clients.ResourceClient
+
+		statusClient = statusutils.NewNamespacedStatusesClient(namespace)
 	)
 
 	BeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
-		reporter = rep.NewReporter(&core.ResourceRef{Name: "test", Namespace: namespace}, mockResourceClient, fakeResourceClient)
+		reporter = rep.NewReporter("test", statusClient, mockResourceClient, fakeResourceClient)
 	})
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
@@ -276,7 +280,7 @@ var _ = Describe("Reporter", func() {
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockedResourceClient = mocks.NewMockResourceClient(mockCtrl)
 			mockedResourceClient.EXPECT().Kind().Return("*v1.MockResource")
-			reporter = rep.NewReporter(&core.ResourceRef{Name: "test", Namespace: namespace}, mockedResourceClient)
+			reporter = rep.NewReporter("test", statusClient, mockedResourceClient)
 		})
 
 		It("checks to make sure a resource exists before writing to it", func() {

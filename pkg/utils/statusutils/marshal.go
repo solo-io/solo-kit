@@ -51,7 +51,7 @@ func (i *NamespacedStatusesUnmarshaler) UnmarshalStatus(resourceStatus v1.Status
 	//	moving forward, so we attempt this unmarshalling first.
 	// 2. If we are successful, complete
 	// 3. If we are not successful, attempt to unmarshal the status as a core.Status.
-	// 4. If we are successful, update the Status for this namespace
+	// 4. If we are successful, update the Status for this statusReporterNamespace
 	// 5. If we are not successful, an error has occurred.
 	if namespacedStatusesErr := UpdateNamespacedStatuses(into, updateNamespacedStatusesFunc); namespacedStatusesErr != nil {
 		// If unmarshalling NamespacedStatuses failed, the resource likely has a Status instead.

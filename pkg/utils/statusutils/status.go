@@ -9,23 +9,23 @@ import (
 )
 
 // The name of the environment variable used by resource reporters
-// to associate a resource status with the appropriate controller namespace
+// to associate a resource status with the appropriate controller statusReporterNamespace
 const PodNamespaceEnvName = "POD_NAMESPACE"
 
-type StatusReporterClient struct {
-	namespace string
+type NamespacedStatusesClient struct {
+	statusReporterNamespace string
 }
 
-func NewStatusReporterClient(namespace string) *StatusReporterClient {
-	return &StatusReporterClient{namespace: namespace}
+func NewNamespacedStatusesClient(namespace string) *NamespacedStatusesClient {
+	return &NamespacedStatusesClient{statusReporterNamespace: namespace}
 }
 
-func (s *StatusReporterClient) GetStatus(resource resources.InputResource) *core.Status {
-	return resource.GetStatusForNamespace(s.namespace)
+func (s *NamespacedStatusesClient) GetStatus(resource resources.InputResource) *core.Status {
+	return resource.GetStatusForNamespace(s.statusReporterNamespace)
 }
 
-func (s *StatusReporterClient) SetStatus(resource resources.InputResource, status *core.Status) {
-	resource.SetStatusForNamespace(s.namespace, status)
+func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, status *core.Status) {
+	resource.SetStatusForNamespace(s.statusReporterNamespace, status)
 }
 
 func GetStatusReporterNamespaceFromEnv() (string, error) {
@@ -55,10 +55,6 @@ func GetStatusForNamespace(r resources.InputResource, namespace string) *core.St
 	}
 
 	return statuses[namespace]
-}
-
-func CopyStatusForNamespace(source, destination resources.InputResource, namespace string) {
-	SetStatusForNamespace(destination, namespace, GetStatusForNamespace(source, namespace))
 }
 
 func UpdateStatusForNamespace(resource resources.InputResource, updateFunc func(status *core.Status) error, namespace string) error {

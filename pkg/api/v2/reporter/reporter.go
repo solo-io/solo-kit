@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	"k8s.io/client-go/util/retry"
 
 	"github.com/hashicorp/go-multierror"
@@ -196,19 +194,26 @@ type StatusReporter interface {
 	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status
 }
 
-type reporter struct {
-	clients map[string]ReporterResourceClient
-	ref     *core.ResourceRef
+type StatusClient interface {
+	SetStatus(resource resources.InputResource, status *core.Status)
+	GetStatus(resource resources.InputResource) *core.Status
 }
 
-func NewReporter(reporterRef *core.ResourceRef, reporterClients ...ReporterResourceClient) StatusReporter {
+type reporter struct {
+	ref          string
+	statusClient StatusClient
+	clients      map[string]ReporterResourceClient
+}
+
+func NewReporter(ref string, statusClient StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
 	return &reporter{
-		ref:     reporterRef,
-		clients: clientsByKind,
+		ref:          ref,
+		statusClient: statusClient,
+		clients:      clientsByKind,
 	}
 }
 
@@ -236,13 +241,13 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 
-		resourceStatus := resource.GetStatusForNamespace(r.ref.GetNamespace())
+		resourceStatus := r.statusClient.GetStatus(resource)
 		if status.Equal(resourceStatus) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
 
-		resourceToWrite.SetStatusForNamespace(r.ref.GetNamespace(), status)
+		r.statusClient.SetStatus(resourceToWrite, status)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
@@ -283,8 +288,7 @@ func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResou
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite = inputResourceFromRead
-			resourceToWrite.SetStatusForNamespace(r.ref.GetNamespace(), statusToWrite)
-
+			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -309,7 +313,7 @@ func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResou
 		return updatedResource, resourceToWrite, nil
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	statusutils.CopyStatusForNamespace(resourceToWrite, resourceToWriteUpdated, r.ref.GetNamespace())
+	r.statusClient.SetStatus(resourceToWriteUpdated, r.statusClient.GetStatus(resourceToWrite))
 
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
@@ -329,7 +333,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		return &core.Status{
 			State:               core.Status_Rejected,
 			Reason:              errorReason,
-			ReportedBy:          r.ref.GetName(),
+			ReportedBy:          r.ref,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
@@ -338,14 +342,14 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		return &core.Status{
 			State:               core.Status_Warning,
 			Reason:              warningReason,
-			ReportedBy:          r.ref.GetName(),
+			ReportedBy:          r.ref,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
 
 	return &core.Status{
 		State:               core.Status_Accepted,
-		ReportedBy:          r.ref.GetName(),
+		ReportedBy:          r.ref,
 		SubresourceStatuses: subresourceStatuses,
 	}
 }
