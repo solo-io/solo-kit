@@ -12,16 +12,20 @@ import (
 // to associate a resource status with the appropriate controller namespace
 const PodNamespaceEnvName = "POD_NAMESPACE"
 
-type StatusReporter struct {
-	statusReporterNamespace string
+type StatusStore struct {
+	namespace string
 }
 
-func (s *StatusReporter) GetStatus(resource resources.InputResource) *core.Status {
-	return resource.GetStatusForNamespace(s.statusReporterNamespace)
+func NewStatusStore(namespace string) *StatusStore {
+	return &StatusStore{namespace: namespace}
 }
 
-func (s *StatusReporter) SetStatus(resource resources.InputResource, status *core.Status) {
-	resource.SetStatusForNamespace(s.statusReporterNamespace, status)
+func (s *StatusStore) GetStatus(resource resources.InputResource) *core.Status {
+	return resource.GetStatusForNamespace(s.namespace)
+}
+
+func (s *StatusStore) SetStatus(resource resources.InputResource, status *core.Status) {
+	resource.SetStatusForNamespace(s.namespace, status)
 }
 
 func GetStatusReporterNamespaceFromEnv() (string, error) {
