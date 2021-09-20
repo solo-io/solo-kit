@@ -89,7 +89,7 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 	// Use Group.Version.Kind to match CRDs and Schemas
 	crdWriter := NewCrdWriter(options.CrdDirectory)
 	for _, crd := range crds {
-		for i:=0; i < len(crd.Spec.Versions); i++ {
+		for i := 0; i < len(crd.Spec.Versions); i++ {
 			crdGVK := schema.GroupVersionKind{
 				Group:   crd.Spec.Group,
 				Version: crd.Spec.Versions[i].Name,
