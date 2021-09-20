@@ -12,7 +12,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/ghodss/yaml"
-	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/solo-io/anyvendor/anyvendor"
