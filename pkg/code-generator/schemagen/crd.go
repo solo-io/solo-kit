@@ -65,7 +65,7 @@ func (c *CrdWriter) ApplyValidationSchemaToCRD(crd apiextv1.CustomResourceDefini
 }
 
 func getFilenameForCRD(crd apiextv1.CustomResourceDefinition) string {
-	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Versions[0], crd.Spec.Names.Kind)
+	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Versions[0].Name, crd.Spec.Names.Kind)
 }
 
 func GetCRDsFromDirectory(crdDirectory string) ([]apiextv1.CustomResourceDefinition, error) {
