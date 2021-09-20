@@ -3,15 +3,19 @@ package statusutils
 import (
 	"os"
 
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-// The name of the environment variable used by resource reporters
-// to associate a resource status with the appropriate controller statusReporterNamespace
-const PodNamespaceEnvName = "POD_NAMESPACE"
+var _ reporter.StatusClient = new(NamespacedStatusesClient)
 
+// InputResources support multiple statuses, each set by a particular controller
+// Each controller should only update its own status, so we expose a client
+// with simple Get/Set capabilities. This way, the consumers of this client
+// do not need to be aware of the statusReporterNamespace.
 type NamespacedStatusesClient struct {
 	statusReporterNamespace string
 }
@@ -27,6 +31,10 @@ func (s *NamespacedStatusesClient) GetStatus(resource resources.InputResource) *
 func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, status *core.Status) {
 	resource.SetStatusForNamespace(s.statusReporterNamespace, status)
 }
+
+// The name of the environment variable used by resource reporters
+// to associate a resource status with the appropriate controller statusReporterNamespace
+const PodNamespaceEnvName = "POD_NAMESPACE"
 
 func GetStatusReporterNamespaceFromEnv() (string, error) {
 	podNamespace := os.Getenv(PodNamespaceEnvName)

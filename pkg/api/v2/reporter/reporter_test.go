@@ -56,21 +56,21 @@ var _ = Describe("Reporter", func() {
 		r3, err = mockResourceClient.Read(r3.GetMetadata().Namespace, r3.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		status := r1.(*v1.MockResource).GetStatusForNamespace(namespace)
+		status := statusClient.GetStatus(r1.(*v1.MockResource))
 		Expect(status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "everyone makes mistakes",
 			ReportedBy: "test",
 		}))
 
-		status = r2.(*v1.MockResource).GetStatusForNamespace(namespace)
+		status = statusClient.GetStatus(r2.(*v1.MockResource))
 		Expect(status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "try your best",
 			ReportedBy: "test",
 		}))
 
-		status = r3.(*v1.MockResource).GetStatusForNamespace(namespace)
+		status = statusClient.GetStatus(r3.(*v1.MockResource))
 		Expect(status).To(Equal(&core.Status{
 			State:      core.Status_Warning,
 			Reason:     "warning: \n  didn't somebody ever tell ya\nit's not gonna be easy?",

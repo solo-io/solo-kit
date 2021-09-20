@@ -200,18 +200,18 @@ type StatusClient interface {
 }
 
 type reporter struct {
-	ref          string
+	reporterRef  string
 	statusClient StatusClient
 	clients      map[string]ReporterResourceClient
 }
 
-func NewReporter(ref string, statusClient StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
+func NewReporter(reporterRef string, statusClient StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
 	return &reporter{
-		ref:          ref,
+		reporterRef:  reporterRef,
 		statusClient: statusClient,
 		clients:      clientsByKind,
 	}
@@ -333,7 +333,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		return &core.Status{
 			State:               core.Status_Rejected,
 			Reason:              errorReason,
-			ReportedBy:          r.ref,
+			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
@@ -342,14 +342,14 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		return &core.Status{
 			State:               core.Status_Warning,
 			Reason:              warningReason,
-			ReportedBy:          r.ref,
+			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
 
 	return &core.Status{
 		State:               core.Status_Accepted,
-		ReportedBy:          r.ref,
+		ReportedBy:          r.reporterRef,
 		SubresourceStatuses: subresourceStatuses,
 	}
 }
