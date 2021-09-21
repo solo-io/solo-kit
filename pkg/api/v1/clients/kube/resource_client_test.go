@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
@@ -126,10 +124,8 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			},
 		}
 
-		inputResourceStatusUnmarshaler = &statusutils.NamespacedStatusesUnmarshaler{
-			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
-			StatusReporterNamespace: namespace,
-		}
+		statusClient                   = statusutils.NewNamespacedStatusesClient(namespace)
+		inputResourceStatusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(namespace)
 	)
 
 	BeforeEach(func() {
@@ -185,7 +181,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Namespace: ns1,
 				},
 			}
-			mockResource.SetStatusForNamespace(namespace, &core.Status{
+			statusClient.SetStatus(mockResource, &core.Status{
 				State:      2,
 				Reason:     "test",
 				ReportedBy: "me",
@@ -200,8 +196,8 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clients.ReadOpts{},
 			)
 
-			mockResourceStatus := mockResource.GetStatusForNamespace(namespace)
-			readResourceStatus := read.(resources.InputResource).GetStatusForNamespace(namespace)
+			mockResourceStatus := statusClient.GetStatus(mockResource)
+			readResourceStatus := statusClient.GetStatus(read.(resources.InputResource))
 			Expect(mockResourceStatus).To(matchers.MatchProto(readResourceStatus))
 		})
 	})

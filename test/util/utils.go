@@ -3,7 +3,6 @@ package util
 import (
 	"context"
 
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -24,10 +23,7 @@ func ClientForClientsetAndResource(clientset *fake.Clientset, cache kube.SharedC
 		res,
 		namespaces,
 		0,
-		&statusutils.NamespacedStatusesUnmarshaler{
-			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
-			StatusReporterNamespace: podNamespace,
-		})
+		statusutils.NewNamespacedStatusesUnmarshaler(podNamespace))
 }
 
 func MockClientForNamespace(cache kube.SharedCache, namespaces []string, podNamespace string) *kube.ResourceClient {
@@ -38,10 +34,7 @@ func MockClientForNamespace(cache kube.SharedCache, namespaces []string, podName
 		&v1.MockResource{},
 		namespaces,
 		0,
-		&statusutils.NamespacedStatusesUnmarshaler{
-			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
-			StatusReporterNamespace: podNamespace,
-		})
+		statusutils.NewNamespacedStatusesUnmarshaler(podNamespace))
 }
 
 func CreateMockResource(ctx context.Context, cs *fake.Clientset, namespace, name, dumbFieldValue string) error {

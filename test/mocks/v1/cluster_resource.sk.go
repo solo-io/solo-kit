@@ -30,30 +30,19 @@ func (r *ClusterResource) SetMetadata(meta *core.Metadata) {
 
 // Deprecated
 func (r *ClusterResource) SetStatus(status *core.Status) {
-	r.SetStatusForNamespace("", status)
+	statusutils.SetFirstStatusInNamespacedStatuses(r, status)
 }
 
 // Deprecated
 func (r *ClusterResource) GetStatus() *core.Status {
 	if r != nil {
-		return r.GetStatusForNamespace("")
+		return statusutils.GetFirstStatusInNamespacedStatuses(r)
 	}
 	return nil
 }
 
 func (r *ClusterResource) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
 	r.NamespacedStatuses = namespacedStatuses
-}
-
-// SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for the namespace
-func (r *ClusterResource) SetStatusForNamespace(namespace string, status *core.Status) {
-	statusutils.SetStatusForNamespace(r, namespace, status)
-}
-
-// GetStatusForNamespace returns the status stored in the NamespacedStatuses.Statuses map for the
-// controller specified by the namespace, or nil if no status exists for that namespace.
-func (r *ClusterResource) GetStatusForNamespace(namespace string) *core.Status {
-	return statusutils.GetStatusForNamespace(r, namespace)
 }
 
 func (r *ClusterResource) MustHash() uint64 {

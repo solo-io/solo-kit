@@ -44,12 +44,10 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 
 type InputResource interface {
 	Resource
-	// Deprecated: prefer GetStatusForNamespace()
+	// Deprecated: prefer GetNamespacedStatuses()
 	GetStatus() *core.Status
-	// Deprecated: prefer SetStatusForNamespace()
+	// Deprecated: prefer SetNamespacedStatuses()
 	SetStatus(status *core.Status)
-	GetStatusForNamespace(namespace string) *core.Status
-	SetStatusForNamespace(namespace string, status *core.Status)
 	GetNamespacedStatuses() *core.NamespacedStatuses
 	SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses)
 }
