@@ -21,7 +21,7 @@ func NewNamespacedStatusesClient(namespace string) *NamespacedStatusesClient {
 }
 
 func (s *NamespacedStatusesClient) GetStatus(resource resources.InputResource) *core.Status {
-	getStatusForNamespace(resource, s.statusReporterNamespace)
+	return getStatusForNamespace(resource, s.statusReporterNamespace)
 }
 
 func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, status *core.Status) {
