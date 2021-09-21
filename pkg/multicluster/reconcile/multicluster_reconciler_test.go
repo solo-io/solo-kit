@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reconcile"
 	. "github.com/solo-io/solo-kit/pkg/multicluster/reconcile"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/util"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -29,7 +30,7 @@ var _ = Describe("MulticlusterReconciler", func() {
 		reconciler = NewMultiClusterReconciler(map[string]clients.ResourceClient{
 			clusterName1: cluster1,
 			clusterName2: cluster2,
-		})
+		}, statusutils.NewNamespacedStatusesClient(namespace))
 	})
 	withCluster1 := func(resource resources.Resource) resources.Resource {
 		resources.UpdateMetadata(resource, func(meta *core.Metadata) {
