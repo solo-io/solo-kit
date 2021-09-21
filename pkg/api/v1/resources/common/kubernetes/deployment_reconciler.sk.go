@@ -24,9 +24,9 @@ func deploymentsToResources(list DeploymentList) resources.ResourceList {
 	return resourceList
 }
 
-func NewDeploymentReconciler(client DeploymentClient) DeploymentReconciler {
+func NewDeploymentReconciler(client DeploymentClient, statusSetter resources.StatusSetter) DeploymentReconciler {
 	return &deploymentReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

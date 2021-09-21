@@ -21,12 +21,14 @@ type Reconciler interface {
 }
 
 type reconciler struct {
-	rc clients.ResourceClient
+	rc           clients.ResourceClient
+	statusSetter resources.StatusSetter
 }
 
-func NewReconciler(resourceClient clients.ResourceClient) Reconciler {
+func NewReconciler(resourceClient clients.ResourceClient, statusSetter resources.StatusSetter) Reconciler {
 	return &reconciler{
-		rc: resourceClient,
+		rc:           resourceClient,
+		statusSetter: statusSetter,
 	}
 }
 
@@ -61,13 +63,13 @@ func (r *reconciler) syncResource(ctx context.Context, desired resources.Resourc
 	original, _ := originalResourcesMap[desired.GetMetadata().Ref().Key()]
 	return errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 		var err error
-		original, err = attemptSyncResource(ctx, desired, original, r.rc, transition)
+		original, err = attemptSyncResource(ctx, desired, original, r.rc, transition, r.statusSetter)
 		return err
 	})
 }
 
-func attemptSyncResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc) (resources.Resource, error) {
-	err := writeDesiredResource(ctx, desired, original, client, transition)
+func attemptSyncResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc, statusSetter resources.StatusSetter) (resources.Resource, error) {
+	err := writeDesiredResource(ctx, desired, original, client, transition, statusSetter)
 	if err == nil {
 		return original, nil
 	}
@@ -85,10 +87,10 @@ func attemptSyncResource(ctx context.Context, desired, original resources.Resour
 	return updatedOriginal, err
 }
 
-func writeDesiredResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc) error {
+func writeDesiredResource(ctx context.Context, desired, original resources.Resource, client clients.ResourceClient, transition TransitionResourcesFunc, statusSetter resources.StatusSetter) error {
 	if original != nil {
 		// this is an update: update resource version, set status to 0, needs to be re-processed
-		desired = updateDesiredResourceVersionAndStatus(desired, original)
+		desired = updateDesiredResourceVersionAndStatus(desired, original, statusSetter)
 		if transition == nil {
 			transition = defaultTransition
 		}
@@ -104,12 +106,12 @@ func writeDesiredResource(ctx context.Context, desired, original resources.Resou
 	return writeErr
 }
 
-func updateDesiredResourceVersionAndStatus(desired, original resources.Resource) resources.Resource {
+func updateDesiredResourceVersionAndStatus(desired, original resources.Resource, statusSetter resources.StatusSetter) resources.Resource {
 	resources.UpdateMetadata(desired, func(meta *core.Metadata) {
 		meta.ResourceVersion = original.GetMetadata().ResourceVersion
 	})
 	if desiredInput, ok := desired.(resources.InputResource); ok {
-		desiredInput.SetStatus(&core.Status{})
+		statusSetter.SetStatus(desiredInput, &core.Status{})
 	}
 	return desired
 }

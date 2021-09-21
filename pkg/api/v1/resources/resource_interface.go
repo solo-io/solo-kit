@@ -44,8 +44,29 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 
 type InputResource interface {
 	Resource
+	// Deprecated: prefer GetNamespacedStatuses()
 	GetStatus() *core.Status
+	// Deprecated: prefer SetNamespacedStatuses()
 	SetStatus(status *core.Status)
+	GetNamespacedStatuses() *core.NamespacedStatuses
+	SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses)
+}
+
+type StatusGetter interface {
+	GetStatus(resource InputResource) *core.Status
+}
+
+type StatusSetter interface {
+	SetStatus(resource InputResource, status *core.Status)
+}
+
+type StatusClient interface {
+	StatusGetter
+	StatusSetter
+}
+
+type StatusUnmarshaler interface {
+	UnmarshalStatus(status v1.Status, into InputResource) error
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control
@@ -53,7 +74,7 @@ type InputResource interface {
 type CustomInputResource interface {
 	InputResource
 	UnmarshalSpec(spec v1.Spec) error
-	UnmarshalStatus(status v1.Status) error
+	UnmarshalStatus(status v1.Status, defaultUnmarshaler StatusUnmarshaler) error
 	MarshalSpec() (v1.Spec, error)
 	MarshalStatus() (v1.Status, error)
 }
@@ -446,16 +467,6 @@ func UpdateListMetadata(resources ResourceList, updateFunc func(meta *core.Metad
 		resource.SetMetadata(meta)
 		resources[i] = resource
 	}
-}
-
-func UpdateStatus(resource InputResource, updateFunc func(status *core.Status) error) error {
-	status := resource.GetStatus()
-	err := updateFunc(status)
-	if err != nil {
-		return err
-	}
-	resource.SetStatus(status)
-	return nil
 }
 
 func Validate(resource Resource) error {

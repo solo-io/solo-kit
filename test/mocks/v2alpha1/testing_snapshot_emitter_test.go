@@ -19,6 +19,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -51,11 +52,14 @@ var _ = Describe("V2Alpha1Emitter", func() {
 	)
 
 	BeforeEach(func() {
+		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
+		Expect(err).NotTo(HaveOccurred())
+
 		ctx = context.Background()
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
+		err = kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
@@ -91,9 +95,13 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		emitter = NewTestingEmitter(mockResourceClient, frequentlyChangingAnnotationsResourceClient, fakeResourceClient)
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
+		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -278,6 +286,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 
 		assertSnapshotFakes(nil, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
 	})
+
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
 		err := emitter.Register()

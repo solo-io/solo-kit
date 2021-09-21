@@ -46,7 +46,7 @@ type {{ .Name }} struct {
 	Spec api.{{ .Name }} {{ backtick }}json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"{{ backtick }}
 
 {{- if .HasStatus }}
-	Status core.Status {{ backtick }}json:"status,omitempty" protobuf:"bytes,3,opt,name=status"{{ backtick }}
+	Status core.NamespacedStatuses {{ backtick }}json:"status,omitempty" protobuf:"bytes,3,opt,name=status"{{ backtick }}
 {{- end }}
 }
 
@@ -58,7 +58,7 @@ func (o *{{ .Name }}) MarshalJSON() ([]byte, error) {
 	}
 	delete(spec, "metadata")
 {{- if .HasStatus }}
-	delete(spec, "status")
+	delete(spec, "namespacedStatuses")
 {{- end }}
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
@@ -88,9 +88,9 @@ func (o *{{ .Name }}) UnmarshalJSON(data []byte) error {
 		Spec:       spec,
 	}
 {{- if .HasStatus }}
-	if spec.Status != nil {
-		o.Status = *spec.Status
-		o.Spec.Status = nil
+	if spec.GetNamespacedStatuses() != nil {
+		o.Status = *spec.NamespacedStatuses
+		o.Spec.NamespacedStatuses = nil
 	}
 {{- end }}
 

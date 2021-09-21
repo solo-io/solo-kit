@@ -11,21 +11,25 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/matchers"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
 var _ = Describe("Reconciler", func() {
+
 	var (
-		namespace          = helpers.RandString(5)
 		mockReconciler     Reconciler
 		mockResourceClient clients.ResourceClient
+		statusClient       resources.StatusClient
 	)
+
 	BeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
-		mockReconciler = NewReconciler(mockResourceClient)
+		statusClient = statusutils.NewNamespacedStatusesClient(namespace)
+		mockReconciler = NewReconciler(mockResourceClient, statusClient)
 	})
+
 	It("does the crudding for you so you can sip a nice coconut", func() {
 		desiredMockResources := resources.ResourceList{
 			v1.NewMockResource(namespace, "a1-barry"),
@@ -73,7 +77,7 @@ var _ = Describe("Reconciler", func() {
 			desiredMock.Data = "some_" + originalMock.Data
 			return true, nil
 		}
-		mockReconciler = NewReconciler(mockResourceClient)
+		mockReconciler = NewReconciler(mockResourceClient, statusClient)
 		err = mockReconciler.Reconcile(namespace, desiredMockResources, tznFnc, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -116,7 +120,7 @@ var _ = Describe("Reconciler", func() {
 		BeforeEach(func() {
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockedResourceClient = mocks.NewMockResourceClient(mockCtrl)
-			mockReconciler = NewReconciler(mockedResourceClient)
+			mockReconciler = NewReconciler(mockedResourceClient, statusClient)
 
 			// original state of the world
 			mockResource = v1.NewMockResource(namespace, "name")
@@ -173,7 +177,7 @@ var _ = Describe("Reconciler", func() {
 			mockResourceClient.Write(res, clients.WriteOpts{})
 
 			// use test client to check that Write is not called
-			mockReconciler = NewReconciler(&testResourceClient{errorOnWrite: true, base: mockResourceClient})
+			mockReconciler = NewReconciler(&testResourceClient{errorOnWrite: true, base: mockResourceClient}, statusClient)
 			err := mockReconciler.Reconcile(namespace, resources.ResourceList{res}, nil, clients.ListOpts{})
 			// error will occur if Write was called
 			Expect(err).NotTo(HaveOccurred())
@@ -186,7 +190,7 @@ var _ = Describe("Reconciler", func() {
 			mockResourceClient.Write(res, clients.WriteOpts{})
 
 			// use test client to check that Write is not called
-			mockReconciler = NewReconciler(&testResourceClient{errorOnRead: true, errorOnWrite: true, base: mockResourceClient})
+			mockReconciler = NewReconciler(&testResourceClient{errorOnRead: true, errorOnWrite: true, base: mockResourceClient}, statusClient)
 			err := mockReconciler.Reconcile(namespace, resources.ResourceList{res}, func(original, desired resources.Resource) (b bool, e error) {
 				// always return true
 				return true, nil

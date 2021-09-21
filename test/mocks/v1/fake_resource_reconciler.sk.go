@@ -24,9 +24,9 @@ func fakeResourcesToResources(list FakeResourceList) resources.ResourceList {
 	return resourceList
 }
 
-func NewFakeResourceReconciler(client FakeResourceClient) FakeResourceReconciler {
+func NewFakeResourceReconciler(client FakeResourceClient, statusSetter resources.StatusSetter) FakeResourceReconciler {
 	return &fakeResourceReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

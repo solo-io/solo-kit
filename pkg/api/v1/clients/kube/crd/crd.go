@@ -102,17 +102,19 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 			return nil, MarshalErr(err, "resource to map")
 		}
 
+		// When marshalling we CRD, we remove information from the resource spec that will be persisted elsewhere.
+		// For example, namespacedStatuses contains the status set by solo controllers. It is removed from the
+		// spec and maintained in the CRD status
 		delete(data, "metadata")
-		delete(data, "status")
+		delete(data, "namespacedStatuses")
 		spec = data
 
-		if resource.GetStatus() != nil {
-			statusProto := resource.GetStatus()
-			statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
+		if namespacedStatusesProto := resource.GetNamespacedStatuses(); namespacedStatusesProto != nil {
+			namespacedStatusesMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(namespacedStatusesProto)
 			if err != nil {
-				return nil, MarshalErr(err, "resource status to map")
+				return nil, MarshalErr(err, "resource namespacedStatuses to map")
 			}
-			status = statusMap
+			status = namespacedStatusesMap
 		}
 	}
 

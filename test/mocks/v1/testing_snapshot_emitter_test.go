@@ -10,6 +10,7 @@ import (
 	"time"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,11 +56,14 @@ var _ = Describe("V1Emitter", func() {
 	)
 
 	BeforeEach(func() {
+		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
+		Expect(err).NotTo(HaveOccurred())
+
 		ctx = context.Background()
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
+		err = kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
@@ -133,11 +137,15 @@ var _ = Describe("V1Emitter", func() {
 		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
+		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		clusterResourceClient.Delete(name1, clients.DeleteOpts{})
 		clusterResourceClient.Delete(name2, clients.DeleteOpts{})
 	})
+
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -540,6 +548,7 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotpods(nil, github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod1a, pod1b, pod2a, pod2b})
 	})
+
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
 		err := emitter.Register()

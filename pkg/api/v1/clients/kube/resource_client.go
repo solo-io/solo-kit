@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
 	"github.com/solo-io/go-utils/stringutils"
@@ -100,13 +99,14 @@ var _ clients.StorageWriteOpts = new(KubeWriteOpts)
 // lazy start in list & watch
 // register informers in register
 type ResourceClient struct {
-	crd                crd.Crd
-	crdClientset       versioned.Interface
-	resourceName       string
-	resourceType       resources.InputResource
-	sharedCache        SharedCache
-	namespaceWhitelist []string // Will contain at least metaV1.NamespaceAll ("")
-	resyncPeriod       time.Duration
+	crd                       crd.Crd
+	crdClientset              versioned.Interface
+	resourceName              string
+	resourceType              resources.InputResource
+	sharedCache               SharedCache
+	namespaceWhitelist        []string // Will contain at least metaV1.NamespaceAll ("")
+	resyncPeriod              time.Duration
+	resourceStatusUnmarshaler resources.StatusUnmarshaler
 }
 
 func NewResourceClient(
@@ -116,6 +116,7 @@ func NewResourceClient(
 	resourceType resources.InputResource,
 	namespaceWhitelist []string,
 	resyncPeriod time.Duration,
+	resourceStatusUnmarshaler resources.StatusUnmarshaler,
 ) *ResourceClient {
 
 	typeof := reflect.TypeOf(resourceType)
@@ -123,13 +124,14 @@ func NewResourceClient(
 	resourceName = strings.Replace(resourceName, ".", "", -1)
 
 	return &ResourceClient{
-		crd:                crd,
-		crdClientset:       clientset,
-		resourceName:       resourceName,
-		resourceType:       resourceType,
-		sharedCache:        sharedCache,
-		namespaceWhitelist: namespaceWhitelist,
-		resyncPeriod:       resyncPeriod,
+		crd:                       crd,
+		crdClientset:              clientset,
+		resourceName:              resourceName,
+		resourceType:              resourceType,
+		sharedCache:               sharedCache,
+		namespaceWhitelist:        namespaceWhitelist,
+		resyncPeriod:              resyncPeriod,
+		resourceStatusUnmarshaler: resourceStatusUnmarshaler,
 	}
 }
 
@@ -435,7 +437,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 					resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
 		}
-		if err := customResource.UnmarshalStatus(resourceCrd.Status); err != nil {
+		if err := customResource.UnmarshalStatus(resourceCrd.Status, rc.resourceStatusUnmarshaler); err != nil {
 			return nil, errors.Wrapf(err, "unmarshalling crd status on custom resource %v in namespace %v into %v",
 				resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 		}
@@ -444,20 +446,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 		// Default unmarshalling
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
-			// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
-			withStatus.SetStatus(&core.Status{})
-			updateFunc := func(status *core.Status) error {
-				if status == nil {
-					return nil
-				}
-				typedStatus := core.Status{}
-				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
-					return err
-				}
-				*status = typedStatus
-				return nil
-			}
-			if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
+			if err := rc.resourceStatusUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus); err != nil {
 				return nil, err
 			}
 		}

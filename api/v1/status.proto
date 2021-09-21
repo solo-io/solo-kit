@@ -9,6 +9,15 @@ option (extproto.equal_all) = true;
 import "google/protobuf/struct.proto";
 
 /**
+ * NamespacedStatuses indicates the Status of a resource according to each controller.
+ * NamespacedStatuses are meant to be read-only by users
+ */
+message NamespacedStatuses {
+    // Mapping from namespace to the Status written by the controller running in that namespace.
+    map<string, Status> statuses = 1;
+}
+
+/**
  * Status indicates whether a resource has been (in)validated by a reporter in the system.
  * Statuses are meant to be read-only by users
  */

@@ -22,8 +22,9 @@ It can then perform reconciles against lists of desiredResources with resources
 desired across multiple clusters
 */
 type multiClusterReconciler struct {
-	rcs    map[string]clients.ResourceClient
-	access sync.RWMutex
+	rcs          map[string]clients.ResourceClient
+	statusSetter resources.StatusSetter
+	access       sync.RWMutex
 }
 
 func (r *multiClusterReconciler) AddClusterClient(cluster string, client clients.ResourceClient) {
@@ -38,8 +39,11 @@ func (r *multiClusterReconciler) RemoveClusterClient(cluster string) {
 	r.access.Unlock()
 }
 
-func NewMultiClusterReconciler(rcs map[string]clients.ResourceClient) MultiClusterReconciler {
-	return &multiClusterReconciler{rcs: rcs}
+func NewMultiClusterReconciler(rcs map[string]clients.ResourceClient, statusSetter resources.StatusSetter) MultiClusterReconciler {
+	return &multiClusterReconciler{
+		rcs:          rcs,
+		statusSetter: statusSetter,
+	}
 }
 
 func (r *multiClusterReconciler) Reconcile(namespace string, desiredResources resources.ResourceList, transitionFunc reconcile.TransitionResourcesFunc, opts clients.ListOpts) error {
@@ -54,7 +58,7 @@ func (r *multiClusterReconciler) Reconcile(namespace string, desiredResources re
 		if !ok {
 			return eris.Errorf("no client found for cluster %v", cluster)
 		}
-		if err := reconcile.NewReconciler(rc).Reconcile(namespace, desiredForCluster, transitionFunc, opts); err != nil {
+		if err := reconcile.NewReconciler(rc, r.statusSetter).Reconcile(namespace, desiredForCluster, transitionFunc, opts); err != nil {
 			errs = multierr.Append(errs, eris.Wrapf(err, "reconciling cluster %v", cluster))
 		}
 	}

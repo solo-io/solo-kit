@@ -27,9 +27,9 @@ func {{ lower_camel .Name }}sToResources(list {{ .Name }}List) resources.Resourc
 	return resourceList
 }
 
-func New{{ .Name }}Reconciler(client {{ .Name }}Client) {{ .Name }}Reconciler {
+func New{{ .Name }}Reconciler(client {{ .Name }}Client, statusSetter resources.StatusSetter) {{ .Name }}Reconciler {
 	return &{{ lower_camel .Name }}Reconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

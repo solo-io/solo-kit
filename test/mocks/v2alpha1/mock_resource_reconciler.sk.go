@@ -24,9 +24,9 @@ func mockResourcesToResources(list MockResourceList) resources.ResourceList {
 	return resourceList
 }
 
-func NewMockResourceReconciler(client MockResourceClient) MockResourceReconciler {
+func NewMockResourceReconciler(client MockResourceClient, statusSetter resources.StatusSetter) MockResourceReconciler {
 	return &mockResourceReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

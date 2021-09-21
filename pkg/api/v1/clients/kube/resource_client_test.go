@@ -5,8 +5,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/matchers"
 	"github.com/solo-io/solo-kit/test/setup"
 
@@ -48,7 +51,9 @@ var (
 	client     *kube.ResourceClient
 	clientset  *versioned.Clientset
 	lock       *clusterlock.TestClusterLocker
+	namespace  = "resource-client-test-ns"
 )
+
 var _ = SynchronizedBeforeSuite(func() []byte {
 	ctx := context.Background()
 	cfg, err := kubeutils.GetConfig("", "")
@@ -80,11 +85,17 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
 	Expect(err).NotTo(HaveOccurred())
+
+	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	err := setup.DeleteCrd(v1.MockResourceCrd.FullName())
 	Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
+
+	err = os.Unsetenv(statusutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 })
 
@@ -114,11 +125,21 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				"someDumbField": dumbValue,
 			},
 		}
+
+		statusClient                   = statusutils.NewNamespacedStatusesClient(namespace)
+		inputResourceStatusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(namespace, protoutils.UnmarshalMapToProto)
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		client = kube.NewResourceClient(v1.MockResourceCrd, clientset, kube.NewKubeCache(ctx), &v1.MockResource{}, []string{metav1.NamespaceAll}, 0)
+		client = kube.NewResourceClient(
+			v1.MockResourceCrd,
+			clientset,
+			kube.NewKubeCache(ctx),
+			&v1.MockResource{},
+			[]string{metav1.NamespaceAll},
+			0,
+			inputResourceStatusUnmarshaler)
 	})
 
 	Context("integrations tests", func() {
@@ -155,17 +176,19 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		})
 
 		It("Can maintain status when written and read from storage", func() {
+
 			mockResource := &v1.MockResource{
-				Status: &core.Status{
-					State:      2,
-					Reason:     "test",
-					ReportedBy: "me",
-				},
 				Metadata: &core.Metadata{
 					Name:      "test",
 					Namespace: ns1,
 				},
 			}
+			statusClient.SetStatus(mockResource, &core.Status{
+				State:      2,
+				Reason:     "test",
+				ReportedBy: "me",
+			})
+
 			_, err := client.Write(mockResource, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -175,7 +198,9 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				clients.ReadOpts{},
 			)
 
-			Expect(mockResource.GetStatus()).To(matchers.MatchProto(read.(resources.InputResource).GetStatus()))
+			mockResourceStatus := statusClient.GetStatus(mockResource)
+			readResourceStatus := statusClient.GetStatus(read.(resources.InputResource))
+			Expect(mockResourceStatus).To(matchers.MatchProto(readResourceStatus))
 		})
 	})
 
@@ -273,7 +298,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		BeforeEach(func() {
 			clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
 			cache = kube.NewKubeCache(ctx)
-			rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
+			rc = kube.NewResourceClient(
+				v1.MockResourceCrd,
+				clientset,
+				cache,
+				&v1.MockResource{},
+				[]string{namespace1},
+				0,
+				inputResourceStatusUnmarshaler)
 		})
 
 		It("return the expected kind name", func() {
@@ -363,7 +395,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 						Reason: metav1.StatusReasonNotFound,
 					}}
 				})
-				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
+				rc = kube.NewResourceClient(
+					v1.MockResourceCrd,
+					clientset,
+					cache,
+					&v1.MockResource{},
+					[]string{namespace1},
+					0,
+					inputResourceStatusUnmarshaler)
 				Expect(rc.Register()).NotTo(HaveOccurred())
 			})
 
@@ -429,7 +468,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				err := util.CreateMockResource(ctx, clientset, namespace1, resourceToUpdate.Metadata.Name, "to-be-updated")
 				Expect(err).NotTo(HaveOccurred())
 
-				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
+				rc = kube.NewResourceClient(
+					v1.MockResourceCrd,
+					clientset,
+					cache,
+					&v1.MockResource{},
+					[]string{namespace1},
+					0,
+					inputResourceStatusUnmarshaler)
 				Expect(rc.Register()).NotTo(HaveOccurred())
 				ownerRef = metav1.OwnerReference{
 					APIVersion: "APIVersion",
@@ -520,7 +566,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				// v2alpha1 resources should be ignored by this v1 MockResource client
 				Expect(util.CreateV2Alpha1MockResource(ctx, clientset, namespace2, "res-5", "val-5")).NotTo(HaveOccurred())
 
-				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1, namespace2, "empty"}, 0)
+				rc = kube.NewResourceClient(
+					v1.MockResourceCrd,
+					clientset,
+					cache,
+					&v1.MockResource{},
+					[]string{namespace1, namespace2, "empty"},
+					0,
+					inputResourceStatusUnmarshaler)
 				Expect(rc.Register()).NotTo(HaveOccurred())
 			})
 
@@ -549,7 +602,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				// Create initial resource
 				Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
 
-				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1}, 0)
+				rc = kube.NewResourceClient(
+					v1.MockResourceCrd,
+					clientset,
+					cache,
+					&v1.MockResource{},
+					[]string{namespace1},
+					0,
+					inputResourceStatusUnmarshaler)
 				Expect(rc.Register()).NotTo(HaveOccurred())
 			})
 
@@ -587,7 +647,14 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			BeforeEach(func() {
 				clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
 
-				rc = kube.NewResourceClient(v1.MockResourceCrd, clientset, cache, &v1.MockResource{}, []string{namespace1, namespace2}, 0)
+				rc = kube.NewResourceClient(
+					v1.MockResourceCrd,
+					clientset,
+					cache,
+					&v1.MockResource{},
+					[]string{namespace1, namespace2},
+					0,
+					inputResourceStatusUnmarshaler)
 				Expect(rc.Register()).NotTo(HaveOccurred())
 			})
 

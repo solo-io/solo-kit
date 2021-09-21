@@ -24,9 +24,9 @@ func configMapsToResources(list ConfigMapList) resources.ResourceList {
 	return resourceList
 }
 
-func NewConfigMapReconciler(client ConfigMapClient) ConfigMapReconciler {
+func NewConfigMapReconciler(client ConfigMapClient, statusSetter resources.StatusSetter) ConfigMapReconciler {
 	return &configMapReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

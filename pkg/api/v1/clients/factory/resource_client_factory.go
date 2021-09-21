@@ -7,6 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/go-utils/stringutils"
@@ -83,6 +87,16 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 			}
 		}
 
+		// The POD_NAMESPACE determines which namespace to write statuses to
+		// This is used for backwards compatibility in case a CRD is unmarshalled
+		// and it contains a single status.
+		statusReporterNamespace, err := statusutils.GetStatusReporterNamespaceFromEnv()
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting status reporter namespace")
+		}
+
+		inputResourceStatusUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(statusReporterNamespace, protoutils.UnmarshalMapToProto)
+
 		client := kube.NewResourceClient(
 			opts.Crd,
 			crdClient,
@@ -90,6 +104,7 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 			inputResource,
 			namespaceWhitelist,
 			opts.ResyncPeriod,
+			inputResourceStatusUnmarshaler,
 		)
 		return wrapper.NewClusterResourceClient(client, opts.Cluster), nil
 

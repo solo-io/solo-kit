@@ -195,18 +195,20 @@ type StatusReporter interface {
 }
 
 type reporter struct {
-	clients map[string]ReporterResourceClient
-	ref     string
+	reporterRef  string
+	statusClient resources.StatusClient
+	clients      map[string]ReporterResourceClient
 }
 
-func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) StatusReporter {
+func NewReporter(reporterRef string, statusClient resources.StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
 	return &reporter{
-		ref:     reporterRef,
-		clients: clientsByKind,
+		reporterRef:  reporterRef,
+		statusClient: statusClient,
+		clients:      clientsByKind,
 	}
 }
 
@@ -233,15 +235,18 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
-		if status.Equal(resource.GetStatus()) {
+
+		resourceStatus := r.statusClient.GetStatus(resource)
+		if status.Equal(resourceStatus) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
-		resourceToWrite.SetStatus(status)
+
+		r.statusClient.SetStatus(resourceToWrite, status)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			updatedResource, resourceToWrite, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite)
+			updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
 			return writeErr
 		})
 
@@ -264,7 +269,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
@@ -277,9 +282,8 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
 		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
-			status := resourceToWrite.GetStatus()
 			resourceToWrite = inputResourceFromRead
-			resourceToWrite.SetStatus(status)
+			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -304,7 +308,8 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 		return updatedResource, resourceToWrite, nil
 	}
 	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	resourceToWriteUpdated.SetStatus(resourceToWrite.GetStatus())
+	r.statusClient.SetStatus(resourceToWriteUpdated, r.statusClient.GetStatus(resourceToWrite))
+
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
@@ -323,7 +328,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		return &core.Status{
 			State:               core.Status_Rejected,
 			Reason:              errorReason,
-			ReportedBy:          r.ref,
+			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
@@ -332,14 +337,14 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		return &core.Status{
 			State:               core.Status_Warning,
 			Reason:              warningReason,
-			ReportedBy:          r.ref,
+			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
 		}
 	}
 
 	return &core.Status{
 		State:               core.Status_Accepted,
-		ReportedBy:          r.ref,
+		ReportedBy:          r.reporterRef,
 		SubresourceStatuses: subresourceStatuses,
 	}
 }

@@ -27,6 +27,17 @@ spec:
           properties:
             data.json:
               type: string
+            namespacedStatuses:
+              description: The NamespacedStatuses field comment
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  description: Mapping from namespace to the Status written by the
+                    controller running in that namespace.
+                  type: object
+              type: object
             oneofNestedoneof:
               description: oneof comment
               properties:
@@ -59,13 +70,8 @@ spec:
               type: boolean
             someDumbField:
               type: string
-            status:
-              description: The status field comment
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
-          description: The status field comment
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object

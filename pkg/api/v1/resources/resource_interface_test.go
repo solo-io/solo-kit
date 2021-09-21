@@ -53,11 +53,24 @@ func (m *mockResources) Equal(that interface{}) bool {
 	return false
 }
 
+// Deprecated
 func (m *mockResources) GetStatus() *core.Status {
-	// Not need in this test
-	return &core.Status{}
+	// Not needed in this test
+	panic("implement me")
 }
 
+// Deprecated
 func (m *mockResources) SetStatus(status *core.Status) {
-	// Not need in this test
+	// Not needed in this test
+	panic("implement me")
+}
+
+func (m *mockResources) GetNamespacedStatuses() *core.NamespacedStatuses {
+	// Not needed in this test
+	panic("implement me")
+}
+
+func (m *mockResources) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
+	// Not needed in this test
+	panic("implement me")
 }

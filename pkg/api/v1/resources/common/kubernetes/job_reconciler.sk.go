@@ -24,9 +24,9 @@ func jobsToResources(list JobList) resources.ResourceList {
 	return resourceList
 }
 
-func NewJobReconciler(client JobClient) JobReconciler {
+func NewJobReconciler(client JobClient, statusSetter resources.StatusSetter) JobReconciler {
 	return &jobReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

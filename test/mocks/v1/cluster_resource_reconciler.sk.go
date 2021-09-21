@@ -24,9 +24,9 @@ func clusterResourcesToResources(list ClusterResourceList) resources.ResourceLis
 	return resourceList
 }
 
-func NewClusterResourceReconciler(client ClusterResourceClient) ClusterResourceReconciler {
+func NewClusterResourceReconciler(client ClusterResourceClient, statusSetter resources.StatusSetter) ClusterResourceReconciler {
 	return &clusterResourceReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

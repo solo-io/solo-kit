@@ -2,6 +2,7 @@ package tests_test
 
 import (
 	"context"
+	"os"
 
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/matchers"
@@ -12,6 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skv1alpha2 "github.com/solo-io/solo-kit/test/mocks/v2alpha1"
 	"github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
 	v2alpha1client "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client/clientset/versioned/typed/testing.solo.io/v2alpha1"
@@ -34,6 +36,9 @@ var _ = Describe("Generated Kube Code", func() {
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
+		err = os.Setenv(statusutils.PodNamespaceEnvName, "default")
+		Expect(err).NotTo(HaveOccurred())
+
 		// Create the CRD in the cluster
 		apiExts, err = apiext.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
@@ -49,10 +54,13 @@ var _ = Describe("Generated Kube Code", func() {
 			Cfg:         cfg,
 			SharedCache: kube.NewKubeCache(context.TODO()),
 		})
-
+		Expect(err).NotTo(HaveOccurred())
 	})
+
 	AfterEach(func() {
 		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, skv1alpha2.MockResourceCrd.FullName(), v1.DeleteOptions{})
+
+		Expect(os.Unsetenv(statusutils.PodNamespaceEnvName)).NotTo(HaveOccurred())
 	})
 
 	It("can read and write a solo kit resource as a typed kube object", func() {

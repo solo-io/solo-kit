@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -27,6 +29,7 @@ type Propagator struct {
 	forController     string
 	children, parents resources.InputResourceList
 	resourceClients   clients.ResourceClients
+	statusClient      resources.StatusClient
 	writeErrs         chan error
 }
 
@@ -36,7 +39,9 @@ func NewPropagator(forController string, parents, children resources.InputResour
 		children:        children,
 		parents:         parents,
 		resourceClients: ResourceClients,
-		writeErrs:       writeErrs,
+		// The propagator is deprecated, we just add this for backwards compatibility
+		statusClient: statusutils.NewNamespacedStatusesClient(""),
+		writeErrs:    writeErrs,
 	}
 }
 
@@ -168,10 +173,10 @@ func (p *Propagator) syncStatuses(parents, children resources.ResourceList, opts
 			// no-op
 			continue
 		}
-		_ = resources.UpdateStatus(parent, func(status *core.Status) error {
+		_ = statusutils.UpdateStatus(parent, func(status *core.Status) error {
 			status.SubresourceStatuses = childStatuses
 			return nil
-		})
+		}, p.statusClient)
 		rc, err := p.resourceClients.ForResource(parent)
 		if err != nil {
 			return errors.Wrapf(err, "resource client for parent not found")

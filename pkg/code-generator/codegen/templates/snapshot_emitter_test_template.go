@@ -69,11 +69,14 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 	)
 
 	BeforeEach(func() {
+		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
+		Expect(err).NotTo(HaveOccurred())
+
 		ctx = context.Background()
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
+		err = kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 {{- if $need_kube_config }}
 		cfg, err = kubeutils.GetConfig("", "")
@@ -108,8 +111,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		emitter = New{{ .GoName }}Emitter({{ $clients }})
 	})
 	AfterEach(func() {
-		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
+		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
+		Expect(err).NotTo(HaveOccurred())
+
 {{- range .Resources }}
 {{- if .ClusterScoped }}
 		{{ lower_camel .Name }}Client.Delete(name1, clients.DeleteOpts{})
@@ -117,6 +124,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- end }}
 {{- end }}
 	})
+
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -227,6 +235,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- end }}
 {{- end}}
 	})
+
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
 		err := emitter.Register()

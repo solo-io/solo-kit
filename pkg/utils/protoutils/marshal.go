@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
@@ -14,7 +16,6 @@ import (
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"sigs.k8s.io/yaml"
 )
@@ -190,20 +191,13 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
 	if withStatus, ok := resource.(resources.InputResource); ok {
 
-		updateFunc := func(status *core.Status) error {
-			if status == nil {
-				return nil
-			}
-			typedStatus := core.Status{}
-			err := UnmarshalMapToProto(resourceCrd.Status, &typedStatus)
-			if err != nil {
-				return err
-			}
-			*status = typedStatus
-			return nil
+		statusReporterNamespace, err := statusutils.GetStatusReporterNamespaceFromEnv()
+		if err != nil {
+			return err
 		}
+		inputResourceUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(statusReporterNamespace, UnmarshalMapToProto)
 
-		if err := resources.UpdateStatus(withStatus, updateFunc); err != nil {
+		if err := inputResourceUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus); err != nil {
 			return err
 		}
 	}

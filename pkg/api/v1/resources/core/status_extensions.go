@@ -36,6 +36,11 @@ func (s Status) DeepCopyInto(out *Status) {
 	*out = *clone
 }
 
+func (s NamespacedStatuses) DeepCopyInto(out *NamespacedStatuses) {
+	clone := proto.Clone(&s).(*NamespacedStatuses)
+	*out = *clone
+}
+
 func orderedMapIterator(m map[string]*Status, onKey func(key string, value *Status)) {
 	var list []struct {
 		key   string

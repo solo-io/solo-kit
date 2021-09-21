@@ -11,6 +11,7 @@ import (
 	"hash"
 	"hash/fnv"
 	"log"
+	"os"
 	"sort"
 
 {{- if $.IsCustom }}
@@ -24,6 +25,9 @@ import (
 {{- if not $.IsCustom }}
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"k8s.io/apimachinery/pkg/runtime"
+{{- end }}
+{{- if $.HasStatus }}
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 {{- end }}
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -86,9 +90,23 @@ func (r *{{ .Name }}) SetMetadata(meta *core.Metadata) {
 
 {{- if $.HasStatus }}
 
+// Deprecated
 func (r *{{ .Name }}) SetStatus(status *core.Status) {
-	r.Status = status
+	statusutils.SetSingleStatusInNamespacedStatuses(r, status)
 }
+
+// Deprecated
+func (r *{{ .Name }}) GetStatus() *core.Status {
+	if r != nil {
+		return statusutils.GetSingleStatusInNamespacedStatuses(r)
+	}
+	return nil
+}
+
+func (r *{{ .Name }}) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
+	r.NamespacedStatuses = namespacedStatuses
+}
+
 {{- end }}
 
 {{- end }}

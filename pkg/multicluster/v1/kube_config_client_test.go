@@ -45,9 +45,11 @@ var _ = Describe("KubeConfigClient", func() {
 				client, err = NewKubeConfigClient(ctx, factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
+
 			AfterEach(func() {
 				test.Teardown(ctx, namespace)
 			})
+
 			It("CRUDs KubeConfigs "+test.Description(), func() {
 				KubeConfigClientTest(namespace, client, name1, name2, name3)
 			})
@@ -56,29 +58,31 @@ var _ = Describe("KubeConfigClient", func() {
 })
 
 func KubeConfigClientTest(namespace string, client KubeConfigClient, name1, name2, name3 string) {
+	testOffset := 1
+
 	err := client.Register()
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	name := name1
 	input := NewKubeConfig(namespace, name)
 
 	r1, err := client.Write(input, clients.WriteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	_, err = client.Write(input, clients.WriteOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsExist(err)).To(BeTrue())
 
-	Expect(r1).To(BeAssignableToTypeOf(&KubeConfig{}))
-	Expect(r1.GetMetadata().Name).To(Equal(name))
-	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
-	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
-	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
+	ExpectWithOffset(testOffset, r1).To(BeAssignableToTypeOf(&KubeConfig{}))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Name).To(Equal(name))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Namespace).To(Equal(namespace))
+	ExpectWithOffset(testOffset, r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
+	ExpectWithOffset(testOffset, r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	Expect(err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
 
 	resources.UpdateMetadata(input, func(meta *core.Metadata) {
 		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
@@ -86,13 +90,13 @@ func KubeConfigClientTest(namespace string, client KubeConfigClient, name1, name
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	read, err := client.Read(namespace, name, clients.ReadOpts{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(read).To(Equal(r1))
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, read).To(Equal(r1))
 	_, err = client.Read("doesntexist", name, clients.ReadOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsNotExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsNotExist(err)).To(BeTrue())
 
 	name = name2
 	input = &KubeConfig{}
@@ -103,35 +107,35 @@ func KubeConfigClientTest(namespace string, client KubeConfigClient, name1, name
 	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	list, err := client.List(namespace, clients.ListOpts{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, list).To(ContainElement(r1))
+	ExpectWithOffset(testOffset, list).To(ContainElement(r2))
 	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{})
-	Expect(err).To(HaveOccurred())
-	Expect(errors.IsNotExist(err)).To(BeTrue())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, errors.IsNotExist(err)).To(BeTrue())
 	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{
 		IgnoreNotExist: true,
 	})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	Eventually(func() KubeConfigList {
 		list, err = client.List(namespace, clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(ContainElement(r1))
 	Eventually(func() KubeConfigList {
 		list, err = client.List(namespace, clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
 	w, errs, err := client.Watch(namespace, clients.WatchOpts{
 		RefreshRate: time.Hour,
 	})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	var r3 resources.Resource
 	wait := make(chan struct{})
@@ -143,24 +147,24 @@ func KubeConfigClientTest(namespace string, client KubeConfigClient, name1, name
 			meta.ResourceVersion = ""
 		})
 		r2, err = client.Write(r2, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 		name = name3
 		input = &KubeConfig{}
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		input.SetMetadata(&core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	}()
 	<-wait
 
 	select {
 	case err := <-errs:
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	case list = <-w:
 	case <-time.After(time.Millisecond * 5):
 		Fail("expected a message in channel")
@@ -171,7 +175,7 @@ func KubeConfigClientTest(namespace string, client KubeConfigClient, name1, name
 		for {
 			select {
 			case err := <-errs:
-				Expect(err).NotTo(HaveOccurred())
+				ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 			case <-time.After(time.Second / 4):
 				return
 			}

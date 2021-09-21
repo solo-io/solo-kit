@@ -24,9 +24,9 @@ func kubeNamespacesToResources(list KubeNamespaceList) resources.ResourceList {
 	return resourceList
 }
 
-func NewKubeNamespaceReconciler(client KubeNamespaceClient) KubeNamespaceReconciler {
+func NewKubeNamespaceReconciler(client KubeNamespaceClient, statusSetter resources.StatusSetter) KubeNamespaceReconciler {
 	return &kubeNamespaceReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

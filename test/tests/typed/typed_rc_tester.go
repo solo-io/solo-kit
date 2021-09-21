@@ -9,6 +9,7 @@ import (
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -62,11 +63,17 @@ func (rct *KubeRcTester) Skip() bool {
 }
 
 func (rct *KubeRcTester) Setup(ctx context.Context, namespace string) factory.ResourceClientFactory {
+	podNamespace := "default"
+
 	if namespace != "" {
+		podNamespace = namespace
 		kubeClient := helpers.MustKubeClient()
 		err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	}
+	err := os.Setenv(statusutils.PodNamespaceEnvName, podNamespace)
+	Expect(err).NotTo(HaveOccurred())
+
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	factory := &factory.KubeResourceClientFactory{
@@ -84,8 +91,11 @@ func (rct *KubeRcTester) Setup(ctx context.Context, namespace string) factory.Re
 }
 
 func (rct *KubeRcTester) Teardown(ctx context.Context, namespace string) {
+	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
+	Expect(err).NotTo(HaveOccurred())
+
 	kubeClient := helpers.MustKubeClient()
-	err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, namespace)
+	err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 }
 

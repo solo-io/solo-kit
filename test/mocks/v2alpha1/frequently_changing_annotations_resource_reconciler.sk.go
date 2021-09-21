@@ -24,9 +24,9 @@ func frequentlyChangingAnnotationsResourcesToResources(list FrequentlyChangingAn
 	return resourceList
 }
 
-func NewFrequentlyChangingAnnotationsResourceReconciler(client FrequentlyChangingAnnotationsResourceClient) FrequentlyChangingAnnotationsResourceReconciler {
+func NewFrequentlyChangingAnnotationsResourceReconciler(client FrequentlyChangingAnnotationsResourceClient, statusSetter resources.StatusSetter) FrequentlyChangingAnnotationsResourceReconciler {
 	return &frequentlyChangingAnnotationsResourceReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 
