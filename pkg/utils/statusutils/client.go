@@ -21,12 +21,7 @@ func NewNamespacedStatusesClient(namespace string) *NamespacedStatusesClient {
 }
 
 func (s *NamespacedStatusesClient) GetStatus(resource resources.InputResource) *core.Status {
-	statuses := resource.GetNamespacedStatuses().GetStatuses()
-	if statuses == nil {
-		return nil
-	}
-
-	return statuses[s.statusReporterNamespace]
+	getStatusForNamespace(resource, s.statusReporterNamespace)
 }
 
 func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, status *core.Status) {
@@ -59,17 +54,24 @@ func setStatusForNamespace(resource resources.InputResource, status *core.Status
 	}
 }
 
-// This function is just used to support the deprecated GetStatus() method on an InputResource
-func GetFirstStatusInNamespacedStatuses(resource resources.InputResource) *core.Status {
-	for _, status := range resource.GetNamespacedStatuses().GetStatuses() {
-		// return the first status, if there is one
-		return status
+func getStatusForNamespace(resource resources.InputResource, namespace string) *core.Status {
+	statuses := resource.GetNamespacedStatuses().GetStatuses()
+	if statuses == nil {
+		return nil
 	}
 
-	return nil
+	return statuses[namespace]
 }
 
-// This function is just used to support the deprecated SetStatus() method on an InputResource
-func SetFirstStatusInNamespacedStatuses(resource resources.InputResource, status *core.Status) {
-	setStatusForNamespace(resource, status, "")
+// These code is only used to support the deprecated SetStatus and GetStatus
+// methods on an InputResource
+
+const singleStatusNamespace = ""
+
+func GetSingleStatusInNamespacedStatuses(resource resources.InputResource) *core.Status {
+	return getStatusForNamespace(resource, singleStatusNamespace)
+}
+
+func SetSingleStatusInNamespacedStatuses(resource resources.InputResource, status *core.Status) {
+	setStatusForNamespace(resource, status, singleStatusNamespace)
 }
