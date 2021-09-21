@@ -70,7 +70,7 @@ func getFilenameForCRD(crd apiextv1.CustomResourceDefinition) string {
 
 func GetCRDsFromDirectory(crdDirectory string) ([]apiextv1.CustomResourceDefinition, error) {
 	var crds []apiextv1.CustomResourceDefinition
-
+	log.Printf("Walking directory: %s", crdDirectory)
 	err := filepath.Walk(crdDirectory, func(crdFile string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
