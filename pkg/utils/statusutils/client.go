@@ -6,6 +6,7 @@ import (
 )
 
 var _ resources.StatusClient = new(NamespacedStatusesClient)
+var _ resources.StatusClient = new(NoOpStatusClient)
 
 // InputResources support multiple statuses, each set by a particular controller
 // Each controller should only update its own status, so we expose a client
@@ -30,6 +31,20 @@ func (s *NamespacedStatusesClient) GetStatus(resource resources.InputResource) *
 
 func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, status *core.Status) {
 	setStatusForNamespace(resource, status, s.statusReporterNamespace)
+}
+
+type NoOpStatusClient struct {
+}
+
+func NewNoOpStatusClient() *NoOpStatusClient {
+	return &NoOpStatusClient{}
+}
+
+func (n *NoOpStatusClient) GetStatus(resource resources.InputResource) *core.Status {
+	return nil
+}
+
+func (n *NoOpStatusClient) SetStatus(resource resources.InputResource, status *core.Status) {
 }
 
 func setStatusForNamespace(resource resources.InputResource, status *core.Status, namespace string) {
