@@ -6,7 +6,6 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
 var _ resources.StatusUnmarshaler = new(NamespacedStatusesUnmarshaler)
@@ -16,9 +15,11 @@ type NamespacedStatusesUnmarshaler struct {
 	statusClient        resources.StatusClient
 }
 
-func NewNamespacedStatusesUnmarshaler(statusReporterNamespace string) *NamespacedStatusesUnmarshaler {
+func NewNamespacedStatusesUnmarshaler(
+	statusReporterNamespace string,
+	unmarshalMapToProto func(m map[string]interface{}, into proto.Message) error) *NamespacedStatusesUnmarshaler {
 	return &NamespacedStatusesUnmarshaler{
-		unmarshalMapToProto: protoutils.UnmarshalMapToProto,
+		unmarshalMapToProto: unmarshalMapToProto,
 		statusClient:        NewNamespacedStatusesClient(statusReporterNamespace),
 	}
 }

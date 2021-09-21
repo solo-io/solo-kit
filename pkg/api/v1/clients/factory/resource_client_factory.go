@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/hashicorp/consul/api"
@@ -93,7 +95,7 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 			return nil, errors.Wrapf(err, "getting status reporter namespace")
 		}
 
-		inputResourceStatusUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(statusReporterNamespace)
+		inputResourceStatusUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(statusReporterNamespace, protoutils.UnmarshalMapToProto)
 
 		client := kube.NewResourceClient(
 			opts.Crd,

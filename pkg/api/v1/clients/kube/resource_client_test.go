@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
@@ -125,7 +127,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		}
 
 		statusClient                   = statusutils.NewNamespacedStatusesClient(namespace)
-		inputResourceStatusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(namespace)
+		inputResourceStatusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(namespace, protoutils.UnmarshalMapToProto)
 	)
 
 	BeforeEach(func() {

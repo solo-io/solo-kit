@@ -195,7 +195,7 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 		if err != nil {
 			return err
 		}
-		inputResourceUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(statusReporterNamespace)
+		inputResourceUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(statusReporterNamespace, UnmarshalMapToProto)
 
 		if err := inputResourceUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus); err != nil {
 			return err
