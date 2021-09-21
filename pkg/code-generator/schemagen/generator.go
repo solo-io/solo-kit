@@ -140,7 +140,7 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 func validateStructural(gvk schema.GroupVersionKind, s *apiextv1.JSONSchemaProps) error {
 	out := &apiext.JSONSchemaProps{}
 	if err := apiextv1.Convert_v1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(s, out, nil); err != nil {
-		return fmt.Errorf("%v cannot convert v1beta1 JSONSchemaProps to JSONSchemaProps: %v", gvk, err)
+		return fmt.Errorf("%v cannot convert v1 JSONSchemaProps to JSONSchemaProps: %v", gvk, err)
 	}
 
 	r, err := structuralschema.NewStructural(out)
