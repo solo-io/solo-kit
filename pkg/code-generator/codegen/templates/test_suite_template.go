@@ -50,7 +50,7 @@ var (
 		Expect(err).NotTo(HaveOccurred())
 		
 		{{- range $uniqueCrds}}
-		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "{{lowercase .}}", metav1.DeleteOptions{})
+		err = clientset.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, "{{lowercase .}}", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 		{{- end}}
 		Expect(lock.ReleaseLock()).NotTo(HaveOccurred())

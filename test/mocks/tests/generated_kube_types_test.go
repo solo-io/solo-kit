@@ -52,7 +52,7 @@ var _ = Describe("Generated Kube Code", func() {
 
 	})
 	AfterEach(func() {
-		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, skv1alpha2.MockResourceCrd.FullName(), v1.DeleteOptions{})
+		_ = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, skv1alpha2.MockResourceCrd.FullName(), v1.DeleteOptions{})
 	})
 
 	It("can read and write a solo kit resource as a typed kube object", func() {

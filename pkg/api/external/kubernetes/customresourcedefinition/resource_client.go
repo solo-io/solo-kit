@@ -12,7 +12,7 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +40,7 @@ func NewCustomResourceDefinitionClient(apiExts apiexts.Interface, cache KubeCust
 	return skkube.NewCustomResourceDefinitionClientWithBase(resourceClient)
 }
 
-func FromKubeCustomResourceDefinition(customResourceDefinition *v1beta1.CustomResourceDefinition) *skkube.CustomResourceDefinition {
+func FromKubeCustomResourceDefinition(customResourceDefinition *v1.CustomResourceDefinition) *skkube.CustomResourceDefinition {
 
 	customResourceDefinitionCopy := customResourceDefinition.DeepCopy()
 	kubeCustomResourceDefinition := customresourcedefinition.CustomResourceDefinition(*customResourceDefinitionCopy)
@@ -51,13 +51,13 @@ func FromKubeCustomResourceDefinition(customResourceDefinition *v1beta1.CustomRe
 	return resource
 }
 
-func ToKubeCustomResourceDefinition(resource resources.Resource) (*v1beta1.CustomResourceDefinition, error) {
+func ToKubeCustomResourceDefinition(resource resources.Resource) (*v1.CustomResourceDefinition, error) {
 	customResourceDefinitionResource, ok := resource.(*skkube.CustomResourceDefinition)
 	if !ok {
 		return nil, errors.Errorf("internal error: invalid resource %v passed to customResourceDefinition-only client", resources.Kind(resource))
 	}
 
-	customResourceDefinition := v1beta1.CustomResourceDefinition(customResourceDefinitionResource.CustomResourceDefinition)
+	customResourceDefinition := v1.CustomResourceDefinition(customResourceDefinitionResource.CustomResourceDefinition)
 
 	return &customResourceDefinition, nil
 }
@@ -70,7 +70,7 @@ func (rc *customResourceDefinitionResourceClient) Read(namespace, name string, o
 	}
 	opts = opts.WithDefaults()
 
-	customResourceDefinitionObj, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(opts.Ctx, name, metav1.GetOptions{})
+	customResourceDefinitionObj, err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Get(opts.Ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
@@ -110,11 +110,11 @@ func (rc *customResourceDefinitionResourceClient) Write(resource resources.Resou
 		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
 			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
 		}
-		if _, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Update(opts.Ctx, customResourceDefinitionObj, metav1.UpdateOptions{}); err != nil {
+		if _, err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Update(opts.Ctx, customResourceDefinitionObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube customResourceDefinitionObj %v", customResourceDefinitionObj.Name)
 		}
 	} else {
-		if _, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(opts.Ctx, customResourceDefinitionObj, metav1.CreateOptions{}); err != nil {
+		if _, err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Create(opts.Ctx, customResourceDefinitionObj, metav1.CreateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "creating kube customResourceDefinitionObj %v", customResourceDefinitionObj.Name)
 		}
 	}

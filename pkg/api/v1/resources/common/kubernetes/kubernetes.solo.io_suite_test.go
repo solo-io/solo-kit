@@ -38,7 +38,7 @@ var (
 		Expect(err).NotTo(HaveOccurred())
 		clientset, err := apiexts.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "anothermockresources.testing.solo.io", metav1.DeleteOptions{})
+		err = clientset.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, "anothermockresources.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "clusterresources.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)

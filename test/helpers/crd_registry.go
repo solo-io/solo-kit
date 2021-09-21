@@ -11,7 +11,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/versionutils/kubeapi"
 	"github.com/solo-io/k8s-utils/kubeutils"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -128,22 +128,22 @@ func (r *crdRegistry) registerCrd(ctx context.Context, gvk schema.GroupVersionKi
 	if err != nil {
 		return err
 	}
-	_, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(context.TODO(), toRegister, metav1.CreateOptions{})
+	_, err = clientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.TODO(), toRegister, metav1.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to register crd: %v", err)
 	}
 	return kubeutils.WaitForCrdActive(ctx, clientset, toRegister.Name)
 }
 
-func (r *crdRegistry) getKubeCrd(crd crd.MultiVersionCrd, gvk schema.GroupVersionKind) (*v1beta1.CustomResourceDefinition, error) {
-	scope := v1beta1.NamespaceScoped
+func (r *crdRegistry) getKubeCrd(crd crd.MultiVersionCrd, gvk schema.GroupVersionKind) (*v1.CustomResourceDefinition, error) {
+	scope := v1.NamespaceScoped
 	if crd.ClusterScoped {
-		scope = v1beta1.ClusterScoped
+		scope = v1.ClusterScoped
 	}
-	versions := make([]v1beta1.CustomResourceDefinitionVersion, len(crd.Versions))
+	versions := make([]v1.CustomResourceDefinitionVersion, len(crd.Versions))
 	validGvk := false
 	for i, version := range crd.Versions {
-		versionToAdd := v1beta1.CustomResourceDefinitionVersion{
+		versionToAdd := v1.CustomResourceDefinitionVersion{
 			Name: version.Version,
 		}
 		if gvk.Version == version.Version {
@@ -171,18 +171,17 @@ func (r *crdRegistry) getKubeCrd(crd crd.MultiVersionCrd, gvk schema.GroupVersio
 		return parsedi.GreaterThan(parsedj)
 	})
 
-	return &v1beta1.CustomResourceDefinition{
+	return &v1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{Name: crd.FullName()},
-		Spec: v1beta1.CustomResourceDefinitionSpec{
+		Spec: v1.CustomResourceDefinitionSpec{
 			Group: crd.Group,
 			Scope: scope,
-			Names: v1beta1.CustomResourceDefinitionNames{
+			Names: v1.CustomResourceDefinitionNames{
 				Plural:     crd.Plural,
 				Kind:       crd.KindName,
 				ShortNames: []string{crd.ShortName},
 			},
 			Versions: versions,
-			Version:  versions[0].Name,
 		},
 	}, nil
 }

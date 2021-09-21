@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
@@ -39,21 +39,25 @@ var _ = Describe("DeploymentBaseClient", func() {
 		client = newResourceClient(apiExts, kubeCache)
 	})
 	AfterEach(func() {
-		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, crdName, metav1.DeleteOptions{})
+		_ = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, crdName, metav1.DeleteOptions{})
 	})
 	It("converts a kubernetes deployment to solo-kit resource", func() {
-		originalKubeCrd, err := apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(ctx, &v1beta1.CustomResourceDefinition{
+		originalKubeCrd, err := apiExts.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, &v1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: crdName,
 			},
-			Spec: v1beta1.CustomResourceDefinitionSpec{
-				Group:   "integrationtests.solokit.solo.io",
-				Version: "v1",
-				Scope:   v1beta1.ClusterScoped,
-				Names: v1beta1.CustomResourceDefinitionNames{
+			Spec: v1.CustomResourceDefinitionSpec{
+				Group: "integrationtests.solokit.solo.io",
+				Scope: v1.ClusterScoped,
+				Names: v1.CustomResourceDefinitionNames{
 					Plural:     "testcrds",
 					Kind:       "TestCrd",
 					ShortNames: []string{"tc"},
+				},
+				Versions: []v1.CustomResourceDefinitionVersion{
+					{
+						Name: "v1",
+					},
 				},
 			},
 		}, metav1.CreateOptions{})
