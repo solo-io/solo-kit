@@ -24,9 +24,9 @@ func kubeConfigsToResources(list KubeConfigList) resources.ResourceList {
 	return resourceList
 }
 
-func NewKubeConfigReconciler(client KubeConfigClient) KubeConfigReconciler {
+func NewKubeConfigReconciler(client KubeConfigClient, statusSetter resources.StatusSetter) KubeConfigReconciler {
 	return &kubeConfigReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

@@ -24,9 +24,9 @@ func servicesToResources(list ServiceList) resources.ResourceList {
 	return resourceList
 }
 
-func NewServiceReconciler(client ServiceClient) ServiceReconciler {
+func NewServiceReconciler(client ServiceClient, statusSetter resources.StatusSetter) ServiceReconciler {
 	return &serviceReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

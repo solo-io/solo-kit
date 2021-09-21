@@ -24,9 +24,9 @@ func podsToResources(list PodList) resources.ResourceList {
 	return resourceList
 }
 
-func NewPodReconciler(client PodClient) PodReconciler {
+func NewPodReconciler(client PodClient, statusSetter resources.StatusSetter) PodReconciler {
 	return &podReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

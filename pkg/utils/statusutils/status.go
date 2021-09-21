@@ -3,14 +3,12 @@ package statusutils
 import (
 	"os"
 
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-var _ reporter.StatusClient = new(NamespacedStatusesClient)
+var _ resources.StatusClient = new(NamespacedStatusesClient)
 
 // InputResources support multiple statuses, each set by a particular controller
 // Each controller should only update its own status, so we expose a client

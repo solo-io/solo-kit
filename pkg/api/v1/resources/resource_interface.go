@@ -54,6 +54,19 @@ type InputResource interface {
 	SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses)
 }
 
+type StatusGetter interface {
+	GetStatus(resource InputResource) *core.Status
+}
+
+type StatusSetter interface {
+	SetStatus(resource InputResource, status *core.Status)
+}
+
+type StatusClient interface {
+	StatusGetter
+	StatusSetter
+}
+
 type StatusUnmarshaler interface {
 	UnmarshalStatus(status v1.Status, into InputResource) error
 }

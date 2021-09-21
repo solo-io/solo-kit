@@ -24,9 +24,9 @@ func simpleMockResourcesToResources(list SimpleMockResourceList) resources.Resou
 	return resourceList
 }
 
-func NewSimpleMockResourceReconciler(client SimpleMockResourceClient) SimpleMockResourceReconciler {
+func NewSimpleMockResourceReconciler(client SimpleMockResourceClient, statusSetter resources.StatusSetter) SimpleMockResourceReconciler {
 	return &simpleMockResourceReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

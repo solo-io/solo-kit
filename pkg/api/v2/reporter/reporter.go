@@ -194,18 +194,13 @@ type StatusReporter interface {
 	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status
 }
 
-type StatusClient interface {
-	SetStatus(resource resources.InputResource, status *core.Status)
-	GetStatus(resource resources.InputResource) *core.Status
-}
-
 type reporter struct {
 	reporterRef  string
-	statusClient StatusClient
+	statusClient resources.StatusClient
 	clients      map[string]ReporterResourceClient
 }
 
-func NewReporter(reporterRef string, statusClient StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
+func NewReporter(reporterRef string, statusClient resources.StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client

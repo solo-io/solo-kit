@@ -24,9 +24,9 @@ func mockCustomTypesToResources(list MockCustomTypeList) resources.ResourceList 
 	return resourceList
 }
 
-func NewMockCustomTypeReconciler(client MockCustomTypeClient) MockCustomTypeReconciler {
+func NewMockCustomTypeReconciler(client MockCustomTypeClient, statusSetter resources.StatusSetter) MockCustomTypeReconciler {
 	return &mockCustomTypeReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

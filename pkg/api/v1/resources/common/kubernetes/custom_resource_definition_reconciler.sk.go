@@ -24,9 +24,9 @@ func customResourceDefinitionsToResources(list CustomResourceDefinitionList) res
 	return resourceList
 }
 
-func NewCustomResourceDefinitionReconciler(client CustomResourceDefinitionClient) CustomResourceDefinitionReconciler {
+func NewCustomResourceDefinitionReconciler(client CustomResourceDefinitionClient, statusSetter resources.StatusSetter) CustomResourceDefinitionReconciler {
 	return &customResourceDefinitionReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 
