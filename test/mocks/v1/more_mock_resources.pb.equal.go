@@ -66,6 +66,17 @@ func (m *AnotherMockResource) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetSpec()) != len(target.GetSpec()) {
+		return false
+	}
+	for k, v := range m.GetSpec() {
+
+		if strings.Compare(v, target.GetSpec()[k]) != 0 {
+			return false
+		}
+
+	}
+
 	if strings.Compare(m.GetBasicField(), target.GetBasicField()) != 0 {
 		return false
 	}
@@ -112,6 +123,17 @@ func (m *ClusterResource) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetStatus(), target.GetStatus()) {
 			return false
 		}
+	}
+
+	if len(m.GetSpec()) != len(target.GetSpec()) {
+		return false
+	}
+	for k, v := range m.GetSpec() {
+
+		if strings.Compare(v, target.GetSpec()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	if strings.Compare(m.GetBasicField(), target.GetBasicField()) != 0 {

@@ -145,6 +145,11 @@ func (r *crdRegistry) getKubeCrd(crd crd.MultiVersionCrd, gvk schema.GroupVersio
 	for i, version := range crd.Versions {
 		versionToAdd := v1.CustomResourceDefinitionVersion{
 			Name: version.Version,
+			Schema: &v1.CustomResourceValidation{
+				OpenAPIV3Schema: &v1.JSONSchemaProps{
+					Type: "object",
+				},
+			},
 		}
 		if gvk.Version == version.Version {
 			versionToAdd.Served = true

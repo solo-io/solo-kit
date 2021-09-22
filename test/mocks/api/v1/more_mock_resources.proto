@@ -22,7 +22,7 @@ message AnotherMockResource {
     option (core.solo.io.resource).plural_name = "anothermockresources";
     core.solo.io.Metadata metadata = 1;
     core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
-
+    map<string, string> spec = 7;
     // comments that go above the basic field in our docs
     string basic_field = 2;
 
@@ -34,7 +34,7 @@ message ClusterResource {
     option (core.solo.io.resource).cluster_scoped = true;
     core.solo.io.Metadata metadata = 1;
     core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
-
+    map<string, string> spec = 7;
     // comments that go above the basic field in our docs
     string basic_field = 2;
 
