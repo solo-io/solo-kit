@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
-	apiextslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1"
+	apiextslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -34,7 +34,7 @@ func NewKubeCustomResourceDefinitionCache(ctx context.Context, apiExtsClient api
 
 	apiExtsInformerFactory := apiextsinformers.NewSharedInformerFactory(apiExtsClient, resyncDuration)
 
-	customResourceDefinitions := apiExtsInformerFactory.Apiextensions().V1beta1().CustomResourceDefinitions()
+	customResourceDefinitions := apiExtsInformerFactory.Apiextensions().V1().CustomResourceDefinitions()
 
 	k := &kubeCustomResourceDefinitionCache{
 		customResourceDefinitionLister: customResourceDefinitions.Lister(),
