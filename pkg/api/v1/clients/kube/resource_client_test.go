@@ -197,10 +197,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				mockResource.GetMetadata().GetName(),
 				clients.ReadOpts{},
 			)
-			//log.Printf("%v", mockResource.GetMetadata())
-			log.Printf("%v", read.(resources.InputResource).GetMetadata())
-			log.Printf("read status %d", len(read.(resources.InputResource).GetNamespacedStatuses().GetStatuses()))
-			log.Printf("mock resource status %d", len(mockResource.GetNamespacedStatuses().GetStatuses()))
+
 			mockResourceStatus := statusClient.GetStatus(mockResource)
 			readResourceStatus := statusClient.GetStatus(read.(resources.InputResource))
 			Expect(mockResourceStatus).To(matchers.MatchProto(readResourceStatus))

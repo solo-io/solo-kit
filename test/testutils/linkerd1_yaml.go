@@ -275,7 +275,7 @@ data:
       dtab: /svc => /#/io.l5d.k8s
 
 ---
-apiVersion: extensions/v1
+apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   labels:

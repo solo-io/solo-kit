@@ -2,7 +2,6 @@ package kube
 
 import (
 	"context"
-	"log"
 	"reflect"
 	"sort"
 	"strings"
@@ -438,8 +437,6 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 					resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
 		}
-		//TODO: delete logging
-		log.Printf("unmarshalling status %v", resourceCrd.Status)
 		if err := customResource.UnmarshalStatus(resourceCrd.Status, rc.resourceStatusUnmarshaler); err != nil {
 			return nil, errors.Wrapf(err, "unmarshalling crd status on custom resource %v in namespace %v into %v",
 				resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
@@ -447,7 +444,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 
 	} else {
 		// Default unmarshalling
-		log.Printf("default unmarshalling %v", resourceCrd.Status)
+
 		if withStatus, ok := resource.(resources.InputResource); ok {
 			if err := rc.resourceStatusUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus); err != nil {
 				return nil, err
