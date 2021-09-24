@@ -1,6 +1,8 @@
 package statusutils
 
 import (
+	"log"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -44,6 +46,7 @@ func (n *NoOpStatusClient) SetStatus(resource resources.InputResource, status *c
 
 func setStatusForNamespace(resource resources.InputResource, status *core.Status, namespace string) {
 	statuses := resource.GetNamespacedStatuses().GetStatuses()
+	log.Printf("Writing status %v \n resource %v %s", status, resource.GetMetadata().GetName(), status.GetReportedBy())
 	if statuses == nil {
 		resource.SetNamespacedStatuses(
 			&core.NamespacedStatuses{

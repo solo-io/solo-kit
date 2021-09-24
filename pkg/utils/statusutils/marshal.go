@@ -27,7 +27,6 @@ func NewNamespacedStatusesUnmarshaler(
 func (i *NamespacedStatusesUnmarshaler) UnmarshalStatus(resourceStatus v1.Status, into resources.InputResource) error {
 	// Always initialize status to empty, before it was empty by default, as it was a non-pointer value.
 	i.statusClient.SetStatus(into, &core.Status{})
-
 	updateStatusFunc := func(status *core.Status) error {
 		if status == nil {
 			return nil
