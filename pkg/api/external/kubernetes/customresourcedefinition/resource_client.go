@@ -133,7 +133,7 @@ func (rc *customResourceDefinitionResourceClient) Delete(namespace, name string,
 		return nil
 	}
 
-	if err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
+	if err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(opts.Ctx, name, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "deleting customResourceDefinitionObj %v", name)
 	}
 	return nil
@@ -168,6 +168,6 @@ func (rc *customResourceDefinitionResourceClient) Watch(namespace string, opts c
 }
 
 func (rc *customResourceDefinitionResourceClient) exist(ctx context.Context, namespace, name string) bool {
-	_, err := rc.apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
+	_, err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }
