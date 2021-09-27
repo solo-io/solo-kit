@@ -2,4 +2,4 @@ changelog:
  - type: NEW_FEATURE
    issueLink: https://github.com/solo-io/gloo/issues/4304
    resolvesIssue: false
-   descpription: Update generated CRDs to use v1 apis. 
+   description: Update generated CRDs to use v1 apis. 
