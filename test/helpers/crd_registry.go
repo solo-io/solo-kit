@@ -6,6 +6,8 @@ import (
 	"sort"
 	"sync"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 
 	"github.com/rotisserie/eris"
@@ -147,7 +149,8 @@ func (r *crdRegistry) getKubeCrd(crd crd.MultiVersionCrd, gvk schema.GroupVersio
 			Name: version.Version,
 			Schema: &v1.CustomResourceValidation{
 				OpenAPIV3Schema: &v1.JSONSchemaProps{
-					Type: "object",
+					Type:                   "object",
+					XPreserveUnknownFields: pointer.BoolPtr(true),
 				},
 			},
 		}
