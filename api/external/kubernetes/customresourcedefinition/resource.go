@@ -6,15 +6,15 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-type CustomResourceDefinition v1beta1.CustomResourceDefinition
+type CustomResourceDefinition v1.CustomResourceDefinition
 
 var _ resources.Resource = new(CustomResourceDefinition)
 
 func (p *CustomResourceDefinition) Clone() *CustomResourceDefinition {
-	vp := v1beta1.CustomResourceDefinition(*p)
+	vp := v1.CustomResourceDefinition(*p)
 	copy := vp.DeepCopy()
 	newP := CustomResourceDefinition(*copy)
 	return &newP

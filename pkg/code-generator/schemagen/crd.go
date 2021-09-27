@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	v1beta1 = "apiextensions.k8s.io/v1"
+	v1 = "apiextensions.k8s.io/v1"
 )
 
 var (
@@ -112,8 +112,8 @@ func GetCRDFromFile(pathToFile string) (apiextv1.CustomResourceDefinition, error
 	chunk := bytes.TrimSpace(doc)
 
 	err = yaml.Unmarshal(chunk, &crd)
-	if err == nil && v1beta1 != crd.APIVersion {
-		return crd, ApiVersionMismatch(v1beta1, crd.APIVersion)
+	if err == nil && v1 != crd.APIVersion {
+		return crd, ApiVersionMismatch(v1, crd.APIVersion)
 	}
 
 	return crd, err
