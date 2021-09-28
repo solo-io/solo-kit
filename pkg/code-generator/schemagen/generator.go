@@ -85,51 +85,51 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 		return err
 	}
 
-	// For each version of each matching CRD, apply the JSON schema to that CRD
+	// For each matching CRD, apply the 0th JSON schema to that CRD
 	// Use Group.Version.Kind to match CRDs and Schemas
 	crdWriter := NewCrdWriter(options.CrdDirectory)
 	for _, crd := range crds {
-		for i := 0; i < len(crd.Spec.Versions); i++ {
-			crdGVK := schema.GroupVersionKind{
-				Group:   crd.Spec.Group,
-				Version: crd.Spec.Versions[i].Name,
-				Kind:    crd.Spec.Names.Kind,
+		crdGVK := schema.GroupVersionKind{
+			Group:   crd.Spec.Group,
+			Version: crd.Spec.Versions[0].Name,
+			Kind:    crd.Spec.Names.Kind,
+		}
+
+		specJsonSchema, ok := jsonSchemasByGVK[crdGVK]
+		if !ok {
+			continue
+		}
+		if len(crd.Spec.Versions) > 1 {
+			log.Debugf("Multiple schema versions found. Only the first will be applied")
+		}
+		// prevent k8s from validating metadata field
+		removeProtoMetadataValidation(specJsonSchema)
+
+		if err := validateStructural(crdGVK, specJsonSchema); err != nil {
+			return err
+		}
+
+		validationSchema := &apiextv1.CustomResourceValidation{
+			OpenAPIV3Schema: &apiextv1.JSONSchemaProps{
+				Type:       "object",
+				Properties: map[string]apiextv1.JSONSchemaProps{},
+			},
+		}
+
+		// Either use the status defined on the spec, or a generic status
+		statusSchema := specJsonSchema.Properties["status"]
+		if statusSchema.Type == "" {
+			statusSchema = apiextv1.JSONSchemaProps{
+				Type:                   "object",
+				XPreserveUnknownFields: pointer.BoolPtr(true),
 			}
+		}
 
-			specJsonSchema, ok := jsonSchemasByGVK[crdGVK]
-			if !ok {
-				continue
-			}
+		validationSchema.OpenAPIV3Schema.Properties["spec"] = *specJsonSchema
+		validationSchema.OpenAPIV3Schema.Properties["status"] = statusSchema
 
-			// prevent k8s from validating metadata field
-			removeProtoMetadataValidation(specJsonSchema)
-
-			if err := validateStructural(crdGVK, specJsonSchema); err != nil {
-				return err
-			}
-
-			validationSchema := &apiextv1.CustomResourceValidation{
-				OpenAPIV3Schema: &apiextv1.JSONSchemaProps{
-					Type:       "object",
-					Properties: map[string]apiextv1.JSONSchemaProps{},
-				},
-			}
-
-			// Either use the status defined on the spec, or a generic status
-			statusSchema := specJsonSchema.Properties["status"]
-			if statusSchema.Type == "" {
-				statusSchema = apiextv1.JSONSchemaProps{
-					Type:                   "object",
-					XPreserveUnknownFields: pointer.BoolPtr(true),
-				}
-			}
-
-			validationSchema.OpenAPIV3Schema.Properties["spec"] = *specJsonSchema
-			validationSchema.OpenAPIV3Schema.Properties["status"] = statusSchema
-
-			if err = crdWriter.ApplyValidationSchemaToCRD(crd, validationSchema); err != nil {
-				return err
-			}
+		if err = crdWriter.ApplyValidationSchemaToCRD(crd, validationSchema); err != nil {
+			return err
 		}
 	}
 
