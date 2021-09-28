@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
-	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -47,7 +47,7 @@ func NewCueGenerator(importsCollector collector.Collector, absoluteRoot string) 
 	}
 }
 
-func (c *cueGenerator) GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*apiextv1beta1.JSONSchemaProps, error) {
+func (c *cueGenerator) GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*apiextv1.JSONSchemaProps, error) {
 	protobufExtractor, err := c.getProtobufExtractorForProject(project)
 	if err != nil {
 		return nil, err
@@ -123,8 +123,8 @@ func (c *cueGenerator) getProtobufExtractorForProject(project *model.Project) (*
 	return protobufExtractor, nil
 }
 
-func (c *cueGenerator) convertOpenApiSchemasToJsonSchemas(project *model.Project, schemas OpenApiSchemas) (map[schema.GroupVersionKind]*apiextv1beta1.JSONSchemaProps, error) {
-	jsonSchemasByGVK := make(map[schema.GroupVersionKind]*apiextv1beta1.JSONSchemaProps)
+func (c *cueGenerator) convertOpenApiSchemasToJsonSchemas(project *model.Project, schemas OpenApiSchemas) (map[schema.GroupVersionKind]*apiextv1.JSONSchemaProps, error) {
+	jsonSchemasByGVK := make(map[schema.GroupVersionKind]*apiextv1.JSONSchemaProps)
 
 	for schemaKey, schemaValue := range schemas {
 		schemaGVK := c.getGVKForSchemaKey(project, schemaKey)
@@ -141,7 +141,7 @@ func (c *cueGenerator) convertOpenApiSchemasToJsonSchemas(project *model.Project
 	return jsonSchemasByGVK, nil
 }
 
-func (c *cueGenerator) convertOpenApiSchemaToJsonSchema(schemaKey string, schema *openapi.OrderedMap) (*apiextv1beta1.JSONSchemaProps, error) {
+func (c *cueGenerator) convertOpenApiSchemaToJsonSchema(schemaKey string, schema *openapi.OrderedMap) (*apiextv1.JSONSchemaProps, error) {
 	if schema == nil {
 		return nil, eris.Errorf("no open api schema for %s", schemaKey)
 	}
@@ -164,7 +164,7 @@ func (c *cueGenerator) convertOpenApiSchemaToJsonSchema(schemaKey string, schema
 		return nil, err
 	}
 
-	jsonSchema := &apiextv1beta1.JSONSchemaProps{}
+	jsonSchema := &apiextv1.JSONSchemaProps{}
 	if err = json.Unmarshal(bytes, jsonSchema); err != nil {
 		return nil, eris.Errorf("Cannot unmarshal raw OpenAPI schema to JSONSchemaProps for %v: %v", schemaKey, err)
 	}

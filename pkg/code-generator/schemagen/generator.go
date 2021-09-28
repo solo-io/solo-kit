@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	structuralschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -44,7 +44,7 @@ type ValidationSchemaOptions struct {
 }
 
 type JsonSchemaGenerator interface {
-	GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*apiextv1beta1.JSONSchemaProps, error)
+	GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*apiextv1.JSONSchemaProps, error)
 }
 
 func GenerateOpenApiValidationSchemas(project *model.Project, options *ValidationSchemaOptions, importsCollector collector.Collector, absoluteRoot string) error {
@@ -85,13 +85,13 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 		return err
 	}
 
-	// For each matching CRD, apply the JSON schema to that CRD
+	// For each matching CRD, apply the 0th JSON schema to that CRD
 	// Use Group.Version.Kind to match CRDs and Schemas
 	crdWriter := NewCrdWriter(options.CrdDirectory)
 	for _, crd := range crds {
 		crdGVK := schema.GroupVersionKind{
 			Group:   crd.Spec.Group,
-			Version: crd.Spec.Version,
+			Version: crd.Spec.Versions[0].Name,
 			Kind:    crd.Spec.Names.Kind,
 		}
 
@@ -99,7 +99,9 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 		if !ok {
 			continue
 		}
-
+		if len(crd.Spec.Versions) > 1 {
+			log.Debugf("Multiple schema versions found. Only the first will be applied")
+		}
 		// prevent k8s from validating metadata field
 		removeProtoMetadataValidation(specJsonSchema)
 
@@ -107,17 +109,17 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 			return err
 		}
 
-		validationSchema := &apiextv1beta1.CustomResourceValidation{
-			OpenAPIV3Schema: &apiextv1beta1.JSONSchemaProps{
+		validationSchema := &apiextv1.CustomResourceValidation{
+			OpenAPIV3Schema: &apiextv1.JSONSchemaProps{
 				Type:       "object",
-				Properties: map[string]apiextv1beta1.JSONSchemaProps{},
+				Properties: map[string]apiextv1.JSONSchemaProps{},
 			},
 		}
 
 		// Either use the status defined on the spec, or a generic status
 		statusSchema := specJsonSchema.Properties["status"]
 		if statusSchema.Type == "" {
-			statusSchema = apiextv1beta1.JSONSchemaProps{
+			statusSchema = apiextv1.JSONSchemaProps{
 				Type:                   "object",
 				XPreserveUnknownFields: pointer.BoolPtr(true),
 			}
@@ -135,10 +137,10 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 }
 
 // Lifted from https://github.com/istio/tools/blob/477454adf7995dd3070129998495cdc8aaec5aff/cmd/cue-gen/crd.go#L108
-func validateStructural(gvk schema.GroupVersionKind, s *apiextv1beta1.JSONSchemaProps) error {
+func validateStructural(gvk schema.GroupVersionKind, s *apiextv1.JSONSchemaProps) error {
 	out := &apiext.JSONSchemaProps{}
-	if err := apiextv1beta1.Convert_v1beta1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(s, out, nil); err != nil {
-		return fmt.Errorf("%v cannot convert v1beta1 JSONSchemaProps to JSONSchemaProps: %v", gvk, err)
+	if err := apiextv1.Convert_v1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(s, out, nil); err != nil {
+		return fmt.Errorf("%v cannot convert v1 JSONSchemaProps to JSONSchemaProps: %v", gvk, err)
 	}
 
 	r, err := structuralschema.NewStructural(out)
@@ -158,7 +160,7 @@ func validateStructural(gvk schema.GroupVersionKind, s *apiextv1beta1.JSONSchema
 // "if metadata is specified, then only restrictions on metadata.name and metadata.generateName are allowed."
 // The kube api server is responsible for managing the metadata field, so users are not allowed to define schemas on it.
 // We remove validation altogether.
-func removeProtoMetadataValidation(s *apiextv1beta1.JSONSchemaProps) {
+func removeProtoMetadataValidation(s *apiextv1.JSONSchemaProps) {
 	delete(s.Properties, "metadata")
 }
 

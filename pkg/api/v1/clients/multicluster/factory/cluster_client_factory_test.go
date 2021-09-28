@@ -104,7 +104,7 @@ var _ = Describe("ClusterClientFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 			clientset, err := apiexts.NewForConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
-			err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, "mocks.testing.solo.io", metav1.DeleteOptions{})
+			err = clientset.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, "mocks.testing.solo.io", metav1.DeleteOptions{})
 			testutils.ErrorNotOccuredOrNotFound(err)
 		})
 

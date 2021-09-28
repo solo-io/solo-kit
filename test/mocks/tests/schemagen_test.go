@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -85,7 +85,7 @@ var _ = Describe("schemagen", func() {
 			protocGenerator = schemagen.NewProtocGenerator(importsCollector, soloKitRoot, validationSchemaOptions)
 		})
 
-		ExpectSchemaPropertiesAreEqual := func(cue, protoc *v1beta1.JSONSchemaProps, property string) {
+		ExpectSchemaPropertiesAreEqual := func(cue, protoc *v1.JSONSchemaProps, property string) {
 			cueSchema := cue.Properties[property]
 			protocSchema := protoc.Properties[property]
 
@@ -96,10 +96,10 @@ var _ = Describe("schemagen", func() {
 			ExpectWithOffset(2, cueSchema).To(Equal(protocSchema))
 		}
 
-		ExpectJsonSchemasToMatch := func(cue, protoc *v1beta1.JSONSchemaProps) {
+		ExpectJsonSchemasToMatch := func(cue, protoc *v1.JSONSchemaProps) {
 			var (
 				fieldName               string
-				cueSchema, protocSchema v1beta1.JSONSchemaProps
+				cueSchema, protocSchema v1.JSONSchemaProps
 			)
 
 			// google.protobuf types

@@ -52,7 +52,7 @@ var _ = Describe("Clientset", func() {
 		err = helpers.AddAndRegisterCrd(ctx, mocksv1.MockResourceCrd, apiextsClient)
 		Expect(err).NotTo(HaveOccurred())
 
-		c, err := apiextsClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(ctx, v1.ListOptions{})
+		c, err := apiextsClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, v1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(c.Items)).To(BeNumerically(">=", 1))
 		var found bool

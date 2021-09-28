@@ -12,7 +12,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/ghodss/yaml"
-	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/solo-io/anyvendor/anyvendor"
@@ -40,7 +40,7 @@ func NewProtocGenerator(importsCollector collector.Collector, absoluteRoot strin
 	}
 }
 
-func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*apiextv1beta1.JSONSchemaProps, error) {
+func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[schema.GroupVersionKind]*apiextv1.JSONSchemaProps, error) {
 	// Use a tmp directory as the output of schemas
 	// The schemas will then be matched with the appropriate CRD
 	tmpOutputDir, err := ioutil.TempDir("", "")
@@ -89,8 +89,8 @@ func (p *protocGenerator) generateSchemasForProjectProto(projectProtoFile string
 	return protocExecutor.Execute(projectProtoFile, tmpFile.Name(), imports)
 }
 
-func (p *protocGenerator) processGeneratedSchemas(project *model.Project, schemaOutputDir string) (map[schema.GroupVersionKind]*apiextv1beta1.JSONSchemaProps, error) {
-	jsonSchemasByGVK := make(map[schema.GroupVersionKind]*apiextv1beta1.JSONSchemaProps)
+func (p *protocGenerator) processGeneratedSchemas(project *model.Project, schemaOutputDir string) (map[schema.GroupVersionKind]*apiextv1.JSONSchemaProps, error) {
+	jsonSchemasByGVK := make(map[schema.GroupVersionKind]*apiextv1.JSONSchemaProps)
 	err := filepath.Walk(schemaOutputDir, func(schemaFile string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -161,7 +161,7 @@ func (p *protocGenerator) getGVKForSchemaKey(project *model.Project, schemaKey s
 	}
 }
 
-func (p *protocGenerator) getJsonSchema(schemaKey string, schema *openapi3.SchemaRef) (*apiextv1beta1.JSONSchemaProps, error) {
+func (p *protocGenerator) getJsonSchema(schemaKey string, schema *openapi3.SchemaRef) (*apiextv1.JSONSchemaProps, error) {
 	if schema == nil {
 		return nil, eris.Errorf("no open api schema for %s", schemaKey)
 	}
@@ -184,7 +184,7 @@ func (p *protocGenerator) getJsonSchema(schemaKey string, schema *openapi3.Schem
 		return nil, err
 	}
 
-	jsonSchema := &apiextv1beta1.JSONSchemaProps{}
+	jsonSchema := &apiextv1.JSONSchemaProps{}
 	if err = json.Unmarshal(bytes, jsonSchema); err != nil {
 		return nil, eris.Errorf("Cannot unmarshal raw OpenAPI schema to JSONSchemaProps for %v: %v", schemaKey, err)
 	}

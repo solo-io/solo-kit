@@ -11,17 +11,15 @@ import (
 
 	"github.com/rotisserie/eris"
 
+	"github.com/ghodss/yaml"
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
 	"github.com/solo-io/solo-kit/pkg/code-generator/writer"
-	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	"k8s.io/utils/pointer"
-
-	"github.com/ghodss/yaml"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kubeyaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 const (
-	v1beta1 = "apiextensions.k8s.io/v1beta1"
+	v1 = "apiextensions.k8s.io/v1"
 )
 
 var (
@@ -45,12 +43,8 @@ func NewCrdWriter(crdDirectory string) *CrdWriter {
 	}
 }
 
-func (c *CrdWriter) ApplyValidationSchemaToCRD(crd apiextv1beta1.CustomResourceDefinition, validationSchema *apiextv1beta1.CustomResourceValidation) error {
-	crd.Spec.Validation = validationSchema
-	// Setting PreserveUnknownFields to false ensures that objects with unknown fields are rejected.
-	// This is deprecated and will default to false in future versions.
-	crd.Spec.PreserveUnknownFields = pointer.BoolPtr(false)
-
+func (c *CrdWriter) ApplyValidationSchemaToCRD(crd apiextv1.CustomResourceDefinition, validationSchema *apiextv1.CustomResourceValidation) error {
+	crd.Spec.Versions[0].Schema = validationSchema
 	crdBytes, err := yaml.Marshal(crd)
 	if err != nil {
 		return err
@@ -62,12 +56,12 @@ func (c *CrdWriter) ApplyValidationSchemaToCRD(crd apiextv1beta1.CustomResourceD
 	})
 }
 
-func getFilenameForCRD(crd apiextv1beta1.CustomResourceDefinition) string {
-	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Version, crd.Spec.Names.Kind)
+func getFilenameForCRD(crd apiextv1.CustomResourceDefinition) string {
+	return fmt.Sprintf("%s_%s_%s.yaml", crd.Spec.Group, crd.Spec.Versions[0].Name, crd.Spec.Names.Kind)
 }
 
-func GetCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDefinition, error) {
-	var crds []apiextv1beta1.CustomResourceDefinition
+func GetCRDsFromDirectory(crdDirectory string) ([]apiextv1.CustomResourceDefinition, error) {
+	var crds []apiextv1.CustomResourceDefinition
 
 	err := filepath.Walk(crdDirectory, func(crdFile string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -94,8 +88,8 @@ func GetCRDsFromDirectory(crdDirectory string) ([]apiextv1beta1.CustomResourceDe
 	return crds, err
 }
 
-func GetCRDFromFile(pathToFile string) (apiextv1beta1.CustomResourceDefinition, error) {
-	crd := apiextv1beta1.CustomResourceDefinition{}
+func GetCRDFromFile(pathToFile string) (apiextv1.CustomResourceDefinition, error) {
+	crd := apiextv1.CustomResourceDefinition{}
 
 	r, err := os.Open(pathToFile)
 	if err != nil {
@@ -118,8 +112,8 @@ func GetCRDFromFile(pathToFile string) (apiextv1beta1.CustomResourceDefinition, 
 	chunk := bytes.TrimSpace(doc)
 
 	err = yaml.Unmarshal(chunk, &crd)
-	if err == nil && v1beta1 != crd.APIVersion {
-		return crd, ApiVersionMismatch(v1beta1, crd.APIVersion)
+	if err == nil && v1 != crd.APIVersion {
+		return crd, ApiVersionMismatch(v1, crd.APIVersion)
 	}
 
 	return crd, err
