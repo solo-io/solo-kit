@@ -68,7 +68,7 @@ var _ = Describe("ResourceClientFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// ensure the crd is not registered
-			err = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, v1.MockResourceCrd.FullName(), v12.DeleteOptions{})
+			err = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, v1.MockResourceCrd.FullName(), v12.DeleteOptions{})
 			if err != nil {
 				Expect(err).To(BeErrTypeMatcher{
 					ExpectedErrType: "not found",
@@ -76,7 +76,7 @@ var _ = Describe("ResourceClientFactory", func() {
 				})
 			}
 			Eventually(func() bool {
-				_, err := apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Get(ctx, v1.MockResourceCrd.FullName(), v12.GetOptions{})
+				_, err := apiExts.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, v1.MockResourceCrd.FullName(), v12.GetOptions{})
 				return err != nil && errors.IsNotFound(err)
 			}, time.Minute, time.Second*5).Should(BeTrue())
 
