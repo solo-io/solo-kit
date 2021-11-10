@@ -18,7 +18,7 @@ func (p *KubeNamespace) Clone() *KubeNamespace {
 }
 
 func (p *KubeNamespace) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(p.ObjectMeta)
+	return kubeutils.FromKubeMeta(p.ObjectMeta, true)
 }
 
 func (p *KubeNamespace) SetMetadata(meta *core.Metadata) {

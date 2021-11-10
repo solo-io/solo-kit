@@ -34,7 +34,7 @@ func KubeCfgFromSecret(secret *kubev1.Secret) (*v1.KubeConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	meta := kubeutils.FromKubeMeta(secret.ObjectMeta)
+	meta := kubeutils.FromKubeMeta(secret.ObjectMeta, true)
 	return &v1.KubeConfig{
 		KubeConfig: apiv1.KubeConfig{Metadata: meta,
 			Config:  *baseConfig,

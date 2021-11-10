@@ -21,7 +21,7 @@ func (p *ConfigMap) Clone() *ConfigMap {
 }
 
 func (p *ConfigMap) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(p.ObjectMeta)
+	return kubeutils.FromKubeMeta(p.ObjectMeta, true)
 }
 
 func (p *ConfigMap) SetMetadata(meta *core.Metadata) {
