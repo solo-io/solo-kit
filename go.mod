@@ -43,12 +43,12 @@ require (
 	github.com/pseudomuto/protokit v0.2.0
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
-	github.com/sam-heilbron/protoc-gen-openapi v0.0.0-20210826234431-905e0eb8fa8e
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.0.4
 	github.com/solo-io/go-utils v0.21.6
 	github.com/solo-io/k8s-utils v0.0.8
 	github.com/solo-io/protoc-gen-ext v0.0.13
+	github.com/solo-io/protoc-gen-openapi v0.0.1
 	github.com/spf13/afero v1.3.4 // indirect
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
