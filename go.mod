@@ -13,7 +13,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/frankban/quicktest v1.4.1 // indirect
-	github.com/getkin/kin-openapi v0.1.1-0.20190507152207-d3180292eead
+	github.com/getkin/kin-openapi v0.80.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-test/deep v1.0.2
 	github.com/golang/mock v1.4.4

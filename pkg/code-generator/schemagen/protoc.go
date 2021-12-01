@@ -134,8 +134,8 @@ func (p *protocGenerator) processGeneratedSchemas(project *model.Project, schema
 	return jsonSchemasByGVK, err
 }
 
-func (p *protocGenerator) readOpenApiDocumentFromFile(file string) (*openapi3.Swagger, error) {
-	var openApiDocument *openapi3.Swagger
+func (p *protocGenerator) readOpenApiDocumentFromFile(file string) (*openapi3.T, error) {
+	var openApiDocument *openapi3.T
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading file")
