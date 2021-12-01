@@ -9,9 +9,9 @@ Name|Version|License
 [apd/v2](https://github.com/cockroachdb/apd)|v2.0.1|Apache License 2.0
 [emicklei/proto](https://github.com/emicklei/proto)|v1.6.15|MIT License
 [protoc-gen-validate/validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.4.0|Apache License 2.0
-[getkin/kin-openapi](https://github.com/getkin/kin-openapi)|v0.1.1-0.20190507152207-d3180292eead|MIT License
+[getkin/kin-openapi](https://github.com/getkin/kin-openapi)|v0.80.0|MIT License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
-[go-openapi/jsonpointer](https://github.com/go-openapi/jsonpointer)|v0.19.3|Apache License 2.0
+[go-openapi/jsonpointer](https://github.com/go-openapi/jsonpointer)|v0.19.5|Apache License 2.0
 [go-openapi/jsonreference](https://github.com/go-openapi/jsonreference)|v0.19.3|Apache License 2.0
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.4|Apache License 2.0
 [go-openapi/swag](https://github.com/go-openapi/swag)|v0.19.5|Apache License 2.0

@@ -13,7 +13,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/frankban/quicktest v1.4.1 // indirect
-	github.com/getkin/kin-openapi v0.1.1-0.20190507152207-d3180292eead
+	github.com/getkin/kin-openapi v0.80.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-test/deep v1.0.2
 	github.com/golang/mock v1.4.4
@@ -43,12 +43,12 @@ require (
 	github.com/pseudomuto/protokit v0.2.0
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
-	github.com/sam-heilbron/protoc-gen-openapi v0.0.0-20210826234431-905e0eb8fa8e
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.0.4
 	github.com/solo-io/go-utils v0.21.6
 	github.com/solo-io/k8s-utils v0.0.8
 	github.com/solo-io/protoc-gen-ext v0.0.13
+	github.com/solo-io/protoc-gen-openapi v0.0.1
 	github.com/spf13/afero v1.3.4 // indirect
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
