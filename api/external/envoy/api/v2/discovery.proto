@@ -15,6 +15,7 @@ import "google/rpc/status.proto";
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 option (extproto.equal_all) = true;
+option (extproto.clone_all) = true;
 
 // [#protodoc-title: Common discovery API components]
 
