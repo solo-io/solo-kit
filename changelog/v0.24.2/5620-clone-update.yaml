@@ -1,0 +1,5 @@
+changelog:
+ - type: NEW_FEATURE
+   issueLink: https://github.com/solo-io/gloo/issues/5620
+   resolvesIssue: false
+   description: Add clone_all plugins to all available .proto files as well as the resource_interface snapshot's clone methods
