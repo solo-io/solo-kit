@@ -16,7 +16,7 @@ Name|Version|License
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.4|Apache License 2.0
 [go-openapi/swag](https://github.com/go-openapi/swag)|v0.19.5|Apache License 2.0
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.1|BSD 3-clause "New" or "Revised" License
-[golang/protobuf](https://github.com/golang/protobuf)|v1.4.3|BSD 3-clause "New" or "Revised" License
+[golang/protobuf](https://github.com/golang/protobuf)|v1.5.2|BSD 3-clause "New" or "Revised" License
 [google/gofuzz](https://github.com/google/gofuzz)|v1.1.0|Apache License 2.0
 [google/uuid](https://github.com/google/uuid)|v1.1.2|BSD 3-clause "New" or "Revised" License
 [huandu/xstrings](https://github.com/huandu/xstrings)|v1.3.1|MIT License
@@ -43,7 +43,7 @@ Name|Version|License
 [sync/errgroup](https://golang.org/x/sync/errgroup)|v0.0.0-20200625203802-6e8e738ad208|BSD 3-clause "New" or "Revised" License
 [x/text](https://golang.org/x/text)|v0.3.3|BSD 3-clause "New" or "Revised" License
 [xerrors/internal](https://golang.org/x/xerrors/internal)|v0.0.0-20200804184101-5ec99f83aff1|BSD 3-clause "New" or "Revised" License
-[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
+[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.26.0|BSD 3-clause "New" or "Revised" License
 [gopkg.in/inf.v0](https://gopkg.in/inf.v0)|v0.9.1|BSD 3-clause "New" or "Revised" License
 [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)|v2.4.0|Apache License 2.0
 [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3)|v3.0.0-20200313102051-9f266ea9e77c|MIT License

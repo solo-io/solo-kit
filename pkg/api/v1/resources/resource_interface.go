@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -420,13 +421,16 @@ type CloneableResource interface {
 }
 
 func Clone(resource Resource) Resource {
+	if cloneable, ok := resource.(clone.Cloner); ok {
+		return cloneable.Clone().(Resource)
+	}
 	if cloneable, ok := resource.(CloneableResource); ok {
 		return cloneable.Clone()
 	}
 	if protoMessage, ok := resource.(ProtoResource); ok {
 		return proto.Clone(protoMessage).(Resource)
 	}
-	panic(fmt.Errorf("resource %T is not cloneable and not a proto", resource))
+	panic(fmt.Errorf("resource %T is not any of [clone.Cloner, CloneableResource, ProtoResource]", resource))
 }
 
 func Kind(resource Resource) string {
