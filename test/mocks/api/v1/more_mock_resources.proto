@@ -7,6 +7,7 @@ option go_package = "github.com/solo-io/solo-kit/test/mocks/v1";
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 option (extproto.equal_all) = true;
+option (extproto.clone_all) = true;
 
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
