@@ -77,22 +77,36 @@ func (m *MockResource) Equal(that interface{}) bool {
 	switch m.TestOneofFields.(type) {
 
 	case *MockResource_OneofOne:
+		if _, ok := target.TestOneofFields.(*MockResource_OneofOne); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetOneofOne(), target.GetOneofOne()) != 0 {
 			return false
 		}
 
 	case *MockResource_OneofTwo:
+		if _, ok := target.TestOneofFields.(*MockResource_OneofTwo); !ok {
+			return false
+		}
 
 		if m.GetOneofTwo() != target.GetOneofTwo() {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.TestOneofFields != target.TestOneofFields {
+			return false
+		}
 	}
 
 	switch m.NestedOneofOptions.(type) {
 
 	case *MockResource_OneofNestedoneof:
+		if _, ok := target.NestedOneofOptions.(*MockResource_OneofNestedoneof); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetOneofNestedoneof()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOneofNestedoneof()) {
@@ -104,6 +118,11 @@ func (m *MockResource) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.NestedOneofOptions != target.NestedOneofOptions {
+			return false
+		}
 	}
 
 	return true
@@ -133,38 +152,63 @@ func (m *NestedOneOf) Equal(that interface{}) bool {
 	switch m.Option.(type) {
 
 	case *NestedOneOf_OptionA:
+		if _, ok := target.Option.(*NestedOneOf_OptionA); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetOptionA(), target.GetOptionA()) != 0 {
 			return false
 		}
 
 	case *NestedOneOf_OptionB:
+		if _, ok := target.Option.(*NestedOneOf_OptionB); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetOptionB(), target.GetOptionB()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Option != target.Option {
+			return false
+		}
 	}
 
 	switch m.AnotherOption.(type) {
 
 	case *NestedOneOf_AnotherOptionA:
+		if _, ok := target.AnotherOption.(*NestedOneOf_AnotherOptionA); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetAnotherOptionA(), target.GetAnotherOptionA()) != 0 {
 			return false
 		}
 
 	case *NestedOneOf_AnotherOptionB:
+		if _, ok := target.AnotherOption.(*NestedOneOf_AnotherOptionB); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetAnotherOptionB(), target.GetAnotherOptionB()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.AnotherOption != target.AnotherOption {
+			return false
+		}
 	}
 
 	switch m.NestedOneof.(type) {
 
 	case *NestedOneOf_AnotherNestedOneofOne:
+		if _, ok := target.NestedOneof.(*NestedOneOf_AnotherNestedOneofOne); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetAnotherNestedOneofOne()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAnotherNestedOneofOne()) {
@@ -177,6 +221,9 @@ func (m *NestedOneOf) Equal(that interface{}) bool {
 		}
 
 	case *NestedOneOf_AnotherNestedOneofTwo:
+		if _, ok := target.NestedOneof.(*NestedOneOf_AnotherNestedOneofTwo); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetAnotherNestedOneofTwo()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAnotherNestedOneofTwo()) {
@@ -188,6 +235,11 @@ func (m *NestedOneOf) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.NestedOneof != target.NestedOneof {
+			return false
+		}
 	}
 
 	return true
@@ -217,17 +269,28 @@ func (m *InternalOneOf) Equal(that interface{}) bool {
 	switch m.Option.(type) {
 
 	case *InternalOneOf_OptionA:
+		if _, ok := target.Option.(*InternalOneOf_OptionA); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetOptionA(), target.GetOptionA()) != 0 {
 			return false
 		}
 
 	case *InternalOneOf_OptionB:
+		if _, ok := target.Option.(*InternalOneOf_OptionB); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetOptionB(), target.GetOptionB()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Option != target.Option {
+			return false
+		}
 	}
 
 	return true
