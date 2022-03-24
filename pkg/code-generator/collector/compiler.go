@@ -5,15 +5,16 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/solo-kit/pkg/code-generator/metrics"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -53,7 +54,20 @@ func (c *protoCompiler) CompileDescriptorsFromRoot(root string, skipDirs []strin
 		defer mutex.Unlock()
 		descriptors = append(descriptors, &f)
 	}
-	var g errgroup.Group
+	var (
+		g            errgroup.Group
+		sem              chan struct{}
+		limitConcurrency bool
+	)
+	if s := os.Getenv("MAX_CONCURRENT_PROTOCS"); s != "" {
+		maxProtocs, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, eris.Wrapf(err, "invalid value for MAX_CONCURRENT_PROTOCS: %s", s)
+		}
+		sem = make(chan struct{}, maxProtocs)
+		limitConcurrency = true
+	}
+
 	for _, dir := range append([]string{root}) {
 		absoluteDir, err := filepath.Abs(dir)
 		if err != nil {
@@ -73,6 +87,14 @@ func (c *protoCompiler) CompileDescriptorsFromRoot(root string, skipDirs []strin
 
 			// parallelize parsing the descriptors as each one requires file i/o and is slow
 			g.Go(func() error {
+				if limitConcurrency {
+					sem <- struct{}{}
+				}
+				defer func() {
+					if limitConcurrency {
+						<-sem
+					}
+				}()
 				return c.addDescriptorsForFile(addDescriptor, absoluteDir, protoFile)
 			})
 			return nil
