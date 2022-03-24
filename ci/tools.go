@@ -1,3 +1,4 @@
+//go:build tools
 // +build tools
 
 /*
@@ -17,7 +18,7 @@ package tools
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate"
-	_ "github.com/solo-io/protoc-gen-openapi"
 	_ "github.com/solo-io/protoc-gen-ext"
+	_ "github.com/solo-io/protoc-gen-openapi"
 	_ "k8s.io/code-generator"
 )

@@ -55,7 +55,7 @@ func (c *protoCompiler) CompileDescriptorsFromRoot(root string, skipDirs []strin
 		descriptors = append(descriptors, &f)
 	}
 	var (
-		g            errgroup.Group
+		g                errgroup.Group
 		sem              chan struct{}
 		limitConcurrency bool
 	)
