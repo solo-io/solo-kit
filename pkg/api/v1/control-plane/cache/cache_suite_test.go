@@ -32,6 +32,11 @@ const (
 	UpstreamHost = "127.0.0.1"
 )
 
+var (
+	// Compile-time assertion
+	_ cache.Snapshot = new(TestSnapshot)
+)
+
 type TestSnapshot struct {
 	// Endpoints are items in the EDS V3 response payload.
 	Endpoints cache.Resources

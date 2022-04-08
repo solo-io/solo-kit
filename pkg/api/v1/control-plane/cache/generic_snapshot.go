@@ -21,6 +21,11 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+var (
+	// Compile-time assertion
+	_ Snapshot = new(GenericSnapshot)
+)
+
 type TypedResources map[string]Resources
 
 type GenericSnapshot struct {

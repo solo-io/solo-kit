@@ -46,6 +46,11 @@ type Snapshot interface {
 	Clone() Snapshot
 }
 
+var (
+	// Compile-time assertion
+	_ Snapshot = new(NilSnapshot)
+)
+
 type NilSnapshot struct{}
 
 func (NilSnapshot) Consistent() error                 { return nil }
