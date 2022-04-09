@@ -108,11 +108,11 @@ func (s *GenericSnapshot) Consistent() error {
 
 	for _, ref := range required {
 		if resources, ok := s.typedResources[ref.Type]; ok {
-			if _, ok := resources.Items[ref.Name]; ok {
-				return fmt.Errorf("required resource not in snapshot: %s %s", ref.Type, ref.Name)
+			if _, ok := resources.Items[ref.Name]; !ok {
+				return fmt.Errorf("required resource name not in snapshot: %s %s", ref.Type, ref.Name)
 			}
 		} else {
-			return fmt.Errorf("required resource not in snapshot: %s %s", ref.Type, ref.Name)
+			return fmt.Errorf("required resource type not in snapshot: %s %s", ref.Type, ref.Name)
 		}
 	}
 
@@ -120,6 +120,30 @@ func (s *GenericSnapshot) Consistent() error {
 }
 
 func (s *GenericSnapshot) MakeConsistent() {
+	if s == nil {
+		return
+	}
+
+	var required []XdsResourceReference
+
+	for _, resources := range s.typedResources {
+		for _, resource := range resources.Items {
+			required = append(required, resource.References()...)
+		}
+	}
+
+	for _, ref := range required {
+		if resources, ok := s.typedResources[ref.Type]; ok {
+			if _, ok := resources.Items[ref.Name]; !ok {
+				// add name
+				// TODO(kdorosh) figure out how to do this with dynamic any
+				resources.Items[ref.Name] = nil
+			}
+		} else {
+			//s.typedResources[ref.Type] = make(Resources)
+			// add type and ref with name
+		}
+	}
 	// TODO(kdorosh) figure out how to do this for extauth/ratelimit
 }
 
@@ -140,7 +164,7 @@ func (s *GenericSnapshot) Clone() Snapshot {
 			Items:   make(map[string]Resource, len(resources.Items)),
 		}
 		for k, v := range resources.Items {
-			resourcesCopy.Items[k] = proto.Clone(v.ResourceProto()).(Resource)
+			resourcesCopy.Items[k] = proto.Clone(v.ResourceProto()).(Resource) // TODO(kdorosh) this is a bug, see https://github.com/solo-io/solo-kit/issues/461
 		}
 		typedResourcesCopy[typeName] = resourcesCopy
 	}
