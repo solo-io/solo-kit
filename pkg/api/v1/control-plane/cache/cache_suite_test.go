@@ -68,7 +68,55 @@ func (s TestSnapshot) Consistent() error {
 }
 
 func (s TestSnapshot) MakeConsistent() {
-	// TODO(kdorosh)
+	endpoints := resource.GetResourceReferences(s.Clusters.Items)
+	for resourceName := range s.Endpoints.Items {
+		if cluster, exists := endpoints[resourceName]; !exists {
+			// add placeholder
+			s.Endpoints.Items[resourceName] = resource.NewEnvoyResource(
+				&endpoint.ClusterLoadAssignment{
+					ClusterName: cluster.Self().Name,
+					Endpoints:   []*endpoint.LocalityLbEndpoints{},
+				},
+			)
+		}
+	}
+	routes := resource.GetResourceReferences(s.Listeners.Items)
+	for resourceName := range s.Listeners.Items {
+		if listener, exists := routes[resourceName]; !exists {
+			// add placeholder
+			s.Routes.Items[resourceName] = resource.NewEnvoyResource(
+				&route.RouteConfiguration{
+					Name: fmt.Sprintf("%s-%s", listener.Self().Name, "routes-for-invalid-envoy"),
+					VirtualHosts: []*route.VirtualHost{
+						{
+							Name:    "invalid-envoy-config-vhost",
+							Domains: []string{"*"},
+							Routes: []*route.Route{
+								{
+									Match: &route.RouteMatch{
+										PathSpecifier: &route.RouteMatch_Prefix{
+											Prefix: "/",
+										},
+									},
+									Action: &route.Route_DirectResponse{
+										DirectResponse: &route.DirectResponseAction{
+											Status: 500,
+											Body: &core.DataSource{
+												Specifier: &core.DataSource_InlineString{
+													InlineString: "Invalid Envoy Configuration. " +
+														"This placeholder was generated to localize pain to the misconfigured route",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			)
+		}
+	}
 }
 
 func (s TestSnapshot) GetResources(typ string) cache.Resources {
