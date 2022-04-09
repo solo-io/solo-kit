@@ -66,6 +66,11 @@ func (s TestSnapshot) Consistent() error {
 	}
 	return cache.Superset(routes, s.Routes.Items)
 }
+
+func (s TestSnapshot) MakeConsistent() {
+	// TODO(kdorosh)
+}
+
 func (s TestSnapshot) GetResources(typ string) cache.Resources {
 	switch typ {
 	case resource.EndpointTypeV3:

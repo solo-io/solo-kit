@@ -42,6 +42,7 @@ func NewResources(version string, items []Resource) Resources {
 
 type Snapshot interface {
 	Consistent() error
+	MakeConsistent()
 	GetResources(typ string) Resources
 	Clone() Snapshot
 }
@@ -54,6 +55,7 @@ var (
 type NilSnapshot struct{}
 
 func (NilSnapshot) Consistent() error                 { return nil }
+func (NilSnapshot) MakeConsistent()                   {}
 func (NilSnapshot) GetResources(typ string) Resources { return Resources{} }
 func (NilSnapshot) Clone() Snapshot                   { return NilSnapshot{} }
 

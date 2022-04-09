@@ -119,6 +119,10 @@ func (s *GenericSnapshot) Consistent() error {
 	return nil
 }
 
+func (s *GenericSnapshot) MakeConsistent() {
+	// TODO(kdorosh) figure out how to do this for extauth/ratelimit
+}
+
 // GetResources selects snapshot resources by type.
 func (s *GenericSnapshot) GetResources(typ string) Resources {
 	if s == nil {
