@@ -74,6 +74,9 @@ type SnapshotCache interface {
 	//
 	// This method will cause the server to respond to all open watches, for which
 	// the version differs from the snapshot version.
+	//
+	// based off of https://github.com/envoyproxy/go-control-plane/blob/v0.10.1/pkg/cache/v3/simple.go#L43-L49,
+	// but updated to handle errors so Gloo control plane can ensure xds snapshot is always getting updates
 	SetSnapshot(node string, snapshot Snapshot)
 
 	// GetSnapshots gets the snapshot for a node.
