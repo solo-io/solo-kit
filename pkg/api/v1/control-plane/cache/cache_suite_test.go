@@ -67,6 +67,10 @@ func (s TestSnapshot) Consistent() error {
 	return cache.SupersetWithResource(routes, s.Routes.Items)
 }
 
+func RouteConfigNameForListenerName(listenerName string) string {
+	return listenerName + "-routes"
+}
+
 func (s TestSnapshot) MakeConsistent() {
 	endpoints := resource.GetResourceReferences(s.Clusters.Items)
 	for resourceName := range s.Endpoints.Items {
@@ -82,9 +86,9 @@ func (s TestSnapshot) MakeConsistent() {
 	}
 	routes := resource.GetResourceReferences(s.Listeners.Items)
 	for resourceName := range s.Listeners.Items {
-		if listener, exists := routes[resourceName]; !exists {
+		if listener, exists := routes[RouteConfigNameForListenerName(resourceName)]; !exists {
 			// add placeholder
-			s.Routes.Items[resourceName] = resource.NewEnvoyResource(
+			s.Routes.Items[RouteConfigNameForListenerName(resourceName)] = resource.NewEnvoyResource(
 				&route.RouteConfiguration{
 					Name: fmt.Sprintf("%s-%s", listener.Self().Name, "routes-for-invalid-envoy"),
 					VirtualHosts: []*route.VirtualHost{
