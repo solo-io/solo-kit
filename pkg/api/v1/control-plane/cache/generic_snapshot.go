@@ -15,10 +15,12 @@
 package cache
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 var (
@@ -120,31 +122,12 @@ func (s *GenericSnapshot) Consistent() error {
 }
 
 func (s *GenericSnapshot) MakeConsistent() {
+	// this is fine since generic snapshots are only used by extauth/ratelimit extensions syncers; and those don't
+	// have dependent resources. this will not be called anywhere
+	contextutils.LoggerFrom(context.TODO()).DPanicf("it is an error to call make consistent on a generic snapshot")
 	if s == nil {
 		return
 	}
-
-	var required []XdsResourceReference
-
-	for _, resources := range s.typedResources {
-		for _, resource := range resources.Items {
-			required = append(required, resource.References()...)
-		}
-	}
-
-	for _, ref := range required {
-		if resources, ok := s.typedResources[ref.Type]; ok {
-			if _, ok := resources.Items[ref.Name]; !ok {
-				// add name
-				// TODO(kdorosh) figure out how to do this with dynamic any
-				resources.Items[ref.Name] = nil
-			}
-		} else {
-			//s.typedResources[ref.Type] = make(Resources)
-			// add type and ref with name
-		}
-	}
-	// TODO(kdorosh) figure out how to do this for extauth/ratelimit
 }
 
 // GetResources selects snapshot resources by type.
@@ -157,6 +140,8 @@ func (s *GenericSnapshot) GetResources(typ string) Resources {
 }
 
 func (s *GenericSnapshot) Clone() Snapshot {
+	// the bug is fine since generic snapshots are only used by extauth/ratelimit extensions syncers; and we don't call
+	// clone today on any code path for those xds snapshots e.g. https://github.com/solo-io/solo-kit/blob/2986d1b6d33f7beec9008731fdaee4a9deb9f726/pkg/api/v1/control-plane/cache/simple.go#L176
 	typedResourcesCopy := make(TypedResources)
 	for typeName, resources := range s.typedResources {
 		resourcesCopy := Resources{
