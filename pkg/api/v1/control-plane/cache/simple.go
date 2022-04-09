@@ -45,6 +45,9 @@ var (
 	}
 
 	VersionUpToDateError = errors.New("skip fetch: version up to date")
+
+	// Compile-time assertion
+	_ SnapshotCache = new(snapshotCache)
 )
 
 func init() {
@@ -71,7 +74,7 @@ type SnapshotCache interface {
 	//
 	// This method will cause the server to respond to all open watches, for which
 	// the version differs from the snapshot version.
-	SetSnapshot(node string, snapshot Snapshot) error
+	SetSnapshot(node string, snapshot Snapshot)
 
 	// GetSnapshots gets the snapshot for a node.
 	GetSnapshot(node string) (Snapshot, error)
@@ -123,7 +126,7 @@ func NewSnapshotCache(ads bool, hash NodeHash, logger log.Logger) SnapshotCache 
 }
 
 // SetSnapshotCache updates a snapshot for a node.
-func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
+func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -155,8 +158,6 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
 		}
 		info.mu.Unlock()
 	}
-
-	return nil
 }
 
 // Returns a copy of the snapshot for the given node, or an error if not found.
