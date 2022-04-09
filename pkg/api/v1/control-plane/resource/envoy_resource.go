@@ -159,8 +159,8 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 
 // GetResourceReferences returns the names for dependent resources (EDS cluster
 // names for CDS, RDS routes names for LDS).
-func GetResourceReferences(resources map[string]cache.Resource) map[string]bool {
-	out := make(map[string]bool)
+func GetResourceReferences(resources map[string]cache.Resource) map[string]cache.Resource {
+	out := make(map[string]cache.Resource)
 	for _, res := range resources {
 		if res == nil {
 			continue
@@ -172,9 +172,9 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 			// for EDS type, use cluster name or ServiceName override
 			if v.GetType() == envoy_config_cluster_v3.Cluster_EDS {
 				if v.GetEdsClusterConfig().GetServiceName() != "" {
-					out[v.GetEdsClusterConfig().GetServiceName()] = true
+					out[v.GetEdsClusterConfig().GetServiceName()] = res
 				} else {
-					out[v.GetName()] = true
+					out[v.GetName()] = res
 				}
 			}
 		case *envoy_config_route_v3.RouteConfiguration:
@@ -190,7 +190,7 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 						config := unmarshalHcmV3(filter.GetTypedConfig())
 						if config != nil {
 							if rDS := config.GetRds(); rDS != nil {
-								out[rDS.GetRouteConfigName()] = true
+								out[rDS.GetRouteConfigName()] = res
 							}
 							continue
 						}

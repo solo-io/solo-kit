@@ -56,7 +56,7 @@ func (s TestSnapshot) Consistent() error {
 	if len(endpoints) != len(s.Endpoints.Items) {
 		return fmt.Errorf("mismatched endpoint reference and resource lengths: length of %v does not equal length of %v", endpoints, s.Endpoints.Items)
 	}
-	if err := cache.Superset(endpoints, s.Endpoints.Items); err != nil {
+	if err := cache.SupersetWithResource(endpoints, s.Endpoints.Items); err != nil {
 		return err
 	}
 
@@ -64,7 +64,7 @@ func (s TestSnapshot) Consistent() error {
 	if len(routes) != len(s.Routes.Items) {
 		return fmt.Errorf("mismatched route reference and resource lengths: length of %v does not equal length of %v", routes, s.Routes.Items)
 	}
-	return cache.Superset(routes, s.Routes.Items)
+	return cache.SupersetWithResource(routes, s.Routes.Items)
 }
 
 func (s TestSnapshot) MakeConsistent() {

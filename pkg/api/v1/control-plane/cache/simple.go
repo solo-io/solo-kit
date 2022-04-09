@@ -200,6 +200,16 @@ func Superset(names map[string]bool, resources map[string]Resource) error {
 	return nil
 }
 
+// SupersetWithResource checks that all resources are listed in the names set.
+func SupersetWithResource(names map[string]Resource, resources map[string]Resource) error {
+	for resourceName := range resources {
+		if _, exists := names[resourceName]; !exists {
+			return fmt.Errorf("%q not listed", resourceName)
+		}
+	}
+	return nil
+}
+
 // CreateWatch returns a watch for an xDS request.
 func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func()) {
 	nodeID := cache.hash.ID(request.Node)
