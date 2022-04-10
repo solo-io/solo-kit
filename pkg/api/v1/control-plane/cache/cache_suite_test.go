@@ -37,6 +37,10 @@ var (
 	_ cache.Snapshot = new(TestSnapshot)
 )
 
+// this struct ends up being similar to the EnvoySnapshot in Gloo
+// https://github.com/solo-io/gloo/blob/2caabd47783584320f2667616c2bac71cd32433f/projects/gloo/pkg/xds/envoy_snapshot.go#L39
+// lots of the code have been copied over here for testing purposes; in a refactor we may reconsider moving the Gloo code
+// here into solo-kit.
 type TestSnapshot struct {
 	// Endpoints are items in the EDS V3 response payload.
 	Endpoints cache.Resources
@@ -67,16 +71,17 @@ func (s TestSnapshot) Consistent() error {
 	return cache.SupersetWithResource(routes, s.Routes.Items)
 }
 
-func RouteConfigNameForListenerName(listenerName string) string {
-	return listenerName + "-routes"
-}
-
 func (s TestSnapshot) MakeConsistent() {
-	endpoints := resource.GetResourceReferences(s.Clusters.Items)
-	for resourceName := range s.Endpoints.Items {
-		if cluster, exists := endpoints[resourceName]; !exists {
+	// for each cluster persisted, add placeholder endpoint if referenced endpoint does not exist
+	childEndpoints := resource.GetResourceReferences(s.Clusters.Items)
+	persistedEndpointNameSet := map[string]bool{}
+	for _, endpoint := range s.Endpoints.Items {
+		persistedEndpointNameSet[endpoint.Self().Name] = true
+	}
+	for childEndpointName, cluster := range childEndpoints {
+		if found, exists := persistedEndpointNameSet[childEndpointName]; !found || !exists {
 			// add placeholder
-			s.Endpoints.Items[resourceName] = resource.NewEnvoyResource(
+			s.Endpoints.Items[childEndpointName] = resource.NewEnvoyResource(
 				&endpoint.ClusterLoadAssignment{
 					ClusterName: cluster.Self().Name,
 					Endpoints:   []*endpoint.LocalityLbEndpoints{},
@@ -84,11 +89,17 @@ func (s TestSnapshot) MakeConsistent() {
 			)
 		}
 	}
-	routes := resource.GetResourceReferences(s.Listeners.Items)
-	for resourceName := range s.Listeners.Items {
-		if listener, exists := routes[RouteConfigNameForListenerName(resourceName)]; !exists {
+
+	// for each listener persisted, add placeholder route if referenced route does not exist
+	childRoutes := resource.GetResourceReferences(s.Listeners.Items)
+	persistedRouteNameSet := map[string]bool{}
+	for _, route := range s.Routes.Items {
+		persistedRouteNameSet[route.Self().Name] = true
+	}
+	for childRouteName, listener := range childRoutes {
+		if found, exists := persistedRouteNameSet[childRouteName]; !found || !exists {
 			// add placeholder
-			s.Routes.Items[RouteConfigNameForListenerName(resourceName)] = resource.NewEnvoyResource(
+			s.Routes.Items[childRouteName] = resource.NewEnvoyResource(
 				&route.RouteConfiguration{
 					Name: fmt.Sprintf("%s-%s", listener.Self().Name, "routes-for-invalid-envoy"),
 					VirtualHosts: []*route.VirtualHost{

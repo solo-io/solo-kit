@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Adds `MakeConsistent` to `Snapshot` interface, so Gloo translation loop can always succeed
-    resolvesIssue: false
-    issueLink: https://github.com/solo-io/gloo/issues/6114
