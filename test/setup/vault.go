@@ -180,7 +180,6 @@ func (i *VaultInstance) RunWithPort() error {
 		// append the -path argument before final cmd.
 		enableCmd.Args = append(args[:len(args)-1], pathPrefixCfg, args[len(args)-1])
 	}
-	fmt.Printf(">>> %v\n", enableCmd.Args)
 
 	enableCmd.Env = append(enableCmd.Env, "VAULT_TOKEN="+i.token)
 
