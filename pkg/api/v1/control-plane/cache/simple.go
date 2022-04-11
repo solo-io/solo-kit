@@ -45,6 +45,9 @@ var (
 	}
 
 	VersionUpToDateError = errors.New("skip fetch: version up to date")
+
+	// Compile-time assertion
+	_ SnapshotCache = new(snapshotCache)
 )
 
 func init() {
@@ -62,6 +65,8 @@ func init() {
 //
 // SnapshotCache can operate as a REST or regular xDS backend. The snapshot
 // can be partial, e.g. only include RDS or EDS resources.
+//
+// roughly copied from https://github.com/envoyproxy/go-control-plane/blob/v0.10.1/pkg/cache/v3/simple.go#L40
 type SnapshotCache interface {
 	Cache
 
@@ -71,7 +76,11 @@ type SnapshotCache interface {
 	//
 	// This method will cause the server to respond to all open watches, for which
 	// the version differs from the snapshot version.
-	SetSnapshot(node string, snapshot Snapshot) error
+	//
+	// based off of https://github.com/envoyproxy/go-control-plane/blob/v0.10.1/pkg/cache/v3/simple.go#L43-L49,
+	// but updated to handle errors instead of returning them so Gloo Edge control plane can ensure xds snapshot
+	// is always getting updates
+	SetSnapshot(node string, snapshot Snapshot)
 
 	// GetSnapshots gets the snapshot for a node.
 	GetSnapshot(node string) (Snapshot, error)
@@ -123,7 +132,7 @@ func NewSnapshotCache(ads bool, hash NodeHash, logger log.Logger) SnapshotCache 
 }
 
 // SetSnapshotCache updates a snapshot for a node.
-func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
+func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -155,8 +164,6 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
 		}
 		info.mu.Unlock()
 	}
-
-	return nil
 }
 
 // Returns a copy of the snapshot for the given node, or an error if not found.
@@ -192,6 +199,16 @@ func nameSet(names []string) map[string]bool {
 
 // Superset checks that all resources are listed in the names set.
 func Superset(names map[string]bool, resources map[string]Resource) error {
+	for resourceName := range resources {
+		if _, exists := names[resourceName]; !exists {
+			return fmt.Errorf("%q not listed", resourceName)
+		}
+	}
+	return nil
+}
+
+// SupersetWithResource checks that all resources are listed in the names set.
+func SupersetWithResource(names map[string]Resource, resources map[string]Resource) error {
 	for resourceName := range resources {
 		if _, exists := names[resourceName]; !exists {
 			return fmt.Errorf("%q not listed", resourceName)
