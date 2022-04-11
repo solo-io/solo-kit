@@ -293,7 +293,7 @@ func (rct *VaultRcTester) Skip() bool {
 
 func (rct *VaultRcTester) Setup(_ context.Context, namespace string) factory.ResourceClientFactory {
 	var err error
-	rct.vaultFactory, err = setup.NewVaultFactory()
+	rct.vaultFactory, err = setup.NewVaultFactory(&setup.VaultFactoryConfig{})
 	Expect(err).NotTo(HaveOccurred())
 	rct.vaultInstance, err = rct.vaultFactory.NewVaultInstance()
 	Expect(err).NotTo(HaveOccurred())

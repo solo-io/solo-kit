@@ -68,14 +68,25 @@ func (rc *ResourceClient) toVaultSecret(resource resources.Resource) (map[string
 }
 
 type ResourceClient struct {
-	vault        *api.Client
-	root         string
+	vault *api.Client
+
+	// Vault's path where resources are located.
+	root string
+
+	// Tells Vault which secrets engine it should route traffic to. Defaults to "secret".
+	// https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines
+	pathPrefix   string
 	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
+func NewResourceClient(client *api.Client, pathPrefix string, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
+	if pathPrefix == "" {
+		pathPrefix = "secret"
+	}
+
 	return &ResourceClient{
 		vault:        client,
+		pathPrefix:   pathPrefix,
 		root:         rootKey,
 		resourceType: resourceType,
 	}
@@ -306,7 +317,7 @@ const (
 
 func (rc *ResourceClient) resourceDirectory(namespace, directoryType string) string {
 	return strings.Join([]string{
-		"secret",
+		rc.pathPrefix,
 		directoryType,
 		rc.root,
 		rc.resourceType.GroupVersionKind().Group,
