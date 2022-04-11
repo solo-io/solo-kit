@@ -42,8 +42,10 @@ func NewResources(version string, items []Resource) Resources {
 
 type Snapshot interface {
 	Consistent() error
+	// MakeConsistent should never be called on a generic snapshot as it is not used for snapshots with dependent resources.
 	MakeConsistent()
 	GetResources(typ string) Resources
+	// Clone shouldn't be called on a generic snapshot until https://github.com/solo-io/solo-kit/issues/461 is resolved.
 	Clone() Snapshot
 }
 
