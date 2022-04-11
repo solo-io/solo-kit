@@ -70,13 +70,15 @@ func (rc *ResourceClient) toVaultSecret(resource resources.Resource) (map[string
 type ResourceClient struct {
 	vault        *api.Client
 	root         string
+	pathPrefix   string
 	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
+func NewResourceClient(client *api.Client, rootKey string, pathPrefix string, resourceType resources.VersionedResource) *ResourceClient {
 	return &ResourceClient{
 		vault:        client,
 		root:         rootKey,
+		pathPrefix:   pathPrefix,
 		resourceType: resourceType,
 	}
 }
@@ -305,8 +307,12 @@ const (
 )
 
 func (rc *ResourceClient) resourceDirectory(namespace, directoryType string) string {
+	if rc.pathPrefix == "" {
+		rc.pathPrefix = "secret"
+	}
+
 	return strings.Join([]string{
-		"secret",
+		"secreto",
 		directoryType,
 		rc.root,
 		rc.resourceType.GroupVersionKind().Group,

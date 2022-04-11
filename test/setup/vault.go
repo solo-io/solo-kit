@@ -23,14 +23,20 @@ import (
 )
 
 const defaultVaultDockerImage = "vault:1.1.3"
+const DefaultTestPathPrefix = "test-org"
 
 type VaultFactory struct {
-	vaultpath string
-	tmpdir    string
-	Port      int
+	vaultpath  string
+	pathprefix string
+	tmpdir     string
+	Port       int
 }
 
-func NewVaultFactory() (*VaultFactory, error) {
+type VaultFactoryConfig struct {
+	PathPrefix string
+}
+
+func NewVaultFactory(config *VaultFactoryConfig) (*VaultFactory, error) {
 	vaultpath := os.Getenv("VAULT_BINARY")
 
 	if vaultpath == "" {
@@ -43,10 +49,14 @@ func NewVaultFactory() (*VaultFactory, error) {
 
 	port := AllocateParallelPort(8200)
 
+	if config.PathPrefix == "" {
+		config.PathPrefix = "secret"
+	}
 	if vaultpath != "" {
 		return &VaultFactory{
-			vaultpath: vaultpath,
-			Port:      port,
+			vaultpath:  vaultpath,
+			pathprefix: config.PathPrefix,
+			Port:       port,
 		}, nil
 	}
 
@@ -98,11 +108,12 @@ func (ef *VaultFactory) Clean() error {
 }
 
 type VaultInstance struct {
-	vaultpath string
-	tmpdir    string
-	cmd       *exec.Cmd
-	token     string
-	Port      int
+	vaultpath  string
+	tmpdir     string
+	pathprefix string
+	cmd        *exec.Cmd
+	token      string
+	Port       int
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -113,9 +124,10 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	}
 
 	return &VaultInstance{
-		vaultpath: ef.vaultpath,
-		tmpdir:    tmpdir,
-		Port:      ef.Port,
+		vaultpath:  ef.vaultpath,
+		pathprefix: ef.pathprefix,
+		tmpdir:     tmpdir,
+		Port:       ef.Port,
 	}, nil
 
 }
@@ -153,12 +165,16 @@ func (i *VaultInstance) RunWithPort() error {
 	}
 
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
-
+	// secret engine paths get defaulted to "secret/"
+	if i.pathprefix == "" {
+		i.pathprefix = "secret"
+	}
 	enableCmd := exec.Command(i.vaultpath,
 		"secrets",
 		"enable",
 		fmt.Sprintf("-address=http://127.0.0.1:%v", i.Port),
 		"-version=2",
+		fmt.Sprintf("-path=%s", i.pathprefix),
 		"kv")
 	enableCmd.Env = append(enableCmd.Env, "VAULT_TOKEN="+i.token)
 
