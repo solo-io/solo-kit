@@ -103,8 +103,7 @@ var _ = Describe("Control Plane Cache", func() {
 
 		err = snapshot.Consistent()
 		Expect(err).ToNot(HaveOccurred())
-		err = c.SetSnapshot(key, snapshot)
-		Expect(err).ToNot(HaveOccurred())
+		c.SetSnapshot(key, snapshot)
 
 		snap, err := c.GetSnapshot(key)
 		Expect(err).ToNot(HaveOccurred())
@@ -127,8 +126,7 @@ var _ = Describe("Control Plane Cache", func() {
 
 		err = snapshot2.Consistent()
 		Expect(err).ToNot(HaveOccurred())
-		err = c.SetSnapshot(key, snapshot2)
-		Expect(err).ToNot(HaveOccurred())
+		c.SetSnapshot(key, snapshot2)
 
 		snap2, err := c.GetSnapshot(key)
 		Expect(err).ToNot(HaveOccurred())

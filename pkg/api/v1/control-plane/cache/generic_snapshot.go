@@ -15,10 +15,17 @@
 package cache
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/go-utils/contextutils"
+)
+
+var (
+	// Compile-time assertion
+	_ Snapshot = new(GenericSnapshot)
 )
 
 type TypedResources map[string]Resources
@@ -103,15 +110,24 @@ func (s *GenericSnapshot) Consistent() error {
 
 	for _, ref := range required {
 		if resources, ok := s.typedResources[ref.Type]; ok {
-			if _, ok := resources.Items[ref.Name]; ok {
-				return fmt.Errorf("required resource not in snapshot: %s %s", ref.Type, ref.Name)
+			if _, ok := resources.Items[ref.Name]; !ok {
+				return fmt.Errorf("required resource name not in snapshot: %s %s", ref.Type, ref.Name)
 			}
 		} else {
-			return fmt.Errorf("required resource not in snapshot: %s %s", ref.Type, ref.Name)
+			return fmt.Errorf("required resource type not in snapshot: %s %s", ref.Type, ref.Name)
 		}
 	}
 
 	return nil
+}
+
+func (s *GenericSnapshot) MakeConsistent() {
+	// this is fine since generic snapshots are only used by extauth/ratelimit extensions syncers; and those don't
+	// have dependent resources. this will not be called anywhere
+	contextutils.LoggerFrom(context.TODO()).DPanicf("it is an error to call make consistent on a generic snapshot")
+	if s == nil {
+		return
+	}
 }
 
 // GetResources selects snapshot resources by type.
@@ -124,6 +140,8 @@ func (s *GenericSnapshot) GetResources(typ string) Resources {
 }
 
 func (s *GenericSnapshot) Clone() Snapshot {
+	// the bug is fine since generic snapshots are only used by extauth/ratelimit extensions syncers; and we don't call
+	// clone today on any code path for those xds snapshots e.g. https://github.com/solo-io/solo-kit/blob/2986d1b6d33f7beec9008731fdaee4a9deb9f726/pkg/api/v1/control-plane/cache/simple.go#L176
 	typedResourcesCopy := make(TypedResources)
 	for typeName, resources := range s.typedResources {
 		resourcesCopy := Resources{
@@ -131,7 +149,7 @@ func (s *GenericSnapshot) Clone() Snapshot {
 			Items:   make(map[string]Resource, len(resources.Items)),
 		}
 		for k, v := range resources.Items {
-			resourcesCopy.Items[k] = proto.Clone(v.ResourceProto()).(Resource)
+			resourcesCopy.Items[k] = proto.Clone(v.ResourceProto()).(Resource) // TODO(kdorosh) this is a bug, see https://github.com/solo-io/solo-kit/issues/461
 		}
 		typedResourcesCopy[typeName] = resourcesCopy
 	}

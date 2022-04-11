@@ -1,0 +1,9 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >-
+      Adds `MakeConsistent` to `Snapshot` interface, so Gloo translation loop can always succeed. Also updates the
+      `SnapshotCache` in a breaking way such that the `SetSnapshot` function can no longer error, so Gloo can ensure
+      translation completes. Also updates `GetResourceReferences` to return the parent resources rather than just
+      true.
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/6114
