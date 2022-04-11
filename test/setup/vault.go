@@ -49,9 +49,9 @@ func NewVaultFactory(config *VaultFactoryConfig) (*VaultFactory, error) {
 
 	port := AllocateParallelPort(8200)
 
-	if config.PathPrefix == "" {
-		config.PathPrefix = "secret"
-	}
+	//if config.PathPrefix == "" {
+	//	config.PathPrefix = "secret"
+	//}
 	if vaultpath != "" {
 		return &VaultFactory{
 			vaultpath:  vaultpath,
@@ -165,18 +165,23 @@ func (i *VaultInstance) RunWithPort() error {
 	}
 
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
-	// don't setup -path if none provided for paths. fixes issues with reusing paths in tests.
-	pathPrefixCfg := ""
-	if i.pathprefix != "" {
-		pathPrefixCfg = fmt.Sprintf("-path=%s", i.pathprefix)
-	}
 	enableCmd := exec.Command(i.vaultpath,
 		"secrets",
 		"enable",
 		fmt.Sprintf("-address=http://127.0.0.1:%v", i.Port),
 		"-version=2",
-		pathPrefixCfg,
 		"kv")
+
+	// Setting a -path inside of exec.Command led to issues regarding reusing paths for tests, when defaulting to secret.
+	// The way to handle that is to not add a -path argument if we're not testing a custom path, so moving this logic outside of exec.Command
+	if i.pathprefix != "" {
+		pathPrefixCfg := fmt.Sprintf("-path=%s", i.pathprefix)
+		args := enableCmd.Args
+		// append the -path argument before final cmd.
+		enableCmd.Args = append(args[:len(args)-1], pathPrefixCfg, args[len(args)-1])
+	}
+	fmt.Printf(">>> %v\n", enableCmd.Args)
+
 	enableCmd.Env = append(enableCmd.Env, "VAULT_TOKEN="+i.token)
 
 	// enable kv storage
