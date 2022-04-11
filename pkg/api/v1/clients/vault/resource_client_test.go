@@ -3,8 +3,9 @@ package vault_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/solo-kit/test/setup"
 	"time"
+
+	"github.com/solo-io/solo-kit/test/setup"
 
 	"github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
