@@ -165,16 +165,17 @@ func (i *VaultInstance) RunWithPort() error {
 	}
 
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
-	// secret engine paths get defaulted to "secret/"
-	if i.pathprefix == "" {
-		i.pathprefix = "secret"
+	// don't setup -path if none provided for paths. fixes issues with reusing paths in tests.
+	pathPrefixCfg := ""
+	if i.pathprefix != "" {
+		pathPrefixCfg = fmt.Sprintf("-path=%s", i.pathprefix)
 	}
 	enableCmd := exec.Command(i.vaultpath,
 		"secrets",
 		"enable",
 		fmt.Sprintf("-address=http://127.0.0.1:%v", i.Port),
 		"-version=2",
-		fmt.Sprintf("-path=%s", i.pathprefix),
+		pathPrefixCfg,
 		"kv")
 	enableCmd.Env = append(enableCmd.Env, "VAULT_TOKEN="+i.token)
 
