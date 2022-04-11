@@ -49,9 +49,6 @@ func NewVaultFactory(config *VaultFactoryConfig) (*VaultFactory, error) {
 
 	port := AllocateParallelPort(8200)
 
-	//if config.PathPrefix == "" {
-	//	config.PathPrefix = "secret"
-	//}
 	if vaultpath != "" {
 		return &VaultFactory{
 			vaultpath:  vaultpath,
@@ -90,9 +87,10 @@ docker rm -f $CID
 	}
 
 	return &VaultFactory{
-		vaultpath: filepath.Join(tmpdir, "vault"),
-		tmpdir:    tmpdir,
-		Port:      port,
+		vaultpath:  filepath.Join(tmpdir, "vault"),
+		pathprefix: config.PathPrefix,
+		tmpdir:     tmpdir,
+		Port:       port,
 	}, nil
 }
 
