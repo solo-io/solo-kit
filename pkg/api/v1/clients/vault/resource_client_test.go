@@ -19,8 +19,8 @@ import (
 var _ = Describe("Base", func() {
 	var (
 		vault      *api.Client
-		rootKey    string
 		pathPrefix string
+		rootKey    string
 		secrets    clients.ResourceClient
 	)
 	BeforeEach(func() {
@@ -33,7 +33,7 @@ var _ = Describe("Base", func() {
 		c.SetToken(vaultInstance.Token())
 		Expect(err).NotTo(HaveOccurred())
 		vault = c
-		secrets = NewResourceClient(vault, rootKey, pathPrefix, &v1.MockResource{})
+		secrets = NewResourceClient(vault, pathPrefix, rootKey, &v1.MockResource{})
 	})
 	AfterEach(func() {
 		vault.Logical().Delete(rootKey)

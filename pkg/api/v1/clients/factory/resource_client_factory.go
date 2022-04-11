@@ -147,7 +147,7 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 		if !ok {
 			return nil, errors.Errorf("the vault storage client can only be used for resources which implement the resources.VersionedResource interface resources, received type %v", resources.Kind(resourceType))
 		}
-		return vault.NewResourceClient(opts.Vault, opts.RootKey, opts.PathPrefix, versionedResource), nil
+		return vault.NewResourceClient(opts.Vault, opts.PathPrefix, opts.RootKey, versionedResource), nil
 	}
 	panic("unsupported type " + reflect.TypeOf(factory).Name())
 }
@@ -238,8 +238,8 @@ func (f *KubeSecretClientFactory) NewResourceClient(ctx context.Context, params 
 
 type VaultSecretClientFactory struct {
 	Vault      *vaultapi.Client
-	RootKey    string
 	PathPrefix string
+	RootKey    string
 }
 
 func (f *VaultSecretClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
