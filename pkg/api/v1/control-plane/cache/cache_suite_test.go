@@ -32,6 +32,15 @@ const (
 	UpstreamHost = "127.0.0.1"
 )
 
+var (
+	// Compile-time assertion
+	_ cache.Snapshot = new(TestSnapshot)
+)
+
+// this struct ends up being similar to the EnvoySnapshot in Gloo
+// https://github.com/solo-io/gloo/blob/2caabd47783584320f2667616c2bac71cd32433f/projects/gloo/pkg/xds/envoy_snapshot.go#L39
+// lots of the code have been copied over here for testing purposes; in a refactor we may reconsider moving the Gloo code
+// here into solo-kit.
 type TestSnapshot struct {
 	// Endpoints are items in the EDS V3 response payload.
 	Endpoints cache.Resources
@@ -51,7 +60,7 @@ func (s TestSnapshot) Consistent() error {
 	if len(endpoints) != len(s.Endpoints.Items) {
 		return fmt.Errorf("mismatched endpoint reference and resource lengths: length of %v does not equal length of %v", endpoints, s.Endpoints.Items)
 	}
-	if err := cache.Superset(endpoints, s.Endpoints.Items); err != nil {
+	if err := cache.SupersetWithResource(endpoints, s.Endpoints.Items); err != nil {
 		return err
 	}
 
@@ -59,8 +68,88 @@ func (s TestSnapshot) Consistent() error {
 	if len(routes) != len(s.Routes.Items) {
 		return fmt.Errorf("mismatched route reference and resource lengths: length of %v does not equal length of %v", routes, s.Routes.Items)
 	}
-	return cache.Superset(routes, s.Routes.Items)
+	return cache.SupersetWithResource(routes, s.Routes.Items)
 }
+
+func (s TestSnapshot) MakeConsistent() {
+	// for each cluster persisted, add placeholder endpoint if referenced endpoint does not exist
+	childEndpoints := resource.GetResourceReferences(s.Clusters.Items)
+	persistedEndpointNameSet := map[string]bool{}
+	for _, endpoint := range s.Endpoints.Items {
+		persistedEndpointNameSet[endpoint.Self().Name] = true
+	}
+	for childEndpointName, cluster := range childEndpoints {
+		if found, exists := persistedEndpointNameSet[childEndpointName]; !found || !exists {
+			// add placeholder
+			s.Endpoints.Items[childEndpointName] = resource.NewEnvoyResource(
+				&endpoint.ClusterLoadAssignment{
+					ClusterName: cluster.Self().Name,
+					Endpoints:   []*endpoint.LocalityLbEndpoints{},
+				},
+			)
+		}
+	}
+
+	// remove each endpoint not referenced by a cluster
+	// it is safe to delete from a map you are iterating over, example in effective go https://go.dev/doc/effective_go#for
+	for name, _ := range s.Endpoints.Items {
+		if _, exists := childEndpoints[name]; !exists {
+			delete(s.Endpoints.Items, name)
+		}
+	}
+
+	// for each listener persisted, add placeholder route if referenced route does not exist
+	childRoutes := resource.GetResourceReferences(s.Listeners.Items)
+	persistedRouteNameSet := map[string]bool{}
+	for _, route := range s.Routes.Items {
+		persistedRouteNameSet[route.Self().Name] = true
+	}
+	for childRouteName, listener := range childRoutes {
+		if found, exists := persistedRouteNameSet[childRouteName]; !found || !exists {
+			// add placeholder
+			s.Routes.Items[childRouteName] = resource.NewEnvoyResource(
+				&route.RouteConfiguration{
+					Name: fmt.Sprintf("%s-%s", listener.Self().Name, "routes-for-invalid-envoy"),
+					VirtualHosts: []*route.VirtualHost{
+						{
+							Name:    "invalid-envoy-config-vhost",
+							Domains: []string{"*"},
+							Routes: []*route.Route{
+								{
+									Match: &route.RouteMatch{
+										PathSpecifier: &route.RouteMatch_Prefix{
+											Prefix: "/",
+										},
+									},
+									Action: &route.Route_DirectResponse{
+										DirectResponse: &route.DirectResponseAction{
+											Status: 500,
+											Body: &core.DataSource{
+												Specifier: &core.DataSource_InlineString{
+													InlineString: "Invalid Envoy Configuration. " +
+														"This placeholder was generated to localize pain to the misconfigured route",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			)
+		}
+	}
+
+	// remove each route not referenced by a listener
+	// it is safe to delete from a map you are iterating over, example in effective go https://go.dev/doc/effective_go#for
+	for name, _ := range s.Routes.Items {
+		if _, exists := childRoutes[name]; !exists {
+			delete(s.Routes.Items, name)
+		}
+	}
+}
+
 func (s TestSnapshot) GetResources(typ string) cache.Resources {
 	switch typ {
 	case resource.EndpointTypeV3:

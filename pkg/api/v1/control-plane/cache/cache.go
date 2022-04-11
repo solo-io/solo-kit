@@ -29,6 +29,8 @@ type Request = envoy_service_discovery_v3.DiscoveryRequest
 // the responses when they are ready. The watch can be cancelled by the
 // consumer, in effect terminating the watch for the request.
 // ConfigWatcher implementation must be thread-safe.
+//
+// roughly copied from https://github.com/envoyproxy/go-control-plane/blob/dcf5642c8e54496938e0311fe9c48e39b609e583/pkg/cache/v3/cache.go#L45
 type ConfigWatcher interface {
 	// CreateWatch returns a new open watch from a non-empty request.
 	//
@@ -43,6 +45,8 @@ type ConfigWatcher interface {
 }
 
 // Cache is a generic config cache with a watcher.
+//
+// roughly copied from https://github.com/envoyproxy/go-control-plane/blob/dcf5642c8e54496938e0311fe9c48e39b609e583/pkg/cache/v3/cache.go#L72
 type Cache interface {
 	ConfigWatcher
 
@@ -51,8 +55,8 @@ type Cache interface {
 
 	// GetStatusInfo retrieves status information for a node ID.
 	GetStatusInfo(string) StatusInfo
-	//
-	// // GetStatusKeys retrieves node IDs for all statuses.
+
+	// GetStatusKeys retrieves node IDs for all statuses.
 	GetStatusKeys() []string
 }
 
