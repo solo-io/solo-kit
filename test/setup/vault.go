@@ -23,14 +23,20 @@ import (
 )
 
 const defaultVaultDockerImage = "vault:1.1.3"
+const DefaultTestPathPrefix = "test-org"
 
 type VaultFactory struct {
-	vaultpath string
-	tmpdir    string
-	Port      int
+	vaultpath  string
+	pathprefix string
+	tmpdir     string
+	Port       int
 }
 
-func NewVaultFactory() (*VaultFactory, error) {
+type VaultFactoryConfig struct {
+	PathPrefix string
+}
+
+func NewVaultFactory(config *VaultFactoryConfig) (*VaultFactory, error) {
 	vaultpath := os.Getenv("VAULT_BINARY")
 
 	if vaultpath == "" {
@@ -45,8 +51,9 @@ func NewVaultFactory() (*VaultFactory, error) {
 
 	if vaultpath != "" {
 		return &VaultFactory{
-			vaultpath: vaultpath,
-			Port:      port,
+			vaultpath:  vaultpath,
+			pathprefix: config.PathPrefix,
+			Port:       port,
 		}, nil
 	}
 
@@ -80,9 +87,10 @@ docker rm -f $CID
 	}
 
 	return &VaultFactory{
-		vaultpath: filepath.Join(tmpdir, "vault"),
-		tmpdir:    tmpdir,
-		Port:      port,
+		vaultpath:  filepath.Join(tmpdir, "vault"),
+		pathprefix: config.PathPrefix,
+		tmpdir:     tmpdir,
+		Port:       port,
 	}, nil
 }
 
@@ -98,11 +106,12 @@ func (ef *VaultFactory) Clean() error {
 }
 
 type VaultInstance struct {
-	vaultpath string
-	tmpdir    string
-	cmd       *exec.Cmd
-	token     string
-	Port      int
+	vaultpath  string
+	tmpdir     string
+	pathprefix string
+	cmd        *exec.Cmd
+	token      string
+	Port       int
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -113,9 +122,10 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	}
 
 	return &VaultInstance{
-		vaultpath: ef.vaultpath,
-		tmpdir:    tmpdir,
-		Port:      ef.Port,
+		vaultpath:  ef.vaultpath,
+		pathprefix: ef.pathprefix,
+		tmpdir:     tmpdir,
+		Port:       ef.Port,
 	}, nil
 
 }
@@ -153,13 +163,22 @@ func (i *VaultInstance) RunWithPort() error {
 	}
 
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
-
 	enableCmd := exec.Command(i.vaultpath,
 		"secrets",
 		"enable",
 		fmt.Sprintf("-address=http://127.0.0.1:%v", i.Port),
 		"-version=2",
 		"kv")
+
+	// Setting a -path inside of exec.Command led to issues regarding reusing paths for tests, when defaulting to secret.
+	// The way to handle that is to not add a -path argument if we're not testing a custom path, so moving this logic outside of exec.Command
+	if i.pathprefix != "" {
+		pathPrefixCfg := fmt.Sprintf("-path=%s", i.pathprefix)
+		args := enableCmd.Args
+		// append the -path argument before final cmd.
+		enableCmd.Args = append(args[:len(args)-1], pathPrefixCfg, args[len(args)-1])
+	}
+
 	enableCmd.Env = append(enableCmd.Env, "VAULT_TOKEN="+i.token)
 
 	// enable kv storage

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/solo-kit/test/setup"
+
 	"github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,11 +19,13 @@ import (
 
 var _ = Describe("Base", func() {
 	var (
-		vault   *api.Client
-		rootKey string
-		secrets clients.ResourceClient
+		vault      *api.Client
+		pathPrefix string
+		rootKey    string
+		secrets    clients.ResourceClient
 	)
 	BeforeEach(func() {
+		pathPrefix = setup.DefaultTestPathPrefix
 		rootKey = "test-prefix"
 		cfg := api.DefaultConfig()
 		cfg.Address = fmt.Sprintf("http://127.0.0.1:%v", vaultInstance.Port)
@@ -30,7 +34,7 @@ var _ = Describe("Base", func() {
 		c.SetToken(vaultInstance.Token())
 		Expect(err).NotTo(HaveOccurred())
 		vault = c
-		secrets = NewResourceClient(vault, rootKey, &v1.MockResource{})
+		secrets = NewResourceClient(vault, pathPrefix, rootKey, &v1.MockResource{})
 	})
 	AfterEach(func() {
 		vault.Logical().Delete(rootKey)

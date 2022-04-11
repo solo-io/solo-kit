@@ -28,7 +28,7 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	vaultFactory, err = setup.NewVaultFactory()
+	vaultFactory, err = setup.NewVaultFactory(&setup.VaultFactoryConfig{PathPrefix: setup.DefaultTestPathPrefix})
 	Expect(err).NotTo(HaveOccurred())
 	vaultInstance, err = vaultFactory.NewVaultInstance()
 	Expect(err).NotTo(HaveOccurred())
