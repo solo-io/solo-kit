@@ -65,6 +65,8 @@ func init() {
 //
 // SnapshotCache can operate as a REST or regular xDS backend. The snapshot
 // can be partial, e.g. only include RDS or EDS resources.
+//
+// roughly copied from https://github.com/envoyproxy/go-control-plane/blob/v0.10.1/pkg/cache/v3/simple.go#L40
 type SnapshotCache interface {
 	Cache
 
@@ -76,7 +78,8 @@ type SnapshotCache interface {
 	// the version differs from the snapshot version.
 	//
 	// based off of https://github.com/envoyproxy/go-control-plane/blob/v0.10.1/pkg/cache/v3/simple.go#L43-L49,
-	// but updated to handle errors so Gloo control plane can ensure xds snapshot is always getting updates
+	// but updated to handle errors instead of returning them so Gloo Edge control plane can ensure xds snapshot
+	// is always getting updates
 	SetSnapshot(node string, snapshot Snapshot)
 
 	// GetSnapshots gets the snapshot for a node.
