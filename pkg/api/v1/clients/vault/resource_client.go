@@ -312,7 +312,7 @@ func (rc *ResourceClient) resourceDirectory(namespace, directoryType string) str
 	}
 
 	return strings.Join([]string{
-		"secreto",
+		rc.pathPrefix,
 		directoryType,
 		rc.root,
 		rc.resourceType.GroupVersionKind().Group,
