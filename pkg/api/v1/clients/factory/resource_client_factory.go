@@ -113,7 +113,7 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 		if !ok {
 			return nil, errors.Errorf("the consul storage client can only be used for resources which implement the resources.VersionedResource interface resources, received type %v", resources.Kind(resourceType))
 		}
-		return consul.NewResourceClient(opts.Consul, opts.RootKey, versionedResource), nil
+		return consul.NewResourceClient(opts.Consul, opts.RootKey, opts.QueryOptions, versionedResource), nil
 	case *FileResourceClientFactory:
 		return file.NewResourceClient(opts.RootDir, resourceType), nil
 	case *MemoryResourceClientFactory:
@@ -176,8 +176,9 @@ func (f *KubeResourceClientFactory) NewResourceClient(ctx context.Context, param
 }
 
 type ConsulResourceClientFactory struct {
-	Consul  *api.Client
-	RootKey string
+	Consul       *api.Client
+	RootKey      string
+	QueryOptions api.QueryOptions
 }
 
 func (f *ConsulResourceClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {

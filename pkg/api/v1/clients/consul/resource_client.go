@@ -18,13 +18,15 @@ import (
 type ResourceClient struct {
 	consul       *api.Client
 	root         string
+	queryOptions api.QueryOptions
 	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
+func NewResourceClient(client *api.Client, rootKey string, query api.QueryOptions, resourceType resources.VersionedResource) *ResourceClient {
 	return &ResourceClient{
 		consul:       client,
 		root:         rootKey,
+		queryOptions: query,
 		resourceType: resourceType,
 	}
 }
@@ -50,7 +52,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	opts = opts.WithDefaults()
 	key := rc.resourceKey(namespace, name)
 
-	kvPair, _, err := rc.consul.KV().Get(key, nil)
+	kvPair, _, err := rc.consul.KV().Get(key, &rc.queryOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "performing consul KV get")
 	}
@@ -142,7 +144,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	opts = opts.WithDefaults()
 
 	resourceDir := rc.resourceDir(namespace)
-	kvPairs, _, err := rc.consul.KV().List(resourceDir, nil)
+	kvPairs, _, err := rc.consul.KV().List(resourceDir, &rc.queryOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading namespace root")
 	}
@@ -189,7 +191,8 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	updatedResourceList := func() (resources.ResourceList, error) {
 		kvPairs, meta, err := rc.consul.KV().List(resourceDir,
 			&api.QueryOptions{
-				RequireConsistent: true,
+				RequireConsistent: rc.queryOptions.RequireConsistent,
+				AllowStale:        rc.queryOptions.AllowStale,
 				WaitIndex:         lastIndex,
 				WaitTime:          opts.RefreshRate,
 			})
