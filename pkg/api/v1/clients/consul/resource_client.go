@@ -22,11 +22,11 @@ type ResourceClient struct {
 	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, query api.QueryOptions, resourceType resources.VersionedResource) *ResourceClient {
+func NewResourceClient(client *api.Client, rootKey string, queryOptions api.QueryOptions, resourceType resources.VersionedResource) *ResourceClient {
 	return &ResourceClient{
 		consul:       client,
 		root:         rootKey,
-		queryOptions: query,
+		queryOptions: queryOptions,
 		resourceType: resourceType,
 	}
 }
