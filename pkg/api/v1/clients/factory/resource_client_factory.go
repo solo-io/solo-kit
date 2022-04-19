@@ -178,7 +178,7 @@ func (f *KubeResourceClientFactory) NewResourceClient(ctx context.Context, param
 type ConsulResourceClientFactory struct {
 	Consul       *api.Client
 	RootKey      string
-	QueryOptions api.QueryOptions
+	QueryOptions *api.QueryOptions
 }
 
 func (f *ConsulResourceClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {

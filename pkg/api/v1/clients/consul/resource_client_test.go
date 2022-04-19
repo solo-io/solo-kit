@@ -17,9 +17,10 @@ import (
 
 var _ = Describe("Base", func() {
 	var (
-		consul  *api.Client
-		client  *ResourceClient
-		rootKey string
+		consul       *api.Client
+		client       *ResourceClient
+		queryOptions *api.QueryOptions
+		rootKey      string
 	)
 	BeforeEach(func() {
 		rootKey = "my-root-key"
@@ -31,7 +32,7 @@ var _ = Describe("Base", func() {
 		Expect(err).NotTo(HaveOccurred())
 		consul = c
 
-		queryOptions := api.QueryOptions{AllowStale: false, RequireConsistent: true}
+		queryOptions = &api.QueryOptions{AllowStale: false, RequireConsistent: true}
 		client = NewResourceClient(consul, rootKey, queryOptions, &v1.MockResource{})
 	})
 	AfterEach(func() {

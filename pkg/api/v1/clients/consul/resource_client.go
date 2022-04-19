@@ -18,11 +18,11 @@ import (
 type ResourceClient struct {
 	consul       *api.Client
 	root         string
-	queryOptions api.QueryOptions
+	queryOptions *api.QueryOptions
 	resourceType resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, rootKey string, queryOptions api.QueryOptions, resourceType resources.VersionedResource) *ResourceClient {
+func NewResourceClient(client *api.Client, rootKey string, queryOptions *api.QueryOptions, resourceType resources.VersionedResource) *ResourceClient {
 	return &ResourceClient{
 		consul:       client,
 		root:         rootKey,
@@ -52,7 +52,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	opts = opts.WithDefaults()
 	key := rc.resourceKey(namespace, name)
 
-	kvPair, _, err := rc.consul.KV().Get(key, &rc.queryOptions)
+	kvPair, _, err := rc.consul.KV().Get(key, rc.queryOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "performing consul KV get")
 	}
@@ -144,7 +144,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	opts = opts.WithDefaults()
 
 	resourceDir := rc.resourceDir(namespace)
-	kvPairs, _, err := rc.consul.KV().List(resourceDir, &rc.queryOptions)
+	kvPairs, _, err := rc.consul.KV().List(resourceDir, rc.queryOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading namespace root")
 	}
