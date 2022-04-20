@@ -17,9 +17,10 @@ import (
 
 var _ = Describe("Base", func() {
 	var (
-		consul  *api.Client
-		client  *ResourceClient
-		rootKey string
+		consul       *api.Client
+		client       *ResourceClient
+		queryOptions *api.QueryOptions
+		rootKey      string
 	)
 	BeforeEach(func() {
 		rootKey = "my-root-key"
@@ -30,7 +31,9 @@ var _ = Describe("Base", func() {
 		c, err := api.NewClient(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		consul = c
-		client = NewResourceClient(consul, rootKey, &v1.MockResource{})
+
+		queryOptions = &api.QueryOptions{AllowStale: false, RequireConsistent: true}
+		client = NewResourceClient(consul, rootKey, queryOptions, &v1.MockResource{})
 	})
 	AfterEach(func() {
 		consul.KV().DeleteTree(rootKey, nil)
