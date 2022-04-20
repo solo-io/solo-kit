@@ -1,0 +1,7 @@
+changelog:
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/gloo/issues/6185
+    resolvesIssue: false
+    description: |
+      Expose `queryOptions` to allow configuration for Read/Watch queries.
+      This allows for Consul options, such as stale reads, to be configured through gloo.
