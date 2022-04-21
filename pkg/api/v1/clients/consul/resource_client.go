@@ -22,7 +22,14 @@ type ResourceClient struct {
 	resourceType resources.VersionedResource
 }
 
+var DefaultQueryOptions = &api.QueryOptions{RequireConsistent: true, AllowStale: false}
+
 func NewResourceClient(client *api.Client, rootKey string, queryOptions *api.QueryOptions, resourceType resources.VersionedResource) *ResourceClient {
+	// Default the query options to require consistent reads
+	if queryOptions == nil {
+		queryOptions = DefaultQueryOptions
+	}
+
 	return &ResourceClient{
 		consul:       client,
 		root:         rootKey,
@@ -189,13 +196,11 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 		resourcesChan <- list
 	}()
 	updatedResourceList := func() (resources.ResourceList, error) {
-		kvPairs, meta, err := rc.consul.KV().List(resourceDir,
-			&api.QueryOptions{
-				RequireConsistent: rc.queryOptions.RequireConsistent,
-				AllowStale:        rc.queryOptions.AllowStale,
-				WaitIndex:         lastIndex,
-				WaitTime:          opts.RefreshRate,
-			})
+		queryOptions := rc.queryOptions
+		queryOptions.WaitIndex = lastIndex
+		queryOptions.WaitTime = opts.RefreshRate
+
+		kvPairs, meta, err := rc.consul.KV().List(resourceDir, queryOptions)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting kv-pairs list")
 		}
