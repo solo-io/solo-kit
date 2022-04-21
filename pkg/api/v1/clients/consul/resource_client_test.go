@@ -3,8 +3,9 @@ package consul_test
 import (
 	"context"
 	"fmt"
-	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	"time"
+
+	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
