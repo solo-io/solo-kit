@@ -1,4 +1,5 @@
 changelog:
   - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6185
     resolvesIssue: false
     description: Add default query options if nil passed, to avoid nil pointer dereference.
