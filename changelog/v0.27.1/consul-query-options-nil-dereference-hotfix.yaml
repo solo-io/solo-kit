@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    resolvesIssue: false
+    description: Add default query options if nil passed, to avoid nil pointer dereference.
