@@ -15,7 +15,7 @@
 package cache
 
 import (
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // Resource is the base interface for the xDS payload.

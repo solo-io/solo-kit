@@ -19,7 +19,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/solo-io/go-utils/contextutils"
 )
 
