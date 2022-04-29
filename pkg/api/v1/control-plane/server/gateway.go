@@ -19,8 +19,7 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/golang/protobuf/proto"
-
+	"google.golang.org/protobuf/proto"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
@@ -82,7 +81,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	// TODO: Attempt to parse as V3, and then V2
 	// parse as JSON
 	out := &envoy_service_discovery_v3.DiscoveryRequest{}
-	outV2 := proto.MessageV2(out) // convert to proto v2 since newer unmarshal is faster
+	outV2 := proto.Message(out)
 	err = jsonpb.Unmarshal(body, outV2)
 
 	if err != nil {
@@ -106,7 +105,7 @@ func (h *HTTPGateway) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resV2 := proto.MessageV2(res) // convert to proto v2 since newer marshal is faster
+	resV2 := proto.Message(res)
 	bytes, err := jsonpb.Marshal(resV2)
 	if err != nil {
 		h.Log.Debugf("marshal error: " + err.Error())

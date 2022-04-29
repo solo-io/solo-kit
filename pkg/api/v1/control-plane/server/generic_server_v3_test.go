@@ -13,6 +13,7 @@ import (
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	resource_v3 "github.com/envoyproxy/go-control-plane/pkg/test/resource/v3"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
@@ -73,7 +74,12 @@ func (c *callbacks) OnStreamOpen(context.Context, int64, string) error {
 }
 func (c *callbacks) OnStreamClosed(int64)                                     {}
 func (c *callbacks) OnStreamRequest(int64, *discovery.DiscoveryRequest) error { return nil }
-func (c *callbacks) OnStreamResponse(int64, *discovery.DiscoveryRequest, *discovery.DiscoveryResponse) {
+func (c *callbacks) OnStreamResponse(
+	context.Context,
+	int64,
+	*discovery.DiscoveryRequest,
+	*discovery.DiscoveryResponse,
+) {
 }
 func (c *callbacks) OnFetchRequest(context.Context, *discovery.DiscoveryRequest) error {
 	if c.callbackError {

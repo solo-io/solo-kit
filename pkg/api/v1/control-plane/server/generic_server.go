@@ -23,7 +23,7 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	sk_discovery "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
@@ -83,7 +83,7 @@ type Callbacks interface {
 	// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 	OnStreamRequest(int64, *envoy_service_discovery_v3.DiscoveryRequest) error
 	// OnStreamResponse is called immediately prior to sending a response on a stream.
-	OnStreamResponse(int64, *envoy_service_discovery_v3.DiscoveryRequest, *envoy_service_discovery_v3.DiscoveryResponse)
+	OnStreamResponse(context.Context, int64, *envoy_service_discovery_v3.DiscoveryRequest, *envoy_service_discovery_v3.DiscoveryResponse)
 	// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
 	// request and respond with an error.
 	OnFetchRequest(context.Context, *envoy_service_discovery_v3.DiscoveryRequest) error
@@ -180,7 +180,7 @@ func (s *server) StreamEnvoyV3(
 		}
 	}()
 
-	err := s.process(stream.Context(), s.sendEnvoyV3(stream), reqCh, defaultTypeURL)
+	err := s.process(stream.Context(), s.sendEnvoyV3(stream.Context(), stream), reqCh, defaultTypeURL)
 
 	// prevents writing to a closed channel if send failed on blocked recv
 	// TODO(kuat) figure out how to unblock recv through gRPC API
@@ -210,7 +210,7 @@ func (s *server) StreamSolo(
 		}
 	}()
 
-	err := s.process(stream.Context(), s.sendSolo(stream), reqCh, defaultTypeURL)
+	err := s.process(stream.Context(), s.sendSolo(stream.Context(), stream), reqCh, defaultTypeURL)
 
 	// prevents writing to a closed channel if send failed on blocked recv
 	// TODO(kuat) figure out how to unblock recv through gRPC API
@@ -222,6 +222,7 @@ func (s *server) StreamSolo(
 type sendFunc func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error)
 
 func (s *server) sendSolo(
+	ctx context.Context,
 	stream solo_discovery.SoloDiscoveryService_StreamAggregatedResourcesServer,
 ) sendFunc {
 	return func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error) {
@@ -234,13 +235,14 @@ func (s *server) sendSolo(
 		*streamNonce = *streamNonce + 1
 		out.Nonce = strconv.FormatInt(*streamNonce, 10)
 		if s.callbacks != nil {
-			s.callbacks.OnStreamResponse(streamId, &resp.Request, out)
+			s.callbacks.OnStreamResponse(ctx, streamId, &resp.Request, out)
 		}
 		return out.Nonce, stream.Send(util.DowngradeDiscoveryResponse(out))
 	}
 }
 
 func (s *server) sendEnvoyV3(
+	ctx context.Context,
 	stream envoy_service_discovery_v3.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
 ) sendFunc {
 	return func(resp cache.Response, typeURL string, streamId int64, streamNonce *int64) (string, error) {
@@ -253,7 +255,7 @@ func (s *server) sendEnvoyV3(
 		*streamNonce = *streamNonce + 1
 		out.Nonce = strconv.FormatInt(*streamNonce, 10)
 		if s.callbacks != nil {
-			s.callbacks.OnStreamResponse(streamId, &resp.Request, out)
+			s.callbacks.OnStreamResponse(ctx, streamId, &resp.Request, out)
 		}
 		return out.Nonce, stream.Send(out)
 	}
