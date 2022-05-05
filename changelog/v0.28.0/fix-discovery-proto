@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/3624
     resolvesIssue: false
     description: |
-	changes package of discovery.proto from envoy.api.to to solo.io.envoy.api.v2
+      changes package of discovery.proto from envoy.api.to to solo.io.envoy.api.v2
