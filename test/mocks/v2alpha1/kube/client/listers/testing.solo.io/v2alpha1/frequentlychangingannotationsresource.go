@@ -26,10 +26,8 @@ import (
 )
 
 // FrequentlyChangingAnnotationsResourceLister helps list FrequentlyChangingAnnotationsResources.
-// All objects returned here must be treated as read-only.
 type FrequentlyChangingAnnotationsResourceLister interface {
 	// List lists all FrequentlyChangingAnnotationsResources in the indexer.
-	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v2alpha1.FrequentlyChangingAnnotationsResource, err error)
 	// FrequentlyChangingAnnotationsResources returns an object that can list and get FrequentlyChangingAnnotationsResources.
 	FrequentlyChangingAnnotationsResources(namespace string) FrequentlyChangingAnnotationsResourceNamespaceLister
@@ -60,13 +58,10 @@ func (s *frequentlyChangingAnnotationsResourceLister) FrequentlyChangingAnnotati
 }
 
 // FrequentlyChangingAnnotationsResourceNamespaceLister helps list and get FrequentlyChangingAnnotationsResources.
-// All objects returned here must be treated as read-only.
 type FrequentlyChangingAnnotationsResourceNamespaceLister interface {
 	// List lists all FrequentlyChangingAnnotationsResources in the indexer for a given namespace.
-	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v2alpha1.FrequentlyChangingAnnotationsResource, err error)
 	// Get retrieves the FrequentlyChangingAnnotationsResource from the indexer for a given namespace and name.
-	// Objects returned here must be treated as read-only.
 	Get(name string) (*v2alpha1.FrequentlyChangingAnnotationsResource, error)
 	FrequentlyChangingAnnotationsResourceNamespaceListerExpansion
 }
