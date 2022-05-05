@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
+	any "github.com/golang/protobuf/ptypes/any"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
@@ -1341,7 +1341,7 @@ func (x *TransportSocket) GetConfig() *_struct.Struct {
 	return nil
 }
 
-func (x *TransportSocket) GetTypedConfig() *any1.Any {
+func (x *TransportSocket) GetTypedConfig() *any.Any {
 	if x, ok := x.GetConfigType().(*TransportSocket_TypedConfig); ok {
 		return x.TypedConfig
 	}
@@ -1357,7 +1357,7 @@ type TransportSocket_Config struct {
 }
 
 type TransportSocket_TypedConfig struct {
-	TypedConfig *any1.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
+	TypedConfig *any.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
 }
 
 func (*TransportSocket_Config) isTransportSocket_ConfigType() {}
@@ -1749,7 +1749,7 @@ var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_g
 	(*wrappers.BoolValue)(nil),       // 23: google.protobuf.BoolValue
 	(*core.ResourceRef)(nil),         // 24: core.solo.io.ResourceRef
 	(*HttpUri)(nil),                  // 25: solo.io.envoy.api.v2.core.HttpUri
-	(*any1.Any)(nil),                 // 26: google.protobuf.Any
+	(*any.Any)(nil),                  // 26: google.protobuf.Any
 	(*_type.FractionalPercent)(nil),  // 27: solo.io.envoy.type.FractionalPercent
 }
 var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_depIdxs = []int32{
