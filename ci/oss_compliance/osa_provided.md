@@ -21,7 +21,6 @@ Name|Version|License
 [google/uuid](https://github.com/google/uuid)|v1.1.2|BSD 3-clause "New" or "Revised" License
 [huandu/xstrings](https://github.com/huandu/xstrings)|v1.3.1|MIT License
 [iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.0.0-20191112232945-16388991a334|MIT License
-[ilackarms/protoc-gen-doc](https://github.com/ilackarms/protoc-gen-doc)|v1.0.0|MIT License
 [imdario/mergo](https://github.com/imdario/mergo)|v0.3.9|BSD 3-clause "New" or "Revised" License
 [json-iterator/go](https://github.com/json-iterator/go)|v1.1.10|MIT License
 [k0kubun/pp](https://github.com/k0kubun/pp)|latest|MIT License
@@ -34,16 +33,16 @@ Name|Version|License
 [modern-go/reflect2](https://github.com/modern-go/reflect2)|v1.0.1|Apache License 2.0
 [mpvl/unique](https://github.com/mpvl/unique)|v0.0.0-20150818121801-cbe035fff7de|MIT License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
-[protoc-gen-doc/parser](https://github.com/pseudomuto/protoc-gen-doc)|v1.0.0|MIT License
+[protoc-gen-doc/extensions](https://github.com/pseudomuto/protoc-gen-doc)|v1.5.1|MIT License
 [pseudomuto/protokit](https://github.com/pseudomuto/protokit)|v0.2.0|MIT License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.1.1|MIT License
 [afero/mem](https://github.com/spf13/afero)|v1.3.4|Apache License 2.0
 [x/crypto](https://golang.org/x/crypto)|v0.0.0-20210513164829-c07d793c2f9a|BSD 3-clause "New" or "Revised" License
-[x/net](https://golang.org/x/net)|v0.0.0-20210226172049-e18ecbb05110|BSD 3-clause "New" or "Revised" License
-[sync/errgroup](https://golang.org/x/sync/errgroup)|v0.0.0-20200625203802-6e8e738ad208|BSD 3-clause "New" or "Revised" License
-[x/text](https://golang.org/x/text)|v0.3.3|BSD 3-clause "New" or "Revised" License
+[x/net](https://golang.org/x/net)|v0.0.0-20210503060351-7fd8e65b6420|BSD 3-clause "New" or "Revised" License
+[sync/errgroup](https://golang.org/x/sync/errgroup)|v0.0.0-20210220032951-036812b2e83c|BSD 3-clause "New" or "Revised" License
+[x/text](https://golang.org/x/text)|v0.3.6|BSD 3-clause "New" or "Revised" License
 [xerrors/internal](https://golang.org/x/xerrors/internal)|v0.0.0-20200804184101-5ec99f83aff1|BSD 3-clause "New" or "Revised" License
-[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.26.0|BSD 3-clause "New" or "Revised" License
+[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.27.1|BSD 3-clause "New" or "Revised" License
 [gopkg.in/inf.v0](https://gopkg.in/inf.v0)|v0.9.1|BSD 3-clause "New" or "Revised" License
 [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)|v2.4.0|Apache License 2.0
 [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3)|v3.0.0-20200313102051-9f266ea9e77c|MIT License
