@@ -34,7 +34,7 @@ func (m *DiscoveryRequest) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DiscoveryRequest")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DiscoveryRequest")); err != nil {
 		return 0, err
 	}
 
@@ -110,7 +110,7 @@ func (m *DiscoveryResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DiscoveryResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DiscoveryResponse")); err != nil {
 		return 0, err
 	}
 
@@ -187,7 +187,7 @@ func (m *DeltaDiscoveryRequest) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DeltaDiscoveryRequest")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DeltaDiscoveryRequest")); err != nil {
 		return 0, err
 	}
 
@@ -290,7 +290,7 @@ func (m *DeltaDiscoveryResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DeltaDiscoveryResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.DeltaDiscoveryResponse")); err != nil {
 		return 0, err
 	}
 
@@ -350,7 +350,7 @@ func (m *Resource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.Resource")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2.Resource")); err != nil {
 		return 0, err
 	}
 

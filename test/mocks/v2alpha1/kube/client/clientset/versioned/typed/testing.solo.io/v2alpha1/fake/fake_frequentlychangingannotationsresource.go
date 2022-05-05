@@ -105,7 +105,7 @@ func (c *FakeFrequentlyChangingAnnotationsResources) Update(ctx context.Context,
 // Delete takes name of the frequentlyChangingAnnotationsResource and deletes it. Returns an error if one occurs.
 func (c *FakeFrequentlyChangingAnnotationsResources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(frequentlychangingannotationsresourcesResource, c.ns, name), &v2alpha1.FrequentlyChangingAnnotationsResource{})
+		Invokes(testing.NewDeleteActionWithOptions(frequentlychangingannotationsresourcesResource, c.ns, name, opts), &v2alpha1.FrequentlyChangingAnnotationsResource{})
 
 	return err
 }
