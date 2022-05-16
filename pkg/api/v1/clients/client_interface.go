@@ -109,7 +109,7 @@ type ListOpts struct {
 
 	// Equality-based label requirements
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
-	// Equality--based requirements allow filtering by label keys and values.
+	// Equality-based requirements allow filtering by label keys and values.
 	// Matching objects must satisfy all of the specified label constraints,
 	// though they may have additional labels as well.
 	// Example:
@@ -143,7 +143,7 @@ type WatchOpts struct {
 
 	// Equality-based label requirements
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
-	// Equality--based requirements allow filtering by label keys and values.
+	// Equality-based requirements allow filtering by label keys and values.
 	// Matching objects must satisfy all of the specified label constraints,
 	// though they may have additional labels as well.
 	// Example:
