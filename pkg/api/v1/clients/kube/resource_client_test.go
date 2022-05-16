@@ -677,6 +677,11 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(list).To(HaveLen(1))
+
+				list, err = rc.List(namespace1, clients.ListOpts{
+					ExpressionSelector: "invalid expression to parse",
+				})
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("lists the correct resources using order: set-based, equality-based", func() {
