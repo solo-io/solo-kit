@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6406
+    resolvesIssue: false
+    description: |
+      Add ExpressionSelector to ListOpts and WatchOpts.
+      This adds support to set-based label selection on resource clients, allowing selection
+      of resources with multiple values for the same key. Previously, only equality-based
+      label selection was supported, which required a single key and value for all defined requirements.
