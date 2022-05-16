@@ -2,6 +2,7 @@ package kube_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -558,11 +559,44 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			BeforeEach(func() {
 				clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
 
-				// Create initial resources
-				Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-1", "val-1")).NotTo(HaveOccurred())
-				Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-2", "val-2")).NotTo(HaveOccurred())
-				Expect(util.CreateMockResource(ctx, clientset, namespace1, "res-3", "val-3")).NotTo(HaveOccurred())
-				Expect(util.CreateMockResource(ctx, clientset, namespace2, "res-4", "val-4")).NotTo(HaveOccurred())
+				metadataForMockResources := []*core.Metadata{
+					{
+						Name:      "res-1",
+						Namespace: namespace1,
+						Labels: map[string]string{
+							"name":      "res-1",
+							"namespace": namespace1,
+						},
+					},
+					{
+						Name:      "res-2",
+						Namespace: namespace1,
+						Labels: map[string]string{
+							"name":      "res-2",
+							"namespace": namespace1,
+						},
+					},
+					{
+						Name:      "res-3",
+						Namespace: namespace1,
+						Labels: map[string]string{
+							"name":      "res-3",
+							"namespace": namespace1,
+						},
+					},
+					{
+						Name:      "res-4",
+						Namespace: namespace2,
+						Labels: map[string]string{
+							"name":      "res-4",
+							"namespace": namespace2,
+						},
+					},
+				}
+
+				for i, meta := range metadataForMockResources {
+					Expect(util.CreateMockResourceWithMetadata(ctx, clientset, meta, fmt.Sprintf("val-%d", i)))
+				}
 				// v2alpha1 resources should be ignored by this v1 MockResource client
 				Expect(util.CreateV2Alpha1MockResource(ctx, clientset, namespace2, "res-5", "val-5")).NotTo(HaveOccurred())
 
@@ -590,6 +624,61 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(list).To(HaveLen(0))
 			})
+
+			It("lists the correct resources for the given equality-based label selector", func() {
+				list, err := rc.List(namespace1, clients.ListOpts{
+					Selector: map[string]string{
+						"namespace": namespace1,
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(3))
+
+				list, err = rc.List(namespace1, clients.ListOpts{
+					Selector: map[string]string{
+						"name": "res-1",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(1))
+
+				// equality-based selector use AND to join requirements
+				list, err = rc.List(namespace1, clients.ListOpts{
+					Selector: map[string]string{
+						"namespace": namespace1,
+						"name":      "res-1",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(1))
+			})
+
+			It("lists the correct resources for the given set-based label selector", func() {
+				list, err := rc.List(namespace1, clients.ListOpts{
+					ExpressionSelector: fmt.Sprintf("namespace in (%s)", namespace1),
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(3))
+
+				list, err = rc.List(namespace1, clients.ListOpts{
+					ExpressionSelector: fmt.Sprintf("namespace in (%s)", namespace2),
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(0))
+
+				list, err = rc.List(namespace1, clients.ListOpts{
+					ExpressionSelector: fmt.Sprintf("namespace in (%s,%s)", namespace1, namespace2),
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(3))
+
+				list, err = rc.List(namespace1, clients.ListOpts{
+					ExpressionSelector: fmt.Sprintf("namespace in (%s,%s),name in (%s)", namespace1, namespace2, "res-1"),
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(1))
+			})
+
 		})
 
 		Describe("deleting resources", func() {

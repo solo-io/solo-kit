@@ -104,9 +104,10 @@ func (o DeleteOpts) WithDefaults() DeleteOpts {
 }
 
 type ListOpts struct {
-	Ctx      context.Context
-	Selector map[string]string
-	Cluster  string
+	Ctx                context.Context
+	Selector           map[string]string
+	ExpressionSelector string
+	Cluster            string
 }
 
 func (o ListOpts) WithDefaults() ListOpts {
@@ -120,9 +121,10 @@ func (o ListOpts) WithDefaults() ListOpts {
 // To achieve a similar behavior you can use the KubeResourceClientFactory.ResyncPeriod field. The difference is that it
 // will apply to all the watches started by clients built with the factory.
 type WatchOpts struct {
-	Ctx         context.Context
-	Selector    map[string]string
-	RefreshRate time.Duration
+	Ctx                context.Context
+	Selector           map[string]string
+	ExpressionSelector string
+	RefreshRate        time.Duration
 	// Cluster is ignored by aggregated watches, but is respected by multi cluster clients.
 	Cluster string
 }
