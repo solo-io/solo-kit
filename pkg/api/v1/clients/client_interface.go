@@ -121,9 +121,11 @@ type ListOpts struct {
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
 	// Set-based label requirements allow filtering keys according to a set of values.
 	// Three kinds of operators are supported: in,notin and exists (only the key identifier).
+	// Set-based requirements can be mixed with equality-based requirements.
 	// Example:
-	//	"product in (edge, mesh)" would return all objects with the label key equal to product
-	//	and value equal to edge or mesh
+	//	"product in (edge, mesh),version=v1" would return all objects that match ALL of the following:
+	//	 (1) the label key equal to product and value equal to edge or mesh
+	//	 (2) the label key equal to version and the value equal to v1
 	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	ExpressionSelector string
 }
@@ -155,9 +157,11 @@ type WatchOpts struct {
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
 	// Set-based label requirements allow filtering keys according to a set of values.
 	// Three kinds of operators are supported: in,notin and exists (only the key identifier).
+	// Set-based requirements can be mixed with equality-based requirements.
 	// Example:
-	//	"product in (edge, mesh)" would return all objects with the label key equal to product
-	//	and value equal to edge or mesh
+	//	"product in (edge, mesh),version=v1" would return all objects that match ALL of the following:
+	//	 (1) the label key equal to product and value equal to edge or mesh
+	//	 (2) the label key equal to version and the value equal to v1
 	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	ExpressionSelector string
 	RefreshRate        time.Duration
