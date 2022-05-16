@@ -802,6 +802,120 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				}
 			})
 
+			It("correctly receives notifications for resources with the given equality-based label requirements", func() {
+				resources, errors, err := rc.Watch(namespace1, clients.WatchOpts{
+					Selector: map[string]string{
+						"name": "res-1",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Create resources
+				resourceMeta := []*core.Metadata{
+					{
+						Name:      "res-1",
+						Namespace: namespace1,
+						Labels: map[string]string{
+							"name": "res-1",
+						},
+					},
+					{
+						Name:      "res-2",
+						Namespace: namespace1,
+						Labels: map[string]string{
+							"name": "res-2",
+						},
+					},
+				}
+
+				go func() {
+					for i, meta := range resourceMeta {
+						Expect(util.CreateMockResourceWithMetadata(ctx, clientset, meta, fmt.Sprintf("val-%d", i))).NotTo(HaveOccurred())
+					}
+				}()
+
+				skippedInitialRead := false
+				after := time.After(2 * time.Second)
+			LOOP:
+				for {
+					select {
+					case res := <-resources:
+						if skippedInitialRead {
+							Expect(res).To(HaveLen(1))
+							Expect(res[0].GetMetadata().Name).To(BeEquivalentTo("res-1"))
+							break LOOP
+						}
+						Expect(res).To(HaveLen(0))
+						skippedInitialRead = true
+						continue
+					case <-errors:
+						Fail("unexpected error on watch error channel")
+					case <-after:
+						Fail("timed out waiting for event notification")
+					}
+				}
+			})
+
+			It("correctly receives notifications for resources with the given set-based label requirements", func() {
+				resources, errors, err := rc.Watch(namespace1, clients.WatchOpts{
+					ExpressionSelector: "name in (res-1, res-2)",
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Create resources
+				resourceMeta := []*core.Metadata{
+					{
+						Name:      "res-1",
+						Namespace: namespace1,
+						Labels: map[string]string{
+							"name": "res-1",
+						},
+					},
+					{
+						Name:      "res-2",
+						Namespace: namespace1,
+						Labels: map[string]string{
+							"name": "res-2",
+						},
+					},
+					{
+						Name:      "res-3",
+						Namespace: namespace1,
+						Labels: map[string]string{
+							"name": "res-3",
+						},
+					},
+				}
+
+				go func() {
+					for i, meta := range resourceMeta {
+						Expect(util.CreateMockResourceWithMetadata(ctx, clientset, meta, fmt.Sprintf("val-%d", i))).NotTo(HaveOccurred())
+					}
+				}()
+
+				skippedInitialRead := false
+				after := time.After(2 * time.Second)
+			LOOP:
+				for {
+					select {
+					case res := <-resources:
+						if skippedInitialRead {
+							Expect(res).To(HaveLen(2))
+							Expect(res[0].GetMetadata().Name).To(HavePrefix("res-"))
+							Expect(res[1].GetMetadata().Name).To(HavePrefix("res-"))
+							break LOOP
+						}
+						Expect(res).To(HaveLen(0))
+						skippedInitialRead = true
+						continue
+					case <-errors:
+						Fail("unexpected error on watch error channel")
+					case <-after:
+						Fail("timed out waiting for event notification")
+					}
+				}
+			})
+
 			It("does not receives notifications for resources other namespaces", func() {
 				resources, errors, err := rc.Watch(namespace1, clients.WatchOpts{})
 				Expect(err).NotTo(HaveOccurred())
