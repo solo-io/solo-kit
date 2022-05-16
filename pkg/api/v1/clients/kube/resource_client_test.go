@@ -679,6 +679,27 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(list).To(HaveLen(1))
 			})
 
+			It("lists the correct resources using order: set-based, equality-based", func() {
+				// uses ExpressionSelector if defined
+				list, err := rc.List(namespace1, clients.ListOpts{
+					Selector: map[string]string{
+						"invalid-key": "invalid-value",
+					},
+					ExpressionSelector: fmt.Sprintf("namespace in (%s)", namespace1),
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(3))
+
+				// fallback to Selector if no ExpressionSelector is defined
+				list, err = rc.List(namespace1, clients.ListOpts{
+					Selector: map[string]string{
+						"invalid-key": "invalid-value",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(list).To(HaveLen(0))
+			})
+
 		})
 
 		Describe("deleting resources", func() {
