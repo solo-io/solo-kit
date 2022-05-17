@@ -23,10 +23,15 @@ type ResourceClient struct {
 }
 
 func NewResourceClient(client *api.Client, rootKey string, queryOptions *api.QueryOptions, resourceType resources.VersionedResource) *ResourceClient {
+	queryOptionsOrDefault := &api.QueryOptions{}
+	if queryOptions != nil {
+		queryOptionsOrDefault = queryOptions
+	}
+
 	return &ResourceClient{
 		consul:       client,
 		root:         rootKey,
-		queryOptions: queryOptions,
+		queryOptions: queryOptionsOrDefault,
 		resourceType: resourceType,
 	}
 }
