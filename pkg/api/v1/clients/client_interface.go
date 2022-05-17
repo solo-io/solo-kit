@@ -104,9 +104,28 @@ func (o DeleteOpts) WithDefaults() DeleteOpts {
 }
 
 type ListOpts struct {
-	Ctx      context.Context
+	Ctx     context.Context
+	Cluster string
+
+	// Equality-based label requirements
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	// Equality-based requirements allow filtering by label keys and values.
+	// Matching objects must satisfy all of the specified label constraints,
+	// though they may have additional labels as well.
+	// Example:
+	//	{product: edge} would return all objects with a label key equal to
+	//	product and label value equal to edge
+	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	Selector map[string]string
-	Cluster  string
+	// Set-based label requirements
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
+	// Set-based label requirements allow filtering keys according to a set of values.
+	// Three kinds of operators are supported: in,notin and exists (only the key identifier).
+	// Example:
+	//	"product in (edge, mesh)" would return all objects with the label key equal to product
+	//	and value equal to edge or mesh
+	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
+	ExpressionSelector string
 }
 
 func (o ListOpts) WithDefaults() ListOpts {
@@ -120,9 +139,28 @@ func (o ListOpts) WithDefaults() ListOpts {
 // To achieve a similar behavior you can use the KubeResourceClientFactory.ResyncPeriod field. The difference is that it
 // will apply to all the watches started by clients built with the factory.
 type WatchOpts struct {
-	Ctx         context.Context
-	Selector    map[string]string
-	RefreshRate time.Duration
+	Ctx context.Context
+
+	// Equality-based label requirements
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	// Equality-based requirements allow filtering by label keys and values.
+	// Matching objects must satisfy all of the specified label constraints,
+	// though they may have additional labels as well.
+	// Example:
+	//	{product: edge} would return all objects with a label key equal to
+	//	product and label value equal to edge
+	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
+	Selector map[string]string
+	// Set-based label requirements
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
+	// Set-based label requirements allow filtering keys according to a set of values.
+	// Three kinds of operators are supported: in,notin and exists (only the key identifier).
+	// Example:
+	//	"product in (edge, mesh)" would return all objects with the label key equal to product
+	//	and value equal to edge or mesh
+	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
+	ExpressionSelector string
+	RefreshRate        time.Duration
 	// Cluster is ignored by aggregated watches, but is respected by multi cluster clients.
 	Cluster string
 }
