@@ -16,9 +16,14 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type graphqlSnapshot struct {
+	stitchedSchema string `protobuf:"bytes,4,opt,name=stitched_schema,json=stitchedSchema,proto3" json:"stitched_schema,omitempty"`
+}
+
 type Report struct {
-	Warnings []string
-	Errors   error
+	graphqlSnapshot graphqlSnapshot
+	Warnings        []string
+	Errors          error
 }
 
 type ResourceReports map[resources.InputResource]Report
