@@ -46,7 +46,7 @@ require (
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.0.4
 	github.com/solo-io/go-utils v0.21.6
-	github.com/solo-io/k8s-utils v0.0.8
+	github.com/solo-io/k8s-utils v0.1.0
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.0.1
 	github.com/spf13/afero v1.3.4 // indirect
