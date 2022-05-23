@@ -40,15 +40,22 @@ func MockClientForNamespace(cache kube.SharedCache, namespaces []string, podName
 }
 
 func CreateMockResource(ctx context.Context, cs *fake.Clientset, namespace, name, dumbFieldValue string) error {
+	return CreateMockResourceWithMetadata(ctx, cs, &core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	}, dumbFieldValue)
+}
+
+func CreateMockResourceWithMetadata(ctx context.Context, cs *fake.Clientset, metadata *core.Metadata, dumbFieldValue string) error {
 	kubeResource, err := v1.MockResourceCrd.KubeResource(&v1.MockResource{
-		Metadata:      &core.Metadata{Name: name},
+		Metadata:      metadata,
 		SomeDumbField: dumbFieldValue,
 	})
 	if err != nil {
 		return err
 	}
 
-	_, err = cs.ResourcesV1().Resources(namespace).Create(ctx, kubeResource, metav1.CreateOptions{})
+	_, err = cs.ResourcesV1().Resources(metadata.GetNamespace()).Create(ctx, kubeResource, metav1.CreateOptions{})
 	return err
 }
 
