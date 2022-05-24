@@ -63,6 +63,18 @@ func getStatusForNamespace(resource resources.InputResource, namespace string) *
 	return statuses[namespace]
 }
 
+func setMessages(resource resources.InputResource, messages []string) {
+	resource.SetMessages(messages)
+}
+
+func getMessages(resource resources.InputResource) []string {
+	messages := resource.GetMessages()
+	if messages == nil {
+		return nil
+	}
+	return messages
+}
+
 // These code is only used to support the deprecated SetStatus and GetStatus
 // methods on an InputResource
 

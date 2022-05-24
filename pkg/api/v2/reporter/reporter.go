@@ -245,6 +245,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 
 		r.statusClient.SetStatus(resourceToWrite, status)
+		r.messagesClient.SetMessages(resourceToWrite, []string{"test", "this"})
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
