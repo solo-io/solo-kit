@@ -65,6 +65,16 @@ func (m *mockResources) SetStatus(status *core.Status) {
 	panic("implement me")
 }
 
+func (m *mockResources) GetMessages() []string {
+	// Not needed in this test
+	panic("implement me")
+}
+
+func (m *mockResources) SetMessages(messages []string) {
+	// Not needed in this test
+	panic("implement me")
+}
+
 func (m *mockResources) GetNamespacedStatuses() *core.NamespacedStatuses {
 	// Not needed in this test
 	panic("implement me")

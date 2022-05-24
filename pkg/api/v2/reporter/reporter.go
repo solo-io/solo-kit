@@ -16,18 +16,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-type GraphqlSnapshot struct {
-	stitchedSchema string `protobuf:"bytes,4,opt,name=stitched_schema,json=stitchedSchema,proto3" json:"stitched_schema,omitempty"`
-}
-
-type Snapshots struct {
-	graphqlSnapshot GraphqlSnapshot
-}
-
 type Report struct {
-	snapshots Snapshots
-	Warnings  []string
-	Errors    error
+	Warnings []string
+	Errors   error
+	Messages []string
 }
 
 type ResourceReports map[resources.InputResource]Report
@@ -204,9 +196,10 @@ type StatusReporter interface {
 }
 
 type reporter struct {
-	reporterRef  string
-	statusClient resources.StatusClient
-	clients      map[string]ReporterResourceClient
+	reporterRef    string
+	statusClient   resources.StatusClient
+	messagesClient resources.MessagesClient
+	clients        map[string]ReporterResourceClient
 }
 
 func NewReporter(reporterRef string, statusClient resources.StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
@@ -255,7 +248,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			updatedResource, resourceToWrite, writeErr = r.attemptUpdate(ctx, client, resourceToWrite, status, report.snapshots)
+			updatedResource, resourceToWrite, writeErr = r.attemptUpdate(ctx, client, resourceToWrite, status, report.Messages)
 			return writeErr
 		})
 
@@ -278,7 +271,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status, snapshots Snapshots) (resources.Resource, resources.InputResource, error) {
+func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status, messages []string) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
@@ -293,7 +286,7 @@ func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceCli
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite = inputResourceFromRead
 			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
-
+			r.messagesClient.SetMessages(resourceToWrite, messages)
 			//HANDLE LOGIC FOR WRITING SNAPSHOTS TO resourceToWrite HERE
 		}
 	}
