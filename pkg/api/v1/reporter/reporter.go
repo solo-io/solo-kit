@@ -46,7 +46,7 @@ func (e ResourceErrors) Validate() error {
 }
 
 type Reporter interface {
-	WriteReports(ctx context.Context, errs ResourceErrors, subresourceStatuses map[string]*core.Status) error
+	WriteReports(ctx context.Context, errs ResourceErrors, subresourceStatuses map[string]*core.Status, messages []string) error
 }
 
 type reporter struct {
@@ -65,7 +65,7 @@ func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) 
 	}
 }
 
-func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors, subresourceStatuses map[string]*core.Status) error {
+func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors, subresourceStatuses map[string]*core.Status, messages []string) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -95,7 +95,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors
 			if readErr == nil {
 				equal, _ := hashutils.HashableEqual(updatedRes, resourceToWrite)
 				if equal {
-					// same hash, s	omething not important was done, try again:
+					// same hash, something not important was done, try again:
 					updatedRes.(resources.InputResource).SetStatus(status)
 					res, writeErr = client.Write(updatedRes, clients.WriteOpts{
 						Ctx:               ctx,

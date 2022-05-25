@@ -62,6 +62,14 @@ func (m *AnotherMockResource) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	for _, v := range m.GetMessages() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -100,6 +108,14 @@ func (m *ClusterResource) Hash(hasher hash.Hash64) (uint64, error) {
 
 	if _, err = hasher.Write([]byte(m.GetBasicField())); err != nil {
 		return 0, err
+	}
+
+	for _, v := range m.GetMesssages() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

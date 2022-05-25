@@ -62,6 +62,14 @@ func (m *MockResource) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	for _, v := range m.GetMessages() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
 	switch m.TestOneofFields.(type) {
 
 	case *MockResource_OneofOne:

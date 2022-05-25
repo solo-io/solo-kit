@@ -69,6 +69,8 @@ message MockResource {
         // oneof comment
         NestedOneOf oneof_nestedoneof = 12;
     }
+
+    repeated string messages = 17;
 }
 
 // A NestedOneOf message

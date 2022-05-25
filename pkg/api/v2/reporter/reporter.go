@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -22,10 +23,6 @@ type Report struct {
 	Warnings []string
 	Errors   error
 
-	// The most recent generation observed in the the object's metadata.
-	// If the `observedGeneration` does not match `metadata.generation`, Gloo Mesh
-	// has not processed the most recent version of this object.
-	ObservedGeneration int64 `protobuf:"varint,1,opt,name=observed_generation,json=observedGeneration,proto3" json:"observed_generation,omitempty"`
 	// Additional information about the current state of the resource.
 	Messages []string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 	// The last time the status was updated.
@@ -198,7 +195,7 @@ type ReporterResourceClient interface {
 }
 
 type Reporter interface {
-	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status) error
+	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status, messages []string) error
 }
 type StatusReporter interface {
 	Reporter
@@ -226,7 +223,7 @@ func NewReporter(reporterRef string, statusClient resources.StatusClient, report
 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
-func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
+func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status, messages []string) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -249,17 +246,17 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
-		if status.Equal(resourceStatus) {
+		if status.Equal(resourceStatus) && reflect.DeepEqual(messages, report.Messages) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
 
 		r.statusClient.SetStatus(resourceToWrite, status)
-		r.messagesClient.SetMessages(resourceToWrite, []string{"test", "this"})
+		r.messagesClient.SetMessages(resourceToWrite, messages)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			updatedResource, resourceToWrite, writeErr = r.attemptUpdate(ctx, client, resourceToWrite, status, report.Messages)
+			updatedResource, resourceToWrite, writeErr = r.attemptUpdate(ctx, client, resourceToWrite, status, messages)
 			return writeErr
 		})
 
@@ -279,8 +276,8 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 	return merr.ErrorOrNil()
 }
 
-// Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
-//    to avoid confusion about whether this may update the resource rather than just its status.
+// Ideally, this and its caller, WriteReports, would just take the resource ref and its status and/or messages, rather than the resource itself,
+//    to avoid confusion about whether this may update the resource rather than just its fields.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
 func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status, messages []string) (resources.Resource, resources.InputResource, error) {
 	var readErr error
@@ -289,7 +286,7 @@ func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceCli
 		return nil, resourceToWrite, nil
 	}
 	if readErr == nil {
-		// set resourceToWrite to the resource we read but with the new status
+		// set resourceToWrite to the resource we read but with the new status and new messages
 		// Note: it's possible that this resourceFromRead is newer than the resourceToWrite and therefore the status will be out of sync.
 		//    If so, we will soon recalculate the status. The interim incorrect status is not dangerous since the status is informational only.
 		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
@@ -297,8 +294,9 @@ func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceCli
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite = inputResourceFromRead
 			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
-			r.messagesClient.SetMessages(resourceToWrite, messages)
-			//HANDLE LOGIC FOR WRITING SNAPSHOTS TO resourceToWrite HERE
+			if messages != nil {
+				r.messagesClient.SetMessages(resourceToWrite, messages)
+			}
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})

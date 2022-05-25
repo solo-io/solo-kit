@@ -74,6 +74,17 @@ func (m *MockResource) Equal(that interface{}) bool {
 		return false
 	}
 
+	if len(m.GetMessages()) != len(target.GetMessages()) {
+		return false
+	}
+	for idx, v := range m.GetMessages() {
+
+		if strings.Compare(v, target.GetMessages()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	switch m.TestOneofFields.(type) {
 
 	case *MockResource_OneofOne:
