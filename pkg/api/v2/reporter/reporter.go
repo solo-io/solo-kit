@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/timestamp"
+
 	"k8s.io/client-go/util/retry"
 
 	"github.com/hashicorp/go-multierror"
@@ -19,7 +21,15 @@ import (
 type Report struct {
 	Warnings []string
 	Errors   error
-	Messages []string
+
+	// The most recent generation observed in the the object's metadata.
+	// If the `observedGeneration` does not match `metadata.generation`, Gloo Mesh
+	// has not processed the most recent version of this object.
+	ObservedGeneration int64 `protobuf:"varint,1,opt,name=observed_generation,json=observedGeneration,proto3" json:"observed_generation,omitempty"`
+	// Additional information about the current state of the resource.
+	Messages []string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	// The last time the status was updated.
+	UpdatedAt *timestamp.Timestamp `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 }
 
 type ResourceReports map[resources.InputResource]Report
