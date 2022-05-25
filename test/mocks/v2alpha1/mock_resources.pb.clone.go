@@ -47,6 +47,15 @@ func (m *MockResource) Clone() proto.Message {
 		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.Metadata)
 	}
 
+	if m.GetMessages() != nil {
+		target.Messages = make([]string, len(m.GetMessages()))
+		for idx, v := range m.GetMessages() {
+
+			target.Messages[idx] = v
+
+		}
+	}
+
 	switch m.WeStuckItInAOneof.(type) {
 
 	case *MockResource_SomeDumbField:

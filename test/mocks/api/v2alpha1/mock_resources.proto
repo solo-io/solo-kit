@@ -34,6 +34,8 @@ message MockResource {
         string oneof_one = 3;
         bool oneof_two = 2;
     };
+
+    repeated string messages = 17;
 }
 
 message FrequentlyChangingAnnotationsResource {

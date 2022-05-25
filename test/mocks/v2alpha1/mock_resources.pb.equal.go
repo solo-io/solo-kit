@@ -66,6 +66,17 @@ func (m *MockResource) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetMessages()) != len(target.GetMessages()) {
+		return false
+	}
+	for idx, v := range m.GetMessages() {
+
+		if strings.Compare(v, target.GetMessages()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	switch m.WeStuckItInAOneof.(type) {
 
 	case *MockResource_SomeDumbField:

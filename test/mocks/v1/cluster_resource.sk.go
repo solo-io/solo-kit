@@ -41,6 +41,10 @@ func (r *ClusterResource) GetStatus() *core.Status {
 	return nil
 }
 
+func (r *ClusterResource) SetMessages(messages []string) {
+	r.Messages = messages
+}
+
 func (r *ClusterResource) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
 	r.NamespacedStatuses = namespacedStatuses
 }

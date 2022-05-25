@@ -103,6 +103,10 @@ func (r *{{ .Name }}) GetStatus() *core.Status {
 	return nil
 }
 
+func (r *{{ .Name }}) SetMessages(messages []string) {
+	r.Messages = messages
+}
+
 func (r *{{ .Name }}) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
 	r.NamespacedStatuses = namespacedStatuses
 }

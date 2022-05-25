@@ -41,6 +41,10 @@ func (r *MockResource) GetStatus() *core.Status {
 	return nil
 }
 
+func (r *MockResource) SetMessages(messages []string) {
+	r.Messages = messages
+}
+
 func (r *MockResource) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
 	r.NamespacedStatuses = namespacedStatuses
 }
