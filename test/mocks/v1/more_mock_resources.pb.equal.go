@@ -129,12 +129,12 @@ func (m *ClusterResource) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetMesssages()) != len(target.GetMesssages()) {
+	if len(m.GetMessages()) != len(target.GetMessages()) {
 		return false
 	}
-	for idx, v := range m.GetMesssages() {
+	for idx, v := range m.GetMessages() {
 
-		if strings.Compare(v, target.GetMesssages()[idx]) != 0 {
+		if strings.Compare(v, target.GetMessages()[idx]) != 0 {
 			return false
 		}
 
