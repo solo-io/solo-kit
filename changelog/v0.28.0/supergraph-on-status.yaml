@@ -1,4 +1,4 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: BREAKING_CHANGE
     issueLink: https://github.com/solo-io/solo-projects/issues/3338
     description: Add graphqlSnapshot field to status to Report for exposing computed supergraph
