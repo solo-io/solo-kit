@@ -36,7 +36,7 @@ var _ = Describe("Reporter", func() {
 			r1.(*v1.MockResource): fmt.Errorf("everyone makes mistakes"),
 			r2.(*v1.MockResource): fmt.Errorf("try your best"),
 		}
-		err = reporter.WriteReports(context.TODO(), resourceErrs, nil, nil)
+		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		r1, err = mockResourceClient.Read(r1.GetMetadata().Namespace, r1.GetMetadata().Name, clients.ReadOpts{})
@@ -73,7 +73,7 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(r1updated.GetMetadata().ResourceVersion))
 
-		err = reporter.WriteReports(context.TODO(), resourceErrs, nil, nil)
+		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

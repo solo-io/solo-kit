@@ -46,7 +46,7 @@ func (e ResourceErrors) Validate() error {
 }
 
 type Reporter interface {
-	WriteReports(ctx context.Context, errs ResourceErrors, subresourceStatuses map[string]*core.Status, messages []string) error
+	WriteReports(ctx context.Context, errs ResourceErrors, subresourceStatuses map[string]*core.Status) error
 }
 
 type reporter struct {
@@ -65,7 +65,7 @@ func NewReporter(reporterRef string, resourceClients ...clients.ResourceClient) 
 	}
 }
 
-func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors, subresourceStatuses map[string]*core.Status, messages []string) error {
+func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceErrors, subresourceStatuses map[string]*core.Status) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 

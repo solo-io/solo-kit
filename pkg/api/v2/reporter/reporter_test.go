@@ -20,7 +20,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
-var _ = FDescribe("Reporter", func() {
+var _ = Describe("Reporter", func() {
 
 	var (
 		reporter                               rep.Reporter
