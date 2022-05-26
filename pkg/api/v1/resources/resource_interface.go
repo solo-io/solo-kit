@@ -74,9 +74,6 @@ type MessagesSetter interface {
 type StatusClient interface {
 	StatusGetter
 	StatusSetter
-}
-
-type MessagesClient interface {
 	MessagesGetter
 	MessagesSetter
 }

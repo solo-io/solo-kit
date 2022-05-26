@@ -16,15 +16,8 @@ type NamespacedStatusesClient struct {
 	statusReporterNamespace string
 }
 
-type NamespacedMessagesClient struct {
-}
-
 func NewNamespacedStatusesClient(namespace string) *NamespacedStatusesClient {
 	return &NamespacedStatusesClient{statusReporterNamespace: namespace}
-}
-
-func NewNamespacedMessagesClient() *NamespacedMessagesClient {
-	return &NamespacedMessagesClient{}
 }
 
 func (s *NamespacedStatusesClient) GetStatus(resource resources.InputResource) *core.Status {
@@ -35,7 +28,7 @@ func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, s
 	setStatusForNamespace(resource, status, s.statusReporterNamespace)
 }
 
-func (s *NamespacedMessagesClient) GetMessages(resource resources.InputResource) []string {
+func (s *NamespacedStatusesClient) GetMessages(resource resources.InputResource) []string {
 	messages := resource.GetMessages()
 	if messages == nil {
 		return nil
@@ -43,11 +36,18 @@ func (s *NamespacedMessagesClient) GetMessages(resource resources.InputResource)
 	return messages
 }
 
-func (s *NamespacedMessagesClient) SetMessages(resource resources.InputResource, messages []string) {
+func (s *NamespacedStatusesClient) SetMessages(resource resources.InputResource, messages []string) {
 	resource.SetMessages(messages)
 }
 
 type NoOpStatusClient struct {
+}
+
+func (n *NoOpStatusClient) GetMessages(resource resources.InputResource) []string {
+	return nil
+}
+
+func (n *NoOpStatusClient) SetMessages(resource resources.InputResource, messages []string) {
 }
 
 func NewNoOpStatusClient() *NoOpStatusClient {

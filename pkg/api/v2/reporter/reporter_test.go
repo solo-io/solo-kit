@@ -20,20 +20,19 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
-var _ = Describe("Reporter", func() {
+var _ = FDescribe("Reporter", func() {
 
 	var (
 		reporter                               rep.Reporter
 		mockResourceClient, fakeResourceClient clients.ResourceClient
 
-		statusClient   = statusutils.NewNamespacedStatusesClient(namespace)
-		messagesClient = statusutils.NewNamespacedMessagesClient()
+		statusClient = statusutils.NewNamespacedStatusesClient(namespace)
 	)
 
 	BeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
-		reporter = rep.NewReporter("test", statusClient, messagesClient, mockResourceClient, fakeResourceClient)
+		reporter = rep.NewReporter("test", statusClient, mockResourceClient, fakeResourceClient)
 	})
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
@@ -83,7 +82,7 @@ var _ = Describe("Reporter", func() {
 			ReportedBy: "test",
 		}))
 
-		messages := messagesClient.GetMessages(r4.(*v1.MockResource))
+		messages := statusClient.GetMessages(r4.(*v1.MockResource))
 		Expect(messages).To(Equal([]string{"I'm just a message"}))
 	})
 
@@ -289,7 +288,7 @@ var _ = Describe("Reporter", func() {
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockedResourceClient = mocks.NewMockResourceClient(mockCtrl)
 			mockedResourceClient.EXPECT().Kind().Return("*v1.MockResource")
-			reporter = rep.NewReporter("test", statusClient, messagesClient, mockedResourceClient)
+			reporter = rep.NewReporter("test", statusClient, mockedResourceClient)
 		})
 
 		It("checks to make sure a resource exists before writing to it", func() {

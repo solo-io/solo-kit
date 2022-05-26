@@ -203,22 +203,20 @@ type StatusReporter interface {
 }
 
 type reporter struct {
-	reporterRef    string
-	statusClient   resources.StatusClient
-	messagesClient resources.MessagesClient
-	clients        map[string]ReporterResourceClient
+	reporterRef  string
+	statusClient resources.StatusClient
+	clients      map[string]ReporterResourceClient
 }
 
-func NewReporter(reporterRef string, statusClient resources.StatusClient, messagesClient resources.MessagesClient, reporterClients ...ReporterResourceClient) StatusReporter {
+func NewReporter(reporterRef string, statusClient resources.StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
 	return &reporter{
-		reporterRef:    reporterRef,
-		statusClient:   statusClient,
-		messagesClient: messagesClient,
-		clients:        clientsByKind,
+		reporterRef:  reporterRef,
+		statusClient: statusClient,
+		clients:      clientsByKind,
 	}
 }
 
@@ -246,7 +244,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
-		resourceMessages := r.messagesClient.GetMessages(resource)
+		resourceMessages := r.statusClient.GetMessages(resource)
 
 		if status.Equal(resourceStatus) && reflect.DeepEqual(report.Messages, resourceMessages) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
@@ -255,7 +253,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 
 		r.statusClient.SetStatus(resourceToWrite, status)
 		if report.Messages != nil {
-			r.messagesClient.SetMessages(resourceToWrite, report.Messages)
+			r.statusClient.SetMessages(resourceToWrite, report.Messages)
 		}
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
@@ -299,7 +297,7 @@ func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceCli
 			resourceToWrite = inputResourceFromRead
 			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
 			if messagesToWrite != nil {
-				r.messagesClient.SetMessages(resourceToWrite, messagesToWrite)
+				r.statusClient.SetMessages(resourceToWrite, messagesToWrite)
 			}
 		}
 	}
