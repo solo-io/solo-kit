@@ -2,7 +2,6 @@ package reporter
 
 import (
 	"context"
-	"reflect"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -246,13 +245,14 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
-		if status.Equal(resourceStatus) && reflect.DeepEqual(messages, report.Messages) {
+		//&& reflect.DeepEqual(messages, report.Messages)
+		if status.Equal(resourceStatus) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
 
 		r.statusClient.SetStatus(resourceToWrite, status)
-		r.messagesClient.SetMessages(resourceToWrite, messages)
+		//r.messagesClient.SetMessages(resourceToWrite, messages)
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
@@ -294,9 +294,9 @@ func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceCli
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite = inputResourceFromRead
 			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
-			if messages != nil {
+			/*if messages != nil {
 				r.messagesClient.SetMessages(resourceToWrite, messages)
-			}
+			}*/
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
