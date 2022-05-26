@@ -46,7 +46,7 @@ var _ = Describe("Reporter", func() {
 			r2.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("try your best")},
 			r3.(*v1.MockResource): rep.Report{Warnings: []string{"didn't somebody ever tell ya", "it's not gonna be easy?"}},
 		}
-		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
+		err = reporter.WriteReports(context.TODO(), resourceErrs, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		r1, err = mockResourceClient.Read(r1.GetMetadata().Namespace, r1.GetMetadata().Name, clients.ReadOpts{})
@@ -92,7 +92,7 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(r1updated.GetMetadata().ResourceVersion))
 
-		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
+		err = reporter.WriteReports(context.TODO(), resourceErrs, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -293,7 +293,7 @@ var _ = Describe("Reporter", func() {
 			// Since the resource doesn't exist, we shouldn't write to it.
 			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, nil).Times(0)
 
-			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
+			err := reporter.WriteReports(context.TODO(), resourceErrs, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(resourceErrs)).To(Equal(0))
 		})
@@ -316,7 +316,7 @@ var _ = Describe("Reporter", func() {
 			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(res, nil)
 			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil)
 
-			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
+			err := reporter.WriteReports(context.TODO(), resourceErrs, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -333,7 +333,7 @@ var _ = Describe("Reporter", func() {
 			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, resVerErr)
 			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, errors.Errorf("no read RBAC")).Times(2)
 
-			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
+			err := reporter.WriteReports(context.TODO(), resourceErrs, nil, nil)
 			Expect(err).To(HaveOccurred())
 			flattenedErrs := err.(*multierror.Error).WrappedErrors()
 			Expect(flattenedErrs).To(HaveLen(1))
