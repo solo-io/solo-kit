@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -194,7 +195,7 @@ type ReporterResourceClient interface {
 }
 
 type Reporter interface {
-	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status, messages []string) error
+	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status) error
 }
 type StatusReporter interface {
 	Reporter
@@ -208,21 +209,22 @@ type reporter struct {
 	clients        map[string]ReporterResourceClient
 }
 
-func NewReporter(reporterRef string, statusClient resources.StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
+func NewReporter(reporterRef string, statusClient resources.StatusClient, messagesClient resources.MessagesClient, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
 	return &reporter{
-		reporterRef:  reporterRef,
-		statusClient: statusClient,
-		clients:      clientsByKind,
+		reporterRef:    reporterRef,
+		statusClient:   statusClient,
+		messagesClient: messagesClient,
+		clients:        clientsByKind,
 	}
 }
 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
-func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status, messages []string) error {
+func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -244,19 +246,21 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
+		resourceMessages := r.messagesClient.GetMessages(resource)
 
-		//&& reflect.DeepEqual(messages, report.Messages)
-		if status.Equal(resourceStatus) {
+		if status.Equal(resourceStatus) && reflect.DeepEqual(report.Messages, resourceMessages) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
 
 		r.statusClient.SetStatus(resourceToWrite, status)
-		//r.messagesClient.SetMessages(resourceToWrite, messages)
+		if report.Messages != nil {
+			r.messagesClient.SetMessages(resourceToWrite, report.Messages)
+		}
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			updatedResource, resourceToWrite, writeErr = r.attemptUpdate(ctx, client, resourceToWrite, status, messages)
+			updatedResource, resourceToWrite, writeErr = r.attemptUpdate(ctx, client, resourceToWrite, status, report.Messages)
 			return writeErr
 		})
 
@@ -279,7 +283,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status and/or messages, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its fields.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status, messages []string) (resources.Resource, resources.InputResource, error) {
+func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status, messagesToWrite []string) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
@@ -294,9 +298,9 @@ func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceCli
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite = inputResourceFromRead
 			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
-			/*if messages != nil {
-				r.messagesClient.SetMessages(resourceToWrite, messages)
-			}*/
+			if messagesToWrite != nil {
+				r.messagesClient.SetMessages(resourceToWrite, messagesToWrite)
+			}
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})

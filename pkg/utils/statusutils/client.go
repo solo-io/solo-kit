@@ -16,8 +16,15 @@ type NamespacedStatusesClient struct {
 	statusReporterNamespace string
 }
 
+type NamespacedMessagesClient struct {
+}
+
 func NewNamespacedStatusesClient(namespace string) *NamespacedStatusesClient {
 	return &NamespacedStatusesClient{statusReporterNamespace: namespace}
+}
+
+func NewNamespacedMessagesClient() *NamespacedMessagesClient {
+	return &NamespacedMessagesClient{}
 }
 
 func (s *NamespacedStatusesClient) GetStatus(resource resources.InputResource) *core.Status {
@@ -26,6 +33,18 @@ func (s *NamespacedStatusesClient) GetStatus(resource resources.InputResource) *
 
 func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, status *core.Status) {
 	setStatusForNamespace(resource, status, s.statusReporterNamespace)
+}
+
+func (s *NamespacedMessagesClient) GetMessages(resource resources.InputResource) []string {
+	messages := resource.GetMessages()
+	if messages == nil {
+		return nil
+	}
+	return messages
+}
+
+func (s *NamespacedMessagesClient) SetMessages(resource resources.InputResource, messages []string) {
+	resource.SetMessages(messages)
 }
 
 type NoOpStatusClient struct {
@@ -61,18 +80,6 @@ func getStatusForNamespace(resource resources.InputResource, namespace string) *
 	}
 
 	return statuses[namespace]
-}
-
-//func setMessages(resource resources.InputResource, messages []string) {
-//	resource.SetMessages(messages)
-//}
-
-func getMessages(resource resources.InputResource) []string {
-	messages := resource.GetMessages()
-	if messages == nil {
-		return nil
-	}
-	return messages
 }
 
 // These code is only used to support the deprecated SetStatus and GetStatus
