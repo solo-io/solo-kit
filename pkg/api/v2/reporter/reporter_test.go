@@ -3,6 +3,7 @@ package reporter_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/golang/mock/gomock"
