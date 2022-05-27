@@ -21,7 +21,7 @@ type Report struct {
 	Errors   error
 
 	// Additional information about the current state of the resource.
-	Messages []string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	Messages []string
 }
 
 type ResourceReports map[resources.InputResource]Report
@@ -249,7 +249,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			updatedResource, resourceToWrite, writeErr = r.attemptUpdate(ctx, client, resourceToWrite, status, report.Messages)
+			updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
 			return writeErr
 		})
 
@@ -272,7 +272,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status and/or messages, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its fields.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status, messagesToWrite []string) (resources.Resource, resources.InputResource, error) {
+func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
