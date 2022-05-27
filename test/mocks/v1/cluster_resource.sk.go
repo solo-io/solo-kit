@@ -42,17 +42,6 @@ func (r *ClusterResource) GetStatus() *core.Status {
 	return nil
 }
 
-func (r *ClusterResource) getMessages() []string {
-	if r.Messages != nil && len(r.Messages) != 0 {
-		return r.Messages
-	}
-	return nil
-}
-
-func (r *ClusterResource) SetMessages(messages []string) {
-	r.Messages = messages
-}
-
 func (r *ClusterResource) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
 	r.NamespacedStatuses = namespacedStatuses
 }

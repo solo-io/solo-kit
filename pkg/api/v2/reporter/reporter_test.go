@@ -20,7 +20,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
-var _ = Describe("Reporter", func() {
+var _ = FDescribe("Reporter", func() {
 
 	var (
 		reporter                               rep.Reporter
@@ -66,6 +66,7 @@ var _ = Describe("Reporter", func() {
 			State:      2,
 			Reason:     "everyone makes mistakes",
 			ReportedBy: "test",
+			Messages:   nil,
 		}))
 
 		status = statusClient.GetStatus(r2.(*v1.MockResource))
@@ -73,6 +74,7 @@ var _ = Describe("Reporter", func() {
 			State:      2,
 			Reason:     "try your best",
 			ReportedBy: "test",
+			Messages:   nil,
 		}))
 
 		status = statusClient.GetStatus(r3.(*v1.MockResource))
@@ -80,10 +82,16 @@ var _ = Describe("Reporter", func() {
 			State:      core.Status_Warning,
 			Reason:     "warning: \n  didn't somebody ever tell ya\nit's not gonna be easy?",
 			ReportedBy: "test",
+			Messages:   nil,
 		}))
 
-		messages := statusClient.GetMessages(r4.(*v1.MockResource))
-		Expect(messages).To(Equal([]string{"I'm just a message"}))
+		status = statusClient.GetStatus(r4.(*v1.MockResource))
+		Expect(status).To(Equal(&core.Status{
+			State:      core.Status_Accepted,
+			Reason:     "",
+			ReportedBy: "test",
+			Messages:   []string{"I'm just a message"},
+		}))
 	})
 
 	It("handles conflict", func() {

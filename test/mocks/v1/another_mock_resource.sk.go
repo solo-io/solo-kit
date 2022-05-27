@@ -42,17 +42,6 @@ func (r *AnotherMockResource) GetStatus() *core.Status {
 	return nil
 }
 
-func (r *AnotherMockResource) getMessages() []string {
-	if r.Messages != nil && len(r.Messages) != 0 {
-		return r.Messages
-	}
-	return nil
-}
-
-func (r *AnotherMockResource) SetMessages(messages []string) {
-	r.Messages = messages
-}
-
 func (r *AnotherMockResource) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
 	r.NamespacedStatuses = namespacedStatuses
 }

@@ -51,8 +51,6 @@ type InputResource interface {
 	SetStatus(status *core.Status)
 	GetNamespacedStatuses() *core.NamespacedStatuses
 	SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses)
-	GetMessages() []string
-	SetMessages(messages []string)
 }
 
 type StatusGetter interface {
@@ -63,19 +61,9 @@ type StatusSetter interface {
 	SetStatus(resource InputResource, status *core.Status)
 }
 
-type MessagesGetter interface {
-	GetMessages(resource InputResource) []string
-}
-
-type MessagesSetter interface {
-	SetMessages(resource InputResource, messages []string)
-}
-
 type StatusClient interface {
 	StatusGetter
 	StatusSetter
-	MessagesGetter
-	MessagesSetter
 }
 
 type StatusUnmarshaler interface {

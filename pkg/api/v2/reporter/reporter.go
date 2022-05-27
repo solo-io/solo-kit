@@ -2,10 +2,7 @@ package reporter
 
 import (
 	"context"
-	"reflect"
 	"strings"
-
-	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"k8s.io/client-go/util/retry"
 
@@ -25,8 +22,6 @@ type Report struct {
 
 	// Additional information about the current state of the resource.
 	Messages []string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
-	// The last time the status was updated.
-	UpdatedAt *timestamp.Timestamp `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 }
 
 type ResourceReports map[resources.InputResource]Report
@@ -241,20 +236,16 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		if !ok {
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
-		status := r.StatusFromReport(report, subresourceStatuses)
+		status := r.StatusFromReport(report, subresourceStatuses) //HERE
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
-		resourceMessages := r.statusClient.GetMessages(resource)
 
-		if status.Equal(resourceStatus) && reflect.DeepEqual(report.Messages, resourceMessages) {
+		if status.Equal(resourceStatus) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
 
 		r.statusClient.SetStatus(resourceToWrite, status)
-		if report.Messages != nil {
-			r.statusClient.SetMessages(resourceToWrite, report.Messages)
-		}
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
@@ -296,9 +287,6 @@ func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceCli
 		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
 			resourceToWrite = inputResourceFromRead
 			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
-			if messagesToWrite != nil {
-				r.statusClient.SetMessages(resourceToWrite, messagesToWrite)
-			}
 		}
 	}
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
@@ -329,6 +317,10 @@ func (r *reporter) attemptUpdate(ctx context.Context, client ReporterResourceCli
 }
 
 func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
+	var messages []string
+	if len(report.Messages) != 0 {
+		messages = report.Messages
+	}
 
 	var warningReason string
 	if len(report.Warnings) > 0 {
@@ -345,6 +337,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 			Reason:              errorReason,
 			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
+			Messages:            messages,
 		}
 	}
 
@@ -354,6 +347,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 			Reason:              warningReason,
 			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
+			Messages:            messages,
 		}
 	}
 
@@ -361,5 +355,6 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		State:               core.Status_Accepted,
 		ReportedBy:          r.reporterRef,
 		SubresourceStatuses: subresourceStatuses,
+		Messages:            messages,
 	}
 }

@@ -28,18 +28,6 @@ func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, s
 	setStatusForNamespace(resource, status, s.statusReporterNamespace)
 }
 
-func (s *NamespacedStatusesClient) GetMessages(resource resources.InputResource) []string {
-	messages := resource.GetMessages()
-	if messages == nil {
-		return nil
-	}
-	return messages
-}
-
-func (s *NamespacedStatusesClient) SetMessages(resource resources.InputResource, messages []string) {
-	resource.SetMessages(messages)
-}
-
 type NoOpStatusClient struct {
 }
 
