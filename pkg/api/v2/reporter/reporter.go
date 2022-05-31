@@ -131,6 +131,21 @@ func (e ResourceReports) AddWarning(res resources.InputResource, warning string)
 	e[res] = rpt
 }
 
+func (e ResourceReports) AddMessages(res resources.InputResource, message ...string) {
+	for _, warn := range message {
+		e.AddMessages(res, warn)
+	}
+}
+
+func (e ResourceReports) AddMessage(res resources.InputResource, message string) {
+	if message == "" {
+		return
+	}
+	rpt := e[res]
+	rpt.Messages = append(rpt.Warnings, message)
+	e[res] = rpt
+}
+
 func (e ResourceReports) Find(kind string, ref *core.ResourceRef) (resources.InputResource, Report) {
 	for res, rpt := range e {
 		if resources.Kind(res) == kind && res.GetMetadata().Ref().Equal(ref) {
