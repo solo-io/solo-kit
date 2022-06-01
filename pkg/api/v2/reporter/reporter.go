@@ -56,6 +56,17 @@ func (e ResourceReports) Merge(resErrs ResourceReports) {
 				}
 			}
 
+			// Merge messages lists
+			allMessages := make(map[string]bool)
+			for _, message := range firstReport.Messages {
+				allWarnings[message] = true
+			}
+			for _, message := range secondReport.Messages {
+				if _, found := allWarnings[message]; !found {
+					firstReport.Messages = append(firstReport.Messages, message)
+				}
+			}
+
 			if firstReport.Errors == nil {
 				// Only 2nd has errs
 				firstReport.Errors = secondReport.Errors
