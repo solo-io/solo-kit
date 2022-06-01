@@ -152,7 +152,10 @@ func (e ResourceReports) AddMessage(res resources.InputResource, message string)
 	if message == "" {
 		return
 	}
-	rpt := e[res]
+	rpt, found := e[res]
+	if !found {
+		return
+	}
 	rpt.Messages = append(rpt.Messages, message)
 	e[res] = rpt
 }
@@ -262,7 +265,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		if !ok {
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
-		status := r.StatusFromReport(report, subresourceStatuses) //HERE
+		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
