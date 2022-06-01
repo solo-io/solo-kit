@@ -133,7 +133,7 @@ func (e ResourceReports) AddWarning(res resources.InputResource, warning string)
 
 func (e ResourceReports) AddMessages(res resources.InputResource, message ...string) {
 	for _, warn := range message {
-		e.AddMessages(res, warn)
+		e.AddMessage(res, warn)
 	}
 }
 
