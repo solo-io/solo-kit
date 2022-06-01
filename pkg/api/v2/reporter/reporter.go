@@ -142,7 +142,7 @@ func (e ResourceReports) AddMessage(res resources.InputResource, message string)
 		return
 	}
 	rpt := e[res]
-	rpt.Messages = append(rpt.Warnings, message)
+	rpt.Messages = append(rpt.Messages, message)
 	e[res] = rpt
 }
 
