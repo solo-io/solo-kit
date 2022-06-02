@@ -152,10 +152,7 @@ func (e ResourceReports) AddMessage(res resources.InputResource, message string)
 	if message == "" {
 		return
 	}
-	rpt, found := e[res]
-	if !found {
-		return
-	}
+	rpt := e[res]
 	rpt.Messages = append(rpt.Messages, message)
 	e[res] = rpt
 }
