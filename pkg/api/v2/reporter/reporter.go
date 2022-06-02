@@ -142,9 +142,9 @@ func (e ResourceReports) AddWarning(res resources.InputResource, warning string)
 	e[res] = rpt
 }
 
-func (e ResourceReports) AddMessages(res resources.InputResource, message ...string) {
-	for _, warn := range message {
-		e.AddMessage(res, warn)
+func (e ResourceReports) AddMessages(res resources.InputResource, messages ...string) {
+	for _, message := range messages {
+		e.AddMessage(res, message)
 	}
 }
 
