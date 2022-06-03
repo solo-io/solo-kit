@@ -70,17 +70,6 @@ func (m *AnotherMockResource) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetMessages()) != len(target.GetMessages()) {
-		return false
-	}
-	for idx, v := range m.GetMessages() {
-
-		if strings.Compare(v, target.GetMessages()[idx]) != 0 {
-			return false
-		}
-
-	}
-
 	return true
 }
 
@@ -127,17 +116,6 @@ func (m *ClusterResource) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetBasicField(), target.GetBasicField()) != 0 {
 		return false
-	}
-
-	if len(m.GetMessages()) != len(target.GetMessages()) {
-		return false
-	}
-	for idx, v := range m.GetMessages() {
-
-		if strings.Compare(v, target.GetMessages()[idx]) != 0 {
-			return false
-		}
-
 	}
 
 	return true

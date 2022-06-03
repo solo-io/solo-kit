@@ -31,13 +31,6 @@ func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, s
 type NoOpStatusClient struct {
 }
 
-func (n *NoOpStatusClient) GetMessages(resource resources.InputResource) []string {
-	return nil
-}
-
-func (n *NoOpStatusClient) SetMessages(resource resources.InputResource, messages []string) {
-}
-
 func NewNoOpStatusClient() *NoOpStatusClient {
 	return &NoOpStatusClient{}
 }

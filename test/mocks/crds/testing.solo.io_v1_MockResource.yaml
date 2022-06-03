@@ -29,10 +29,6 @@ spec:
             properties:
               data.json:
                 type: string
-              messages:
-                items:
-                  type: string
-                type: array
               namespacedStatuses:
                 description: The NamespacedStatuses field comment
                 properties:

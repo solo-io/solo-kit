@@ -27,8 +27,6 @@ message AnotherMockResource {
 
     // comments that go above the basic field in our docs
     string basic_field = 2;
-
-    repeated string messages = 17;
 }
 
 message ClusterResource {
@@ -42,6 +40,4 @@ message ClusterResource {
 
     // comments that go above the basic field in our docs
     string basic_field = 2;
-
-    repeated string messages = 17;
 }
