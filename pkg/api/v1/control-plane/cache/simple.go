@@ -95,6 +95,11 @@ type snapshotCache struct {
 	// ads flag to hold responses until all resources are named
 	ads bool
 
+	// orderWatches should be set when using ads to avoid sending in an
+	// incorrect ordering. It however does add overhead so may be
+	// disabled if willing to roll subscribed xds servers.
+	orderWatches bool
+
 	// snapshots are cached resources indexed by node IDs
 	snapshots map[string]Snapshot
 
@@ -142,7 +147,19 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 	// trigger existing watches for which version changed
 	if info, ok := cache.status[node]; ok {
 		info.mu.Lock()
-		for id, watch := range info.watches {
+
+		info.generatewatchOrderingList()
+		// If ADS is enabled we need to order response watches so we guarantee
+		// sending them in the correct order since Go's default implementation
+		// of maps are randomized order when ranged over.
+		if cache.orderWatches && cache.ads {
+			info.orderResponseWatches()
+		}
+
+		for _, watchKey := range info.watchOrderingList {
+			id := watchKey.ID
+			watch := info.watches[id]
+
 			version := snapshot.GetResources(watch.Request.TypeUrl).Version
 			if version != watch.Request.VersionInfo {
 				if cache.log != nil {
