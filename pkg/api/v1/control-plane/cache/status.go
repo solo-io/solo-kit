@@ -40,6 +40,7 @@ type StatusInfo interface {
 	GetLastWatchRequestTime() time.Time
 }
 
+// statusInfo contains all the response watches for a node.
 type statusInfo struct {
 	// node is the constant Envoy node metadata.
 	node *envoy_config_core_v3.Node
@@ -60,7 +61,7 @@ type ResponseWatch struct {
 	// Request is the original request for the watch.
 	Request Request
 
-	// Response is the channel to push response to.
+	// Response is the channel to push a response to.
 	Response chan Response
 }
 
