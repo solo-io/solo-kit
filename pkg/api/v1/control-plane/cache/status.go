@@ -82,6 +82,7 @@ func (info *statusInfo) GetNode() *envoy_config_core_v3.Node {
 func (info *statusInfo) GetNumWatches() int {
 	info.mu.RLock()
 	defer info.mu.RUnlock()
+	// TODO GetNumberOfWatches()
 	return len(info.watches)
 }
 

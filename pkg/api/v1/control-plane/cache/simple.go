@@ -143,6 +143,93 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 	if info, ok := cache.status[node]; ok {
 		info.mu.Lock()
 		for id, watch := range info.watches {
+			/*
+				ideally we want to be able to get the watches in a sorted maner
+				so first step is to do this....
+
+				Second step is to have a structure that mantains the order
+				We could ask it things like get ids of watches
+
+				GetWatches() - returns the list of watches or a struct that allows us to iterate over the list in O(N)
+				DeleteWatch(watchId) - deletes the watch
+				CloseWatch(watchId) - closes the watch
+				AddWatch(watch) - places the watch into the structure, based off its ordering
+				GetNumberOfWatches() - returns the number of watches
+
+				cache will be given a priorityList
+				IE: like the following
+				[
+					highest priority: [cluser, listener]
+					second highest priority: [other1, other2]
+				]
+				any types not mentioned are the lowest priority
+
+				GetWatches() {
+					returns a struct with the following
+					GetNext() - if nil then no more in structure
+						- else returns the next watch
+					Create() {
+						this.currentIndex = 0
+						this.currentListIndex= 0
+						this.last = this.len(watches)
+						this.priorityOfWatches
+						this.currentListLength = len(this.priorityOfWatches[this.currentListIndex])
+					}
+					GetNext() {
+						if this.currentIndex == this.currentListLength {
+							this.currentListLength++
+							this.currentIndex = 0
+						}
+						if this.currentListLength >= this.numberOfPriorities {
+							return nil
+						} else {
+							tmp := this.priorityOfWatches[this.currentListIndex][this.currentIndex]
+							this.currentIndex++
+							return tmp
+						}
+					}
+				}
+
+				AddWatch(watch, watchId) {
+					priority = -1
+					get Type URL
+					// alternative is to match in a map...
+					for structIndex, structured in trynches {
+						for t in structured {
+							if t == typeURL {
+								this.priorityOfwatches[structIndex][watchId] = watch
+								priority = structIndex
+							}
+						}
+					}
+					if notMatched {
+						// add to the last index of the watches
+						priority =  len(this.priorityOfwatches) - 1
+						this.priorityOfwatches[len(this.priorityOfwatches) - 1].append(watch)
+					}
+					this.mapOfWatches[watchId] = watch
+					this.count++
+				}
+
+				closeWatch(watchId) {
+					close(this.mapOfWatches[watchId])
+				}
+
+				deleteWatch(watchId) {
+					m = this.mapOfWatches[watchId]
+					delete this.priorityOfwatches[m.priority]
+					delete this.mapOfWatches[watchId]
+					this.count--
+				}
+
+				GetNumberOfWatches() {
+					return this.count
+				}
+			*/
+			// orderedResponseWatches := GetWatches()
+
+			// TODO-JAKE order the watches based off the typeURL
+			// for watch := orderedResponseWatches.HasNext(); watch != nil; watch = orderedResponseWatches.HasNext()
 			version := snapshot.GetResources(watch.Request.TypeUrl).Version
 			if version != watch.Request.VersionInfo {
 				if cache.log != nil {
@@ -185,6 +272,7 @@ func (cache *snapshotCache) ClearSnapshot(node string) {
 	defer cache.mu.Unlock()
 
 	delete(cache.snapshots, node)
+	// TODO add a delete method for the watches?
 	delete(cache.status, node)
 }
 
@@ -252,6 +340,8 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 				request.TypeUrl, request.ResourceNames, nodeID, request.VersionInfo)
 		}
 		info.mu.Lock()
+		// check SetSnapshot() for responses on the watches map
+		// TODO AddWatch(ResponseWatch{Request: request, Response: value}, watchId)
 		info.watches[watchID] = ResponseWatch{Request: request, Response: value}
 		info.mu.Unlock()
 		return value, cache.cancelWatch(nodeID, watchID)
@@ -277,9 +367,11 @@ func (cache *snapshotCache) cancelWatch(nodeID string, watchID int64) func() {
 		defer cache.mu.Unlock()
 		if info, ok := cache.status[nodeID]; ok {
 			info.mu.Lock()
+			// TODO-JAKE CloseWatch(watchID)
 			if watch, ok := info.watches[watchID]; ok {
 				close(watch.Response)
 			}
+			// TODO-JAKE DeleteWatch(watchID)
 			delete(info.watches, watchID)
 			info.mu.Unlock()
 		}
