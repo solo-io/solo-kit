@@ -96,41 +96,57 @@ func NewServer(ctx context.Context, config cache.Cache, callbacks Callbacks) Ser
 	return &server{ctx: ctx, cache: config, callbacks: callbacks}
 }
 
+// server sends requests to the cache to be fullfilled.
+// This generates responses asynchronously.
+// Responses are submitted back to the Envoy client or fetched from the client.
 type server struct {
-	cache     cache.Cache
+	// cache is an interface to handle resource cache, and to create channels when the resources are updated.
+	cache cache.Cache
+	// callbacks are pre and post callback used when responses and requests sent/received.
 	callbacks Callbacks
-	ctx       context.Context
-
+	// ctx is the context in which the server is alive.
+	ctx context.Context
 	// streamCount for counting bi-di streams
 	streamCount int64
 }
 
+// singleWatch contians a channel that can be used to watch for new responses from the cache.
 type singleWatch struct {
-	resource       chan cache.Response
+	// resource is the channel used to receive the response.
+	resource chan cache.Response
+	// resourceCancel is a function that allows you to close the resource channel.
 	resourceCancel func()
-	resourceNonce  string
+	// resourceNonce is the nonce used to identify the response to a request.
+	resourceNonce string
 }
 
 // watches for all xDS resource types
 type watches struct {
-	curerntwatches map[string]singleWatch
+	// currentwatches are the response channels used for each resource type.
+	// Currently the only purpose is to cancel the stored channels from the Cancel() function.
+	currentwatches map[string]singleWatch
 }
 
+// newWatches returns an instantiation of watches
 func newWatches() *watches {
 	return &watches{
-		curerntwatches: map[string]singleWatch{},
+		currentwatches: map[string]singleWatch{},
 	}
 }
 
 // Cancel all watches
 func (values *watches) Cancel() {
-	for _, v := range values.curerntwatches {
+	for _, v := range values.currentwatches {
 		if v.resourceCancel != nil {
 			v.resourceCancel()
 		}
 	}
 }
 
+// createResponse will use the response (Envoy Request with updated resources) to serialize the resources and create an Envoy Response.
+//
+// The response tells Envoy that the current SotW, based off the Envoy Requested resources.
+// The response contains its assocaited request.
 func createResponse(resp *cache.Response, typeURL string) (*envoy_service_discovery_v3.DiscoveryResponse, error) {
 	if resp == nil {
 		return nil, errors.New("missing response")
@@ -154,11 +170,19 @@ func createResponse(resp *cache.Response, typeURL string) (*envoy_service_discov
 	return out, nil
 }
 
+// TypedResponse contains the response from a xDS request with the typeURL
 type TypedResponse struct {
+	// Response is the response from a request
 	Response *cache.Response
-	TypeUrl  string
+	// TypeUrl is the type Url of the xDS request
+	TypeUrl string
 }
 
+// StreamEnvoyV3 will create a request channel that will receive requests from the streams Recv() function.
+// It will then set up the processes to handle requests when they are received, so that the server can respond to the requests.
+// The defaultTypeURL is used to identify the type of the resources that the Envoy stream is watching for.
+//
+// process is called to handle both the request and the response to the request. It does this by sending the response onto the stream.
 func (s *server) StreamEnvoyV3(
 	stream StreamEnvoyV3,
 	defaultTypeURL string,
@@ -240,6 +264,10 @@ func (s *server) sendSolo(
 	}
 }
 
+// sendEnvoyV3 returns a function that is called to send an Envoy response. The cahe response is used to create an Envoy response and update the nonce.
+//
+// It will then send the response to the stream.
+// This will handle any callbacks on the server as well.
 func (s *server) sendEnvoyV3(
 	stream envoy_service_discovery_v3.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
 ) sendFunc {
@@ -259,7 +287,15 @@ func (s *server) sendEnvoyV3(
 	}
 }
 
-// process handles a bi-di stream request
+// process handles both the request and the response of an Envoy request.
+//
+// For each request submitted onto the request channel, wait for the corresponding response on the response channel.
+//
+// For each response received from a request submitted, the send function to send the
+// response and translates it to an Envoy Response and send it back on the Envoy client.
+//
+// Requests are received from the servers stream.Recv() function
+// Callbacks are handled as well.
 func (s *server) process(
 	ctx context.Context,
 	send sendFunc,
@@ -297,6 +333,7 @@ func (s *server) process(
 		case <-s.ctx.Done():
 			return nil
 		// config watcher can send the requested resources types in any order
+		// responses come from requests submitted to createWatch()
 		case resp, more := <-responses:
 			if !more {
 				return status.Errorf(codes.Unavailable, "watching failed")
@@ -305,13 +342,14 @@ func (s *server) process(
 				return status.Errorf(codes.Unavailable, "watching failed for "+resp.TypeUrl)
 			}
 			typeurl := resp.TypeUrl
+			// send the response of a request
 			nonce, err := send(*resp.Response, typeurl, streamID, &streamNonce)
 			if err != nil {
 				return err
 			}
-			sw := values.curerntwatches[typeurl]
+			sw := values.currentwatches[typeurl]
 			sw.resourceNonce = nonce
-			values.curerntwatches[typeurl] = sw
+			values.currentwatches[typeurl] = sw
 
 		case req, more := <-reqCh:
 			// input stream ended or errored out
@@ -348,20 +386,26 @@ func (s *server) process(
 
 			// cancel existing watches to (re-)request a newer version
 			typeurl := req.TypeUrl
-			sw := values.curerntwatches[typeurl]
+			sw := values.currentwatches[typeurl]
 			if sw.resourceNonce == "" || sw.resourceNonce == nonce {
 				if sw.resourceCancel != nil {
 					sw.resourceCancel()
 				}
 
-				sw.resource, sw.resourceCancel = s.createWatch(responses, req)
-				values.curerntwatches[typeurl] = sw
+				// wait for a response on the respones channel. Send the request to generate the response asynchronously.
+				sw.resource, sw.resourceCancel = s.createResponseWatch(responses, req)
+				values.currentwatches[typeurl] = sw
 			}
 		}
 	}
 }
 
-func (s *server) createWatch(responses chan<- TypedResponse, req *cache.Request) (chan cache.Response, func()) {
+// createResponseWatch returns a channel for the response of a request and the cancel function.
+// A request is used to generate an async responce that is submitted to the respones channel.
+//
+// It creates a go routine to send responses onto the respones channel.
+// If the watch created canceled, then it will close the go routine, else there was an error and a nil response is sent.
+func (s *server) createResponseWatch(responses chan<- TypedResponse, req *cache.Request) (chan cache.Response, func()) {
 	typeurl := req.TypeUrl
 
 	watchedResource, cancelwatch := s.cache.CreateWatch(*req)
@@ -386,6 +430,7 @@ func (s *server) createWatch(responses chan<- TypedResponse, req *cache.Request)
 			case <-canceled:
 				// this was canceled. goodbye
 				return
+			// receive responses for the requested resources
 			case response, ok := <-watchedResource:
 				if !ok {
 					// resource chan is closed. this may have happened due to cancel,

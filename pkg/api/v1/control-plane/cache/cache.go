@@ -32,7 +32,7 @@ type Request = envoy_service_discovery_v3.DiscoveryRequest
 //
 // roughly copied from https://github.com/envoyproxy/go-control-plane/blob/dcf5642c8e54496938e0311fe9c48e39b609e583/pkg/cache/v3/cache.go#L45
 type ConfigWatcher interface {
-	// CreateWatch returns a new open watch from a non-empty request.
+	// CreateWatch returns a new open watch from a non-empty request to receive a response.
 	//
 	// Value channel produces requested resources, once they are available.  If
 	// the channel is closed prior to cancellation of the watch, an unrecoverable
@@ -60,15 +60,15 @@ type Cache interface {
 	GetStatusKeys() []string
 }
 
-// Response is a pre-serialized xDS response.
+// Response is a pre-serialized xDS response. It contains the updated resources for the original xDS request, the xDS request, and the version.
 type Response struct {
-	// Request is the original request.
+	// Request is the original xDS request.
 	Request envoy_service_discovery_v3.DiscoveryRequest
 
 	// Version of the resources as tracked by the cache for the given type.
 	// Proxy responds with this version as an acknowledgement.
 	Version string
 
-	// Resources to be included in the response.
+	// Resources to be included in the response. Should match the requested resources in the xDS request.
 	Resources []Resource
 }
