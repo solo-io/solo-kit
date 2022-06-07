@@ -1,3 +1,4 @@
 changelog:
-  - type: FIX
-    description: Removed unused v1 writeReports
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/3338
+    description: Removed v1 Reports
