@@ -22,7 +22,7 @@ steps:
   id: 'prepare-workspace'
 
 # download massive container in parallel
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.24'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
   entrypoint: 'bash'
   dir: *dir
   args: ['-c', 'ls']
