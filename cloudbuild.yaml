@@ -7,7 +7,7 @@ steps:
   dir: &dir '/workspace/solo-kit'
 
 # prepare-workspace to set up the project so it can be built and tested
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.4.24'
   args:
   - "--repo-owner"
   - "solo-io"
