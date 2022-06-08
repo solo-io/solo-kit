@@ -45,7 +45,7 @@ type statusInfo struct {
 	node *envoy_config_core_v3.Node
 
 	// watches are indexed channels for the response watches and the original requests.
-	watches map[int64]ResponseWatch
+	watches *PrioritySortedStruct
 
 	// the timestamp of the last watch request
 	lastWatchRequestTime time.Time
@@ -66,9 +66,11 @@ type ResponseWatch struct {
 
 // NewStatusInfo initializes a status info data structure.
 func NewStatusInfo(node *envoy_config_core_v3.Node) *statusInfo {
+	pl := [][]string{{"type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment", "type.googleapis.com/envoy.config.listener.v3.Listener"}}
+	defaultValueFunc := func(el ResponseWatch) string { return el.Request.TypeUrl }
 	out := statusInfo{
 		node:    node,
-		watches: make(map[int64]ResponseWatch),
+		watches: NewPrioritySortedStruct(pl, defaultValueFunc),
 	}
 	return &out
 }
@@ -82,8 +84,7 @@ func (info *statusInfo) GetNode() *envoy_config_core_v3.Node {
 func (info *statusInfo) GetNumWatches() int {
 	info.mu.RLock()
 	defer info.mu.RUnlock()
-	// TODO GetNumberOfWatches()
-	return len(info.watches)
+	return info.watches.Len()
 }
 
 func (info *statusInfo) GetLastWatchRequestTime() time.Time {
