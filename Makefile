@@ -105,7 +105,7 @@ verify-envoy-protos:
 # as this code is no longer used
 .PHONY: test
 test:
-	ginkgo -r  -v -race -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
+	$(DEPSGOBIN)/ginkgo -r  -v -race -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
 
 #----------------------------------------------------------------------------------
 # solo-kit-gen
