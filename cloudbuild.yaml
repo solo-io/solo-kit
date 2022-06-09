@@ -69,7 +69,7 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'SKIP_MOCK_GEN=1'
   - 'CLOUD_BUILD=1'
-  args: ['-c', 'ginkgo', '-r', '-v', '-race', '-p', '-tags', 'solokit', '-compilers=2', '-skip', 'multicluster', '-regexScansFilePath']
+  args: ['-c', 'make test']
   dir: *dir
   id: 'test'
 
