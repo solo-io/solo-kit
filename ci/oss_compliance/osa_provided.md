@@ -40,7 +40,7 @@ Name|Version|License
 [afero/mem](https://github.com/spf13/afero)|v1.3.4|Apache License 2.0
 [x/crypto](https://golang.org/x/crypto)|v0.0.0-20210513164829-c07d793c2f9a|BSD 3-clause "New" or "Revised" License
 [x/net](https://golang.org/x/net)|v0.0.0-20210226172049-e18ecbb05110|BSD 3-clause "New" or "Revised" License
-[sync/errgroup](https://golang.org/x/sync/errgroup)|v0.0.0-20200625203802-6e8e738ad208|BSD 3-clause "New" or "Revised" License
+[sync/errgroup](https://golang.org/x/sync/errgroup)|v0.0.0-20201020160332-67f06af15bc9|BSD 3-clause "New" or "Revised" License
 [x/text](https://golang.org/x/text)|v0.3.3|BSD 3-clause "New" or "Revised" License
 [xerrors/internal](https://golang.org/x/xerrors/internal)|v0.0.0-20200804184101-5ec99f83aff1|BSD 3-clause "New" or "Revised" License
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.26.0|BSD 3-clause "New" or "Revised" License
