@@ -88,6 +88,18 @@ type SnapshotCache interface {
 	ClearSnapshot(node string)
 }
 
+// CacheSettings are the settings used for a cache.
+type CacheSettings struct {
+	// Ads identifies if xDS ADS service is being useds.
+	Ads bool
+	// Hash is the interface for hashing an Envoy node.
+	Hash NodeHash
+	// Logger is the logger used to log server information.
+	Logger log.Logger
+	// PrioritySet priorizes the response watches that the cache creates by their TypeURL.
+	PrioritySet [][]string
+}
+
 type snapshotCache struct {
 	log log.Logger
 
@@ -103,6 +115,9 @@ type snapshotCache struct {
 	// hash is the hashing function for Envoy nodes
 	hash NodeHash
 
+	// prioritySet is the priority of the watches denoted by the TypeURL
+	prioritySet [][]string
+
 	mu sync.RWMutex
 }
 
@@ -117,13 +132,14 @@ type snapshotCache struct {
 // is OK.
 //
 // Logger is optional.
-func NewSnapshotCache(ads bool, hash NodeHash, logger log.Logger) SnapshotCache {
+func NewSnapshotCache(settings CacheSettings) SnapshotCache {
 	return &snapshotCache{
-		log:       logger,
-		ads:       ads,
-		snapshots: make(map[string]Snapshot),
-		status:    make(map[string]*statusInfo),
-		hash:      hash,
+		log:         settings.Logger,
+		ads:         settings.Ads,
+		snapshots:   make(map[string]Snapshot),
+		status:      make(map[string]*statusInfo),
+		hash:        settings.Hash,
+		prioritySet: settings.PrioritySet,
 	}
 }
 
@@ -183,7 +199,14 @@ func (cache *snapshotCache) ClearSnapshot(node string) {
 	defer cache.mu.Unlock()
 
 	delete(cache.snapshots, node)
-	// TODO add a delete method for the watches?
+	// clear all the active watches as well
+	info := cache.status[node]
+	info.mu.Lock()
+	defer info.mu.Unlock()
+	info.watches.Process(func(el ResponseWatch, pi PriorityIndex) {
+		close(el.Response)
+		info.watches.Delete(pi)
+	})
 	delete(cache.status, node)
 }
 
@@ -225,7 +248,7 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 
 	info, ok := cache.status[nodeID]
 	if !ok {
-		info = NewStatusInfo(request.Node)
+		info = NewStatusInfo(request.Node, cache.prioritySet)
 		cache.status[nodeID] = info
 	}
 

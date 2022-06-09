@@ -30,7 +30,7 @@ var _ = Describe("Control Plane Cache", func() {
 
 	It("returns sane values for NewStatusInfo", func() {
 		node := &envoy_config_core_v3.Node{Id: "test"}
-		info := cache.NewStatusInfo(node)
+		info := cache.NewStatusInfo(node, cache.DefaultPrioirtySet)
 
 		Expect(info.GetNode()).To(Equal(node))
 
@@ -40,7 +40,11 @@ var _ = Describe("Control Plane Cache", func() {
 	})
 
 	It("returns sane values for GetStatusKeys", func() {
-		c := cache.NewSnapshotCache(false, TestIDHash{}, nil)
+		settings := cache.CacheSettings{
+			Ads:  false,
+			Hash: TestIDHash{},
+		}
+		c := cache.NewSnapshotCache(settings)
 
 		keys := c.GetStatusKeys()
 		Expect(len(keys)).To(Equal(0))
@@ -70,8 +74,11 @@ var _ = Describe("Control Plane Cache", func() {
 			resource.RouteTypeV3,
 			resource.ListenerTypeV3,
 		}
-
-		c := cache.NewSnapshotCache(true, TestIDHash{}, nil)
+		settings := cache.CacheSettings{
+			Ads:  false,
+			Hash: TestIDHash{},
+		}
+		c := cache.NewSnapshotCache(settings)
 		key := "test"
 
 		_, err := c.GetSnapshot(key)
