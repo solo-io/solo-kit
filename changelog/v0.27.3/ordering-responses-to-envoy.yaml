@@ -1,6 +1,6 @@
 changelog:
   - type: NEW_FEATURE
-    issueLink:
+    issueLink: https://github.com/solo-io/gloo/issues/6337
     resolvesIssue: false
     description: |
       Add ordering to Response Watches so that the order sent to Envoy is in sync.
