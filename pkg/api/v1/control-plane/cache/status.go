@@ -22,12 +22,9 @@ import (
 )
 
 // priority set for Envoy as listed here in Docs https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#resource-warming
-var DefaultPrioirtySet = [][]string{
-	{"type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment", "type.googleapis.com/envoy.config.listener.v3.Listener"},
+var DefaultPrioirtySet = map[int][]string{
+	0: {"type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment", "type.googleapis.com/envoy.config.listener.v3.Listener"},
 }
-
-// GetResponseWatchPriorityValue returns the priority value of a Response Watch
-var GetResponseWatchPriorityValue = func(el ResponseWatch) string { return el.Request.TypeUrl }
 
 // NodeHash computes string identifiers for Envoy nodes.
 type NodeHash interface {
@@ -72,14 +69,18 @@ type ResponseWatch struct {
 	Response chan Response
 }
 
+func (rw ResponseWatch) GetPriority() string {
+	return rw.Request.TypeUrl
+}
+
 // NewStatusInfo initializes a status info data structure.
-func NewStatusInfo(node *envoy_config_core_v3.Node, prioritySet [][]string) *statusInfo {
+func NewStatusInfo(node *envoy_config_core_v3.Node, prioritySet map[int][]string) *statusInfo {
 	if prioritySet == nil {
 		prioritySet = DefaultPrioirtySet
 	}
 	out := statusInfo{
 		node:    node,
-		watches: NewPrioritySortedStruct(prioritySet, GetResponseWatchPriorityValue),
+		watches: NewPrioritySortedStruct(prioritySet),
 	}
 	return &out
 }

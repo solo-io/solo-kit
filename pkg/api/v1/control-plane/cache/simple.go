@@ -97,7 +97,7 @@ type CacheSettings struct {
 	// Logger is the logger used to log server information.
 	Logger log.Logger
 	// PrioritySet priorizes the response watches that the cache creates by their TypeURL.
-	PrioritySet [][]string
+	PrioritySet map[int][]string
 }
 
 type snapshotCache struct {
@@ -116,7 +116,7 @@ type snapshotCache struct {
 	hash NodeHash
 
 	// prioritySet is the priority of the watches denoted by the TypeURL
-	prioritySet [][]string
+	prioritySet map[int][]string
 
 	mu sync.RWMutex
 }
