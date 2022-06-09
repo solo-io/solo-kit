@@ -50,7 +50,7 @@ type statusInfo struct {
 
 	// watchOrderingList is a list of watches optionally ordered by typeURL.
 	// it is derived from watches via the orderResponseWatches function.
-	watchOrderingList keys
+	watchOrderingList orderingList
 
 	// the timestamp of the last watch request
 	lastWatchRequestTime time.Time
@@ -71,10 +71,13 @@ type ResponseWatch struct {
 
 // NewStatusInfo initializes a status info data structure.
 func NewStatusInfo(node *envoy_config_core_v3.Node) *statusInfo {
+	return newOrderedStatusInfo(node, map[string]int{})
+}
+func newOrderedStatusInfo(node *envoy_config_core_v3.Node, typeWeightMap map[string]int) *statusInfo {
 	out := statusInfo{
 		node:              node,
 		watches:           make(map[int64]ResponseWatch),
-		watchOrderingList: make(keys, 0),
+		watchOrderingList: orderingList{keys: make([]key,0),typeWeights: typeWeightMap},
 	}
 	return &out
 }
@@ -103,18 +106,4 @@ func (info *statusInfo) orderResponseWatches() {
 	sort.Sort(info.watchOrderingList)
 }
 
-// generatewatchOrderingList places the watch map into a list with their
-func (info *statusInfo) generatewatchOrderingList() {
-	// 0 out our watch list cause watches get deleted in the map.
-	info.watchOrderingList = make(keys, 0, len(info.watches))
 
-	// This runs in O(n) which could become problematic when we have an extrclemely high watch count.
-	// TODO(alec): revisit this and optimize for speed.
-	for id, watch := range info.watches {
-		info.watchOrderingList = append(info.watchOrderingList, key{
-			ID:      id,
-			TypeURL: watch.Request.TypeUrl,
-		})
-	}
-
-}

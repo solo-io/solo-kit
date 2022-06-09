@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -106,6 +107,10 @@ type snapshotCache struct {
 	// status information for all nodes indexed by node IDs
 	status map[string]*statusInfo
 
+	// typeWeights is a map of resource types to weights which optionally order
+	// xds communication
+	typeWeights map[string]int
+
 	// hash is the hashing function for Envoy nodes
 	hash NodeHash
 
@@ -144,19 +149,11 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 	// update the existing entry
 	cache.snapshots[node] = snapshot
 
-	// trigger existing watches for which version changed
+	// trigger existin	g watches for which version changed
 	if info, ok := cache.status[node]; ok {
 		info.mu.Lock()
 
-		info.generatewatchOrderingList()
-		// If ADS is enabled we need to order response watches so we guarantee
-		// sending them in the correct order since Go's default implementation
-		// of maps are randomized order when ranged over.
-		if cache.orderWatches && cache.ads {
-			info.orderResponseWatches()
-		}
-
-		for _, watchKey := range info.watchOrderingList {
+		for _, watchKey := range info.watchOrderingList.keys {
 			id := watchKey.ID
 			watch := info.watches[id]
 
@@ -176,6 +173,11 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 
 					// discard the watch
 					delete(info.watches, id)
+					kIdx := sort.Search(len(info.watchOrderingList.keys),
+						func(i int) bool { return info.watchOrderingList.keys[i].ID == id },
+					)
+					info.watchOrderingList.keys = append(info.watchOrderingList.keys[:kIdx], info.watchOrderingList.keys[kIdx+1:]...)
+
 				}
 			}
 		}
@@ -243,7 +245,7 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 
 	info, ok := cache.status[nodeID]
 	if !ok {
-		info = NewStatusInfo(request.Node)
+		info = newOrderedStatusInfo(request.Node, cache.typeWeights)
 		cache.status[nodeID] = info
 	}
 
@@ -270,6 +272,7 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 		}
 		info.mu.Lock()
 		info.watches[watchID] = ResponseWatch{Request: request, Response: value}
+
 		info.mu.Unlock()
 		return value, cache.cancelWatch(nodeID, watchID)
 	}

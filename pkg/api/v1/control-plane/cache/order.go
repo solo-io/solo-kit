@@ -7,19 +7,22 @@ type key struct {
 	TypeURL string
 }
 
-// Keys implements Go's sorting.Sort interface
-type keys []key
+type orderingList struct {
+	keys []key
+	// typeWeights for string o(1) lookup
+	typeWeights map[string]int
+}
 
-func (k keys) Len() int {
-	return len(k)
+func (ol orderingList) Len() int {
+	return len(ol.keys)
 }
 
 //-- need to create an ordering similar to that of upstream --
 // Less compares the typeURL and determines what order things should be sent.
-func (k keys) Less(i, j int) bool {
-	return GetResponseType(k[i].TypeURL) > GetResponseType(k[j].TypeURL)
+func (ol orderingList) Less(i, j int) bool {
+	return ol.typeWeights[ol.keys[i].TypeURL] > ol.typeWeights[ol.keys[j].TypeURL]
 }
 
-func (k keys) Swap(i, j int) {
-	k[i], k[j] = k[j], k[i]
+func (ol orderingList) Swap(i, j int) {
+	ol.keys[i], ol.keys[j] = ol.keys[j], ol.keys[i]
 }
