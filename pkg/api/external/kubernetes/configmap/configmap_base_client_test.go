@@ -66,7 +66,7 @@ var _ = Describe("Configmap base client", func() {
 				}
 			}
 			return foundCm
-		}, time.Minute, time.Second*15).Should(BeTrue())
+		}, time.Minute*2, time.Second*15).Should(BeTrue())
 
 	})
 })
