@@ -19,11 +19,12 @@ import (
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 )
 
 // priority set for Envoy as listed here in Docs https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#resource-warming
 var DefaultPrioirtySet = map[int][]string{
-	0: {"type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment", "type.googleapis.com/envoy.config.listener.v3.Listener"},
+	0: {types.ClusterTypeV1, types.ListenerTypeV3, types.ClusterTypeV1, types.ClusterTypeV2, types.ListenerTypeV2, types.ListenerTypeV3},
 }
 
 // NodeHash computes string identifiers for Envoy nodes.
