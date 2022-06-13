@@ -173,6 +173,6 @@ func (p *PrioritySortedStruct) getPriorityOfElement(element ResponseWatch) int {
 		return p
 	} else {
 		// default priority is -1
-		return defaultPrioirty
+		return defaultPriority
 	}
 }
