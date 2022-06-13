@@ -23,7 +23,7 @@ import (
 )
 
 // priority set for Envoy as listed here in Docs https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#resource-warming
-var DefaultPrioirtySet = map[int][]string{
+var DefaultPrioritySet = map[int][]string{
 	0: {types.ClusterTypeV1, types.ListenerTypeV3, types.ClusterTypeV1, types.ClusterTypeV2, types.ListenerTypeV2, types.ListenerTypeV3},
 }
 
