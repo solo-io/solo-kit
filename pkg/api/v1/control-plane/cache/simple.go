@@ -273,7 +273,7 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 		priority := info.watches.Add(ResponseWatch{Request: request, Response: value})
 		info.mu.Unlock()
 		if cache.log != nil {
-			cache.log.Infof("open watch Prioiry Index %d and Element Index %d for %s%v from nodeID %q, version %q",
+			cache.log.Infof("open watch Priority Index %d and Element Index %d for %s%v from nodeID %q, version %q",
 				priority.Priority, priority.Index, request.TypeUrl, request.ResourceNames, nodeID, request.VersionInfo)
 		}
 		return value, cache.cancelWatch(nodeID, priority)
