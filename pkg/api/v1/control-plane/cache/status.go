@@ -50,7 +50,7 @@ type statusInfo struct {
 	// node is the constant Envoy node metadata.
 	node *envoy_config_core_v3.Node
 
-	// watches are response watches of the original requests. They are structured by priority. See DefaultPrioirtySet for more info.
+	// watches are response watches of the original requests. They are structured by priority. See DefaultPrioritySet for more info.
 	watches *PrioritySortedStruct
 
 	// the timestamp of the last watch request
@@ -77,7 +77,7 @@ func (rw ResponseWatch) GetPriority() string {
 // NewStatusInfo initializes a status info data structure.
 func NewStatusInfo(node *envoy_config_core_v3.Node, prioritySet map[int][]string) *statusInfo {
 	if prioritySet == nil {
-		prioritySet = DefaultPrioirtySet
+		prioritySet = DefaultPrioritySet
 	}
 	out := statusInfo{
 		node:    node,

@@ -31,7 +31,7 @@ var _ = Describe("Control Plane Cache", func() {
 
 	It("returns sane values for NewStatusInfo", func() {
 		node := &envoy_config_core_v3.Node{Id: "test"}
-		info := cache.NewStatusInfo(node, cache.DefaultPrioirtySet)
+		info := cache.NewStatusInfo(node, cache.DefaultPrioritySet)
 
 		Expect(info.GetNode()).To(Equal(node))
 
