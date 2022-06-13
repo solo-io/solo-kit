@@ -122,7 +122,7 @@ func (p *PrioritySortedStruct) GetPriorityList() []ResponseWatch {
 // Add will add the element to the Priority Collection, returns the priority, and element number.
 func (p *PrioritySortedStruct) Add(element ResponseWatch) PriorityIndex {
 	priority := p.getPriorityOfElement(element)
-	if priority == defaultPrioirty {
+	if priority == defaultPriority {
 		// add to the last index of the watches
 		priority = len(p.elements) - 1
 	}
