@@ -5,9 +5,9 @@ import (
 	"sort"
 )
 
-// The default Priority is the last index. The last index is not required in the prioirty list, thus any elements added
+// The default Priority is the last index. The last index is not required in the priority list, thus any elements added
 // to the struct will be added to the default priority (last).
-const defaultPrioirty = -1
+const defaultPriority = -1
 
 type PriorityValue interface {
 	GetPriority() string
