@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 )
 
 // TestIDHash uses ID field as the node hash.
@@ -30,7 +31,7 @@ var _ = Describe("Control Plane Cache", func() {
 
 	It("returns sane values for NewStatusInfo", func() {
 		node := &envoy_config_core_v3.Node{Id: "test"}
-		info := cache.NewStatusInfo(node)
+		info := cache.NewStatusInfo(node, cache.DefaultPrioritySet)
 
 		Expect(info.GetNode()).To(Equal(node))
 
@@ -40,7 +41,11 @@ var _ = Describe("Control Plane Cache", func() {
 	})
 
 	It("returns sane values for GetStatusKeys", func() {
-		c := cache.NewSnapshotCache(false, TestIDHash{}, nil)
+		settings := cache.CacheSettings{
+			Ads:  false,
+			Hash: TestIDHash{},
+		}
+		c := cache.NewSnapshotCache(settings)
 
 		keys := c.GetStatusKeys()
 		Expect(len(keys)).To(Equal(0))
@@ -58,20 +63,23 @@ var _ = Describe("Control Plane Cache", func() {
 
 	It("Setting snapshot correctly updates the version", func() {
 		names := map[string][]string{
-			resource.EndpointTypeV3: {clusterName},
-			resource.ClusterTypeV3:  nil,
-			resource.RouteTypeV3:    {routeName},
-			resource.ListenerTypeV3: nil,
+			types.EndpointTypeV3: {clusterName},
+			types.ClusterTypeV3:  nil,
+			types.RouteTypeV3:    {routeName},
+			types.ListenerTypeV3: nil,
 		}
 
 		testTypes := []string{
-			resource.EndpointTypeV3,
-			resource.ClusterTypeV3,
-			resource.RouteTypeV3,
-			resource.ListenerTypeV3,
+			types.EndpointTypeV3,
+			types.ClusterTypeV3,
+			types.RouteTypeV3,
+			types.ListenerTypeV3,
 		}
-
-		c := cache.NewSnapshotCache(true, TestIDHash{}, nil)
+		settings := cache.CacheSettings{
+			Ads:  false,
+			Hash: TestIDHash{},
+		}
+		c := cache.NewSnapshotCache(settings)
 		key := "test"
 
 		_, err := c.GetSnapshot(key)
@@ -108,11 +116,11 @@ var _ = Describe("Control Plane Cache", func() {
 		snap, err := c.GetSnapshot(key)
 		Expect(err).ToNot(HaveOccurred())
 		// check versions for resources
-		Expect(snap.GetResources(resource.ListenerTypeV3).Version).To(Equal(version))
-		Expect(snap.GetResources(resource.ClusterTypeV3).Version).To(Equal(version))
-		Expect(snap.GetResources(resource.RouteTypeV3).Version).To(Equal(version))
+		Expect(snap.GetResources(types.ListenerTypeV3).Version).To(Equal(version))
+		Expect(snap.GetResources(types.ClusterTypeV3).Version).To(Equal(version))
+		Expect(snap.GetResources(types.RouteTypeV3).Version).To(Equal(version))
 		// endpoint resource was not set in snapshot
-		Expect(snap.GetResources(resource.EndpointTypeV3).Version).To(Equal(""))
+		Expect(snap.GetResources(types.EndpointTypeV3).Version).To(Equal(""))
 
 		newName := "test2"
 		snapshot2 := &TestSnapshot{
@@ -131,11 +139,11 @@ var _ = Describe("Control Plane Cache", func() {
 		snap2, err := c.GetSnapshot(key)
 		Expect(err).ToNot(HaveOccurred())
 		// update to version y
-		Expect(snap2.GetResources(resource.EndpointTypeV3).Version).To(Equal(version2))
-		Expect(snap2.GetResources(resource.ClusterTypeV3).Version).To(Equal(version2))
+		Expect(snap2.GetResources(types.EndpointTypeV3).Version).To(Equal(version2))
+		Expect(snap2.GetResources(types.ClusterTypeV3).Version).To(Equal(version2))
 		// the cache will reset to empty version for missing resources
-		Expect(snap2.GetResources(resource.ListenerTypeV3).Version).To(Equal(""))
-		Expect(snap2.GetResources(resource.RouteTypeV3).Version).To(Equal(""))
+		Expect(snap2.GetResources(types.ListenerTypeV3).Version).To(Equal(""))
+		Expect(snap2.GetResources(types.RouteTypeV3).Version).To(Equal(""))
 	})
 
 })
