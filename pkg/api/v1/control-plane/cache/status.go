@@ -19,7 +19,13 @@ import (
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 )
+
+// priority set for Envoy as listed here in Docs https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#resource-warming
+var DefaultPrioritySet = map[int][]string{
+	0: {types.ClusterTypeV1, types.ListenerTypeV3, types.ClusterTypeV1, types.ClusterTypeV2, types.ListenerTypeV2, types.ListenerTypeV3},
+}
 
 // NodeHash computes string identifiers for Envoy nodes.
 type NodeHash interface {
@@ -44,8 +50,8 @@ type statusInfo struct {
 	// node is the constant Envoy node metadata.
 	node *envoy_config_core_v3.Node
 
-	// watches are indexed channels for the response watches and the original requests.
-	watches map[int64]ResponseWatch
+	// watches are response watches of the original requests. They are structured by priority. See DefaultPrioritySet for more info.
+	watches *PrioritySortedStruct
 
 	// the timestamp of the last watch request
 	lastWatchRequestTime time.Time
@@ -64,11 +70,18 @@ type ResponseWatch struct {
 	Response chan Response
 }
 
+func (rw ResponseWatch) GetPriority() string {
+	return rw.Request.TypeUrl
+}
+
 // NewStatusInfo initializes a status info data structure.
-func NewStatusInfo(node *envoy_config_core_v3.Node) *statusInfo {
+func NewStatusInfo(node *envoy_config_core_v3.Node, prioritySet map[int][]string) *statusInfo {
+	if prioritySet == nil {
+		prioritySet = DefaultPrioritySet
+	}
 	out := statusInfo{
 		node:    node,
-		watches: make(map[int64]ResponseWatch),
+		watches: NewPrioritySortedStruct(prioritySet),
 	}
 	return &out
 }
@@ -82,7 +95,7 @@ func (info *statusInfo) GetNode() *envoy_config_core_v3.Node {
 func (info *statusInfo) GetNumWatches() int {
 	info.mu.RLock()
 	defer info.mu.RUnlock()
-	return len(info.watches)
+	return info.watches.Len()
 }
 
 func (info *statusInfo) GetLastWatchRequestTime() time.Time {
