@@ -84,5 +84,14 @@ func (m *Status) Clone() proto.Message {
 		target.Details = proto.Clone(m.GetDetails()).(*github_com_golang_protobuf_ptypes_struct.Struct)
 	}
 
+	if m.GetMessages() != nil {
+		target.Messages = make([]string, len(m.GetMessages()))
+		for idx, v := range m.GetMessages() {
+
+			target.Messages[idx] = v
+
+		}
+	}
+
 	return target
 }

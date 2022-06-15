@@ -41,10 +41,13 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r3, err := mockResourceClient.Write(v1.NewMockResource("", "blimpy"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
+		r4, err := mockResourceClient.Write(v1.NewMockResource("", "phony"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		resourceErrs := rep.ResourceReports{
 			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("everyone makes mistakes")},
 			r2.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("try your best")},
 			r3.(*v1.MockResource): rep.Report{Warnings: []string{"didn't somebody ever tell ya", "it's not gonna be easy?"}},
+			r4.(*v1.MockResource): rep.Report{Messages: []string{"I'm just a message"}},
 		}
 		err = reporter.WriteReports(context.TODO(), resourceErrs, nil)
 		Expect(err).NotTo(HaveOccurred())
@@ -55,12 +58,15 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		r3, err = mockResourceClient.Read(r3.GetMetadata().Namespace, r3.GetMetadata().Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
+		r4, err = mockResourceClient.Read(r4.GetMetadata().Namespace, r4.GetMetadata().Name, clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
 
 		status := statusClient.GetStatus(r1.(*v1.MockResource))
 		Expect(status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "everyone makes mistakes",
 			ReportedBy: "test",
+			Messages:   nil,
 		}))
 
 		status = statusClient.GetStatus(r2.(*v1.MockResource))
@@ -68,6 +74,7 @@ var _ = Describe("Reporter", func() {
 			State:      2,
 			Reason:     "try your best",
 			ReportedBy: "test",
+			Messages:   nil,
 		}))
 
 		status = statusClient.GetStatus(r3.(*v1.MockResource))
@@ -75,6 +82,15 @@ var _ = Describe("Reporter", func() {
 			State:      core.Status_Warning,
 			Reason:     "warning: \n  didn't somebody ever tell ya\nit's not gonna be easy?",
 			ReportedBy: "test",
+			Messages:   nil,
+		}))
+
+		status = statusClient.GetStatus(r4.(*v1.MockResource))
+		Expect(status).To(Equal(&core.Status{
+			State:      core.Status_Accepted,
+			Reason:     "",
+			ReportedBy: "test",
+			Messages:   []string{"I'm just a message"},
 		}))
 	})
 

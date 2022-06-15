@@ -19,6 +19,9 @@ import (
 type Report struct {
 	Warnings []string
 	Errors   error
+
+	// Additional information about the current state of the resource.
+	Messages []string
 }
 
 type ResourceReports map[resources.InputResource]Report
@@ -50,6 +53,17 @@ func (e ResourceReports) Merge(resErrs ResourceReports) {
 			for _, warning := range secondReport.Warnings {
 				if _, found := allWarnings[warning]; !found {
 					firstReport.Warnings = append(firstReport.Warnings, warning)
+				}
+			}
+
+			// Merge messages lists
+			allMessages := make(map[string]struct{})
+			for _, message := range firstReport.Messages {
+				allMessages[message] = struct{}{}
+			}
+			for _, message := range secondReport.Messages {
+				if _, found := allMessages[message]; !found {
+					firstReport.Messages = append(firstReport.Messages, message)
 				}
 			}
 
@@ -125,6 +139,21 @@ func (e ResourceReports) AddWarning(res resources.InputResource, warning string)
 	}
 	rpt := e[res]
 	rpt.Warnings = append(rpt.Warnings, warning)
+	e[res] = rpt
+}
+
+func (e ResourceReports) AddMessages(res resources.InputResource, messages ...string) {
+	for _, message := range messages {
+		e.AddMessage(res, message)
+	}
+}
+
+func (e ResourceReports) AddMessage(res resources.InputResource, message string) {
+	if message == "" {
+		return
+	}
+	rpt := e[res]
+	rpt.Messages = append(rpt.Messages, message)
 	e[res] = rpt
 }
 
@@ -235,8 +264,8 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
-
 		resourceStatus := r.statusClient.GetStatus(resource)
+
 		if status.Equal(resourceStatus) {
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
@@ -276,7 +305,7 @@ func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResou
 		return nil, resourceToWrite, nil
 	}
 	if readErr == nil {
-		// set resourceToWrite to the resource we read but with the new status
+		// set resourceToWrite to the resource we read but with the new status and new messages
 		// Note: it's possible that this resourceFromRead is newer than the resourceToWrite and therefore the status will be out of sync.
 		//    If so, we will soon recalculate the status. The interim incorrect status is not dangerous since the status is informational only.
 		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
@@ -314,6 +343,10 @@ func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResou
 }
 
 func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
+	var messages []string
+	if len(report.Messages) != 0 {
+		messages = report.Messages
+	}
 
 	var warningReason string
 	if len(report.Warnings) > 0 {
@@ -330,6 +363,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 			Reason:              errorReason,
 			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
+			Messages:            messages,
 		}
 	}
 
@@ -339,6 +373,7 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 			Reason:              warningReason,
 			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
+			Messages:            messages,
 		}
 	}
 
@@ -346,5 +381,6 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		State:               core.Status_Accepted,
 		ReportedBy:          r.reporterRef,
 		SubresourceStatuses: subresourceStatuses,
+		Messages:            messages,
 	}
 }

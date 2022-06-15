@@ -46,4 +46,7 @@ message Status {
 
     // Opaque details about status results
     google.protobuf.Struct details = 5;
+
+    // Additional information about the current state of the resource.
+    repeated string Messages = 6;
 }
