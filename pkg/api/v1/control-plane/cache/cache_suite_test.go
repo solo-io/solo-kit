@@ -17,6 +17,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -63,13 +64,13 @@ func (s TestSnapshot) Consistent() error {
 }
 func (s TestSnapshot) GetResources(typ string) cache.Resources {
 	switch typ {
-	case resource.EndpointTypeV3:
+	case types.EndpointTypeV3:
 		return s.Endpoints
-	case resource.ClusterTypeV3:
+	case types.ClusterTypeV3:
 		return s.Clusters
-	case resource.RouteTypeV3:
+	case types.RouteTypeV3:
 		return s.Routes
-	case resource.ListenerTypeV3:
+	case types.ListenerTypeV3:
 		return s.Listeners
 	}
 	return cache.Resources{}
