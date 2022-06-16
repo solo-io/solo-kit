@@ -48,7 +48,7 @@ require (
 	github.com/solo-io/go-utils v0.21.6
 	github.com/solo-io/k8s-utils v0.1.0
 	github.com/solo-io/protoc-gen-ext v0.0.16
-	github.com/solo-io/protoc-gen-openapi v0.0.1
+	github.com/solo-io/protoc-gen-openapi v0.0.5-0.20220616214016-c23629b699a4
 	github.com/spf13/afero v1.3.4 // indirect
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
