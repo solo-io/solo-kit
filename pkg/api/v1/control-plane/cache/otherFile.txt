@@ -1,0 +1,47 @@
+
+type orderedWatch struct {
+	watchId int64
+	watch   ResponseWatch
+}
+
+type orderedWatches []orderedWatch
+
+func (ow orderedWatches) Len() int {
+	return len(ow)
+}
+
+func (ow orderedWatches) Less(i, j int) bool {
+	// TODO-JAKE have to implement GetResponseType
+	return ow[1].watchId > ow[j].watchId
+}
+
+func (ow orderedWatches) Swap(i, j int) {
+	ow[i], ow[j] = ow[j], ow[i]
+}
+
+// this would order the strings based off the default ordering in Envoy
+func defaultEnvoyOrder() {
+
+}
+
+func (info *statusInfo) orderResponseWatches(order bool) {
+
+	// 0 out our watch list cause watches get deleted in the map.
+	watches := make(orderedWatches, 0)
+
+	// This runs in O(n) which could become problematic when we have an extrclemely high watch count.
+	// TODO(alec): revisit this and optimize for speed.
+	for id, watch := range info.watches {
+		ow := orderedWatch{
+			watchId: id,
+			watch:   watch,
+		}
+		watches = append(watches, ow)
+	}
+
+	// Sort our list which we can use in the SetSnapshot functions.
+	// This is only run when we enable ADS on the cache.
+	if order {
+		sort.Sort(watches)
+	}
+}

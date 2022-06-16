@@ -1,0 +1,26 @@
+package cache
+
+type key struct {
+	ID      int64
+	TypeURL string
+}
+
+type keys []key
+
+func (k keys) Len() int {
+	return len(k)
+}
+
+func (k keys) Less(i, j int) bool {
+	// TODO-JAKE have to implement GetResponseType
+	return GetResponseType(k[i]) > GetResponseType(k[j])
+}
+
+func (k keys) Swap(i, j int) {
+	k[i], k[j] = k[j], k[i]
+}
+
+// TODO-JAKE implement this dynamically
+func GetResponseType(k key) int64 {
+	return 1
+}
