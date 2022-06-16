@@ -30,17 +30,15 @@ type ValidationSchemaOptions struct {
 	//	but I wanted to avoid changing the default behavior
 	RemoveDescriptionsFromSchema bool
 
-	// The maximum number of characters to include in a description
-	// If RemoveDescriptionsFromSchema is true, this will be ignored
-	// A 0 value will be interpreted as "include all characters"
-	// Default: 0
-	MaxDescriptionCharacters int
-
 	// Whether to assign Enum fields the `x-kubernetes-int-or-string` property
 	// which allows the value to either be an integer or a string
 	// If this is false, only string values are allowed
 	// Default: false
 	EnumAsIntOrString bool
+
+	// A list of messages (core.solo.io.Status) whose validation schema should
+	// not be generated
+	MessagesWithEmptySchema []string
 }
 
 type JsonSchemaGenerator interface {

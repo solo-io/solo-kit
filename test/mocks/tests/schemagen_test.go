@@ -171,31 +171,6 @@ var _ = Describe("schemagen", func() {
 			ExpectJsonSchemasToMatch(cueSchema, protocSchema)
 		})
 
-		Context("Descriptions for SimpleMockResource can be truncated", func() {
-
-			const maxDescriptionCharacters = 20
-
-			BeforeEach(func() {
-				validationSchemaOptions = &schemagen.ValidationSchemaOptions{
-					MaxDescriptionCharacters: maxDescriptionCharacters,
-				}
-			})
-
-			It("using protoc", func() {
-				protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
-				Expect(err).NotTo(HaveOccurred())
-
-				protocSchema := protocSchemas[simpleMockResourceGVK]
-
-				fieldNameWithLongComment := "dataWithLongComment"
-				fieldWithLongComment := protocSchema.Properties[fieldNameWithLongComment]
-
-				// When we generate a description that is truncated, we included an ellipsis
-				ellipsisLength := 3
-				Expect(fieldWithLongComment.Description).To(HaveLen(maxDescriptionCharacters + ellipsisLength))
-			})
-		})
-
 		Context("Descriptions for SimpleMockResource can be removed", func() {
 
 			BeforeEach(func() {
@@ -256,6 +231,36 @@ var _ = Describe("schemagen", func() {
 				enumField := protocSchema.Properties[enumFieldName]
 
 				Expect(enumField.XIntOrString).To(BeTrue())
+			})
+		})
+
+		Context("Fields for SimpleMockResource can be configured with empty schemas", func() {
+
+			BeforeEach(func() {
+				validationSchemaOptions = &schemagen.ValidationSchemaOptions{
+					MessagesWithEmptySchema: []string{
+						"testing.solo.io.SimpleMockResource.NestedMessage",
+						"core.solo.io.Metadata",
+					},
+				}
+			})
+
+			It("using protoc", func() {
+				protocSchemas, err := protocGenerator.GetJsonSchemaForProject(project)
+				Expect(err).NotTo(HaveOccurred())
+
+				protocSchema := protocSchemas[simpleMockResourceGVK]
+
+				fieldsWithEmptySchema := []v1.JSONSchemaProps{
+					protocSchema.Properties["metadata"],
+					protocSchema.Properties["nestedMessage"],
+				}
+				for _, field := range fieldsWithEmptySchema {
+					Expect(field.XPreserveUnknownFields).To(Equal(pointer.BoolPtr(true)))
+					Expect(field.Type).To(Equal("object"))
+					Expect(field.Properties).To(BeEmpty())
+				}
+
 			})
 		})
 
