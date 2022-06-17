@@ -5,15 +5,15 @@ A tool used to generate validation schemas for Kubernetes CRDs
 Custom Resources in Kubernetes support [defining a structural schema](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema), which is validated on writes (ie create and update). V1 CRDs (required in Kube 1.22 and beyond) require validation schemas. These schemas provide syntax validation (ie does the configuration respect the API structure).
 
 ## Options
-`crdDirectory` - Path to the directory where CRDs will be read from and written to
+`crdDirectory` - Path to the directory where CRDs will be read from and written to.
 
-`jsonSchemaTool` - Name of the tool used to generate JsonSchemas, defaults to `protoc`
+`jsonSchemaTool` - Name of the tool used to generate JsonSchemas, defaults to `protoc`. `cue` is also supported, but can run excessively long for deeply nested protos.
 
-`removeDescriptionsFromSchema` - Whether to remove descriptions from validation schemas, defaults to `false`
+`removeDescriptionsFromSchema` - Whether to remove descriptions from validation schemas, defaults to `false`. Descriptions are a non-functional aspect of CRD validation schemas, and therefore it is recommended to not include descriptions since they can expand the size of the CRD.
 
-`enumAsIntOrString` - Whether to assign Enum fields the `x-kubernetes-int-or-string` property which allows the value to either be an integer, or a string, defaults to `false`. Only strings are supported when this is false.
+`enumAsIntOrString` - Whether to assign Enum fields the `x-kubernetes-int-or-string` property which allows the value to either be an integer, or a string, defaults to `false`. Only strings are supported when this is false. Projects which consume this library may have custom enum marshalers. If the project may marshal an enum as an int or a string, the underlying schema needs to support that as well.
 
-`MessagesWithEmptySchema` - A list of message names (ie `core.solo.io.Status`) for which we should generate a validation schema that accepts all properties. This is useful when certain messages take too long to compute schemas, or are recursive.
+`messagesWithEmptySchema` - A list of message names (ie `core.solo.io.Status`) for which we should generate a validation schema that accepts all properties. This is useful when certain messages take too long to compute schemas, or are recursive.
 
 ## Implementation
 This tool executes the following steps to generate validation schemas:
