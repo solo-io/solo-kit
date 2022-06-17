@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add README to outline behavior of schema generation.
+  - type: NON_USER_FACING
+    description: Skip tests during releases.
