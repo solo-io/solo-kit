@@ -26,10 +26,10 @@ import (
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/stringutils"
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
+	"github.com/solo-io/solo-kit/pkg/code-generator/filegen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/code-generator/parser"
 	"github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
@@ -330,7 +330,7 @@ func (r *Runner) Run() error {
 		log.Printf("Generating files for project: %s", project.String())
 
 		// Generate Files
-		generatedFiles, err := codegen.GenerateFiles(project, true, r.Opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
+		generatedFiles, err := filegen.GenerateFiles(project, true, r.Opts.SkipGeneratedTests, project.ProjectConfig.GenKubeTypes)
 		if err != nil {
 			return err
 		}

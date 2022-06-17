@@ -1,9 +1,7 @@
 # Schemagen
-
 A tool used to generate validation schemas for Kubernetes CRDs
 
 ## Validation Schemas
-
 Custom Resources in Kubernetes support [defining a structural schema](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema), which is validated during creation and updates. V1 CRDs (required in Kube 1.22 and beyond) require validation schemas. These schemas provide syntax validation (ie does the configuration respect the API structure).
 
 ## Options
@@ -16,8 +14,8 @@ Custom Resources in Kubernetes support [defining a structural schema](https://ku
 `enumAsIntOrString` - Whether to assign Enum fields the `x-kubernetes-int-or-string` property which allows the value to either be an integer, or a string, defaults to `false`. Only strings are supported when this is false.
 
 `MessagesWithEmptySchema` - A list of message names (ie `core.solo.io.Status`) for which we should generate a validation schema that accepts all properties. This is useful when certain messages take too long to compute schemas, or are recursive.
-## Implementation
 
+## Implementation
 This tool executes the following steps to generate validation schemas:
 1. Determine if a project is configured to generate validation schemas. If not, return immediately.
 2. Read all the CRDs from the provided `crdDirectory`
@@ -30,7 +28,6 @@ This tool executes the following steps to generate validation schemas:
 **NOTE** It would be nice to move complete CRD generation into this tool, but for now we only modify the schema.
 
 ## Generation Tools
-
 We currently support 2 separate implementations for schema generation.
 
 ### [Cue](github.com/solo-io/cue)

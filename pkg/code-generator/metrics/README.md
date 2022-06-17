@@ -1,11 +1,9 @@
 # Metrics
-
 Tool used primarily for development, to help triage bottlenecks experience during codegen
 
 *This tool was introduced when working on [optimizations to codegen](https://github.com/solo-io/solo-kit/pull/417) and we left it in to be used in other situations*
 
 ### MeasureElapsed
-
 A convenient way to measure how long an operation took to run:
 
 ```go
@@ -17,7 +15,6 @@ func longRunningOperation() {
 ```
 
 ### IncrementFrequency
-
 A convenient way to count the number of times an operation is run:
 
 ```go
@@ -29,7 +26,6 @@ func frequentOperation() {
 ```
 
 ### Flush
-
 A way to flush the aggregate metrics at the end of a run:
 
 ```go

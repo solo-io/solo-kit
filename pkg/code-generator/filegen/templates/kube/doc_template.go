@@ -3,7 +3,7 @@ package kube
 import (
 	"text/template"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
+	"github.com/solo-io/solo-kit/pkg/code-generator/filegen/templates"
 )
 
 var DocTemplate = template.Must(template.New("kube_doc").Funcs(templates.Funcs).Parse(`
