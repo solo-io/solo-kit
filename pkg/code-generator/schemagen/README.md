@@ -2,7 +2,7 @@
 A tool used to generate validation schemas for Kubernetes CRDs
 
 ## Validation Schemas
-Custom Resources in Kubernetes support [defining a structural schema](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema), which is validated during creation and updates. V1 CRDs (required in Kube 1.22 and beyond) require validation schemas. These schemas provide syntax validation (ie does the configuration respect the API structure).
+Custom Resources in Kubernetes support [defining a structural schema](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema), which is validated on writes (ie create and update). V1 CRDs (required in Kube 1.22 and beyond) require validation schemas. These schemas provide syntax validation (ie does the configuration respect the API structure).
 
 ## Options
 `crdDirectory` - Path to the directory where CRDs will be read from and written to
@@ -33,7 +33,7 @@ We currently support 2 separate implementations for schema generation.
 ### [Cue](github.com/solo-io/cue)
 `Use cuelang as an intermediate language for transpiling protobuf schemas to openapi v3 with k8s structural schema constraints.`
 
-This is our preferred implementation. It is not used in production yet, due to some performance issues with the Gloo Edge API. However, our goal is to eventually migrate our code to rely on this implementation. I added in this code in this iteration so that we could compare the generated schemas between the implementations.
+This is our preferred implementation. It is not used in production yet, due to some performance issues with the Gloo Edge API. However, our goal is to eventually migrate our code to rely on this implementation. This code was included in this iteration so that we could compare the generated schemas between the implementations.
 
 [cuelang/cue#944](https://github.com/cuelang/cue/discussions/944) tracks the issue we face when using cuelang with the Gloo Edge API. Specifically, as more oneof's are added to the API, the performance degrades dramatically, to the point where it takes longer than 15 minutes to generate schemas. The authors are aware of this issue and are actively working on improving it. Until it is resolved, we cannot move forward with this implementation.
 
