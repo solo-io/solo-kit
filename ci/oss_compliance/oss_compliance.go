@@ -8,11 +8,6 @@ import (
 )
 
 func main() {
-	glooPackages := []string{
-		"github.com/solo-io/solo-kit/cmd/cli",
-		"github.com/solo-io/solo-kit/cmd/solo-kit-gen",
-	}
-
 	// dependencies for this package which are used on mac, and will not be present in linux CI
 	macOnlyDependencies := []string{
 		"github.com/mitchellh/go-homedir",
@@ -21,7 +16,7 @@ func main() {
 		"golang.org/x/sys",
 	}
 
-	app := license.Cli(glooPackages, macOnlyDependencies)
+	app := license.Cli(nil, macOnlyDependencies)
 	if err := app.Execute(); err != nil {
 		fmt.Errorf("unable to run oss compliance check: %v\n", err)
 		os.Exit(1)

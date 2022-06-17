@@ -74,20 +74,6 @@ steps:
   dir: *dir
   id: 'test'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
-  args: ['solo-kit-cli']
-  waitFor: ['test']
-  id: 'build-cli'
-  dir: *dir
-  env:
-
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
-  args: ['solo-kit-gen']
-  waitFor: ['test']
-  id: 'build-codegen'
-  dir: *dir
-  env:
-
 timeout: 1500s
 tags: ['solo-kit']
 options:
