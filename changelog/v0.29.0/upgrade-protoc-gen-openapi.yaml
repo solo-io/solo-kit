@@ -1,0 +1,9 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: protoc-gen-openapi
+    dependencyTag: v0.1.0
+  - type: FIX
+    description: Support injecting a set of message names to generate empty validation schema
+    issueLink: https://github.com/solo-io/gloo/issues/4789
+    resolvesIssue: false

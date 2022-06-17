@@ -29,6 +29,9 @@ func main() {
 			// Path to where test CRDs are stored
 			CrdDirectory:   "test/mocks/crds",
 			JsonSchemaTool: "protoc",
+			MessagesWithEmptySchema: []string{
+				"core.solo.io.Status",
+			},
 		},
 	}); err != nil {
 		log.Fatalf("generate failed!: %v", err)

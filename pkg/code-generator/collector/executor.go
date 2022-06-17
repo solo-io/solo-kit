@@ -72,14 +72,13 @@ type OpenApiProtocExecutor struct {
 	// Whether to include descriptions in validation schemas
 	IncludeDescriptionsInSchema bool
 
-	// The maximum number of characters to include in a description
-	// A 0 value will be interpreted as "include all characters"
-	// Default: 0
-	MaxDescriptionCharacters int
-
 	// Whether to assign Enum fields the `x-kubernetes-int-or-string` property
 	// which allows the value to either be an integer or a string
 	EnumAsIntOrString bool
+
+	// A list of messages (core.solo.io.Status) whose validation schema should
+	// not be generated
+	MessagesWithEmptySchema []string
 }
 
 func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports []string) error {
@@ -106,8 +105,11 @@ func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports
 	_ = os.Mkdir(directoryPath, os.ModePerm)
 
 	cmd.Args = append(cmd.Args,
-		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,max_description_characters=%d,include_description=%v,enum_as_int_or_string=%v:%s",
-			o.MaxDescriptionCharacters, o.IncludeDescriptionsInSchema, o.EnumAsIntOrString, directoryPath),
+		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,include_description=%v,enum_as_int_or_string=%v,additional_empty_schema=%v:%s",
+			o.IncludeDescriptionsInSchema,
+			o.EnumAsIntOrString,
+			strings.Join(o.MessagesWithEmptySchema, "+"),
+			directoryPath),
 	)
 
 	cmd.Args = append(cmd.Args,
