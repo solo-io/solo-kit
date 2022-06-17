@@ -777,8 +777,8 @@ github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=
 github.com/solo-io/anyvendor v0.0.1 h1:csAXLNLkUQWlr/ll4tgmc+Id9kHw2ibncf35weg03mI=
 github.com/solo-io/anyvendor v0.0.1/go.mod h1:SLucIeU8qBOYI82BveNVn2LzZFcMWJSCf8Kd1S4Jcr4=
-github.com/solo-io/go-list-licenses v0.0.4 h1:Ya954TWjflFh1ah6pu+HF01IgL1BkbuiHp5oSJuWVHY=
-github.com/solo-io/go-list-licenses v0.0.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6B3F6TrWYfcdHVroA=
+github.com/solo-io/go-list-licenses v0.1.0 h1:8FkdOtyiX8ga305U60tQbihXVpsZCWkWQH2uz4rqIMM=
+github.com/solo-io/go-list-licenses v0.1.0/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6B3F6TrWYfcdHVroA=
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
 github.com/solo-io/go-utils v0.21.6 h1:QTRrYJUK31p6IRqR3A1Y9H4MXgl1eOB4cZdD0o5gIhc=
 github.com/solo-io/go-utils v0.21.6/go.mod h1:N6jeYnrAKq5uGv6m/hBkJ+g6i3AwgkyfVoaDlQ/z64o=

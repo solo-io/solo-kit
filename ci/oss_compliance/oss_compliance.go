@@ -16,9 +16,13 @@ func main() {
 		"golang.org/x/sys",
 	}
 
-	app := license.Cli(nil, macOnlyDependencies)
+	app, err := license.CliAllPackages(macOnlyDependencies)
+	if err != nil {
+		fmt.Printf("unable to list all solo-kit dependencies: %v\n", err)
+		os.Exit(1)
+	}
 	if err := app.Execute(); err != nil {
-		fmt.Errorf("unable to run oss compliance check: %v\n", err)
+		fmt.Printf("unable to run oss compliance check: %v\n", err)
 		os.Exit(1)
 	}
 }
