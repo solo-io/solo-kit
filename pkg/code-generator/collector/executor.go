@@ -105,7 +105,7 @@ func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports
 	_ = os.Mkdir(directoryPath, os.ModePerm)
 
 	cmd.Args = append(cmd.Args,
-		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,include_description=%v,enum_as_int_or_string=%v,empty_schema=%v:%s",
+		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,include_description=%v,enum_as_int_or_string=%v,additional_empty_schema=%v:%s",
 			o.IncludeDescriptionsInSchema,
 			o.EnumAsIntOrString,
 			strings.Join(o.MessagesWithEmptySchema, "+"),
