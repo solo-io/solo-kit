@@ -15,6 +15,7 @@ Custom Resources in Kubernetes support [defining a structural schema](https://ku
 
 `enumAsIntOrString` - Whether to assign Enum fields the `x-kubernetes-int-or-string` property which allows the value to either be an integer, or a string, defaults to `false`. Only strings are supported when this is false.
 
+`MessagesWithEmptySchema` - A list of message names (ie `core.solo.io.Status`) for which we should generate a validation schema that accepts all properties. This is useful when certain messages take too long to compute schemas, or are recursive.
 ## Implementation
 
 This tool executes the following steps to generate validation schemas:
@@ -38,6 +39,8 @@ We currently support 2 separate implementations for schema generation.
 This is our preferred implementation. It is not used in production yet, due to some performance issues with the Gloo Edge API. However, our goal is to eventually migrate our code to rely on this implementation. I added in this code in this iteration so that we could compare the generated schemas between the implementations.
 
 [cuelang/cue#944](https://github.com/cuelang/cue/discussions/944) tracks the issue we face when using cuelang with the Gloo Edge API. Specifically, as more oneof's are added to the API, the performance degrades dramatically, to the point where it takes longer than 15 minutes to generate schemas. The authors are aware of this issue and are actively working on improving it. Until it is resolved, we cannot move forward with this implementation.
+
+**[skv2](https://github.com/solo-io/skv2) leverages Cue to build the validation schemas for CRDs.**
 
 ### [Protoc](https://github.com/solo-io/protoc-gen-openapi)
 `protoc-gen-openapi is a plugin for the Google protocol buffer compiler to generate openAPI V3 spec for any given input protobuf. It runs as a protoc-gen- binary that the protobuf compiler infers from the openapi_out flag.`
