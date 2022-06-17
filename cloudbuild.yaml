@@ -7,12 +7,10 @@ steps:
   dir: &dir '/workspace/solo-kit'
 
 # prepare-workspace to set up the project so it can be built and tested
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.4.24'
   args:
-  - "--repo-owner"
-  - "solo-io"
   - "--repo-name"
-  - solo-kit
+  - "solo-io/solo-kit"
   - "--repo-sha"
   - "$COMMIT_SHA"
   - "--repo-output-dir"
@@ -22,21 +20,21 @@ steps:
   id: 'prepare-workspace'
 
 # download massive container in parallel
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.24'
   entrypoint: 'bash'
   dir: *dir
   args: ['-c', 'ls']
   waitFor: ['-']
 
 # Installs go executables required by codegen tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
   args: ['update-deps']
   waitFor: ['prepare-workspace']
   id: 'update-deps'
   dir: *dir
 
 # check code gen for kubernetes custom resources, should be no diff
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
   entrypoint: 'bash'
   args: ['ci/check-code-gen.sh']
   env:
@@ -56,10 +54,10 @@ steps:
   args: ['container', 'clusters', 'get-credentials', 'solo-kit-test']
   id: 'gcloud-solo-kit-test'
 
-# e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
+# e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/tree/master/e2e-go-mod-ginkgo
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.24'
   entrypoint: 'bash'
   env:
   - 'GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn'
@@ -76,14 +74,14 @@ steps:
   dir: *dir
   id: 'test'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
   args: ['solo-kit-cli']
   waitFor: ['test']
   id: 'build-cli'
   dir: *dir
   env:
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
   args: ['solo-kit-gen']
   waitFor: ['test']
   id: 'build-codegen'
