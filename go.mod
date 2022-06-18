@@ -21,8 +21,8 @@ require (
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/ilackarms/protoc-gen-doc v1.0.0
 	github.com/mitchellh/hashstructure v1.0.0
-	github.com/onsi/ginkgo v1.12.1
-	github.com/onsi/gomega v1.10.1
+	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/gomega v1.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/pseudomuto/protokit v0.2.0
 	github.com/radovskyb/watcher v1.0.2
@@ -36,7 +36,7 @@ require (
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
-	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.26.0
@@ -117,7 +117,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/mpvl/unique v0.0.0-20150818121801-cbe035fff7de // indirect
-	github.com/nxadm/tail v1.4.4 // indirect
+	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
@@ -129,13 +129,13 @@ require (
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/mod v0.3.1-0.20200828183125-ce943fd02449 // indirect
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3 // indirect
-	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
+	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20200825202427-b303f430e36d // indirect
+	golang.org/x/tools v0.0.0-20201224043029-2b0845dc783e // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

@@ -11,3 +11,11 @@ changelog:
     dependencyOwner: solo-io
     dependencyRepo: go-list-licenses
     dependencyTag: v0.1.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: onsi
+    dependencyRepo: ginkgo
+    dependencyTag: v1.16.5
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: onsi
+    dependencyRepo: gomega
+    dependencyTag: v1.16.0
