@@ -118,7 +118,7 @@ verify-envoy-protos:
 .PHONY: test
 test:
 ifneq ($(RELEASE), "true")
-	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
+	$(DEPSGOBIN)/ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
 endif
 
 #----------------------------------------------------------------------------------
