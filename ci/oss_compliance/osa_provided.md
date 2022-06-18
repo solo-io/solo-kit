@@ -14,8 +14,8 @@ Name|Version|License
 [iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.0.0-20191112232945-16388991a334|MIT License
 [ilackarms/protoc-gen-doc](https://github.com/ilackarms/protoc-gen-doc)|v1.0.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
-[onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.12.1|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.10.1|MIT License
+[onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.16.5|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.16.0|MIT License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [pseudomuto/protokit](https://github.com/pseudomuto/protokit)|v0.2.0|MIT License
 [radovskyb/watcher](https://github.com/radovskyb/watcher)|v1.0.2|BSD 3-clause "New" or "Revised" License
@@ -23,7 +23,7 @@ Name|Version|License
 [go.opencensus.io](https://go.opencensus.io)|v0.22.4|Apache License 2.0
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.4.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.13.0|MIT License
-[x/sync](https://golang.org/x/sync)|v0.0.0-20200625203802-6e8e738ad208|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.0.0-20201020160332-67f06af15bc9|BSD 3-clause "New" or "Revised" License
 [google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20200825200019-8632dd797987|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.36.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.26.0|BSD 3-clause "New" or "Revised" License
