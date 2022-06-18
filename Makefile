@@ -40,7 +40,7 @@ GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
 # must be a seperate target so that make waits for it to complete before moving on
 .PHONY: mod-download
 mod-download:
-	go mod download
+	go mod download all
 
 
 DEPSGOBIN=$(shell pwd)/_output/.bin
