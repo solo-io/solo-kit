@@ -58,6 +58,8 @@ update-deps: mod-download
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
+.PHONY: update-code-generator
+update-code-generator:
 	# clone solo's fork of code-generator, required for tests & kube type gen
 	mkdir -p $(GOPATH)/src/k8s.io && \
 		cd $(GOPATH)/src/k8s.io && \
@@ -67,6 +69,7 @@ update-deps: mod-download
 		git fetch solo && \
 		git checkout fixed-for-solo-kit-1-16-2 && \
 		git pull
+
 
 #----------------------------------------------------------------------------------
 # Kubernetes Clientsets
