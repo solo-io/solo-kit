@@ -50,7 +50,7 @@ steps:
   entrypoint: 'bash'
   env:
   - 'GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn'
-  - 'RUN_KUBE_TESTS=1'
+  - 'RUN_KUBE_TESTS=0'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
   - 'SKIP_MOCK_GEN=1'
