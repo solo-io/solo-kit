@@ -10,7 +10,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.4.24'
   args:
   - "--repo-name"
-  - "solo-io/solo-kit"
+  - "$REPO_NAME"
   - "--repo-sha"
   - "$COMMIT_SHA"
   - "--repo-output-dir"
@@ -33,18 +33,7 @@ steps:
   id: 'update-deps'
   dir: *dir
 
-# check code gen for kubernetes custom resources, should be no diff
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
-  entrypoint: 'bash'
-  args: ['ci/check-code-gen.sh']
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-  - 'TAGGED_VERSION=$TAG_NAME'
-#  waitFor: ['update-deps']
-  dir: *dir
-  id: 'check-code-and-docs-gen'
-
-  # start setting up kubeconfigs
+# Set gcloud Kubeconfig
 - name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-b']
   id: 'gcloud-compute-zone'
@@ -61,18 +50,25 @@ steps:
   entrypoint: 'bash'
   env:
   - 'GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn'
-  - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
-  - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
   - 'SKIP_MOCK_GEN=1'
-  - 'CLOUD_BUILD=1'
   - 'TAGGED_VERSION=$TAG_NAME'
   args: ['-c', 'make test']
   dir: *dir
   id: 'test'
+
+# check code gen for kubernetes custom resources
+# this step passes if there is no generated diff, fails otherwise
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
+  entrypoint: 'bash'
+  args: ['ci/check-code-gen.sh']
+  env:
+    - 'TAGGED_VERSION=$TAG_NAME'
+  waitFor: ['update-deps']
+  dir: *dir
+  id: 'check-code-and-docs-gen'
 
 timeout: 1500s
 tags: ['solo-kit']

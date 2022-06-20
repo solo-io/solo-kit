@@ -37,7 +37,7 @@ init:
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
 
-# must be a seperate target so that make waits for it to complete before moving on
+# must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
 mod-download:
 	go mod download all
@@ -118,7 +118,7 @@ verify-envoy-protos:
 .PHONY: test
 test:
 ifneq ($(RELEASE), "true")
-	$(DEPSGOBIN)/ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
+	$(DEPSGOBIN)/ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites
 endif
 
 #----------------------------------------------------------------------------------
