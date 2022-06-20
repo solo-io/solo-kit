@@ -57,12 +57,11 @@ jobs:
           ACK_GINKGO_RC: true
           ACK_GINKGO_DEPRECATIONS: 1.16.5
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: warn
-          RUN_KUBE_TESTS: 1
           RUN_CONSUL_TESTS: 0
           RUN_VAULT_TESTS: 0
           SKIP_MOCK_GEN: 1
         run: |
-          make test
+          make update-deps run-k8s-tests
       - name: Debug Info
         if: failure()
         run: |

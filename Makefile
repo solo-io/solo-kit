@@ -121,6 +121,10 @@ ifneq ($(RELEASE), "true")
 	$(DEPSGOBIN)/ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites
 endif
 
+.PHONY: run-k8s-tests
+run-k8s-tests: RUN_KUBE_TESTS=0
+run-k8s-tests: test
+
 #----------------------------------------------------------------------------------
 # Update third party licenses and check for GPL Licenses
 #----------------------------------------------------------------------------------
