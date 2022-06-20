@@ -122,7 +122,7 @@ ifneq ($(RELEASE), "true")
 endif
 
 .PHONY: run-k8s-tests
-run-k8s-tests: RUN_KUBE_TESTS=0
+run-k8s-tests: RUN_KUBE_TESTS=1
 run-k8s-tests: test
 
 #----------------------------------------------------------------------------------
