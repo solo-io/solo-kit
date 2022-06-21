@@ -86,17 +86,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
 	Expect(err).NotTo(HaveOccurred())
-
-	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
-	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	err := setup.DeleteCrd(v1.MockResourceCrd.FullName())
 	Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
-	Expect(err).NotTo(HaveOccurred())
-
-	err = os.Unsetenv(statusutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 })
 
