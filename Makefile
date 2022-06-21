@@ -40,7 +40,7 @@ GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
 # must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
 mod-download:
-	go mod download all
+	go mod download
 
 
 DEPSGOBIN=$(shell pwd)/_output/.bin
@@ -123,10 +123,6 @@ test:
 ifneq ($(RELEASE), "true")
 	$(DEPSGOBIN)/ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites
 endif
-
-.PHONY: run-k8s-tests
-run-k8s-tests: RUN_KUBE_TESTS=1
-run-k8s-tests: test
 
 #----------------------------------------------------------------------------------
 # Update third party licenses and check for GPL Licenses
