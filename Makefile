@@ -6,8 +6,20 @@ ROOTDIR := $(shell pwd)
 PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
-VERSION ?= $(shell git describe --tags)
+
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
+
+#----------------------------------------------------------------------------------
+# Version, Release
+#----------------------------------------------------------------------------------
+VERSION ?= $(shell git describe --tags --dirty | cut -c 2-)
+RELEASE := "false"
+
+# If TAGGED_VERSION does exist, this is a release in CI
+ifneq ($(TAGGED_VERSION),)
+	RELEASE := "true"
+	VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+endif
 
 #----------------------------------------------------------------------------------
 # Repo init
@@ -24,17 +36,17 @@ init:
 
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
+DEPSGOBIN=$(shell pwd)/_output/.bin
 
-# must be a seperate target so that make waits for it to complete before moving on
+.PHONY: update-all
+update-all: mod-download update-deps update-code-generator
+
 .PHONY: mod-download
 mod-download:
 	go mod download
 
-
-DEPSGOBIN=$(shell pwd)/_output/.bin
-
 .PHONY: update-deps
-update-deps: mod-download
+update-deps:
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
@@ -46,6 +58,8 @@ update-deps: mod-download
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
+.PHONY: update-code-generator
+update-code-generator:
 	# clone solo's fork of code-generator, required for tests & kube type gen
 	mkdir -p $(GOPATH)/src/k8s.io && \
 		cd $(GOPATH)/src/k8s.io && \
@@ -55,6 +69,7 @@ update-deps: mod-download
 		git fetch solo && \
 		git checkout fixed-for-solo-kit-1-16-2 && \
 		git pull
+
 
 #----------------------------------------------------------------------------------
 # Kubernetes Clientsets
@@ -105,21 +120,9 @@ verify-envoy-protos:
 # as this code is no longer used
 .PHONY: test
 test:
-	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
-
-#----------------------------------------------------------------------------------
-# solo-kit-gen
-#----------------------------------------------------------------------------------
-
-solo-kit-gen:
-	$(GO_BUILD_FLAGS) go build -o $@ cmd/solo-kit-gen/*.go
-
-#----------------------------------------------------------------------------------
-# solo-kit-cli
-#----------------------------------------------------------------------------------
-
-solo-kit-cli:
-	$(GO_BUILD_FLAGS) go build -o $@ cmd/cli/*.go
+ifneq ($(RELEASE), "true")
+	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites
+endif
 
 #----------------------------------------------------------------------------------
 # Update third party licenses and check for GPL Licenses

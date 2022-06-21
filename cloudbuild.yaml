@@ -30,23 +30,12 @@ steps:
 
 # Installs go executables required by codegen tests
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
-  args: ['update-deps']
+  args: ['update-all']
   waitFor: ['prepare-workspace']
   id: 'update-deps'
   dir: *dir
 
-# check code gen for kubernetes custom resources, should be no diff
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
-  entrypoint: 'bash'
-  args: ['ci/check-code-gen.sh']
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-  - 'TAGGED_VERSION=$TAG_NAME'
-#  waitFor: ['update-deps']
-  dir: *dir
-  id: 'check-code-and-docs-gen'
-
-  # start setting up kubeconfigs
+# Set gcloud Kubeconfig
 - name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-b']
   id: 'gcloud-compute-zone'
@@ -56,38 +45,34 @@ steps:
   args: ['container', 'clusters', 'get-credentials', 'solo-kit-test']
   id: 'gcloud-solo-kit-test'
 
-# e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
+# e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/tree/master/e2e-go-mod-ginkgo
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   entrypoint: 'bash'
   env:
+  - 'ACK_GINKGO_RC=true'
+  - 'ACK_GINKGO_DEPRECATIONS=1.16.5'
   - 'GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn'
-  - 'PROJECT_ROOT=github.com/solo-io/solo-kit'
-  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-b'
-  - 'CLOUDSDK_CONTAINER_CLUSTER=solo-kit-test'
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
-  - 'SKIP_MOCK_GEN=1'
-  - 'CLOUD_BUILD=1'
+  - 'TAGGED_VERSION=$TAG_NAME'
   args: ['-c', 'make test']
+  waitFor: ['update-deps']
   dir: *dir
   id: 'test'
 
+# check code gen for kubernetes custom resources
+# this step passes if there is no generated diff, fails otherwise
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
-  args: ['solo-kit-cli']
-  waitFor: ['test']
-  id: 'build-cli'
-  dir: *dir
+  entrypoint: 'bash'
+  args: ['ci/check-code-gen.sh']
   env:
-
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
-  args: ['solo-kit-gen']
-  waitFor: ['test']
-  id: 'build-codegen'
+    - 'TAGGED_VERSION=$TAG_NAME'
+  waitFor: ['update-deps']
   dir: *dir
-  env:
+  id: 'check-code-and-docs-gen'
 
 timeout: 1500s
 tags: ['solo-kit']
