@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/filegen/utils"
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/utils"
 
 	htmltemplate "html/template"
 

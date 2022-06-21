@@ -3,7 +3,7 @@ package kube
 import (
 	"text/template"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/filegen/templates"
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 )
 
 // TODO(marco): replace hardcoded types

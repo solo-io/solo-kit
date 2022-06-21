@@ -1,4 +1,4 @@
-package filegen
+package codegen
 
 import (
 	"bytes"
@@ -6,14 +6,14 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/solo-io/solo-kit/pkg/code-generator/filegen/templates/kube"
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates/kube"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/iancoleman/strcase"
 	"github.com/solo-io/go-utils/log"
 	code_generator "github.com/solo-io/solo-kit/pkg/code-generator"
-	"github.com/solo-io/solo-kit/pkg/code-generator/filegen/templates"
+	"github.com/solo-io/solo-kit/pkg/code-generator/codegen/templates"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 )
 
