@@ -190,16 +190,8 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	}
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
 	if withStatus, ok := resource.(resources.InputResource); ok {
-
-		statusReporterNamespace, err := statusutils.GetStatusReporterNamespaceFromEnv()
-		if err != nil {
-			return err
-		}
-		inputResourceUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(statusReporterNamespace, UnmarshalMapToProto)
-
-		if err := inputResourceUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus); err != nil {
-			return err
-		}
+		inputResourceUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(UnmarshalMapToProto)
+		inputResourceUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus)
 	}
 
 	if resourceCrd.Spec != nil {

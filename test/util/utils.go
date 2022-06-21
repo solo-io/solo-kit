@@ -25,7 +25,7 @@ func ClientForClientsetAndResource(clientset *fake.Clientset, cache kube.SharedC
 		res,
 		namespaces,
 		0,
-		statusutils.NewNamespacedStatusesUnmarshaler(podNamespace, protoutils.UnmarshalMapToProto))
+		statusutils.NewNamespacedStatusesUnmarshaler(protoutils.UnmarshalMapToProto))
 }
 
 func MockClientForNamespace(cache kube.SharedCache, namespaces []string, podNamespace string) *kube.ResourceClient {
@@ -36,7 +36,7 @@ func MockClientForNamespace(cache kube.SharedCache, namespaces []string, podName
 		&v1.MockResource{},
 		namespaces,
 		0,
-		statusutils.NewNamespacedStatusesUnmarshaler(podNamespace, protoutils.UnmarshalMapToProto))
+		statusutils.NewNamespacedStatusesUnmarshaler(protoutils.UnmarshalMapToProto))
 }
 
 func CreateMockResource(ctx context.Context, cs *fake.Clientset, namespace, name, dumbFieldValue string) error {

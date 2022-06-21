@@ -90,12 +90,13 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 		// The POD_NAMESPACE determines which namespace to write statuses to
 		// This is used for backwards compatibility in case a CRD is unmarshalled
 		// and it contains a single status.
-		statusReporterNamespace, err := statusutils.GetStatusReporterNamespaceFromEnv()
+		// TODO : remove
+		_, err = statusutils.GetStatusReporterNamespaceFromEnv()
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting status reporter namespace")
 		}
 
-		inputResourceStatusUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(statusReporterNamespace, protoutils.UnmarshalMapToProto)
+		inputResourceStatusUnmarshaler := statusutils.NewNamespacedStatusesUnmarshaler(protoutils.UnmarshalMapToProto)
 
 		client := kube.NewResourceClient(
 			opts.Crd,

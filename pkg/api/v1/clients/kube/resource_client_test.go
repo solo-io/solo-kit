@@ -128,7 +128,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		}
 
 		statusClient                   = statusutils.NewNamespacedStatusesClient(namespace)
-		inputResourceStatusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(namespace, protoutils.UnmarshalMapToProto)
+		inputResourceStatusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(protoutils.UnmarshalMapToProto)
 	)
 
 	BeforeEach(func() {
