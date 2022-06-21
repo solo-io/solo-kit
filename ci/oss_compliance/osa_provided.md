@@ -10,7 +10,7 @@ Name|Version|License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
 [go-test/deep](https://github.com/go-test/deep)|v1.0.2|MIT License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.2|BSD 3-clause "New" or "Revised" License
-[grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.3.0|Apache License 2.0
+[grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.0.1-0.20190118093823-f849b5445de4|Apache License 2.0
 [iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.0.0-20191112232945-16388991a334|MIT License
 [ilackarms/protoc-gen-doc](https://github.com/ilackarms/protoc-gen-doc)|v1.0.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
@@ -21,19 +21,19 @@ Name|Version|License
 [radovskyb/watcher](https://github.com/radovskyb/watcher)|v1.0.2|BSD 3-clause "New" or "Revised" License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.1.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.22.4|Apache License 2.0
-[go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
-[go.uber.org/zap](https://go.uber.org/zap)|v1.17.0|MIT License
-[x/sync](https://golang.org/x/sync)|v0.0.0-20210220032951-036812b2e83c|BSD 3-clause "New" or "Revised" License
-[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20210602131652-f16073e35f0c|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.38.0|Apache License 2.0
+[go.uber.org/multierr](https://go.uber.org/multierr)|v1.4.0|MIT License
+[go.uber.org/zap](https://go.uber.org/zap)|v1.13.0|MIT License
+[x/sync](https://golang.org/x/sync)|v0.0.0-20201020160332-67f06af15bc9|BSD 3-clause "New" or "Revised" License
+[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20200825200019-8632dd797987|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.36.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.26.0|BSD 3-clause "New" or "Revised" License
 [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)|v2.4.0|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.22.4|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.22.4|Apache License 2.0
-[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.22.4|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.22.4|Apache License 2.0
-[k8s.io/code-generator](https://k8s.io/code-generator)|v0.22.4|Apache License 2.0
-[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20210819203725-bdf08cb9a70a|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.18.6|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.18.6|Apache License 2.0
+[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.18.6|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.18.6|Apache License 2.0
+[k8s.io/code-generator](https://k8s.io/code-generator)|v0.18.6|Apache License 2.0
+[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20200603063816-c1c6865ac451|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.2.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License

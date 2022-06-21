@@ -14,7 +14,7 @@ require (
 	github.com/go-test/deep v1.0.2
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff
@@ -34,19 +34,19 @@ require (
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	go.opencensus.io v0.22.4
-	go.uber.org/multierr v1.6.0
-	go.uber.org/zap v1.17.0
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
-	google.golang.org/grpc v1.38.0
+	go.uber.org/multierr v1.4.0
+	go.uber.org/zap v1.13.0
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987
+	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.22.4
-	k8s.io/apiextensions-apiserver v0.22.4
-	k8s.io/apimachinery v0.22.4
-	k8s.io/client-go v0.22.4
-	k8s.io/code-generator v0.22.4
-	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
+	k8s.io/api v0.18.6
+	k8s.io/apiextensions-apiserver v0.18.6
+	k8s.io/apimachinery v0.18.6
+	k8s.io/client-go v0.18.6
+	k8s.io/code-generator v0.18.6
+	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -72,7 +72,7 @@ replace (
 	// github.com/Azure/go-autorest/autorest has different versions for the Go
 	// modules than it does for releases on the repository. Note the correct
 	// version when updating.
-	// github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 
 	// pin to the jwt-go fork to fix CVE.
