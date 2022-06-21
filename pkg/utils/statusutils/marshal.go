@@ -64,25 +64,3 @@ func (s *SingleStatusUnmarshaler) convertResourceStatusToGlooStatus(resourceStat
 	}
 	return &typedStatus
 }
-
-func UpdateStatus(resource resources.InputResource, updateFunc func(status *core.Status) error, statusClient resources.StatusClient) error {
-	status := statusClient.GetStatus(resource)
-
-	err := updateFunc(status)
-	if err != nil {
-		return err
-	}
-
-	statusClient.SetStatus(resource, status)
-	return nil
-}
-
-func UpdateNamespacedStatuses(resource resources.InputResource, updateFunc func(namespacedStatuses *core.NamespacedStatuses) error) error {
-	namespacedStatuses := resource.GetNamespacedStatuses()
-	err := updateFunc(namespacedStatuses)
-	if err != nil {
-		return err
-	}
-	resource.SetNamespacedStatuses(namespacedStatuses)
-	return nil
-}
