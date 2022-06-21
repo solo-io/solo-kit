@@ -36,17 +36,17 @@ init:
 
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
+DEPSGOBIN=$(shell pwd)/_output/.bin
 
-# must be a separate target so that make waits for it to complete before moving on
+.PHONY: update-all
+update-all: mod-download update-deps update-code-generator
+
 .PHONY: mod-download
 mod-download:
 	go mod download
 
-
-DEPSGOBIN=$(shell pwd)/_output/.bin
-
 .PHONY: update-deps
-update-deps: mod-download
+update-deps:
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext

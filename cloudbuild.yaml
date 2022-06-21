@@ -30,7 +30,7 @@ steps:
 
 # Installs go executables required by codegen tests
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
-  args: ['update-deps update-code-generator']
+  args: ['update-all']
   waitFor: ['prepare-workspace']
   id: 'update-deps'
   dir: *dir
