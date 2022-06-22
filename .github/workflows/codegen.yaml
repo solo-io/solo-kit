@@ -48,4 +48,4 @@ jobs:
             ${{ runner.os }}-go-
       - name: Generate Code
         run: |
-          ./ci/check-generated-code.sh
+          ./ci/check-code-gen.sh
