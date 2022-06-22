@@ -63,6 +63,17 @@ steps:
   dir: *dir
   id: 'test'
 
+# check code gen for kubernetes custom resources
+# this step passes if there is no generated diff, fails otherwise
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+  entrypoint: 'bash'
+  args: ['ci/check-code-gen.sh']
+  env:
+    - 'TAGGED_VERSION=$TAG_NAME'
+  waitFor: ['update-deps']
+  dir: *dir
+  id: 'check-code-and-docs-gen'
+
 timeout: 1500s
 tags: ['solo-kit']
 options:
