@@ -10,6 +10,7 @@ import (
 // to associate a resource status with the appropriate controller statusReporterNamespace
 const PodNamespaceEnvName = "POD_NAMESPACE"
 
+//noinspection GoUnusedExportedFunction
 func GetStatusReporterNamespaceFromEnv() (string, error) {
 	podNamespace := os.Getenv(PodNamespaceEnvName)
 	if podNamespace == "" {
