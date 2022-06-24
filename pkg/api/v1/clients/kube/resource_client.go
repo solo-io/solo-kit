@@ -435,11 +435,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 					resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
 		}
-		if err := customResource.UnmarshalStatus(resourceCrd.Status); err != nil {
-			return nil, errors.Wrapf(err, "unmarshalling crd status on custom resource %v in namespace %v into %v",
-				resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
-		}
-
+		customResource.UnmarshalStatus(resourceCrd.Status)
 	} else {
 		// Default unmarshalling
 

@@ -54,7 +54,7 @@ type InputResource interface {
 type CustomInputResource interface {
 	InputResource
 	UnmarshalSpec(spec v1.Spec) error
-	UnmarshalStatus(status v1.Status) error
+	UnmarshalStatus(status v1.Status)
 	MarshalSpec() (v1.Spec, error)
 	MarshalStatus() (v1.Status, error)
 }
