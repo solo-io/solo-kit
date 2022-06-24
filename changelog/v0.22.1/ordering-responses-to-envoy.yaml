@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6337
+    resolvesIssue: false
+    description: |
+      Add ordering to Response Watches so that the order sent to Envoy is in sync.
+      This would cause an issue in Envoy where the ClusterAssignmentLoad would update before
+      Clusters would.  This caused the Clusters to stay in a warming state until Envoy timed
+      out, deleting the Endpoints on the cluster.
