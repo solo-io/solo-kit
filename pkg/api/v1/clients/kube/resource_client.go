@@ -2,6 +2,7 @@ package kube
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -177,6 +178,10 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	if !rc.matchesClientGVK(*resourceCrd) {
 		return nil, errors.Errorf("cannot read %v resource with %v client", resourceCrd.GroupVersionKind().String(), rc.crd.GroupVersionKind().String())
 	}
+	if true {
+		return nil, fmt.Errorf("no")
+	}
+
 	resource, err := rc.convertCrdToResource(resourceCrd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "converting output crd")
@@ -312,6 +317,10 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 		if !rc.matchesClientGVK(*resourceCrd) {
 			continue
 		}
+
+		if true {
+			return nil, fmt.Errorf("no")
+		}
 		resource, err := rc.convertCrdToResource(resourceCrd)
 		if err != nil {
 			return nil, errors.Wrapf(err, "converting output crd")
@@ -425,7 +434,9 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resources.Resource, error) {
 	resource := rc.NewResource()
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
-
+	if true {
+		return nil, fmt.Errorf("I am the best")
+	}
 	if customResource, ok := resource.(resources.CustomInputResource); ok {
 		// Handle custom spec/status unmarshalling
 
