@@ -89,10 +89,7 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 		if err != nil {
 			return nil, MarshalErr(err, "resource spec to map")
 		}
-		status, err = customResource.MarshalStatus()
-		if err != nil {
-			return nil, MarshalErr(err, "resource status to map")
-		}
+		status, _ = customResource.MarshalStatus()
 
 	} else {
 		// Default marshalling
@@ -110,10 +107,7 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 		spec = data
 
 		if namespacedStatusesProto := resource.GetNamespacedStatuses(); namespacedStatusesProto != nil {
-			namespacedStatusesMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(namespacedStatusesProto)
-			if err != nil {
-				return nil, MarshalErr(err, "resource namespacedStatuses to map")
-			}
+			namespacedStatusesMap, _ := protoutils.MarshalMapFromProtoWithEnumsAsInts(namespacedStatusesProto)
 			status = namespacedStatusesMap
 		}
 	}
