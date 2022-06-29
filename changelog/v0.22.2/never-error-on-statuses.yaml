@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/484
+    resolvesIssue: false
+    description: |
+      Dont error on statuses. This allows for downgrades.

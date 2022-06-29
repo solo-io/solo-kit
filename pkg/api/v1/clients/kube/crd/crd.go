@@ -89,10 +89,7 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 		if err != nil {
 			return nil, MarshalErr(err, "resource spec to map")
 		}
-		status, err = customResource.MarshalStatus()
-		if err != nil {
-			return nil, MarshalErr(err, "resource status to map")
-		}
+		status, _ = customResource.MarshalStatus()
 
 	} else {
 		// Default marshalling
@@ -108,10 +105,7 @@ func (d Crd) KubeResource(resource resources.InputResource) (*v1.Resource, error
 
 		if resource.GetStatus() != nil {
 			statusProto := resource.GetStatus()
-			statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
-			if err != nil {
-				return nil, MarshalErr(err, "resource status to map")
-			}
+			statusMap, _ := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
 			status = statusMap
 		}
 	}

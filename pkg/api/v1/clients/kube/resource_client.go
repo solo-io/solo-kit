@@ -435,10 +435,10 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 					resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
 		}
-		if err := customResource.UnmarshalStatus(resourceCrd.Status); err != nil {
-			return nil, errors.Wrapf(err, "unmarshalling crd status on custom resource %v in namespace %v into %v",
-				resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
-		}
+		// If the status is of a form that we do not recognize, we should ignore it.
+		// Support backports of custom resources that do not have a status fields
+		// in the way we want.
+		_ = customResource.UnmarshalStatus(resourceCrd.Status)
 
 	} else {
 		// Default unmarshalling
@@ -451,9 +451,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 					return nil
 				}
 				typedStatus := core.Status{}
-				if err := protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus); err != nil {
-					return err
-				}
+				_ = protoutils.UnmarshalMapToProto(resourceCrd.Status, &typedStatus)
 				*status = typedStatus
 				return nil
 			}
