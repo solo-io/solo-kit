@@ -136,6 +136,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	var initialMockResourceList MockResourceList
 
 	currentSnapshot := TestingSnapshot{}
+	mocksByNamespace := make(map[string]MockResourceList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for MockResource */
@@ -145,6 +146,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return nil, nil, errors.Wrapf(err, "initial MockResource list")
 			}
 			initialMockResourceList = append(initialMockResourceList, mocks...)
+			mocksByNamespace[namespace] = mocks
 		}
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {
@@ -209,7 +211,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				stats.Record(ctx, mTestingSnapshotMissed.M(1))
 			}
 		}
-		mocksByNamespace := make(map[string]MockResourceList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
