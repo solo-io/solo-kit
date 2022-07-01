@@ -341,7 +341,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 				// merge lists by namespace
 				{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .Name }}NamespacedList.list
-				var {{ lower_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List
+				totalKubeConfigs := 0
+				for _, kubeconfigs := range {{ lower_camel .PluralName }}ByNamespace {
+					totalKubeConfigs += len(kubeconfigs)
+				}
+				var {{ lower_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List = make([]*{{ .ImportPrefix }}{{ .Name }}, 0, totalKubeConfigs)
 				for _, {{ lower_camel .PluralName }} := range {{ lower_camel .PluralName }}ByNamespace {
 					{{ lower_camel .Name }}List  = append({{ lower_camel .Name }}List, {{ lower_camel .PluralName }}...)
 				}
