@@ -239,6 +239,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	var initialPodList github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
 
 	currentSnapshot := TestingSnapshot{}
+	simplemocksByNamespace := make(map[string]SimpleMockResourceList)
+	mocksByNamespace := make(map[string]MockResourceList)
+	fakesByNamespace := make(map[string]FakeResourceList)
+	anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
+	mctsByNamespace := make(map[string]MockCustomTypeList)
+	podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for SimpleMockResource */
@@ -248,6 +254,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return nil, nil, errors.Wrapf(err, "initial SimpleMockResource list")
 			}
 			initialSimpleMockResourceList = append(initialSimpleMockResourceList, simplemocks...)
+			simplemocksByNamespace[namespace] = simplemocks
 		}
 		simpleMockResourceNamespacesChan, simpleMockResourceErrs, err := c.simpleMockResource.Watch(namespace, opts)
 		if err != nil {
@@ -266,6 +273,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return nil, nil, errors.Wrapf(err, "initial MockResource list")
 			}
 			initialMockResourceList = append(initialMockResourceList, mocks...)
+			mocksByNamespace[namespace] = mocks
 		}
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 		if err != nil {
@@ -284,6 +292,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return nil, nil, errors.Wrapf(err, "initial FakeResource list")
 			}
 			initialFakeResourceList = append(initialFakeResourceList, fakes...)
+			fakesByNamespace[namespace] = fakes
 		}
 		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
 		if err != nil {
@@ -302,6 +311,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return nil, nil, errors.Wrapf(err, "initial AnotherMockResource list")
 			}
 			initialAnotherMockResourceList = append(initialAnotherMockResourceList, anothermockresources...)
+			anothermockresourcesByNamespace[namespace] = anothermockresources
 		}
 		anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
 		if err != nil {
@@ -320,6 +330,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return nil, nil, errors.Wrapf(err, "initial MockCustomType list")
 			}
 			initialMockCustomTypeList = append(initialMockCustomTypeList, mcts...)
+			mctsByNamespace[namespace] = mcts
 		}
 		mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, opts)
 		if err != nil {
@@ -338,6 +349,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return nil, nil, errors.Wrapf(err, "initial Pod list")
 			}
 			initialPodList = append(initialPodList, pods...)
+			podsByNamespace[namespace] = pods
 		}
 		podNamespacesChan, podErrs, err := c.pod.Watch(namespace, opts)
 		if err != nil {
@@ -472,12 +484,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				stats.Record(ctx, mTestingSnapshotMissed.M(1))
 			}
 		}
-		simplemocksByNamespace := make(map[string]SimpleMockResourceList)
-		mocksByNamespace := make(map[string]MockResourceList)
-		fakesByNamespace := make(map[string]FakeResourceList)
-		anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
-		mctsByNamespace := make(map[string]MockCustomTypeList)
-		podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
