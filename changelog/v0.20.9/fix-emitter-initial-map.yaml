@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5554
+    resolvesIssue: false
+    description: >
+      Ensure that the emitter namespaced map is hydrated with the initial list data.
