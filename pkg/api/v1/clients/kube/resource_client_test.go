@@ -86,17 +86,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	clientset, err = versioned.NewForConfig(cfg, v1.MockResourceCrd)
 	Expect(err).NotTo(HaveOccurred())
-
-	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
-	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	err := setup.DeleteCrd(v1.MockResourceCrd.FullName())
 	Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
-	Expect(err).NotTo(HaveOccurred())
-
-	err = os.Unsetenv(statusutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 })
 
@@ -128,7 +122,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 		}
 
 		statusClient                   = statusutils.NewNamespacedStatusesClient(namespace)
-		inputResourceStatusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(namespace, protoutils.UnmarshalMapToProto)
+		inputResourceStatusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(protoutils.UnmarshalMapToProto)
 	)
 
 	BeforeEach(func() {
@@ -363,6 +357,20 @@ var _ = Describe("Test Kube ResourceClient", func() {
 						"unexpectedField": data,
 					},
 				}
+				malformedStatusName = "malformed-status"
+				malformedStatusCrd  = &solov1.Resource{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "testing.solo.io/v1",
+						Kind:       "MockResource",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resource1,
+						Namespace: namespace1,
+					},
+					Status: solov1.Status{
+						"unexpectedField": data,
+					},
+				}
 				unexpectedVersionResourceName = "v1omega1-res"
 				unexpectedVersionResourceCrd  = &solov1.Resource{
 					TypeMeta: metav1.TypeMeta{
@@ -389,6 +397,9 @@ var _ = Describe("Test Kube ResourceClient", func() {
 						}
 						if action.GetName() == unexpectedVersionResourceName {
 							return true, unexpectedVersionResourceCrd, nil
+						}
+						if action.GetName() == malformedStatusName {
+							return true, malformedStatusCrd, nil
 						}
 					}
 					return true, nil, &errors2.StatusError{ErrStatus: metav1.Status{
@@ -428,6 +439,11 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				_, err := rc.Read(namespace1, malformedResourceName, clients.ReadOpts{})
 				Expect(err).To(HaveOccurred())
 				Expect(errors.IsNotExist(err)).To(BeFalse())
+			})
+
+			It("will not return an error when receiving a resource with malformed status", func() {
+				_, err := rc.Read(namespace1, malformedStatusName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("returns an error when retrieving a resource with an unexpected group version kind", func() {

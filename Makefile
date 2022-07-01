@@ -48,7 +48,6 @@ mod-download:
 .PHONY: update-deps
 update-deps:
 	mkdir -p $(DEPSGOBIN)
-	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
 	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
@@ -60,6 +59,7 @@ update-deps:
 
 .PHONY: update-code-generator
 update-code-generator:
+	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	# clone solo's fork of code-generator, required for tests & kube type gen
 	mkdir -p $(GOPATH)/src/k8s.io && \
 		cd $(GOPATH)/src/k8s.io && \
@@ -121,7 +121,7 @@ verify-envoy-protos:
 .PHONY: test
 test:
 ifneq ($(RELEASE), "true")
-	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites
+	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites $(TEST_PKG)
 endif
 
 #----------------------------------------------------------------------------------

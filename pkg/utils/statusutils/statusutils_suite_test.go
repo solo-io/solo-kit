@@ -1,4 +1,4 @@
-package propagator_test
+package statusutils_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestPropagator(t *testing.T) {
+func TestStatusutils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Propagator Suite")
+	RunSpecs(t, "Statusutils Suite")
 }

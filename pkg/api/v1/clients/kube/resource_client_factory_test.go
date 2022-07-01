@@ -18,10 +18,9 @@ import (
 var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 	const (
-		podNamespace = "pod-ns"
-		namespace1   = "test-ns-1"
-		namespace2   = "test-ns-2"
-		namespace3   = "test-ns-3"
+		namespace1 = "test-ns-1"
+		namespace2 = "test-ns-2"
+		namespace3 = "test-ns-3"
 	)
 
 	var (
@@ -36,9 +35,9 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 		kubeCache = kube.NewKubeCache(ctx).(*kube.ResourceClientSharedInformerFactory)
 		Expect(len(kubeCache.Informers())).To(BeZero())
 
-		client1 = util.MockClientForNamespace(kubeCache, []string{namespace1}, podNamespace)
-		client2 = util.MockClientForNamespace(kubeCache, []string{namespace2}, podNamespace)
-		client123 = util.MockClientForNamespace(kubeCache, []string{namespace1, namespace2, namespace3}, podNamespace)
+		client1 = util.MockClientForNamespace(kubeCache, []string{namespace1})
+		client2 = util.MockClientForNamespace(kubeCache, []string{namespace2})
+		client123 = util.MockClientForNamespace(kubeCache, []string{namespace1, namespace2, namespace3})
 	})
 
 	Describe("registering resource clients with the factory", func() {
@@ -118,7 +117,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 		BeforeEach(func() {
 			clientset = fake.NewSimpleClientset(mocksv1.MockResourceCrd)
 			// We need the resourceClient so that we can register its resourceType/namespaces with the cache
-			client := util.ClientForClientsetAndResource(clientset, kubeCache, mocksv1.MockResourceCrd, &mocksv1.MockResource{}, []string{namespace1}, podNamespace)
+			client := util.ClientForClientsetAndResource(clientset, kubeCache, mocksv1.MockResourceCrd, &mocksv1.MockResource{}, []string{namespace1})
 			err := kubeCache.Register(client)
 			Expect(err).NotTo(HaveOccurred())
 

@@ -67,7 +67,7 @@ type StatusClient interface {
 }
 
 type StatusUnmarshaler interface {
-	UnmarshalStatus(status v1.Status, into InputResource) error
+	UnmarshalStatus(status v1.Status, into InputResource)
 }
 
 // Custom resources imported in a solo-kit project can implement this interface to control
@@ -75,7 +75,7 @@ type StatusUnmarshaler interface {
 type CustomInputResource interface {
 	InputResource
 	UnmarshalSpec(spec v1.Spec) error
-	UnmarshalStatus(status v1.Status, defaultUnmarshaler StatusUnmarshaler) error
+	UnmarshalStatus(status v1.Status, defaultUnmarshaler StatusUnmarshaler)
 	MarshalSpec() (v1.Spec, error)
 	MarshalStatus() (v1.Status, error)
 }

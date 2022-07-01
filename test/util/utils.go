@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ClientForClientsetAndResource(clientset *fake.Clientset, cache kube.SharedCache, crd crd.Crd, res resources.InputResource, namespaces []string, podNamespace string) *kube.ResourceClient {
+func ClientForClientsetAndResource(clientset *fake.Clientset, cache kube.SharedCache, crd crd.Crd, res resources.InputResource, namespaces []string) *kube.ResourceClient {
 	return kube.NewResourceClient(
 		crd,
 		clientset,
@@ -25,10 +25,10 @@ func ClientForClientsetAndResource(clientset *fake.Clientset, cache kube.SharedC
 		res,
 		namespaces,
 		0,
-		statusutils.NewNamespacedStatusesUnmarshaler(podNamespace, protoutils.UnmarshalMapToProto))
+		statusutils.NewNamespacedStatusesUnmarshaler(protoutils.UnmarshalMapToProto))
 }
 
-func MockClientForNamespace(cache kube.SharedCache, namespaces []string, podNamespace string) *kube.ResourceClient {
+func MockClientForNamespace(cache kube.SharedCache, namespaces []string) *kube.ResourceClient {
 	return kube.NewResourceClient(
 		v1.MockResourceCrd,
 		fake.NewSimpleClientset(v1.MockResourceCrd),
@@ -36,7 +36,7 @@ func MockClientForNamespace(cache kube.SharedCache, namespaces []string, podName
 		&v1.MockResource{},
 		namespaces,
 		0,
-		statusutils.NewNamespacedStatusesUnmarshaler(podNamespace, protoutils.UnmarshalMapToProto))
+		statusutils.NewNamespacedStatusesUnmarshaler(protoutils.UnmarshalMapToProto))
 }
 
 func CreateMockResource(ctx context.Context, cs *fake.Clientset, namespace, name, dumbFieldValue string) error {

@@ -31,6 +31,7 @@ func (s *NamespacedStatusesClient) SetStatus(resource resources.InputResource, s
 type NoOpStatusClient struct {
 }
 
+//noinspection GoUnusedExportedFunction
 func NewNoOpStatusClient() *NoOpStatusClient {
 	return &NoOpStatusClient{}
 }

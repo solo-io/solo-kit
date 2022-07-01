@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Move codegen validation from build-bot to github action
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/484
+    resolvesIssue: false
+    description: >
+      Ensure that StatusUnmarshal never returns an error.
+      Instead, if an error would occur, set an empty status on the resource.

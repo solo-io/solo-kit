@@ -455,18 +455,13 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 					resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
 		}
-		if err := customResource.UnmarshalStatus(resourceCrd.Status, rc.resourceStatusUnmarshaler); err != nil {
-			return nil, errors.Wrapf(err, "unmarshalling crd status on custom resource %v in namespace %v into %v",
-				resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
-		}
+		customResource.UnmarshalStatus(resourceCrd.Status, rc.resourceStatusUnmarshaler)
 
 	} else {
 		// Default unmarshalling
 
 		if withStatus, ok := resource.(resources.InputResource); ok {
-			if err := rc.resourceStatusUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus); err != nil {
-				return nil, err
-			}
+			rc.resourceStatusUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus)
 		}
 		if resourceCrd.Spec != nil {
 			if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
