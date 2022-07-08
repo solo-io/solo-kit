@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
+
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
 	"github.com/solo-io/go-utils/stringutils"
@@ -17,7 +20,6 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -91,6 +93,7 @@ func init() {
 // This allows to make kubernetes specific changes, like adding an owner reference.
 type KubeWriteOpts struct {
 	PreWriteCallback func(r *v1.Resource)
+	FieldManager     string
 }
 
 func (*KubeWriteOpts) StorageWriteOptsTag() {}
@@ -208,9 +211,19 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		ctx = ctxWithTags
 	}
 
+	kubeUpdateOptions := metav1.UpdateOptions{}
+	kubeCreateOptions := metav1.CreateOptions{}
+
 	if opts.StorageWriteOpts != nil {
 		if kubeOpts, ok := opts.StorageWriteOpts.(*KubeWriteOpts); ok {
-			kubeOpts.PreWriteCallback(resourceCrd)
+			if kubeOpts.PreWriteCallback != nil {
+				kubeOpts.PreWriteCallback(resourceCrd)
+			}
+
+			if kubeOpts.FieldManager != "" {
+				kubeUpdateOptions.FieldManager = kubeOpts.FieldManager
+				kubeCreateOptions.FieldManager = kubeOpts.FieldManager
+			}
 		}
 	}
 
@@ -220,7 +233,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		}
 		stats.Record(ctx, MUpdates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, updateErr := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Update(ctx, resourceCrd, metav1.UpdateOptions{}); updateErr != nil {
+		if _, updateErr := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Update(ctx, resourceCrd, kubeUpdateOptions); updateErr != nil {
 
 			original, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Get(ctx, meta.Name, metav1.GetOptions{})
 			if err == nil {
@@ -238,7 +251,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	} else {
 		stats.Record(ctx, MCreates.M(1), MInFlight.M(1))
 		defer stats.Record(ctx, MInFlight.M(-1))
-		if _, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Create(ctx, resourceCrd, metav1.CreateOptions{}); err != nil {
+		if _, err := rc.crdClientset.ResourcesV1().Resources(meta.Namespace).Create(ctx, resourceCrd, kubeCreateOptions); err != nil {
 			if apierrors.IsAlreadyExists(err) {
 				return nil, errors.NewExistErr(meta)
 			}
@@ -460,7 +473,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 			}
 		}
 		if resourceCrd.Spec != nil {
-			if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+			if err := specutils.UnmarshalSpecMapToResource(*resourceCrd.Spec, resource); err != nil {
 				return nil, errors.Wrapf(err, "reading crd spec on resource %v in namespace %v into %v", resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
 		}

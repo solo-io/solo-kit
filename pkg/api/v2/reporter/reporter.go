@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+
 	"k8s.io/client-go/util/retry"
 
 	"github.com/hashicorp/go-multierror"
@@ -15,6 +17,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
+
+const KubeFieldManager = "status-reporter"
 
 type Report struct {
 	Warnings []string
@@ -197,6 +201,8 @@ type StatusReporter interface {
 type reporter struct {
 	clients map[string]ReporterResourceClient
 	ref     string
+
+	storageWriteOpts clients.StorageWriteOpts
 }
 
 func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) StatusReporter {
@@ -207,6 +213,9 @@ func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) 
 	return &reporter{
 		ref:     reporterRef,
 		clients: clientsByKind,
+		storageWriteOpts: &kube.KubeWriteOpts{
+			FieldManager: KubeFieldManager,
+		},
 	}
 }
 
@@ -241,7 +250,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			updatedResource, resourceToWrite, writeErr = attemptUpdateStatus(ctx, client, resourceToWrite)
+			updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite)
 			return writeErr
 		})
 
@@ -264,7 +273,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
+func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource) (resources.Resource, resources.InputResource, error) {
 	var readErr error
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
@@ -282,7 +291,11 @@ func attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, res
 			resourceToWrite.SetStatus(status)
 		}
 	}
-	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{
+		Ctx:               ctx,
+		OverwriteExisting: true,
+		StorageWriteOpts:  r.storageWriteOpts,
+	})
 	if writeErr == nil {
 		return updatedResource, resourceToWrite, nil
 	}
