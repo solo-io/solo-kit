@@ -18,6 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(ConfigMap)
+)
+
 func NewConfigMap(namespace, name string) *ConfigMap {
 	configmap := &ConfigMap{}
 	configmap.ConfigMap.SetMetadata(&core.Metadata{

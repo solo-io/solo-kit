@@ -32,6 +32,19 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+{{- if $.HasStatus -}}
+{{- if $.IsCustom }}
+	_ resources.CustomInputResource = new({{ .Name }})
+{{- else }}
+	_ resources.InputResource = new({{ .Name }})
+{{- end }}
+{{- else }}
+	_ resources.Resource = new({{ .Name }})
+{{- end }}
+)
+
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {
 	{{ lowercase .Name }} := &{{ .Name }}{}
 {{- if $.IsCustom }}

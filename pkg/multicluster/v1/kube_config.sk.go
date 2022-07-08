@@ -18,6 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(KubeConfig)
+)
+
 func NewKubeConfig(namespace, name string) *KubeConfig {
 	kubeconfig := &KubeConfig{}
 	kubeconfig.KubeConfig.SetMetadata(&core.Metadata{

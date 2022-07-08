@@ -18,6 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(Job)
+)
+
 func NewJob(namespace, name string) *Job {
 	job := &Job{}
 	job.Job.SetMetadata(&core.Metadata{
