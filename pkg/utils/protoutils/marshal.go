@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
+
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -195,7 +197,7 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	}
 
 	if resourceCrd.Spec != nil {
-		if err := UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+		if err := specutils.UnmarshalSpecMapToResource(*resourceCrd.Spec, resource); err != nil {
 			return errors.Wrapf(err, "parsing resource from crd spec %v in namespace %v into %T", resourceCrd.Name, resourceCrd.Namespace, resource)
 		}
 	}
