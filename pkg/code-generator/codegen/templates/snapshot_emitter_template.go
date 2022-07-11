@@ -178,6 +178,12 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 	currentSnapshot := {{ .GoName }}Snapshot{}
 
+	{{- range .Resources}}
+	{{- if not .ClusterScoped }}
+			{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
+	{{- end }}
+	{{- end }}
+
 	for _, namespace := range watchNamespaces {
 {{- range .Resources}}
 {{- if (not .ClusterScoped) }}
@@ -188,6 +194,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				return nil, nil, errors.Wrapf(err, "initial {{ .Name }} list")
 			}
 			initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List, {{ lower_camel .PluralName }}...)
+			{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .PluralName }}
 		}
 		{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
 		if err != nil {
@@ -282,11 +289,6 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			}
 		}
 
-		{{- range .Resources}}
-		{{- if not .ClusterScoped }}
-				{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
-		{{- end }}
-		{{- end }}
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
