@@ -136,6 +136,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	var initialKubeConfigList KubeConfigList
 
 	currentSnapshot := KubeconfigsSnapshot{}
+	kubeconfigsByNamespace := make(map[string]KubeConfigList)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for KubeConfig */
@@ -145,6 +146,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				return nil, nil, errors.Wrapf(err, "initial KubeConfig list")
 			}
 			initialKubeConfigList = append(initialKubeConfigList, kubeconfigs...)
+			kubeconfigsByNamespace[namespace] = kubeconfigs
 		}
 		kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
 		if err != nil {
@@ -209,7 +211,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				stats.Record(ctx, mKubeconfigsSnapshotMissed.M(1))
 			}
 		}
-		kubeconfigsByNamespace := make(map[string]KubeConfigList)
+
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
