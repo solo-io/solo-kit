@@ -289,12 +289,12 @@ var _ = Describe("Reporter", func() {
 			readOpts := clients.ReadOpts{
 				Ctx: reporterCtx,
 			}
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(nil, errors.NewNotExistErr("", "mocky"))
-
-			// Since the resource doesn't exist, we shouldn't write to it.
 			writeOpts := clients.WriteOpts{
 				Ctx: reporterCtx,
 			}
+
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(nil, errors.NewNotExistErr("", "mocky"))
+			// Since the resource doesn't exist, we shouldn't write to it.
 			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(nil, nil).Times(0)
 
 			err := reporter.WriteReports(ctx, resourceErrs, nil)
