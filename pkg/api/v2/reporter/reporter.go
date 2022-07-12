@@ -206,16 +206,25 @@ type reporter struct {
 }
 
 func NewReporter(reporterRef string, reporterClients ...ReporterResourceClient) StatusReporter {
+	// It's not ideal that we define kube properties directly on the reporter, but it is the
+	// only storage mechanism that support StorageWriteOpts
+	storageWriteOpts := &kube.KubeWriteOpts{
+		FieldManager: KubeFieldManager,
+	}
+
+	return NewReporterWithWriteOpts(reporterRef, storageWriteOpts, reporterClients...)
+}
+
+func NewReporterWithWriteOpts(reporterRef string, storageWriteOpts clients.StorageWriteOpts, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
+
 	return &reporter{
-		ref:     reporterRef,
-		clients: clientsByKind,
-		storageWriteOpts: &kube.KubeWriteOpts{
-			FieldManager: KubeFieldManager,
-		},
+		ref:              reporterRef,
+		clients:          clientsByKind,
+		storageWriteOpts: storageWriteOpts,
 	}
 }
 
