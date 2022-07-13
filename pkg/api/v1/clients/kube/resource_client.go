@@ -305,10 +305,17 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	if err != nil {
 		return nil, err
 	}
-	allResources, err := lister.List(labels.SelectorFromSet(opts.Selector))
+
+	labelSelector, err := rc.getLabelSelector(opts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing label selector")
+	}
+
+	allResources, err := lister.List(labelSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing resources in %v", namespace)
 	}
+
 	var listedResources []*v1.Resource
 	if namespace != "" {
 		for _, r := range allResources {
@@ -354,8 +361,9 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 
 	updateResourceList := func() {
 		list, err := rc.List(namespace, clients.ListOpts{
-			Ctx:      ctx,
-			Selector: opts.Selector,
+			Ctx:                ctx,
+			Selector:           opts.Selector,
+			ExpressionSelector: opts.ExpressionSelector,
 		})
 		if err != nil {
 			errs <- err
@@ -414,6 +422,16 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	}(namespace)
 
 	return resourcesChan, errs, nil
+}
+
+func (rc *ResourceClient) getLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
+	if listOpts.ExpressionSelector != "" {
+		return labels.Parse(listOpts.ExpressionSelector)
+	}
+
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	return labels.SelectorFromSet(listOpts.Selector), nil
 }
 
 // Checks whether the group version kind of the given resource matches that of the client's underlying CRD:
