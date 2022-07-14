@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
@@ -314,9 +312,6 @@ var _ = Describe("Reporter", func() {
 			writeOpts := clients.WriteOpts{
 				Ctx:               reporterCtx,
 				OverwriteExisting: true,
-				StorageWriteOpts: &kube.KubeWriteOpts{
-					PreWriteCallback: nil,
-				},
 			}
 			// first write fails due to resource version
 			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
