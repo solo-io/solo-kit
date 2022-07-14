@@ -316,7 +316,6 @@ var _ = Describe("Reporter", func() {
 				OverwriteExisting: true,
 				StorageWriteOpts: &kube.KubeWriteOpts{
 					PreWriteCallback: nil,
-					FieldManager:     rep.KubeFieldManager,
 				},
 			}
 			// first write fails due to resource version

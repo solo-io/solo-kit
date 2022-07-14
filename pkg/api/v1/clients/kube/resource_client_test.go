@@ -447,7 +447,6 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					PreWriteCallback: func(r *crdv1.Resource) {
 						r.ObjectMeta.OwnerReferences = []metav1.OwnerReference{ownerRef}
 					},
-					FieldManager: "field-manager",
 				}
 			})
 

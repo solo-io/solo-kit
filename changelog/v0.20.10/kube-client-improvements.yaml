@@ -3,19 +3,6 @@ changelog:
     issueLink: https://github.com/solo-io/solo-kit/issues/505
     resolvesIssue: false
     description: |
-      KubeStorageOpts supports FieldManager, which is passed passed as a
-      CreateOption or UpdateOption to the Kubernetes API server.
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-kit/issues/505
-    resolvesIssue: false
-    description: |
-      StatusReporter can be configured with custom Write options, and by
-      default is configured with a FieldManager = "status-reporter", so that
-      all requests to the API server by the StatusReporter are easily identifiable.
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-kit/issues/505
-    resolvesIssue: false
-    description: |
       AllowUnknownFields when unmarshalling a kube spec into a resource. Previously,
       unknown fields would cause an error. This is safe, because for the spec to be persisted
       in the first place, it must respect the CRD validation schema definition.
