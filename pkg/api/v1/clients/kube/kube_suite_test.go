@@ -10,4 +10,6 @@ import (
 func TestKube(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Kube Suite")
+
+	// no-op
 }
