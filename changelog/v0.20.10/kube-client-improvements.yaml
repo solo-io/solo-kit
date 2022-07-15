@@ -1,0 +1,16 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/505
+    resolvesIssue: false
+    description: |
+      AllowUnknownFields when unmarshalling a kube spec into a resource. Previously,
+      unknown fields would cause an error. This is safe, because for the spec to be persisted
+      in the first place, it must respect the CRD validation schema definition.
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6406
+    resolvesIssue: false
+    description: |
+      Add ExpressionSelector to ListOpts and WatchOpts.
+      This adds support to set-based label selection on resource clients, allowing selection
+      of resources with multiple values for the same key. Previously, only equality-based
+      label selection was supported, which required a single key and value for all defined requirements.
