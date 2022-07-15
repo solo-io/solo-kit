@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Ensure that UnmarshalResource performs a strict unmarshal and does not allow unknown fields.
+      This method is used by the validation webhook in Gloo Edge.
