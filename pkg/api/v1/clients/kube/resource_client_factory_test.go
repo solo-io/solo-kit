@@ -135,33 +135,55 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 			It("receives an event in that namespace", func() {
 
+				var watchResults []string
+
+				testCtx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
+
+				go func() {
+					for {
+						select {
+						case <-testCtx.Done():
+							return
+						case res := <-watch:
+							watchResults = append(watchResults, res.ObjectMeta.Name)
+						}
+					}
+				}()
+
 				// Add a resource in a separate goroutine
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
 
-				select {
-				case res := <-watch:
-					Expect(res.Namespace).To(BeEquivalentTo(namespace1))
-					Expect(res.Name).To(BeEquivalentTo("mock-res-1"))
-					Expect(res.Kind).To(BeEquivalentTo("MockResource"))
-					return
-				case <-time.After(1 * time.Second):
-					Fail("timed out waiting for watch event")
-					return
-				}
+				// Wait for results to be collected
+				time.Sleep(100 * time.Millisecond)
+
+				<-testCtx.Done()
+
+				Expect(len(watchResults)).To(BeEquivalentTo(1))
+				Expect(watchResults).To(ConsistOf("mock-res-1"))
 			})
 
 			It("ignores an event in a different namespace", func() {
 
+				var watchResults []string
+
+				testCtx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
+
 				// Add a resource in a different namespace
-				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-1", "test")).To(BeNil())
+				go Expect(util.CreateMockResource(testCtx, clientset, namespace2, "mock-res-1", "test")).To(BeNil())
 
 				select {
-				case <-watch:
-					Fail("received event for non-watched namespace")
-				case <-time.After(1 * time.Second):
+				case <-testCtx.Done():
 					return
+				case res := <-watch:
+					watchResults = append(watchResults, res.ObjectMeta.Name)
 				}
 
+				// Wait for results to be collected
+				time.Sleep(100 * time.Millisecond)
+
+				<-testCtx.Done()
+
+				Expect(len(watchResults)).To(BeEquivalentTo(0), "received event for non-watched namespace")
 			})
 
 			It("correctly handles multiple events", func() {
