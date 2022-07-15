@@ -386,7 +386,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(errors.IsNotExist(err)).To(BeTrue())
 			})
 
-			It("ignores unknown fields when returning a malformed resource", func() {
+			It("ignores unknown fields when reading a malformed resource", func() {
 				resource, err := rc.Read(namespace1, malformedResourceName, clients.ReadOpts{})
 				// unknown fields on a spec do not cause errors
 				Expect(err).NotTo(HaveOccurred())
@@ -556,7 +556,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				}
 
 				for i, meta := range metadataForMockResources {
-					Expect(util.CreateMockResourceWithMetadata(ctx, clientset, meta, fmt.Sprintf("val-%d", i)))
+					Expect(util.CreateMockResourceWithMetadata(ctx, clientset, meta, fmt.Sprintf("val-%d", i))).NotTo(HaveOccurred())
 				}
 				// v2alpha1 resources should be ignored by this v1 MockResource client
 				Expect(util.CreateV2Alpha1MockResource(ctx, clientset, namespace2, "res-5", "val-5")).NotTo(HaveOccurred())
