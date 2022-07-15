@@ -73,7 +73,6 @@ steps:
   - 'CLOUD_BUILD=1'
   - 'TAGGED_VERSION=$TAG_NAME'
   args: ['-c', 'make test']
-  waitFor: ['update-deps']
   dir: *dir
   id: 'test'
 
