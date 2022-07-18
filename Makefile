@@ -6,8 +6,16 @@ ROOTDIR := $(shell pwd)
 PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
-VERSION ?= $(shell git describe --tags)
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
+
+VERSION ?= $(shell git describe --tags)
+RELEASE := "false"
+
+# If TAGGED_VERSION does exist, this is a release in CI
+ifneq ($(TAGGED_VERSION),)
+	RELEASE := "true"
+	VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+endif
 
 #----------------------------------------------------------------------------------
 # Repo init
@@ -105,7 +113,9 @@ verify-envoy-protos:
 # as this code is no longer used
 .PHONY: test
 test:
-	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath
+ifneq ($(RELEASE), "true")
+	PATH=$(DEPSGOBIN):$$PATH ginkgo -r -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath $(TEST_PKG)
+endif
 
 #----------------------------------------------------------------------------------
 # solo-kit-gen

@@ -6,6 +6,8 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/solo-io/go-utils/contextutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 
 	"github.com/rotisserie/eris"
@@ -29,8 +31,8 @@ type crdRegistry struct {
 var (
 	registry *crdRegistry
 
-	VersionExistsError = func(version string) error {
-		return eris.Errorf("tried adding version %s, but it already exists", version)
+	VersionExistsError = func(groupKind schema.GroupKind, version string) error {
+		return eris.Errorf("tried adding version %s for group kind %s, but it already exists", version, groupKind.String())
 	}
 
 	NotFoundError = func(id string) error {
@@ -54,7 +56,9 @@ func AddAndRegisterCrd(ctx context.Context, crd crd.Crd, apiexts apiexts.Interfa
 	registry := getRegistry()
 
 	if err := registry.addCrd(crd); err != nil {
-		return err
+		// If we fail to add a CRD, continue
+		contextutils.LoggerFrom(ctx).Warnf("Failed to add CRD %v: %v", crd, err)
+		return nil
 	}
 
 	if err := registry.registerCrd(ctx, crd.GroupVersionKind(), apiexts); err != nil {
@@ -74,7 +78,7 @@ func (r *crdRegistry) addCrd(resource crd.Crd) error {
 		if crd.GroupKind() == resource.GroupKind() {
 			for _, version := range crd.Versions {
 				if version.Version == resource.Version.Version {
-					return VersionExistsError(resource.Version.Version)
+					return VersionExistsError(resource.GroupKind(), resource.Version.Version)
 				}
 			}
 			r.crds[i].Versions = append(crd.Versions, resource.Version)
