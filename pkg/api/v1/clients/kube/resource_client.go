@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
+
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
 	"github.com/solo-io/go-utils/stringutils"
@@ -17,7 +20,6 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -210,7 +212,9 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 	if opts.StorageWriteOpts != nil {
 		if kubeOpts, ok := opts.StorageWriteOpts.(*KubeWriteOpts); ok {
-			kubeOpts.PreWriteCallback(resourceCrd)
+			if kubeOpts.PreWriteCallback != nil {
+				kubeOpts.PreWriteCallback(resourceCrd)
+			}
 		}
 	}
 
@@ -292,10 +296,17 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	if err != nil {
 		return nil, err
 	}
-	allResources, err := lister.List(labels.SelectorFromSet(opts.Selector))
+
+	labelSelector, err := rc.getLabelSelector(opts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing label selector")
+	}
+
+	allResources, err := lister.List(labelSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing resources in %v", namespace)
 	}
+
 	var listedResources []*v1.Resource
 	if namespace != "" {
 		for _, r := range allResources {
@@ -341,8 +352,9 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 
 	updateResourceList := func() {
 		list, err := rc.List(namespace, clients.ListOpts{
-			Ctx:      ctx,
-			Selector: opts.Selector,
+			Ctx:                ctx,
+			Selector:           opts.Selector,
+			ExpressionSelector: opts.ExpressionSelector,
 		})
 		if err != nil {
 			errs <- err
@@ -403,6 +415,16 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
+func (rc *ResourceClient) getLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
+	if listOpts.ExpressionSelector != "" {
+		return labels.Parse(listOpts.ExpressionSelector)
+	}
+
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	return labels.SelectorFromSet(listOpts.Selector), nil
+}
+
 // Checks whether the group version kind of the given resource matches that of the client's underlying CRD:
 func (rc *ResourceClient) matchesClientGVK(resource v1.Resource) bool {
 	return resource.GroupVersionKind().String() == rc.crd.GroupVersionKind().String()
@@ -460,7 +482,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 			}
 		}
 		if resourceCrd.Spec != nil {
-			if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+			if err := specutils.UnmarshalSpecMapToResource(*resourceCrd.Spec, resource); err != nil {
 				return nil, errors.Wrapf(err, "reading crd spec on resource %v in namespace %v into %v", resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
 		}
