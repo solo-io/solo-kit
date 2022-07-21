@@ -156,22 +156,13 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 		info.mu.Lock()
 		watches := info.watches
 		doWatch := func(watch ResponseWatch, pi PriorityIndex) {
-			snapshotResources := snapshot.GetResources(watch.Request.TypeUrl)
-			version := snapshotResources.Version
-			if cache.log != nil {
-				cache.log.Infof("comparing versions for watch response, new (%s) vs old (%s) for type: %s",
-					version, watch.Request.VersionInfo,  watch.Request.TypeUrl,
-				)
-			}
+			version := snapshot.GetResources(watch.Request.TypeUrl).Version
 			if version != watch.Request.VersionInfo {
 				if cache.log != nil {
-					cache.log.Infof(
-						"respond open watch priority %d and index %d. :%v.",
-						pi.Priority, pi.Index, watch.Request.ResourceNames,
-					)
+					cache.log.Infof("respond open watch priority %d and index %d :%v with new version %q", pi.Index, pi.Priority, watch.Request.ResourceNames, version)
 				}
 
-				resources := snapshotResources.Items
+				resources := snapshot.GetResources(watch.Request.TypeUrl).Items
 				// Before sending a response, need to be able to differentiate between a resource in the snapshot that does not exist vs. should be empty
 				// nil resource - not set in the snapshot and should not be updated
 				// empty resource - intended behavior is for the resources to be cleared
