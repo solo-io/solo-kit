@@ -10,10 +10,11 @@ import (
 	"context"
 	"fmt"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	"github.com/hashicorp/go-multierror"
-
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
 	"github.com/solo-io/solo-kit/pkg/api/v1/eventloop"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/go-utils/contextutils"
@@ -102,9 +103,17 @@ func (el *{{ lower_camel .GoName }}SimpleEventLoop) Run(ctx context.Context) (<-
 						cancel()
 					}
 						
+					startTime := time.Now()
 					ctx, span := trace.StartSpan(ctx, fmt.Sprintf("{{ .Name }}.SimpleEventLoopSync-%T", syncer))
 					ctx, canc := context.WithCancel(ctx)
 					err := syncer.Sync(ctx, snapshot)
+					stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{
+							tag.Insert(skstats.SyncerNameKey, fmt.Sprintf("%T", syncer)),
+						},
+						m{{ .GoName }}SnapshotTimeSec.M(time.Now().Sub(startTime).Seconds()),
+					)
 					span.End()
 
 					if err != nil {

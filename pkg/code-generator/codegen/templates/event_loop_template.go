@@ -9,16 +9,38 @@ var ResourceGroupEventLoopTemplate = template.Must(template.New("resource_group_
 import (
 	"context"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
-
 	"github.com/hashicorp/go-multierror"
 
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/eventloop"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 )
+
+
+var (
+	m{{ .GoName }}SnapshotTimeSec     = stats.Float64("{{ .Name }}/sync/time_sec", "The time taken for a given sync", "1")
+	m{{ .GoName }}SnapshotTimeSecView = &view.View{
+		Name:        "{{ .Name }}/sync/time_sec",
+		Description: "The time taken for a given sync",
+		TagKeys:     []tag.Key{tag.MustNewKey("syncer_name")},
+		Measure:     m{{ .GoName }}SnapshotTimeSec,
+		Aggregation: view.Distribution(0.01, 0.05, 0.1, 0.25, 0.5, 1, 5, 10, 60),
+	}
+)
+
+
+func init() {
+	view.Register(
+		m{{ .GoName }}SnapshotTimeSecView,
+	)
+}
 
 type {{ .GoName }}Syncer interface {
 	Sync(context.Context, *{{ .GoName }}Snapshot) error
@@ -83,10 +105,18 @@ func (el *{{ lower_camel .GoName }}EventLoop) Run(namespaces []string, opts clie
 				// cancel any open watches from previous loop
 				cancel()
 
+				startTime := time.Now()
 				ctx, span := trace.StartSpan(opts.Ctx, "{{ .Name }}.EventLoopSync")
 				ctx, canc := context.WithCancel(ctx)
 				cancel = canc
 				err := el.syncer.Sync(ctx, snapshot)
+				stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{
+						tag.Insert(skstats.SyncerNameKey, fmt.Sprintf("%T", el.syncer)),
+					},
+					m{{ .GoName }}SnapshotTimeSec.M(time.Now().Sub(startTime).Seconds()),
+				)
 				span.End()
 
 				if err != nil {
