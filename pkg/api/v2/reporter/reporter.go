@@ -4,11 +4,12 @@ import (
 	"context"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/hashutils"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/go-utils/contextutils"
+
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -24,7 +25,6 @@ type Report struct {
 }
 
 type ResourceReports map[resources.InputResource]Report
-type SubResourceStatuses map[resources.InputResource]map[string]*core.Status
 
 func (e ResourceReports) Accept(res ...resources.InputResource) ResourceReports {
 	for _, r := range res {
@@ -159,7 +159,7 @@ func (e ResourceReports) AddMessage(res resources.InputResource, message string)
 
 func (e ResourceReports) Find(kind string, ref *core.ResourceRef) (resources.InputResource, Report) {
 	for res, rpt := range e {
-		if resources.Kind(res) == kind && res.GetMetadata().Match(ref) {
+		if resources.Kind(res) == kind && res.GetMetadata().Ref().Equal(ref) {
 			return res, rpt
 		}
 	}
@@ -216,80 +216,34 @@ type ReporterResourceClient interface {
 }
 
 type Reporter interface {
-	WriteReports(
-		ctx context.Context,
-		errs ResourceReports,
-		subresourceStatuses SubResourceStatuses,
-	) error
-}
-type StatusBuilder interface {
-	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status
+	WriteReports(ctx context.Context, errs ResourceReports, subresourceStatuses map[string]*core.Status) error
 }
 type StatusReporter interface {
 	Reporter
-	StatusBuilder
-}
-
-func NewMultiReporter(builder StatusBuilder, reporters ...Reporter) StatusReporter {
-	return &multiReporter{
-		reporters: reporters,
-		builder:   builder,
-	}
-}
-
-type multiReporter struct {
-	reporters []Reporter
-	builder   StatusBuilder
-}
-
-func (m *multiReporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
-	return m.builder.StatusFromReport(report, subresourceStatuses)
-}
-
-func (m *multiReporter) WriteReports(
-	ctx context.Context,
-	errs ResourceReports,
-	subresourceStatuses SubResourceStatuses,
-) error {
-	var multiErr *multierror.Error
-	for _, reporter := range m.reporters {
-		if err := reporter.WriteReports(ctx, errs, subresourceStatuses); err != nil {
-			multiErr = multierror.Append(multiErr, err)
-		}
-	}
-	return multiErr.ErrorOrNil()
+	StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status
 }
 
 type reporter struct {
-	reporterRef   string
-	statusClient  resources.StatusClient
-	clients       map[string]ReporterResourceClient
-	statusBuilder StatusBuilder
+	reporterRef  string
+	statusClient resources.StatusClient
+	clients      map[string]ReporterResourceClient
 }
 
-func NewKubeReporter(
-	statusBuilder StatusBuilder,
-	statusClient resources.StatusClient,
-	reporterClients ...ReporterResourceClient,
-) Reporter {
+func NewReporter(reporterRef string, statusClient resources.StatusClient, reporterClients ...ReporterResourceClient) StatusReporter {
 	clientsByKind := make(map[string]ReporterResourceClient)
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
 	return &reporter{
-		statusBuilder: statusBuilder,
-		statusClient:  statusClient,
-		clients:       clientsByKind,
+		reporterRef:  reporterRef,
+		statusClient: statusClient,
+		clients:      clientsByKind,
 	}
 }
 
 // ResourceReports may be modified, and end up with fewer resources than originally requested.
 // If resources referenced in the resourceErrs don't exist, they will be removed.
-func (r *reporter) WriteReports(
-	ctx context.Context,
-	resourceErrs ResourceReports,
-	subresourceStatuses SubResourceStatuses,
-) error {
+func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReports, subresourceStatuses map[string]*core.Status) error {
 	ctx = contextutils.WithLogger(ctx, "reporter")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -308,11 +262,7 @@ func (r *reporter) WriteReports(
 		if !ok {
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
-		var subresourceStatus map[string]*core.Status
-		if subresourceStatuses != nil {
-			subresourceStatus = subresourceStatuses[resource]
-		}
-		status := r.statusBuilder.StatusFromReport(report, subresourceStatus)
+		status := r.StatusFromReport(report, subresourceStatuses)
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
@@ -323,13 +273,11 @@ func (r *reporter) WriteReports(
 
 		r.statusClient.SetStatus(resourceToWrite, status)
 		var updatedResource resources.Resource
-		writeErr := errors.RetryOnConflict(
-			retry.DefaultBackoff, func() error {
-				var writeErr error
-				updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
-				return writeErr
-			},
-		)
+		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
+			var writeErr error
+			updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
+			return writeErr
+		})
 
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
@@ -340,11 +288,7 @@ func (r *reporter) WriteReports(
 		if updatedResource != nil {
 			logger.Debugf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
 		} else {
-			logger.Debugf(
-				"did not write report for %v : %v because resource was not found",
-				resourceToWrite.GetMetadata().Ref(),
-				status,
-			)
+			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
 			delete(resourceErrs, resource)
 		}
 	}
@@ -354,18 +298,9 @@ func (r *reporter) WriteReports(
 // Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
 //    to avoid confusion about whether this may update the resource rather than just its status.
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func (r *reporter) attemptUpdateStatus(
-	ctx context.Context,
-	client ReporterResourceClient,
-	resourceToWrite resources.InputResource,
-	statusToWrite *core.Status,
-) (resources.Resource, resources.InputResource, error) {
+func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
 	var readErr error
-	resourceFromRead, readErr := client.Read(
-		resourceToWrite.GetMetadata().Namespace,
-		resourceToWrite.GetMetadata().Name,
-		clients.ReadOpts{Ctx: ctx},
-	)
+	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
 		return nil, resourceToWrite, nil
 	}
@@ -384,20 +319,12 @@ func (r *reporter) attemptUpdateStatus(
 	if writeErr == nil {
 		return updatedResource, resourceToWrite, nil
 	}
-	updatedResource, readErr = client.Read(
-		resourceToWrite.GetMetadata().Namespace,
-		resourceToWrite.GetMetadata().Name,
-		clients.ReadOpts{Ctx: ctx},
-	)
+	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil {
 		if errors.IsResourceVersion(writeErr) {
 			// we don't want to return the unwrapped resource version writeErr if we also had a read error
 			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
-			return nil, resourceToWrite, errors.Wrapf(
-				writeErr,
-				"unable to read updated resource, no reason to retry resource version conflict; readErr %v",
-				readErr,
-			)
+			return nil, resourceToWrite, errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict; readErr %v", readErr)
 		}
 		return nil, resourceToWrite, writeErr
 	}
@@ -415,17 +342,7 @@ func (r *reporter) attemptUpdateStatus(
 	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
-func NewStatusBuilder(reporterRef string) StatusBuilder {
-	return &statusBuilder{
-		reporterRef: reporterRef,
-	}
-}
-
-type statusBuilder struct {
-	reporterRef string
-}
-
-func (s *statusBuilder) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
+func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
 	var messages []string
 	if len(report.Messages) != 0 {
 		messages = report.Messages
@@ -444,7 +361,7 @@ func (s *statusBuilder) StatusFromReport(report Report, subresourceStatuses map[
 		return &core.Status{
 			State:               core.Status_Rejected,
 			Reason:              errorReason,
-			ReportedBy:          s.reporterRef,
+			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
 			Messages:            messages,
 		}
@@ -454,7 +371,7 @@ func (s *statusBuilder) StatusFromReport(report Report, subresourceStatuses map[
 		return &core.Status{
 			State:               core.Status_Warning,
 			Reason:              warningReason,
-			ReportedBy:          s.reporterRef,
+			ReportedBy:          r.reporterRef,
 			SubresourceStatuses: subresourceStatuses,
 			Messages:            messages,
 		}
@@ -462,7 +379,7 @@ func (s *statusBuilder) StatusFromReport(report Report, subresourceStatuses map[
 
 	return &core.Status{
 		State:               core.Status_Accepted,
-		ReportedBy:          s.reporterRef,
+		ReportedBy:          r.reporterRef,
 		SubresourceStatuses: subresourceStatuses,
 		Messages:            messages,
 	}

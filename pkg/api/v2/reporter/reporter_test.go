@@ -32,8 +32,7 @@ var _ = Describe("Reporter", func() {
 	BeforeEach(func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
-		builder := rep.NewStatusBuilder("test")
-		reporter = rep.NewKubeReporter(builder, statusClient, mockResourceClient, fakeResourceClient)
+		reporter = rep.NewReporter("test", statusClient, mockResourceClient, fakeResourceClient)
 	})
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
@@ -297,8 +296,7 @@ var _ = Describe("Reporter", func() {
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockedResourceClient = mocks.NewMockResourceClient(mockCtrl)
 			mockedResourceClient.EXPECT().Kind().Return("*v1.MockResource")
-			builder := rep.NewStatusBuilder("test")
-			reporter = rep.NewKubeReporter(builder, statusClient, mockedResourceClient)
+			reporter = rep.NewReporter("test", statusClient, mockedResourceClient)
 		})
 
 		It("checks to make sure a resource exists before writing to it", func() {
