@@ -17,7 +17,7 @@ func main() {
 		RelativeRoot:       ".",
 		CompileProtos:      true,
 		SkipGenMocks:       true,
-		SkipGeneratedTests: true,
+		SkipGeneratedTests: false,
 		ExternalImports: &sk_anyvendor.Imports{
 			Local: []string{"test/**/*.proto", "api/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
 			External: map[string][]string{

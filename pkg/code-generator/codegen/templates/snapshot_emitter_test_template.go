@@ -248,11 +248,20 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 
 		var snap *{{ .GoName }}Snapshot
+
 {{- range .Resources }}
 
 		/*
 			{{ .Name }}
 		*/
+		{{ lower_camel .Name }}_list_1, _ := {{ lower_camel .Name }}Client.List(namespace1, clients.ListOpts{Ctx: ctx})
+		{{ lower_camel .Name }}_list_2, _ := {{ lower_camel .Name }}Client.List(namespace2, clients.ListOpts{Ctx: ctx})
+		snap = <-snapshots
+
+		_, err = snap.{{ upper_camel .PluralName }}.Find({{ lower_camel .Name }}_list_1[0].GetMetadata().Ref().Strings())
+		Expect(err).To(BeNil())
+		_, err = snap.{{ upper_camel .PluralName }}.Find({{ lower_camel .Name }}_list_2[0].GetMetadata().Ref().Strings())
+		Expect(err).To(BeNil())
 		
 		assertSnapshot{{ .PluralName }} := func(expect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List, unexpect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List) {
 		drain:
