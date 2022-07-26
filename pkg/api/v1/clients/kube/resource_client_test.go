@@ -355,6 +355,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					},
 					Spec: &solov1.Spec{
 						"unexpectedField": data,
+						"data":            data,
 					},
 				}
 				malformedStatusName = "malformed-status"
