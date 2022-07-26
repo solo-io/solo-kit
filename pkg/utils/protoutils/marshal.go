@@ -7,8 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/solo-io/solo-kit/pkg/utils/specutils"
-
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -185,7 +183,8 @@ func MapStringInterfaceToMapStringString(interfaceMap map[string]interface{}) (m
 	return stringMap, nil
 }
 
-// convert raw Kube JSON to a Solo-Kit resource
+// UnmarshalResource convert raw Kube JSON to a Solo-Kit resource
+// Returns an error if unknown fields are present in the raw json
 func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	var resourceCrd v1.Resource
 	if err := json.Unmarshal(kubeJson, &resourceCrd); err != nil {
@@ -197,7 +196,7 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	}
 
 	if resourceCrd.Spec != nil {
-		if err := specutils.UnmarshalSpecMapToResource(*resourceCrd.Spec, resource); err != nil {
+		if err := UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
 			return errors.Wrapf(err, "parsing resource from crd spec %v in namespace %v into %T", resourceCrd.Name, resourceCrd.Namespace, resource)
 		}
 	}
