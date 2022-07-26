@@ -355,6 +355,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					},
 					Spec: &solov1.Spec{
 						"unexpectedField": data,
+						"data":            data,
 					},
 				}
 				malformedStatusName = "malformed-status"
@@ -435,10 +436,15 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(errors.IsNotExist(err)).To(BeTrue())
 			})
 
-			It("return an error when receiving a malformed resource", func() {
-				_, err := rc.Read(namespace1, malformedResourceName, clients.ReadOpts{})
-				Expect(err).To(HaveOccurred())
-				Expect(errors.IsNotExist(err)).To(BeFalse())
+			It("ignores unknown fields when reading a malformed resource", func() {
+				resource, err := rc.Read(namespace1, malformedResourceName, clients.ReadOpts{})
+				// unknown fields on a spec do not cause errors
+				Expect(err).NotTo(HaveOccurred())
+
+				// known fields on a spec are still processed
+				mockResource, ok := resource.(*v1.MockResource)
+				Expect(ok).To(BeTrue())
+				Expect(mockResource.Data).To(Equal(data))
 			})
 
 			It("will not return an error when receiving a resource with malformed status", func() {
