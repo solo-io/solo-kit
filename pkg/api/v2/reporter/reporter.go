@@ -205,6 +205,7 @@ func NewReporter(reporterRef string, statusClient resources.StatusClient, report
 	for _, client := range reporterClients {
 		clientsByKind[client.Kind()] = client
 	}
+
 	return &reporter{
 		reporterRef:  reporterRef,
 		statusClient: statusClient,
@@ -286,7 +287,10 @@ func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResou
 			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
 		}
 	}
-	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{
+		Ctx:               ctx,
+		OverwriteExisting: true,
+	})
 	if writeErr == nil {
 		return updatedResource, resourceToWrite, nil
 	}
