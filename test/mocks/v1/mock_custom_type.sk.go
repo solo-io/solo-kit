@@ -18,6 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(MockCustomType)
+)
+
 func NewMockCustomType(namespace, name string) *MockCustomType {
 	mockcustomtype := &MockCustomType{}
 	mockcustomtype.MockCustomType.SetMetadata(&core.Metadata{
