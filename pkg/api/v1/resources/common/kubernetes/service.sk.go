@@ -18,6 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(Service)
+)
+
 func NewService(namespace, name string) *Service {
 	service := &Service{}
 	service.Service.SetMetadata(&core.Metadata{

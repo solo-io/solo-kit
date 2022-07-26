@@ -18,6 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var (
+	// Compile-time assertion
+	_ resources.Resource = new(CustomResourceDefinition)
+)
+
 func NewCustomResourceDefinition(namespace, name string) *CustomResourceDefinition {
 	customresourcedefinition := &CustomResourceDefinition{}
 	customresourcedefinition.CustomResourceDefinition.SetMetadata(&core.Metadata{
