@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/mocks"
@@ -34,6 +35,7 @@ var _ = Describe("Reporter", func() {
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", statusClient, mockResourceClient, fakeResourceClient)
 	})
+
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -272,11 +274,15 @@ var _ = Describe("Reporter", func() {
 	Context("completely mocked resource client", func() {
 
 		var (
+			ctx, reporterCtx     context.Context
 			mockCtrl             *gomock.Controller
 			mockedResourceClient *mocks.MockResourceClient
 		)
 
 		BeforeEach(func() {
+			ctx = context.Background()
+			reporterCtx = contextutils.WithLogger(ctx, "reporter")
+
 			mockCtrl = gomock.NewController(GinkgoT())
 			mockedResourceClient = mocks.NewMockResourceClient(mockCtrl)
 			mockedResourceClient.EXPECT().Kind().Return("*v1.MockResource")
@@ -289,11 +295,18 @@ var _ = Describe("Reporter", func() {
 				res: rep.Report{Errors: fmt.Errorf("pocky")},
 			}
 
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, errors.NewNotExistErr("", "mocky"))
-			// Since the resource doesn't exist, we shouldn't write to it.
-			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, nil).Times(0)
+			readOpts := clients.ReadOpts{
+				Ctx: reporterCtx,
+			}
+			writeOpts := clients.WriteOpts{
+				Ctx: reporterCtx,
+			}
 
-			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(nil, errors.NewNotExistErr("", "mocky"))
+			// Since the resource doesn't exist, we shouldn't write to it.
+			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(nil, nil).Times(0)
+
+			err := reporter.WriteReports(ctx, resourceErrs, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(resourceErrs)).To(Equal(0))
 		})
@@ -304,19 +317,26 @@ var _ = Describe("Reporter", func() {
 				res: rep.Report{Errors: fmt.Errorf("everyone makes mistakes")},
 			}
 
+			readOpts := clients.ReadOpts{
+				Ctx: reporterCtx,
+			}
+			writeOpts := clients.WriteOpts{
+				Ctx:               reporterCtx,
+				OverwriteExisting: true,
+			}
 			// first write fails due to resource version
-			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil).Times(2)
+			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(res, nil).Times(2)
 
 			// we retry, and fail again on resource version error
-			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil).Times(2)
+			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(res, nil).Times(2)
 
 			// this time we succeed to write the status
-			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(res, nil)
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(res, nil)
+			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(res, nil)
+			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(res, nil)
 
-			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
+			err := reporter.WriteReports(ctx, resourceErrs, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

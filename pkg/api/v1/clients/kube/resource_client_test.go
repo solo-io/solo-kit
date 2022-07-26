@@ -361,6 +361,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					},
 					Spec: &solov1.Spec{
 						"unexpectedField": data,
+						"data":            data,
 					},
 				}
 				unexpectedVersionResourceName = "v1omega1-res"
@@ -424,10 +425,15 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				Expect(errors.IsNotExist(err)).To(BeTrue())
 			})
 
-			It("return an error when receiving a malformed resource", func() {
-				_, err := rc.Read(namespace1, malformedResourceName, clients.ReadOpts{})
-				Expect(err).To(HaveOccurred())
-				Expect(errors.IsNotExist(err)).To(BeFalse())
+			It("ignores unknown fields when reading a malformed resource", func() {
+				resource, err := rc.Read(namespace1, malformedResourceName, clients.ReadOpts{})
+				// unknown fields on a spec do not cause errors
+				Expect(err).NotTo(HaveOccurred())
+
+				// known fields on a spec are still processed
+				mockResource, ok := resource.(*v1.MockResource)
+				Expect(ok).To(BeTrue())
+				Expect(mockResource.Data).To(Equal(data))
 			})
 
 			It("returns an error when retrieving a resource with an unexpected group version kind", func() {
@@ -513,6 +519,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Expect(r.OwnerReferences).To(HaveLen(1))
 					Expect(r.OwnerReferences[0]).To(Equal(ownerRef))
 				})
+
 			})
 
 			Context("resource exists and we want to overwrite", func() {
@@ -595,7 +602,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				}
 
 				for i, meta := range metadataForMockResources {
-					Expect(util.CreateMockResourceWithMetadata(ctx, clientset, meta, fmt.Sprintf("val-%d", i)))
+					Expect(util.CreateMockResourceWithMetadata(ctx, clientset, meta, fmt.Sprintf("val-%d", i))).NotTo(HaveOccurred())
 				}
 				// v2alpha1 resources should be ignored by this v1 MockResource client
 				Expect(util.CreateV2Alpha1MockResource(ctx, clientset, namespace2, "res-5", "val-5")).NotTo(HaveOccurred())
