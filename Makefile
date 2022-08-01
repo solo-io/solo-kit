@@ -7,7 +7,7 @@ PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
+GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
 
 #----------------------------------------------------------------------------------
 # Version, Release
@@ -48,12 +48,14 @@ mod-download:
 .PHONY: update-deps
 update-deps:
 	mkdir -p $(DEPSGOBIN)
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext@v0.0.16
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi@v0.1.0
-	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports@v0.1.2
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go@v1.4.0
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen@v1.5.0
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo@v1.16.5
+	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
+	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
+	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
+	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
+	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
+	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
+	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
+	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
 .PHONY: update-code-generator
 update-code-generator:

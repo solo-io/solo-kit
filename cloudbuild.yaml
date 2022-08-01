@@ -22,14 +22,14 @@ steps:
   id: 'prepare-workspace'
 
 # download massive container in parallel
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.24'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   entrypoint: 'bash'
   dir: *dir
   args: ['-c', 'ls']
   waitFor: ['-']
 
 # Installs go executables required by codegen tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
   args: ['update-all']
   waitFor: ['prepare-workspace']
   id: 'update-deps'
@@ -48,7 +48,7 @@ steps:
 # e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/tree/master/e2e-go-mod-ginkgo
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.24'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   entrypoint: 'bash'
   env:
   - 'ACK_GINKGO_RC=true'
@@ -65,7 +65,7 @@ steps:
 
 # check code gen for kubernetes custom resources
 # this step passes if there is no generated diff, fails otherwise
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
   entrypoint: 'bash'
   args: ['ci/check-code-gen.sh']
   env:
