@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/505
+    resolvesIssue: false
+    description: |
+      AllowUnknownFields when unmarshalling a kube spec into a resource. Previously,
+      unknown fields would cause an error. This is safe, because for the spec to be persisted
+      in the first place, it must respect the CRD validation schema definition.
