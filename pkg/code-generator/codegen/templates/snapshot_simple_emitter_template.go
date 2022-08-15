@@ -57,22 +57,24 @@ func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) 
 
 	go func() {
 		currentSnapshot := {{ .GoName }}Snapshot{}
+		needsSync := false
+		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second * 1)
+		defer timer.Stop()
 		var previousHash uint64
 		sync := func() {
 			currentHash, err := currentSnapshot.Hash(nil)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if previousHash == currentHash {
+			if !needsSync && previousHash == currentHash {
 				return
 			}
-
 			previousHash = currentHash
-
 			stats.Record(ctx, m{{ .GoName }}SnapshotOut.M(1))
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
+			needsSync = false
 		}
 
 		defer func() {
@@ -89,11 +91,9 @@ func (c *{{ lower_camel .GoName }}SimpleEmitter) Snapshots(ctx context.Context) 
 			case <-ctx.Done():
 				return
 			case <-c.forceEmit:
-				sentSnapshot := currentSnapshot.Clone()
-				snapshots <- &sentSnapshot
+				needsSync = true
 			case untypedList := <-untyped:
 				record()
-
 				currentSnapshot = {{ .GoName }}Snapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {

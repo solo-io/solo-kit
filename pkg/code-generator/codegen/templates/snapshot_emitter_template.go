@@ -264,7 +264,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
+		needsSync := false
+		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second * 1)
+		defer timer.Stop()
 		previousHash, err := currentSnapshot.Hash(nil)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
@@ -275,7 +278,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if previousHash == currentHash {
+			if !needsSync && previousHash == currentHash {
 				return
 			}
 
@@ -284,6 +287,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, m{{ $resource_group }}SnapshotOut.M(1))
 				previousHash = currentHash
+				needsSync = false
 			default:
 				stats.Record(ctx, m{{ $resource_group }}SnapshotMissed.M(1))
 			}
@@ -305,8 +309,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			case <-ctx.Done():
 				return
 			case <-c.forceEmit:
-				sentSnapshot := currentSnapshot.Clone()
-				snapshots <- &sentSnapshot
+				needsSync = true
 {{- range .Resources}}
 {{- if .ClusterScoped }}
 			case {{ lower_camel .Name }}List, ok := <- {{ lower_camel .Name }}Chan:

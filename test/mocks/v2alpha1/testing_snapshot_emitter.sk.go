@@ -287,7 +287,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
+		needsSync := false
+		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second * 1)
+		defer timer.Stop()
 		previousHash, err := currentSnapshot.Hash(nil)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
@@ -298,7 +301,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if previousHash == currentHash {
+			if !needsSync && previousHash == currentHash {
 				return
 			}
 
@@ -307,6 +310,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mTestingSnapshotOut.M(1))
 				previousHash = currentHash
+				needsSync = false
 			default:
 				stats.Record(ctx, mTestingSnapshotMissed.M(1))
 			}
@@ -328,8 +332,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			case <-ctx.Done():
 				return
 			case <-c.forceEmit:
-				sentSnapshot := currentSnapshot.Clone()
-				snapshots <- &sentSnapshot
+				needsSync = true
 			case mockResourceNamespacedList, ok := <-mockResourceChan:
 				if !ok {
 					return

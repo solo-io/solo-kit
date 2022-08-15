@@ -34,7 +34,6 @@ func KubeResourceWatch(cache cache.Cache, listFunc ResourceListFunc, namespace s
 
 	resourcesChan := make(chan resources.ResourceList)
 	errs := make(chan error)
-	// prevent flooding the channel with duplicates
 	var previous *resources.ResourceList
 	updateResourceList := func() {
 		list, err := listFunc(namespace, clients.ListOpts{
@@ -47,6 +46,7 @@ func KubeResourceWatch(cache cache.Cache, listFunc ResourceListFunc, namespace s
 		}
 		if previous != nil {
 			if list.Equal(*previous) {
+				// prevent flooding the channel with duplicates
 				return
 			}
 		}
@@ -59,10 +59,11 @@ func KubeResourceWatch(cache cache.Cache, listFunc ResourceListFunc, namespace s
 		defer close(resourcesChan)
 		defer close(errs)
 
-		// watch should open up with an initial read
+		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second)
 		defer timer.Stop()
 
+		// watch should open up with an initial read
 		updateResourceList()
 		update := false
 		for {

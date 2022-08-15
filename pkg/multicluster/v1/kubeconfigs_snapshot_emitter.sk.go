@@ -187,7 +187,10 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
+		needsSync := false
+		// intentionally rate-limited so that our sync loops have time to complete before the next snapshot is sent
 		timer := time.NewTicker(time.Second * 1)
+		defer timer.Stop()
 		previousHash, err := currentSnapshot.Hash(nil)
 		if err != nil {
 			contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
@@ -198,7 +201,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if previousHash == currentHash {
+			if !needsSync && previousHash == currentHash {
 				return
 			}
 
@@ -207,6 +210,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mKubeconfigsSnapshotOut.M(1))
 				previousHash = currentHash
+				needsSync = false
 			default:
 				stats.Record(ctx, mKubeconfigsSnapshotMissed.M(1))
 			}
@@ -228,8 +232,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			case <-ctx.Done():
 				return
 			case <-c.forceEmit:
-				sentSnapshot := currentSnapshot.Clone()
-				snapshots <- &sentSnapshot
+				needsSync = true
 			case kubeConfigNamespacedList, ok := <-kubeConfigChan:
 				if !ok {
 					return
