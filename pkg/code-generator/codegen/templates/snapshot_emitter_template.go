@@ -34,6 +34,11 @@ import (
 	
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/go-utils/contextutils"
+	// TODO-JAKE ADDED THESE
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	kubewatch "k8s.io/apimachinery/pkg/watch"
+	// END WHAT JAKE ADDED
 )
 
 {{ $emitter_prefix := (print (snake .Name) "/emitter") }}
@@ -162,19 +167,17 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 	var done sync.WaitGroup
 	ctx := opts.Ctx
 
-
 {{- range .Resources}}
 	/* Create channel for {{ .Name }} */
 {{- if (not .ClusterScoped) }}
-	type {{ lower_camel .Name }}ListWithNamespace struct {
-		list {{ .ImportPrefix }}{{ .Name }}List
-		namespace string
-	}
+type {{ lower_camel .Name }}ListWithNamespace struct {
+	list {{ .ImportPrefix }}{{ .Name }}List
+	namespace string
+}
 	{{ lower_camel .Name }}Chan := make(chan {{ lower_camel .Name }}ListWithNamespace)
-
-	var initial{{ upper_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List{{- end }}
-
-{{- end}}
+	var initial{{ upper_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List
+{{- end }}
+{{- end }}
 
 	currentSnapshot := {{ .GoName }}Snapshot{}
 
@@ -184,7 +187,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 	{{- end }}
 	{{- end }}
 
-	for _, namespace := range watchNamespaces {
+	for _, namespace := range watchNamespaces { {{/*BEGIN_RANGE_WATCHNAMESPACES*/}}
 {{- range .Resources}}
 {{- if (not .ClusterScoped) }}
 		/* Setup namespaced watch for {{ .Name }} */
@@ -208,7 +211,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		}(namespace)
 
 {{- end }}
-{{- end}}
+{{- end }}
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -232,7 +235,175 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				}
 			}
 		}(namespace)
+	} {{/*END_RANGE_WATCHNAMESPACES*/}}
+
+{{- if (not .ClusterScoped) }}{{/*BEGIN_FILTER_NON_WATCHED_NAMESPACES*/}}
+	if opts.ExpressionSelector != "" {
+		var k kubernetes.Interface
+		excludeNamespacesFieldDesciptors := ""
+
+		if len(watchNamespaces) == 1 && watchNamespaces[0] == "" {
+			var buffer bytes.Buffer
+			for i, ns := range watchNamespaces {
+				buffer.WriteString("metadata.namespace!=")
+				buffer.WriteString(ns)
+				if i < len(watchNamespaces)-1 {
+					buffer.WriteByte(',')
+				}
+			}
+			excludeNamespacesFieldDesciptors = buffer.String()
+		}
+
+		namespacesResources,err := k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		if err != nil {
+			return nil, nil, err
+		}
+		allOtherNamespaces := make([]string, len(namespacesResources.Items))
+		for _, ns := range namespacesResources.Items {
+			allOtherNamespaces = append(allOtherNamespaces, ns.Namespace)
+		}
+
+		// JAKE-STARTED HERE WITH THE NAMESPACING RESOURCES
+		for _, namespace := range allOtherNamespaces {
+			// TODO-JAKE need to do this on all the resources
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }}
+			// TODO-JAKE need to ensure that we are using ExpressionSelector here...
+			/* Setup namespaced watch for {{ upper_camel .Name }} */
+			{
+				// JAKE-TODO we can leave this just how it is? not sure because we might want to have ExpressionSelectors
+				{{ lower_camel .Name }}s, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial {{ upper_camel .Name }} list")
+				}
+				initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List, {{ lower_camel .Name }}s...)
+				{{ lower_camel .Name }}sByNamespace[namespace] = {{ lower_camel .Name }}s
+			}
+			{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting {{ upper_camel .Name }} watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-{{ lower_camel .Name }}s")
+			}(namespace)
+			// JAKE END OF THE NEW NAMESPACES ADDED
+{{- end }}
+{{- end }}
+			/* Watch for changes and update snapshot */
+			go func(namespace string) {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }}
+					case {{ lower_camel .Name }}List, ok := <-{{ lower_camel .Name }}NamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ lower_camel .Name }}List, namespace: namespace}:
+						}
+{{- end }}
+{{- end }}
+					}
+				}
+			}(namespace)
+		}
+		// create watch on all namespaces, so that we can add resources from new namespaces
+		namespaceWatch,err := k.CoreV1().Namespaces().Watch(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		if err != nil {
+			// TODO-JAKE do somehting about it
+		}
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case event, ok := <-namespaceWatch.ResultChan():
+					if !ok {
+						return
+					}
+					switch event.Type {
+					case kubewatch.Error:
+						// TODO something bad happens
+					default:
+						// we get an event	
+						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+						if err != nil {
+							// TODO something bad happened
+						}
+						for _,item := range namespacesResources.Items {
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }
+							namespace := item.Namespace
+							_, hit := {{ lower_camel .Name }}sByNamespace[namespace]
+							if ! hit {
+								/* Setup namespaced watch for {{ upper_camel .Name }} */
+								{
+									{{ lower_camel .Name }}s, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// TODO-JAKE need to add to some other err channell...
+										errs <- errors.Wrapf(err, "initial new namespace {{ upper_camel .Name }} list")
+										continue
+									}
+									// TODO-JAKE not sure if we need to add to the initial{{ upper_camel .Name }}List or not...
+									// probably do not need to, because this is in an async call.
+									initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List, {{ lower_camel .Name }}s...)
+									{{ lower_camel .Name }}sByNamespace[namespace] = {{ lower_camel .Name }}s
+								}
+								{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
+								if err != nil {
+									// TODO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace {{ upper_camel .Name }} watch")
+									continue
+								}
+
+								// TODO-JAKE should I be calling done here?
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-new-namespace-{{ lower_camel .Name }}s")
+								}(namespace)
+{{- end }}
+{{- end }}
+								// if that is the case, return the {{ lower_camel .Name }}NamespacesChan....
+								/* Watch for changes and update snapshot */
+								go func(namespace string) {
+									for {
+										select {
+										case <-ctx.Done():
+											return
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }}
+										case {{ lower_camel .Name }}List, ok := <-{{ lower_camel .Name }}NamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ lower_camel .Name }}List, namespace: namespace}:
+											}
+{{- end }}
+{{- end }}
+										}
+									}
+								}(namespace)
+							}
+						}
+					}
+				}
+			}
+		}()
 	}
+{{- end }}{{/*END_FILTER_NON_WATCHED_NAMESPACES*/}}
 
 {{- range .Resources}}
 {{- if .ClusterScoped }}
@@ -347,7 +518,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				}
 				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List.Sort()
 {{- end }}
-{{- end}}
+{{- end }}
 			}
 		}
 	}()
