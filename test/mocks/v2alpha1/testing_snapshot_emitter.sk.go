@@ -3,6 +3,7 @@
 package v2alpha1
 
 import (
+	"bytes"
 	"sync"
 	"time"
 
@@ -19,6 +20,9 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubewatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -146,15 +150,30 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 
 	errs := make(chan error)
+	hasWatchedNamespaces := len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
+	watchNamespacesIsEmpty := !hasWatchedNamespaces
 	var done sync.WaitGroup
 	ctx := opts.Ctx
+
+	// if we are watching namespaces, then we do not want to fitler any of the
+	// resources in when listing or watching
+	// TODO-JAKE not sure if we want to get rid of the Selector in the
+	// ListOpts here. the reason that we might want to is because we no
+	// longer allow selectors, unless it is on a unwatched namespace.
+	watchedNamespacesListOptions := clients.ListOpts{Ctx: opts.Ctx}
+	watchedNamespacesWatchOptions := clients.WatchOpts{Ctx: opts.Ctx}
+	if watchNamespacesIsEmpty {
+		// if the namespaces that we are watching is empty, then we want to apply
+		// the expression Selectors to all the namespaces.
+		watchedNamespacesListOptions.ExpressionSelector = opts.ExpressionSelector
+		watchedNamespacesWatchOptions.ExpressionSelector = opts.ExpressionSelector
+	}
 	/* Create channel for MockResource */
 	type mockResourceListWithNamespace struct {
 		list      MockResourceList
 		namespace string
 	}
 	mockResourceChan := make(chan mockResourceListWithNamespace)
-
 	var initialMockResourceList MockResourceList
 	/* Create channel for FrequentlyChangingAnnotationsResource */
 	type frequentlyChangingAnnotationsResourceListWithNamespace struct {
@@ -162,7 +181,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	frequentlyChangingAnnotationsResourceChan := make(chan frequentlyChangingAnnotationsResourceListWithNamespace)
-
 	var initialFrequentlyChangingAnnotationsResourceList FrequentlyChangingAnnotationsResourceList
 	/* Create channel for FakeResource */
 	type fakeResourceListWithNamespace struct {
@@ -170,7 +188,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	fakeResourceChan := make(chan fakeResourceListWithNamespace)
-
 	var initialFakeResourceList testing_solo_io.FakeResourceList
 
 	currentSnapshot := TestingSnapshot{}
@@ -178,17 +195,18 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	fcarsByNamespace := make(map[string]FrequentlyChangingAnnotationsResourceList)
 	fakesByNamespace := make(map[string]testing_solo_io.FakeResourceList)
 
+	// watched namespaces
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for MockResource */
 		{
-			mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			mocks, err := c.mockResource.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial MockResource list")
 			}
 			initialMockResourceList = append(initialMockResourceList, mocks...)
 			mocksByNamespace[namespace] = mocks
 		}
-		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
 		}
@@ -200,14 +218,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for FrequentlyChangingAnnotationsResource */
 		{
-			fcars, err := c.frequentlyChangingAnnotationsResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			fcars, err := c.frequentlyChangingAnnotationsResource.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial FrequentlyChangingAnnotationsResource list")
 			}
 			initialFrequentlyChangingAnnotationsResourceList = append(initialFrequentlyChangingAnnotationsResourceList, fcars...)
 			fcarsByNamespace[namespace] = fcars
 		}
-		frequentlyChangingAnnotationsResourceNamespacesChan, frequentlyChangingAnnotationsResourceErrs, err := c.frequentlyChangingAnnotationsResource.Watch(namespace, opts)
+		frequentlyChangingAnnotationsResourceNamespacesChan, frequentlyChangingAnnotationsResourceErrs, err := c.frequentlyChangingAnnotationsResource.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting FrequentlyChangingAnnotationsResource watch")
 		}
@@ -219,14 +237,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for FakeResource */
 		{
-			fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			fakes, err := c.fakeResource.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial FakeResource list")
 			}
 			initialFakeResourceList = append(initialFakeResourceList, fakes...)
 			fakesByNamespace[namespace] = fakes
 		}
-		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
+		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting FakeResource watch")
 		}
@@ -236,7 +254,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
 		}(namespace)
-
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
 			for {
@@ -273,6 +290,300 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				}
 			}
 		}(namespace)
+	}
+	if hasWatchedNamespaces && opts.ExpressionSelector != "" {
+		// watch resources using non-watched namespaces. With these namespaces we
+		// will watch only those that are filted using the label selectors defined
+		// by Expression Selectors
+
+		// first get the renaiming namespaces
+		var k kubernetes.Interface
+		excludeNamespacesFieldDesciptors := ""
+
+		var buffer bytes.Buffer
+		for i, ns := range watchNamespaces {
+			buffer.WriteString("metadata.namespace!=")
+			buffer.WriteString(ns)
+			if i < len(watchNamespaces)-1 {
+				buffer.WriteByte(',')
+			}
+		}
+		excludeNamespacesFieldDesciptors = buffer.String()
+
+		namespacesResources, err := k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		if err != nil {
+			return nil, nil, err
+		}
+		allOtherNamespaces := make([]string, len(namespacesResources.Items))
+		for _, ns := range namespacesResources.Items {
+			allOtherNamespaces = append(allOtherNamespaces, ns.Namespace)
+		}
+
+		// nonWatchedNamespaces
+		// REFACTOR
+		for _, namespace := range allOtherNamespaces {
+			/* Setup namespaced watch for MockResource */
+			{
+				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial MockResource list")
+				}
+				initialMockResourceList = append(initialMockResourceList, mocks...)
+				mocksByNamespace[namespace] = mocks
+			}
+			mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
+			}(namespace)
+			/* Setup namespaced watch for FrequentlyChangingAnnotationsResource */
+			{
+				fcars, err := c.frequentlyChangingAnnotationsResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial FrequentlyChangingAnnotationsResource list")
+				}
+				initialFrequentlyChangingAnnotationsResourceList = append(initialFrequentlyChangingAnnotationsResourceList, fcars...)
+				fcarsByNamespace[namespace] = fcars
+			}
+			frequentlyChangingAnnotationsResourceNamespacesChan, frequentlyChangingAnnotationsResourceErrs, err := c.frequentlyChangingAnnotationsResource.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting FrequentlyChangingAnnotationsResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, frequentlyChangingAnnotationsResourceErrs, namespace+"-fcars")
+			}(namespace)
+			/* Setup namespaced watch for FakeResource */
+			{
+				fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial FakeResource list")
+				}
+				initialFakeResourceList = append(initialFakeResourceList, fakes...)
+				fakesByNamespace[namespace] = fakes
+			}
+			fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting FakeResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
+			}(namespace)
+			/* Watch for changes and update snapshot */
+			go func(namespace string) {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case mockResourceList, ok := <-mockResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
+						}
+					case frequentlyChangingAnnotationsResourceList, ok := <-frequentlyChangingAnnotationsResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case frequentlyChangingAnnotationsResourceChan <- frequentlyChangingAnnotationsResourceListWithNamespace{list: frequentlyChangingAnnotationsResourceList, namespace: namespace}:
+						}
+					case fakeResourceList, ok := <-fakeResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case fakeResourceChan <- fakeResourceListWithNamespace{list: fakeResourceList, namespace: namespace}:
+						}
+					}
+				}
+			}(namespace)
+		}
+		// create watch on all namespaces, so that we can add resources from new namespaces
+		namespaceWatch, err := k.CoreV1().Namespaces().Watch(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case event, ok := <-namespaceWatch.ResultChan():
+					if !ok {
+						return
+					}
+					switch event.Type {
+					case kubewatch.Error:
+						errs <- errors.Errorf("receiving namespace event", event)
+					default:
+						// we get an event
+						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+						if err != nil {
+							errs <- errors.Wrapf(err, "listing the namespace resources")
+						}
+
+						hit := false
+						newNamespaces := []string{}
+
+						for _, item := range namespacesResources.Items {
+							namespace := item.Namespace
+							_, hit = mocksByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+							_, hit = fcarsByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+							_, hit = fakesByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+						}
+						if hit {
+							// add a watch for all the new namespaces
+							// REFACTOR
+							for _, namespace := range newNamespaces {
+								/* Setup namespaced watch for MockResource for new namespace */
+								{
+									mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace MockResource list")
+										continue
+									}
+									mocksByNamespace[namespace] = mocks
+								}
+								mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace MockResource watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
+								}(namespace)
+								/* Setup namespaced watch for FrequentlyChangingAnnotationsResource for new namespace */
+								{
+									fcars, err := c.frequentlyChangingAnnotationsResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace FrequentlyChangingAnnotationsResource list")
+										continue
+									}
+									fcarsByNamespace[namespace] = fcars
+								}
+								frequentlyChangingAnnotationsResourceNamespacesChan, frequentlyChangingAnnotationsResourceErrs, err := c.frequentlyChangingAnnotationsResource.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace FrequentlyChangingAnnotationsResource watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, frequentlyChangingAnnotationsResourceErrs, namespace+"-new-namespace-fcars")
+								}(namespace)
+								/* Setup namespaced watch for FakeResource for new namespace */
+								{
+									fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace FakeResource list")
+										continue
+									}
+									fakesByNamespace[namespace] = fakes
+								}
+								fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace FakeResource watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-new-namespace-fakes")
+								}(namespace)
+								/* Watch for changes and update snapshot */
+								// REFACTOR
+								go func(namespace string) {
+									for {
+										select {
+										case <-ctx.Done():
+											return
+										case mockResourceList, ok := <-mockResourceNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
+											}
+										case frequentlyChangingAnnotationsResourceList, ok := <-frequentlyChangingAnnotationsResourceNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case frequentlyChangingAnnotationsResourceChan <- frequentlyChangingAnnotationsResourceListWithNamespace{list: frequentlyChangingAnnotationsResourceList, namespace: namespace}:
+											}
+										case fakeResourceList, ok := <-fakeResourceNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case fakeResourceChan <- fakeResourceListWithNamespace{list: fakeResourceList, namespace: namespace}:
+											}
+										}
+									}
+								}(namespace)
+							}
+						}
+					}
+				}
+			}
+		}()
 	}
 	/* Initialize snapshot for Mocks */
 	currentSnapshot.Mocks = initialMockResourceList.Sort()

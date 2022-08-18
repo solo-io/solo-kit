@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"bytes"
 	"sync"
 	"time"
 
@@ -19,6 +20,9 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubewatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -186,15 +190,30 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 
 	errs := make(chan error)
+	hasWatchedNamespaces := len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
+	watchNamespacesIsEmpty := !hasWatchedNamespaces
 	var done sync.WaitGroup
 	ctx := opts.Ctx
+
+	// if we are watching namespaces, then we do not want to fitler any of the
+	// resources in when listing or watching
+	// TODO-JAKE not sure if we want to get rid of the Selector in the
+	// ListOpts here. the reason that we might want to is because we no
+	// longer allow selectors, unless it is on a unwatched namespace.
+	watchedNamespacesListOptions := clients.ListOpts{Ctx: opts.Ctx}
+	watchedNamespacesWatchOptions := clients.WatchOpts{Ctx: opts.Ctx}
+	if watchNamespacesIsEmpty {
+		// if the namespaces that we are watching is empty, then we want to apply
+		// the expression Selectors to all the namespaces.
+		watchedNamespacesListOptions.ExpressionSelector = opts.ExpressionSelector
+		watchedNamespacesWatchOptions.ExpressionSelector = opts.ExpressionSelector
+	}
 	/* Create channel for SimpleMockResource */
 	type simpleMockResourceListWithNamespace struct {
 		list      SimpleMockResourceList
 		namespace string
 	}
 	simpleMockResourceChan := make(chan simpleMockResourceListWithNamespace)
-
 	var initialSimpleMockResourceList SimpleMockResourceList
 	/* Create channel for MockResource */
 	type mockResourceListWithNamespace struct {
@@ -202,7 +221,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	mockResourceChan := make(chan mockResourceListWithNamespace)
-
 	var initialMockResourceList MockResourceList
 	/* Create channel for FakeResource */
 	type fakeResourceListWithNamespace struct {
@@ -210,7 +228,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	fakeResourceChan := make(chan fakeResourceListWithNamespace)
-
 	var initialFakeResourceList FakeResourceList
 	/* Create channel for AnotherMockResource */
 	type anotherMockResourceListWithNamespace struct {
@@ -218,7 +235,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	anotherMockResourceChan := make(chan anotherMockResourceListWithNamespace)
-
 	var initialAnotherMockResourceList AnotherMockResourceList
 	/* Create channel for ClusterResource */
 	/* Create channel for MockCustomType */
@@ -227,7 +243,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	mockCustomTypeChan := make(chan mockCustomTypeListWithNamespace)
-
 	var initialMockCustomTypeList MockCustomTypeList
 	/* Create channel for Pod */
 	type podListWithNamespace struct {
@@ -235,7 +250,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	podChan := make(chan podListWithNamespace)
-
 	var initialPodList github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
 
 	currentSnapshot := TestingSnapshot{}
@@ -246,17 +260,18 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	mctsByNamespace := make(map[string]MockCustomTypeList)
 	podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
 
+	// watched namespaces
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for SimpleMockResource */
 		{
-			simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			simplemocks, err := c.simpleMockResource.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial SimpleMockResource list")
 			}
 			initialSimpleMockResourceList = append(initialSimpleMockResourceList, simplemocks...)
 			simplemocksByNamespace[namespace] = simplemocks
 		}
-		simpleMockResourceNamespacesChan, simpleMockResourceErrs, err := c.simpleMockResource.Watch(namespace, opts)
+		simpleMockResourceNamespacesChan, simpleMockResourceErrs, err := c.simpleMockResource.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting SimpleMockResource watch")
 		}
@@ -268,14 +283,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for MockResource */
 		{
-			mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			mocks, err := c.mockResource.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial MockResource list")
 			}
 			initialMockResourceList = append(initialMockResourceList, mocks...)
 			mocksByNamespace[namespace] = mocks
 		}
-		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
 		}
@@ -287,14 +302,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for FakeResource */
 		{
-			fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			fakes, err := c.fakeResource.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial FakeResource list")
 			}
 			initialFakeResourceList = append(initialFakeResourceList, fakes...)
 			fakesByNamespace[namespace] = fakes
 		}
-		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
+		fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting FakeResource watch")
 		}
@@ -306,14 +321,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for AnotherMockResource */
 		{
-			anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			anothermockresources, err := c.anotherMockResource.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial AnotherMockResource list")
 			}
 			initialAnotherMockResourceList = append(initialAnotherMockResourceList, anothermockresources...)
 			anothermockresourcesByNamespace[namespace] = anothermockresources
 		}
-		anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
+		anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting AnotherMockResource watch")
 		}
@@ -325,14 +340,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for MockCustomType */
 		{
-			mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			mcts, err := c.mockCustomType.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial MockCustomType list")
 			}
 			initialMockCustomTypeList = append(initialMockCustomTypeList, mcts...)
 			mctsByNamespace[namespace] = mcts
 		}
-		mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, opts)
+		mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting MockCustomType watch")
 		}
@@ -344,14 +359,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}(namespace)
 		/* Setup namespaced watch for Pod */
 		{
-			pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			pods, err := c.pod.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial Pod list")
 			}
 			initialPodList = append(initialPodList, pods...)
 			podsByNamespace[namespace] = pods
 		}
-		podNamespacesChan, podErrs, err := c.pod.Watch(namespace, opts)
+		podNamespacesChan, podErrs, err := c.pod.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Pod watch")
 		}
@@ -361,7 +376,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, podErrs, namespace+"-pods")
 		}(namespace)
-
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
 			for {
@@ -426,6 +440,501 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}
 		}(namespace)
 	}
+	if hasWatchedNamespaces && opts.ExpressionSelector != "" {
+		// watch resources using non-watched namespaces. With these namespaces we
+		// will watch only those that are filted using the label selectors defined
+		// by Expression Selectors
+
+		// first get the renaiming namespaces
+		var k kubernetes.Interface
+		excludeNamespacesFieldDesciptors := ""
+
+		var buffer bytes.Buffer
+		for i, ns := range watchNamespaces {
+			buffer.WriteString("metadata.namespace!=")
+			buffer.WriteString(ns)
+			if i < len(watchNamespaces)-1 {
+				buffer.WriteByte(',')
+			}
+		}
+		excludeNamespacesFieldDesciptors = buffer.String()
+
+		namespacesResources, err := k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		if err != nil {
+			return nil, nil, err
+		}
+		allOtherNamespaces := make([]string, len(namespacesResources.Items))
+		for _, ns := range namespacesResources.Items {
+			allOtherNamespaces = append(allOtherNamespaces, ns.Namespace)
+		}
+
+		// nonWatchedNamespaces
+		// REFACTOR
+		for _, namespace := range allOtherNamespaces {
+			/* Setup namespaced watch for SimpleMockResource */
+			{
+				simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial SimpleMockResource list")
+				}
+				initialSimpleMockResourceList = append(initialSimpleMockResourceList, simplemocks...)
+				simplemocksByNamespace[namespace] = simplemocks
+			}
+			simpleMockResourceNamespacesChan, simpleMockResourceErrs, err := c.simpleMockResource.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting SimpleMockResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-simplemocks")
+			}(namespace)
+			/* Setup namespaced watch for MockResource */
+			{
+				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial MockResource list")
+				}
+				initialMockResourceList = append(initialMockResourceList, mocks...)
+				mocksByNamespace[namespace] = mocks
+			}
+			mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
+			}(namespace)
+			/* Setup namespaced watch for FakeResource */
+			{
+				fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial FakeResource list")
+				}
+				initialFakeResourceList = append(initialFakeResourceList, fakes...)
+				fakesByNamespace[namespace] = fakes
+			}
+			fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting FakeResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
+			}(namespace)
+			/* Setup namespaced watch for AnotherMockResource */
+			{
+				anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial AnotherMockResource list")
+				}
+				initialAnotherMockResourceList = append(initialAnotherMockResourceList, anothermockresources...)
+				anothermockresourcesByNamespace[namespace] = anothermockresources
+			}
+			anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting AnotherMockResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-anothermockresources")
+			}(namespace)
+			/* Setup namespaced watch for MockCustomType */
+			{
+				mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial MockCustomType list")
+				}
+				initialMockCustomTypeList = append(initialMockCustomTypeList, mcts...)
+				mctsByNamespace[namespace] = mcts
+			}
+			mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting MockCustomType watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
+			}(namespace)
+			/* Setup namespaced watch for Pod */
+			{
+				pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial Pod list")
+				}
+				initialPodList = append(initialPodList, pods...)
+				podsByNamespace[namespace] = pods
+			}
+			podNamespacesChan, podErrs, err := c.pod.Watch(namespace, opts)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting Pod watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, podErrs, namespace+"-pods")
+			}(namespace)
+			/* Watch for changes and update snapshot */
+			go func(namespace string) {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case simpleMockResourceList, ok := <-simpleMockResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case simpleMockResourceChan <- simpleMockResourceListWithNamespace{list: simpleMockResourceList, namespace: namespace}:
+						}
+					case mockResourceList, ok := <-mockResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
+						}
+					case fakeResourceList, ok := <-fakeResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case fakeResourceChan <- fakeResourceListWithNamespace{list: fakeResourceList, namespace: namespace}:
+						}
+					case anotherMockResourceList, ok := <-anotherMockResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case anotherMockResourceChan <- anotherMockResourceListWithNamespace{list: anotherMockResourceList, namespace: namespace}:
+						}
+					case mockCustomTypeList, ok := <-mockCustomTypeNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
+						}
+					case podList, ok := <-podNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case podChan <- podListWithNamespace{list: podList, namespace: namespace}:
+						}
+					}
+				}
+			}(namespace)
+		}
+		// create watch on all namespaces, so that we can add resources from new namespaces
+		namespaceWatch, err := k.CoreV1().Namespaces().Watch(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case event, ok := <-namespaceWatch.ResultChan():
+					if !ok {
+						return
+					}
+					switch event.Type {
+					case kubewatch.Error:
+						errs <- errors.Errorf("receiving namespace event", event)
+					default:
+						// we get an event
+						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+						if err != nil {
+							errs <- errors.Wrapf(err, "listing the namespace resources")
+						}
+
+						hit := false
+						newNamespaces := []string{}
+
+						for _, item := range namespacesResources.Items {
+							namespace := item.Namespace
+							_, hit = simplemocksByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+							_, hit = mocksByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+							_, hit = fakesByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+							_, hit = anothermockresourcesByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+							_, hit = mctsByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+							_, hit = podsByNamespace[namespace]
+							if !hit {
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+						}
+						if hit {
+							// add a watch for all the new namespaces
+							// REFACTOR
+							for _, namespace := range newNamespaces {
+								/* Setup namespaced watch for SimpleMockResource for new namespace */
+								{
+									simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace SimpleMockResource list")
+										continue
+									}
+									simplemocksByNamespace[namespace] = simplemocks
+								}
+								simpleMockResourceNamespacesChan, simpleMockResourceErrs, err := c.simpleMockResource.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace SimpleMockResource watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-new-namespace-simplemocks")
+								}(namespace)
+								/* Setup namespaced watch for MockResource for new namespace */
+								{
+									mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace MockResource list")
+										continue
+									}
+									mocksByNamespace[namespace] = mocks
+								}
+								mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace MockResource watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
+								}(namespace)
+								/* Setup namespaced watch for FakeResource for new namespace */
+								{
+									fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace FakeResource list")
+										continue
+									}
+									fakesByNamespace[namespace] = fakes
+								}
+								fakeResourceNamespacesChan, fakeResourceErrs, err := c.fakeResource.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace FakeResource watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-new-namespace-fakes")
+								}(namespace)
+								/* Setup namespaced watch for AnotherMockResource for new namespace */
+								{
+									anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace AnotherMockResource list")
+										continue
+									}
+									anothermockresourcesByNamespace[namespace] = anothermockresources
+								}
+								anotherMockResourceNamespacesChan, anotherMockResourceErrs, err := c.anotherMockResource.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace AnotherMockResource watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-new-namespace-anothermockresources")
+								}(namespace)
+								/* Setup namespaced watch for MockCustomType for new namespace */
+								{
+									mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace MockCustomType list")
+										continue
+									}
+									mctsByNamespace[namespace] = mcts
+								}
+								mockCustomTypeNamespacesChan, mockCustomTypeErrs, err := c.mockCustomType.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace MockCustomType watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-new-namespace-mcts")
+								}(namespace)
+								/* Setup namespaced watch for Pod for new namespace */
+								{
+									pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									if err != nil {
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
+										errs <- errors.Wrapf(err, "initial new namespace Pod list")
+										continue
+									}
+									podsByNamespace[namespace] = pods
+								}
+								podNamespacesChan, podErrs, err := c.pod.Watch(namespace, opts)
+								if err != nil {
+									// INFO-JAKE is this what we really want to do when there is an error?
+									errs <- errors.Wrapf(err, "starting new namespace Pod watch")
+									continue
+								}
+
+								// INFO-JAKE I think this is appropriate, becasue
+								// we want to watch the errors coming off the namespace
+								done.Add(1)
+								go func(namespace string) {
+									defer done.Done()
+									errutils.AggregateErrs(ctx, errs, podErrs, namespace+"-new-namespace-pods")
+								}(namespace)
+								/* Watch for changes and update snapshot */
+								// REFACTOR
+								go func(namespace string) {
+									for {
+										select {
+										case <-ctx.Done():
+											return
+										case simpleMockResourceList, ok := <-simpleMockResourceNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case simpleMockResourceChan <- simpleMockResourceListWithNamespace{list: simpleMockResourceList, namespace: namespace}:
+											}
+										case mockResourceList, ok := <-mockResourceNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
+											}
+										case fakeResourceList, ok := <-fakeResourceNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case fakeResourceChan <- fakeResourceListWithNamespace{list: fakeResourceList, namespace: namespace}:
+											}
+										case anotherMockResourceList, ok := <-anotherMockResourceNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case anotherMockResourceChan <- anotherMockResourceListWithNamespace{list: anotherMockResourceList, namespace: namespace}:
+											}
+										case mockCustomTypeList, ok := <-mockCustomTypeNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
+											}
+										case podList, ok := <-podNamespacesChan:
+											if !ok {
+												return
+											}
+											select {
+											case <-ctx.Done():
+												return
+											case podChan <- podListWithNamespace{list: podList, namespace: namespace}:
+											}
+										}
+									}
+								}(namespace)
+							}
+						}
+					}
+				}
+			}
+		}()
+	}
 	/* Initialize snapshot for Simplemocks */
 	currentSnapshot.Simplemocks = initialSimpleMockResourceList.Sort()
 	/* Initialize snapshot for Mocks */
@@ -434,6 +943,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	currentSnapshot.Fakes = initialFakeResourceList.Sort()
 	/* Initialize snapshot for Anothermockresources */
 	currentSnapshot.Anothermockresources = initialAnotherMockResourceList.Sort()
+	// TODO-JAKE not sure if ther is anything that will need to be done for cluster
+	// scoped resources.  Verify if this is even used in Gloo or not.
 	/* Setup cluster-wide watch for ClusterResource */
 	var err error
 	currentSnapshot.Clusterresources, err = c.clusterResource.List(clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})

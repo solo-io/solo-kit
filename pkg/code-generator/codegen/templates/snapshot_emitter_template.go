@@ -169,6 +169,9 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 	// if we are watching namespaces, then we do not want to fitler any of the 
 	// resources in when listing or watching
+	// TODO-JAKE not sure if we want to get rid of the Selector in the
+	// ListOpts here. the reason that we might want to is because we no
+	// longer allow selectors, unless it is on a unwatched namespace.
 	watchedNamespacesListOptions := clients.ListOpts{Ctx: opts.Ctx}
 	watchedNamespacesWatchOptions := clients.WatchOpts{Ctx: opts.Ctx}
 	if watchNamespacesIsEmpty {
@@ -181,10 +184,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- range .Resources}}
 	/* Create channel for {{ .Name }} */
 {{- if (not .ClusterScoped) }}
-type {{ lower_camel .Name }}ListWithNamespace struct {
-	list {{ .ImportPrefix }}{{ .Name }}List
-	namespace string
-}
+	type {{ lower_camel .Name }}ListWithNamespace struct {
+		list {{ .ImportPrefix }}{{ .Name }}List
+		namespace string
+	}
 	{{ lower_camel .Name }}Chan := make(chan {{ lower_camel .Name }}ListWithNamespace)
 	var initial{{ upper_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List
 {{- end }}
@@ -192,11 +195,11 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 
 	currentSnapshot := {{ .GoName }}Snapshot{}
 
-	{{- range .Resources}}
-	{{- if not .ClusterScoped }}
-			{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
-	{{- end }}
-	{{- end }}
+{{- range .Resources}}
+{{- if not .ClusterScoped }}
+	{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
+{{- end }}
+{{- end }}
 
 	// watched namespaces
 	for _, namespace := range watchNamespaces {
@@ -204,9 +207,6 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 {{- if (not .ClusterScoped) }}
 		/* Setup namespaced watch for {{ .Name }} */
 		{
-			// TODO-JAKE not sure if we want to get rid of the Selector in the
-			// ListOpts here. the reason that we might want to is because we no
-			// longer allow selectors, unless it is on a unwatched namespace.
 			{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, watchedNamespacesListOptions)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "initial {{ .Name }} list")
@@ -227,7 +227,6 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 
 {{- end }}
 {{- end }}
-
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
 			for {
@@ -251,7 +250,6 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 			}
 		}(namespace)
 	}
-{{- if (not .ClusterScoped) }}
 	if hasWatchedNamespaces && opts.ExpressionSelector != "" {
 		// watch resources using non-watched namespaces. With these namespaces we
 		// will watch only those that are filted using the label selectors defined
@@ -281,17 +279,18 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 		}
 
 		// nonWatchedNamespaces
+		// REFACTOR
 		for _, namespace := range allOtherNamespaces {
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
 			/* Setup namespaced watch for {{ upper_camel .Name }} */
 			{
-				{{ lower_camel .Name }}s, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+				{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial {{ upper_camel .Name }} list")
 				}
-				initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List, {{ lower_camel .Name }}s...)
-				{{ lower_camel .Name }}sByNamespace[namespace] = {{ lower_camel .Name }}s
+				initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List,{{ lower_camel .PluralName }}...)
+				{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .PluralName }}
 			}
 			{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
 			if err != nil {
@@ -301,7 +300,7 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 			done.Add(1)
 			go func(namespace string) {
 				defer done.Done()
-				errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-{{ lower_camel .Name }}s")
+				errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-{{ lower_camel .PluralName }}")
 			}(namespace)
 {{- end }}
 {{- end }}
@@ -347,28 +346,42 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 					case kubewatch.Error:
 						errs <- errors.Errorf("receiving namespace event", event)
 					default:
-						// we get an event	
 						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
 						if err != nil {
 							errs <- errors.Wrapf(err, "listing the namespace resources")
 						}
+
+						hit := false
+						newNamespaces := []string{}
+
 						for _,item := range namespacesResources.Items {
+							namespace := item.Namespace
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
-							namespace := item.Namespace
-							_, hit := {{ lower_camel .Name }}sByNamespace[namespace]
+							_, hit = {{ lower_camel .PluralName }}ByNamespace[namespace]
 							if ! hit {
-								/* Setup namespaced watch for {{ upper_camel .Name }} */
+								newNamespaces = append(newNamespaces, namespace)
+								continue
+							}
+{{- end }}
+{{- end }}
+						}
+						if hit {
+							// add a watch for all the new namespaces
+							// REFACTOR
+							for _, namespace := range newNamespaces {
+	{{- range .Resources }}
+	{{- if (not .ClusterScoped) }}
+								/* Setup namespaced watch for {{ upper_camel .Name }} for new namespace */
 								{
-									{{ lower_camel .Name }}s, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
+									{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
 									if err != nil {
-										// INFO-JAKE pretty sure we want to send
-										// an error message here, but we might want
-										// to do something else.
+										// INFO-JAKE not sure if we want to do something else
+										// but since this is occuring in async I think it should be fine
 										errs <- errors.Wrapf(err, "initial new namespace {{ upper_camel .Name }} list")
 										continue
 									}
-									{{ lower_camel .Name }}sByNamespace[namespace] = {{ lower_camel .Name }}s
+									{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .PluralName }}
 								}
 								{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
 								if err != nil {
@@ -382,22 +395,19 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 								done.Add(1)
 								go func(namespace string) {
 									defer done.Done()
-									errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-new-namespace-{{ lower_camel .Name }}s")
+									errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-new-namespace-{{ lower_camel .PluralName }}")
 								}(namespace)
-{{- end }}
-{{- end }}
-								// if that is the case, return the {{ lower_camel .Name }}NamespacesChan....
+	{{- end }}
+	{{- end }}
 								/* Watch for changes and update snapshot */
-								// INFO-JAKE I would like to refactor this code
-								// is there a way we can refactor all this code 
-								// in the go routine once?
+								// REFACTOR
 								go func(namespace string) {
 									for {
 										select {
 										case <-ctx.Done():
 											return
-{{- range .Resources }}
-{{- if (not .ClusterScoped) }}
+	{{- range .Resources }}
+	{{- if (not .ClusterScoped) }}
 										case {{ lower_camel .Name }}List, ok := <-{{ lower_camel .Name }}NamespacesChan:
 											if !ok {
 												return
@@ -407,8 +417,8 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 												return
 											case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ lower_camel .Name }}List, namespace: namespace}:
 											}
-{{- end }}
-{{- end }}
+	{{- end }}
+	{{- end }}
 										}
 									}
 								}(namespace)
@@ -419,7 +429,6 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 			}
 		}()
 	}
-{{- end }}
 {{- range .Resources}}
 {{- if .ClusterScoped }}
 	// TODO-JAKE not sure if ther is anything that will need to be done for cluster
