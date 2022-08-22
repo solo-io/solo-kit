@@ -91,7 +91,7 @@ func (client *jobClient) List(namespace string, opts clients.ListOpts) (JobList,
 	if err != nil {
 		return nil, err
 	}
-	return convertToJob(resourceList), nil
+	return convertToJob(resourceList, ""), nil
 }
 
 func (client *jobClient) Watch(namespace string, opts clients.WatchOpts) (<-chan JobList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *jobClient) Watch(namespace string, opts clients.WatchOpts) (<-chan
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case jobsChan <- convertToJob(resourceList):
+				case jobsChan <- convertToJob(resourceList, ""):
 				case <-opts.Ctx.Done():
 					close(jobsChan)
 					return
@@ -121,7 +121,7 @@ func (client *jobClient) Watch(namespace string, opts clients.WatchOpts) (<-chan
 	return jobsChan, errs, nil
 }
 
-func convertToJob(resources resources.ResourceList) JobList {
+func convertToJob(resources resources.ResourceList, namespace string) JobList {
 	var jobList JobList
 	for _, resource := range resources {
 		jobList = append(jobList, resource.(*Job))

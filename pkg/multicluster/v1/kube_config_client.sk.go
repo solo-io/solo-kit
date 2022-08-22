@@ -91,7 +91,7 @@ func (client *kubeConfigClient) List(namespace string, opts clients.ListOpts) (K
 	if err != nil {
 		return nil, err
 	}
-	return convertToKubeConfig(resourceList), nil
+	return convertToKubeConfig(resourceList, ""), nil
 }
 
 func (client *kubeConfigClient) Watch(namespace string, opts clients.WatchOpts) (<-chan KubeConfigList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *kubeConfigClient) Watch(namespace string, opts clients.WatchOpts) 
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case kubeconfigsChan <- convertToKubeConfig(resourceList):
+				case kubeconfigsChan <- convertToKubeConfig(resourceList, ""):
 				case <-opts.Ctx.Done():
 					close(kubeconfigsChan)
 					return
@@ -121,7 +121,7 @@ func (client *kubeConfigClient) Watch(namespace string, opts clients.WatchOpts) 
 	return kubeconfigsChan, errs, nil
 }
 
-func convertToKubeConfig(resources resources.ResourceList) KubeConfigList {
+func convertToKubeConfig(resources resources.ResourceList, namespace string) KubeConfigList {
 	var kubeConfigList KubeConfigList
 	for _, resource := range resources {
 		kubeConfigList = append(kubeConfigList, resource.(*KubeConfig))

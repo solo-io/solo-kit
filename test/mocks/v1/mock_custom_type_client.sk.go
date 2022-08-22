@@ -91,7 +91,7 @@ func (client *mockCustomTypeClient) List(namespace string, opts clients.ListOpts
 	if err != nil {
 		return nil, err
 	}
-	return convertToMockCustomType(resourceList), nil
+	return convertToMockCustomType(resourceList, ""), nil
 }
 
 func (client *mockCustomTypeClient) Watch(namespace string, opts clients.WatchOpts) (<-chan MockCustomTypeList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *mockCustomTypeClient) Watch(namespace string, opts clients.WatchOp
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case mctsChan <- convertToMockCustomType(resourceList):
+				case mctsChan <- convertToMockCustomType(resourceList, ""):
 				case <-opts.Ctx.Done():
 					close(mctsChan)
 					return
@@ -121,7 +121,7 @@ func (client *mockCustomTypeClient) Watch(namespace string, opts clients.WatchOp
 	return mctsChan, errs, nil
 }
 
-func convertToMockCustomType(resources resources.ResourceList) MockCustomTypeList {
+func convertToMockCustomType(resources resources.ResourceList, namespace string) MockCustomTypeList {
 	var mockCustomTypeList MockCustomTypeList
 	for _, resource := range resources {
 		mockCustomTypeList = append(mockCustomTypeList, resource.(*MockCustomType))

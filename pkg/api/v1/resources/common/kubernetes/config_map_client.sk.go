@@ -91,7 +91,7 @@ func (client *configMapClient) List(namespace string, opts clients.ListOpts) (Co
 	if err != nil {
 		return nil, err
 	}
-	return convertToConfigMap(resourceList), nil
+	return convertToConfigMap(resourceList, ""), nil
 }
 
 func (client *configMapClient) Watch(namespace string, opts clients.WatchOpts) (<-chan ConfigMapList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *configMapClient) Watch(namespace string, opts clients.WatchOpts) (
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case configmapsChan <- convertToConfigMap(resourceList):
+				case configmapsChan <- convertToConfigMap(resourceList, ""):
 				case <-opts.Ctx.Done():
 					close(configmapsChan)
 					return
@@ -121,7 +121,7 @@ func (client *configMapClient) Watch(namespace string, opts clients.WatchOpts) (
 	return configmapsChan, errs, nil
 }
 
-func convertToConfigMap(resources resources.ResourceList) ConfigMapList {
+func convertToConfigMap(resources resources.ResourceList, namespace string) ConfigMapList {
 	var configMapList ConfigMapList
 	for _, resource := range resources {
 		configMapList = append(configMapList, resource.(*ConfigMap))

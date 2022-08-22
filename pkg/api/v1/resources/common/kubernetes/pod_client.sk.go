@@ -91,7 +91,7 @@ func (client *podClient) List(namespace string, opts clients.ListOpts) (PodList,
 	if err != nil {
 		return nil, err
 	}
-	return convertToPod(resourceList), nil
+	return convertToPod(resourceList, ""), nil
 }
 
 func (client *podClient) Watch(namespace string, opts clients.WatchOpts) (<-chan PodList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *podClient) Watch(namespace string, opts clients.WatchOpts) (<-chan
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case podsChan <- convertToPod(resourceList):
+				case podsChan <- convertToPod(resourceList, ""):
 				case <-opts.Ctx.Done():
 					close(podsChan)
 					return
@@ -121,7 +121,7 @@ func (client *podClient) Watch(namespace string, opts clients.WatchOpts) (<-chan
 	return podsChan, errs, nil
 }
 
-func convertToPod(resources resources.ResourceList) PodList {
+func convertToPod(resources resources.ResourceList, namespace string) PodList {
 	var podList PodList
 	for _, resource := range resources {
 		podList = append(podList, resource.(*Pod))

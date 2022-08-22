@@ -4,6 +4,7 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -91,7 +92,7 @@ func (client *fakeResourceClient) List(namespace string, opts clients.ListOpts) 
 	if err != nil {
 		return nil, err
 	}
-	return convertToFakeResource(resourceList), nil
+	return convertToFakeResource(resourceList, ""), nil
 }
 
 func (client *fakeResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error) {
@@ -107,7 +108,7 @@ func (client *fakeResourceClient) Watch(namespace string, opts clients.WatchOpts
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case fakesChan <- convertToFakeResource(resourceList):
+				case fakesChan <- convertToFakeResource(resourceList, namespace):
 				case <-opts.Ctx.Done():
 					close(fakesChan)
 					return
@@ -121,7 +122,13 @@ func (client *fakeResourceClient) Watch(namespace string, opts clients.WatchOpts
 	return fakesChan, errs, nil
 }
 
-func convertToFakeResource(resources resources.ResourceList) FakeResourceList {
+func convertToFakeResource(resources resources.ResourceList, namespace string) FakeResourceList {
+	if namespace == "slow-watch-namespace" {
+		// This is _only_ utilized by FakeResource, specifically to test out fix for https://github.com/solo-io/gloo/issues/5554.
+		// The general premise is that we need the ability to _conditionally_ have slow watchers to observe
+		// what currentSnapshot.Fakes is over time.  We expect it to _not_ lose data when initial watchers report data.
+		time.Sleep(5 * time.Second)
+	}
 	var fakeResourceList FakeResourceList
 	for _, resource := range resources {
 		fakeResourceList = append(fakeResourceList, resource.(*FakeResource))

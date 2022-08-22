@@ -91,7 +91,7 @@ func (client *mockResourceClient) List(namespace string, opts clients.ListOpts) 
 	if err != nil {
 		return nil, err
 	}
-	return convertToMockResource(resourceList), nil
+	return convertToMockResource(resourceList, ""), nil
 }
 
 func (client *mockResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan MockResourceList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *mockResourceClient) Watch(namespace string, opts clients.WatchOpts
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case mocksChan <- convertToMockResource(resourceList):
+				case mocksChan <- convertToMockResource(resourceList, ""):
 				case <-opts.Ctx.Done():
 					close(mocksChan)
 					return
@@ -121,7 +121,7 @@ func (client *mockResourceClient) Watch(namespace string, opts clients.WatchOpts
 	return mocksChan, errs, nil
 }
 
-func convertToMockResource(resources resources.ResourceList) MockResourceList {
+func convertToMockResource(resources resources.ResourceList, namespace string) MockResourceList {
 	var mockResourceList MockResourceList
 	for _, resource := range resources {
 		mockResourceList = append(mockResourceList, resource.(*MockResource))

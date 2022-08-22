@@ -91,7 +91,7 @@ func (client *deploymentClient) List(namespace string, opts clients.ListOpts) (D
 	if err != nil {
 		return nil, err
 	}
-	return convertToDeployment(resourceList), nil
+	return convertToDeployment(resourceList, ""), nil
 }
 
 func (client *deploymentClient) Watch(namespace string, opts clients.WatchOpts) (<-chan DeploymentList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *deploymentClient) Watch(namespace string, opts clients.WatchOpts) 
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case deploymentsChan <- convertToDeployment(resourceList):
+				case deploymentsChan <- convertToDeployment(resourceList, ""):
 				case <-opts.Ctx.Done():
 					close(deploymentsChan)
 					return
@@ -121,7 +121,7 @@ func (client *deploymentClient) Watch(namespace string, opts clients.WatchOpts) 
 	return deploymentsChan, errs, nil
 }
 
-func convertToDeployment(resources resources.ResourceList) DeploymentList {
+func convertToDeployment(resources resources.ResourceList, namespace string) DeploymentList {
 	var deploymentList DeploymentList
 	for _, resource := range resources {
 		deploymentList = append(deploymentList, resource.(*Deployment))
