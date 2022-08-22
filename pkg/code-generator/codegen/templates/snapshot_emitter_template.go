@@ -440,11 +440,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 	}
 {{- range .Resources}}
 {{- if .ClusterScoped }}
-	// TODO-JAKE not sure if ther is anything that will need to be done for cluster
-	// scoped resources.  Verify if this is even used in Gloo or not.
+	// TODO-JAKE verify that this is what we should be doing with Cluster Scoped Resources
 	/* Setup cluster-wide watch for {{ .Name }} */
 	var err error
-	currentSnapshot.{{ upper_camel .PluralName }},err = c.{{ lower_camel .Name }}.List(clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+	currentSnapshot.{{ upper_camel .PluralName }},err = c.{{ lower_camel .Name }}.List(clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector, Selector: opts.Selector})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "initial {{ .Name }} list")
 	}
