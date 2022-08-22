@@ -283,7 +283,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 					}
 					switch event.Type {
 					case kubewatch.Error:
-						errs <- errors.Errorf("receiving namespace event", event)
+						errs <- errors.Errorf("receiving namespace event: %v", event)
 					default:
 						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
 						if err != nil {

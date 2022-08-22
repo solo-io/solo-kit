@@ -4,6 +4,14 @@ import (
 	"text/template"
 )
 
+// Snapshot Emitters are used to take snapshots of the current system, using either
+// cluster scoped or non namespaced scoped selection. Watches are used to notify
+// the snapshot emitter when new resources have been created or updated.
+// Snapshot Emitters will delegate to Resource Clients to list and watch defined
+// resources.
+
+// ClusterScoped - without namespacing, get all the resources within the entire cluster. There is one watch per resource.
+// Not using ClusterScoped - allows for using namespacing, so that each namespace has it's own watch per resource.
 var ResourceGroupEmitterTemplate = template.Must(template.New("resource_group_emitter").Funcs(Funcs).Parse(
 	`package {{ .Project.ProjectConfig.Version }}
 
@@ -161,6 +169,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		}
 	}
 
+	// TODO-JAKE some of this should only be present if scoped by namespace
 	errs := make(chan error)
 	hasWatchedNamespaces :=  len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
 	watchNamespacesIsEmpty := ! hasWatchedNamespaces
@@ -344,7 +353,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 					}
 					switch event.Type {
 					case kubewatch.Error:
-						errs <- errors.Errorf("receiving namespace event", event)
+						errs <- errors.Errorf("receiving namespace event: %v", event)
 					default:
 						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
 						if err != nil {
