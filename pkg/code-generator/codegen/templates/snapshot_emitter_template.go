@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"sync"
 	"time"
+	"os"
 
 	{{ .Imports }}
 	"go.opencensus.io/stats"
@@ -45,6 +46,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	kubewatch "k8s.io/apimachinery/pkg/watch"
+	"github.com/solo-io/k8s-utils/kubeutils"
 )
 
 {{ $emitter_prefix := (print (snake .Name) "/emitter") }}
@@ -268,9 +270,21 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		var k kubernetes.Interface
 		excludeNamespacesFieldDesciptors := ""
 
+		// TODO-JAKE REFACTOR, this must be added another way
+		// TODO-JAKE should not be from KUBECONFIG, might need to use the abstraction for namespace Resources
+		// I do not think this would work in a real scenario
+		cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
+		if err != nil {
+			return nil, nil, err
+		}
+		k, err := kubernetes.NewForConfig(cfg)
+		if err != nil {
+			return nil, nil, err
+		}
+
 		var buffer bytes.Buffer
 		for i, ns := range watchNamespaces {
-			buffer.WriteString("metadata.namespace!=")
+			buffer.WriteString("metadata.name!=")
 			buffer.WriteString(ns)
 			if i < len(watchNamespaces)-1 {
 				buffer.WriteByte(',')
@@ -365,6 +379,8 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 						for _,item := range namespacesResources.Items {
 							namespace := item.Namespace
+							// TODO-JAKE we might want to add a set of namespaces
+							// to the struct above, to manage it's list of namespaces
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
 							_, hit = {{ lower_camel .PluralName }}ByNamespace[namespace]
