@@ -277,7 +277,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		if err != nil {
 			return nil, nil, err
 		}
-		k, err := kubernetes.NewForConfig(cfg)
+		k, err = kubernetes.NewForConfig(cfg)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -292,13 +292,14 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		}
 		excludeNamespacesFieldDesciptors = buffer.String()
 
+		// TODO-JAKE test that we can create a huge field selector of massive size
 		namespacesResources,err := k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
 		if err != nil {
 			return nil, nil, err
 		}
 		allOtherNamespaces := make([]string, len(namespacesResources.Items))
-		for _, ns := range namespacesResources.Items {
-			allOtherNamespaces = append(allOtherNamespaces, ns.Namespace)
+		for i, ns := range namespacesResources.Items {
+			allOtherNamespaces[i] = ns.Namespace
 		}
 
 		// nonWatchedNamespaces
@@ -374,7 +375,6 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 							errs <- errors.Wrapf(err, "listing the namespace resources")
 						}
 
-						hit := false
 						newNamespaces := []string{}
 
 						for _,item := range namespacesResources.Items {
@@ -383,15 +383,15 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 							// to the struct above, to manage it's list of namespaces
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
-							_, hit = {{ lower_camel .PluralName }}ByNamespace[namespace]
-							if ! hit {
+							if _, hit := {{ lower_camel .PluralName }}ByNamespace[namespace]; !hit {
 								newNamespaces = append(newNamespaces, namespace)
 								continue
 							}
 {{- end }}
 {{- end }}
 						}
-						if hit {
+						// TODO-JAKE I think we could get rid of this if statement if needed.
+						if len(newNamespaces) > 0{
 							// add a watch for all the new namespaces
 							// REFACTOR
 							for _, namespace := range newNamespaces {

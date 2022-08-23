@@ -4,6 +4,7 @@ package v1
 
 import (
 	"bytes"
+	"os"
 	"sync"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubewatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -189,6 +191,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}
 	}
 
+	// TODO-JAKE some of this should only be present if scoped by namespace
 	errs := make(chan error)
 	hasWatchedNamespaces := len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
 	watchNamespacesIsEmpty := !hasWatchedNamespaces
@@ -449,9 +452,21 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		var k kubernetes.Interface
 		excludeNamespacesFieldDesciptors := ""
 
+		// TODO-JAKE REFACTOR, this must be added another way
+		// TODO-JAKE should not be from KUBECONFIG, might need to use the abstraction for namespace Resources
+		// I do not think this would work in a real scenario
+		cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
+		if err != nil {
+			return nil, nil, err
+		}
+		k, err = kubernetes.NewForConfig(cfg)
+		if err != nil {
+			return nil, nil, err
+		}
+
 		var buffer bytes.Buffer
 		for i, ns := range watchNamespaces {
-			buffer.WriteString("metadata.namespace!=")
+			buffer.WriteString("metadata.name!=")
 			buffer.WriteString(ns)
 			if i < len(watchNamespaces)-1 {
 				buffer.WriteByte(',')
@@ -459,13 +474,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}
 		excludeNamespacesFieldDesciptors = buffer.String()
 
+		// TODO-JAKE test that we can create a huge field selector of massive size
 		namespacesResources, err := k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
 		if err != nil {
 			return nil, nil, err
 		}
 		allOtherNamespaces := make([]string, len(namespacesResources.Items))
-		for _, ns := range namespacesResources.Items {
-			allOtherNamespaces = append(allOtherNamespaces, ns.Namespace)
+		for i, ns := range namespacesResources.Items {
+			allOtherNamespaces[i] = ns.Namespace
 		}
 
 		// nonWatchedNamespaces
@@ -666,50 +682,46 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					}
 					switch event.Type {
 					case kubewatch.Error:
-						errs <- errors.Errorf("receiving namespace event", event)
+						errs <- errors.Errorf("receiving namespace event: %v", event)
 					default:
 						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
 						if err != nil {
 							errs <- errors.Wrapf(err, "listing the namespace resources")
 						}
 
-						hit := false
 						newNamespaces := []string{}
 
 						for _, item := range namespacesResources.Items {
 							namespace := item.Namespace
-							_, hit = simplemocksByNamespace[namespace]
-							if !hit {
+							// TODO-JAKE we might want to add a set of namespaces
+							// to the struct above, to manage it's list of namespaces
+							if _, hit := simplemocksByNamespace[namespace]; !hit {
 								newNamespaces = append(newNamespaces, namespace)
 								continue
 							}
-							_, hit = mocksByNamespace[namespace]
-							if !hit {
+							if _, hit := mocksByNamespace[namespace]; !hit {
 								newNamespaces = append(newNamespaces, namespace)
 								continue
 							}
-							_, hit = fakesByNamespace[namespace]
-							if !hit {
+							if _, hit := fakesByNamespace[namespace]; !hit {
 								newNamespaces = append(newNamespaces, namespace)
 								continue
 							}
-							_, hit = anothermockresourcesByNamespace[namespace]
-							if !hit {
+							if _, hit := anothermockresourcesByNamespace[namespace]; !hit {
 								newNamespaces = append(newNamespaces, namespace)
 								continue
 							}
-							_, hit = mctsByNamespace[namespace]
-							if !hit {
+							if _, hit := mctsByNamespace[namespace]; !hit {
 								newNamespaces = append(newNamespaces, namespace)
 								continue
 							}
-							_, hit = podsByNamespace[namespace]
-							if !hit {
+							if _, hit := podsByNamespace[namespace]; !hit {
 								newNamespaces = append(newNamespaces, namespace)
 								continue
 							}
 						}
-						if hit {
+						// TODO-JAKE I think we could get rid of this if statement if needed.
+						if len(newNamespaces) > 0 {
 							// add a watch for all the new namespaces
 							// REFACTOR
 							for _, namespace := range newNamespaces {
@@ -942,11 +954,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	currentSnapshot.Fakes = initialFakeResourceList.Sort()
 	/* Initialize snapshot for Anothermockresources */
 	currentSnapshot.Anothermockresources = initialAnotherMockResourceList.Sort()
-	// TODO-JAKE not sure if ther is anything that will need to be done for cluster
-	// scoped resources.  Verify if this is even used in Gloo or not.
+	// TODO-JAKE verify that this is what we should be doing with Cluster Scoped Resources
 	/* Setup cluster-wide watch for ClusterResource */
 	var err error
-	currentSnapshot.Clusterresources, err = c.clusterResource.List(clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+	currentSnapshot.Clusterresources, err = c.clusterResource.List(clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector, Selector: opts.Selector})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "initial ClusterResource list")
 	}
