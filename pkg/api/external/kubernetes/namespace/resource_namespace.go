@@ -37,7 +37,7 @@ func (kns *kubeResourceNamespaceLister) GetNamespaceResourceList(ctx context.Con
 }
 
 func (kns *kubeResourceNamespaceLister) GetNamespaceResourceWatch(ctx context.Context, opts resources.ResourceNamespaceWatchOptions) (chan resources.ResourceNamespaceList, <-chan error, error) {
-	wopts := clients.WatchOpts{FieldSelectors: opts.FieldSelectors}
+	wopts := clients.WatchOpts{FieldSelectors: opts.FieldSelectors, ExpressionSelector: opts.ExpressionSelectors}
 	// todo look that the namespace implementation to know exacactly what the channel of errors is returning.
 	namespaceChan, errorChan, err := kns.namespace.Watch(wopts)
 	if err != nil {

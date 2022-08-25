@@ -38,8 +38,9 @@ func KubeResourceWatch(cache cache.Cache, listFunc ResourceListFunc, namespace s
 	var previous *resources.ResourceList
 	updateResourceList := func() {
 		list, err := listFunc(namespace, clients.ListOpts{
-			Ctx:      opts.Ctx,
-			Selector: opts.Selector,
+			Ctx:                opts.Ctx,
+			Selector:           opts.Selector,
+			ExpressionSelector: opts.ExpressionSelector,
 		})
 		if err != nil {
 			errs <- err

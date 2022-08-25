@@ -323,7 +323,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
 			/* Setup namespaced watch for {{ upper_camel .Name }} */
-			{clien
+			{
 				{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial {{ upper_camel .Name }} list")

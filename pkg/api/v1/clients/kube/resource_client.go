@@ -23,7 +23,6 @@ import (
 	"go.opencensus.io/tag"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var (
@@ -296,7 +295,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 		return nil, err
 	}
 
-	labelSelector, err := rc.getLabelSelector(opts)
+	labelSelector, err := clients.GetLabelSelector(opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing label selector")
 	}
@@ -412,16 +411,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	}(namespace)
 
 	return resourcesChan, errs, nil
-}
-
-func (rc *ResourceClient) getLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
-	if listOpts.ExpressionSelector != "" {
-		return labels.Parse(listOpts.ExpressionSelector)
-	}
-
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
-	return labels.SelectorFromSet(listOpts.Selector), nil
 }
 
 // Checks whether the group version kind of the given resource matches that of the client's underlying CRD:
