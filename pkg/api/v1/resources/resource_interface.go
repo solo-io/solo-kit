@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -78,6 +79,46 @@ type CustomInputResource interface {
 	UnmarshalStatus(status v1.Status, defaultUnmarshaler StatusUnmarshaler)
 	MarshalSpec() (v1.Spec, error)
 	MarshalStatus() (v1.Status, error)
+}
+
+// ResourceNamespaceListOptions provides the options for listing Resoiurce Namespaces
+type ResourceNamespaceListOptions struct {
+	// FieldSelectors are used to filter out specific fields that are associated with
+	// the Namespace. IE if using Kubernetes you can filter namespaces by the name
+	// of the namespace by using metadata.name!=<namespace-name>
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
+	FieldSelectors string
+}
+
+// ResourceNamespaceWatchOptions provides the options for watching Resource Namespaces
+type ResourceNamespaceWatchOptions struct {
+	// FieldSelectors are used to filter out specific fields that are associated with
+	// the Namespace. IE if using Kubernetes you can filter namespaces by the name
+	// of the namespace by using metadata.name!=<namespace-name>
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
+	FieldSelectors string
+}
+
+// ResoruceNamespace is the namespaces that resources can be found. ResourceNamespaces are
+// anything that contains resources independent of other resoruces. They provide sections
+// independent infrastructure or regions. IE kubernetes namespaces
+type ResourceNamespace struct {
+	// Name the name of the namespace
+	Name string
+}
+
+// ResourceNamespaceList contains a list of ResourceNamespaces
+type ResourceNamespaceList []ResourceNamespace
+
+// ResourceNamespaceLister is anything that can list and watch namespaces that
+// resources can be found.
+type ResourceNamespaceLister interface {
+	// GetNamespaceResourceList returns the list of the namespaces that resources
+	// can be found.
+	GetNamespaceResourceList(ctx context.Context, opts ResourceNamespaceListOptions) (ResourceNamespaceList, error)
+	// GetNamespaceResourceWatch returns a watch that receives events when namespaces
+	// are updated or created.
+	GetNamespaceResourceWatch(ctx context.Context, opts ResourceNamespaceWatchOptions) (chan ResourceNamespaceList, <-chan error, error)
 }
 
 type ResourceList []Resource

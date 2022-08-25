@@ -13,14 +13,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	skstats "github.com/solo-io/solo-kit/pkg/stats"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubewatch "k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -87,20 +85,22 @@ type KubeconfigsEmitter interface {
 	KubeConfig() KubeConfigClient
 }
 
-func NewKubeconfigsEmitter(kubeConfigClient KubeConfigClient) KubeconfigsEmitter {
-	return NewKubeconfigsEmitterWithEmit(kubeConfigClient, make(chan struct{}))
+func NewKubeconfigsEmitter(kubeConfigClient KubeConfigClient, resourceNamespaceLister resources.ResourceNamespaceLister) KubeconfigsEmitter {
+	return NewKubeconfigsEmitterWithEmit(kubeConfigClient, resourceNamespaceLister, make(chan struct{}))
 }
 
-func NewKubeconfigsEmitterWithEmit(kubeConfigClient KubeConfigClient, emit <-chan struct{}) KubeconfigsEmitter {
+func NewKubeconfigsEmitterWithEmit(kubeConfigClient KubeConfigClient, resourceNamespaceLister resources.ResourceNamespaceLister, emit <-chan struct{}) KubeconfigsEmitter {
 	return &kubeconfigsEmitter{
-		kubeConfig: kubeConfigClient,
-		forceEmit:  emit,
+		kubeConfig:              kubeConfigClient,
+		resourceNamespaceLister: resourceNamespaceLister,
+		forceEmit:               emit,
 	}
 }
 
 type kubeconfigsEmitter struct {
-	forceEmit  <-chan struct{}
-	kubeConfig KubeConfigClient
+	forceEmit               <-chan struct{}
+	kubeConfig              KubeConfigClient
+	resourceNamespaceLister resources.ResourceNamespaceLister
 }
 
 func (c *kubeconfigsEmitter) Register() error {
@@ -127,6 +127,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		}
 	}
 
+	// TODO-JAKE some of this should only be present if scoped by namespace
 	errs := make(chan error)
 	hasWatchedNamespaces := len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
 	watchNamespacesIsEmpty := !hasWatchedNamespaces
@@ -155,7 +156,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	var initialKubeConfigList KubeConfigList
 
 	currentSnapshot := KubeconfigsSnapshot{}
-	kubeconfigsByNamespace := make(map[string]KubeConfigList)
+	kubeconfigsByNamespace := sync.Map{}
 
 	// watched namespaces
 	for _, namespace := range watchNamespaces {
@@ -166,7 +167,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				return nil, nil, errors.Wrapf(err, "initial KubeConfig list")
 			}
 			initialKubeConfigList = append(initialKubeConfigList, kubeconfigs...)
-			kubeconfigsByNamespace[namespace] = kubeconfigs
+			kubeconfigsByNamespace.Store(namespace, kubeconfigs)
 		}
 		kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
@@ -203,12 +204,18 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		// by Expression Selectors
 
 		// first get the renaiming namespaces
-		var k kubernetes.Interface
 		excludeNamespacesFieldDesciptors := ""
 
+		// TODO-JAKE may want to add some comments around how the snapshot_emitter
+		// event_loop and resource clients -> resource client implementations work in a README.md
+		// this would be helpful for documentation purposes
+
+		// TODO implement how we will be able to delete resources from namespaces that are deleted
+
+		// TODO-JAKE REFACTOR, we can refactor how the watched namespaces are added up to make a exclusion namespaced fields
 		var buffer bytes.Buffer
 		for i, ns := range watchNamespaces {
-			buffer.WriteString("metadata.namespace!=")
+			buffer.WriteString("metadata.name!=")
 			buffer.WriteString(ns)
 			if i < len(watchNamespaces)-1 {
 				buffer.WriteByte(',')
@@ -216,13 +223,29 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		}
 		excludeNamespacesFieldDesciptors = buffer.String()
 
-		namespacesResources, err := k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		// we should only be watching namespaces that have the selectors that we want to be watching
+		// TODO-JAKE need to add in the other namespaces that will not be allowed, IE the exclusion list
+		// TODO-JAKE test that we can create a huge field selector of massive size
+		namespacesResources, err := c.resourceNamespaceLister.GetNamespaceResourceList(ctx, resources.ResourceNamespaceListOptions{
+			FieldSelectors: excludeNamespacesFieldDesciptors,
+		})
+
 		if err != nil {
 			return nil, nil, err
 		}
-		allOtherNamespaces := make([]string, len(namespacesResources.Items))
-		for _, ns := range namespacesResources.Items {
-			allOtherNamespaces = append(allOtherNamespaces, ns.Namespace)
+		allOtherNamespaces := make([]string, 0)
+		for _, ns := range namespacesResources {
+			// TODO-JAKE get the filters on the namespacing working
+			add := true
+			// TODO-JAKE need to implement the filtering of the field selectors in the resourceNamespaceLister
+			for _, wns := range watchNamespaces {
+				if ns.Name == wns {
+					add = false
+				}
+			}
+			if add {
+				allOtherNamespaces = append(allOtherNamespaces, ns.Name)
+			}
 		}
 
 		// nonWatchedNamespaces
@@ -235,7 +258,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 					return nil, nil, errors.Wrapf(err, "initial KubeConfig list")
 				}
 				initialKubeConfigList = append(initialKubeConfigList, kubeconfigs...)
-				kubeconfigsByNamespace[namespace] = kubeconfigs
+				kubeconfigsByNamespace.Store(namespace, kubeconfigs)
 			}
 			kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
 			if err != nil {
@@ -267,7 +290,11 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 			}(namespace)
 		}
 		// create watch on all namespaces, so that we can add resources from new namespaces
-		namespaceWatch, err := k.CoreV1().Namespaces().Watch(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		// TODO-JAKE this interface has to deal with the event types of kubernetes independently without the interface knowing about it.
+		// we will need a way to deal with DELETES and CREATES and updates seperately
+		namespaceWatch, _, err := c.resourceNamespaceLister.GetNamespaceResourceWatch(ctx, resources.ResourceNamespaceWatchOptions{
+			FieldSelectors: excludeNamespacesFieldDesciptors,
+		})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -277,79 +304,73 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				select {
 				case <-ctx.Done():
 					return
-				case event, ok := <-namespaceWatch.ResultChan():
+				case resourceNamespaces, ok := <-namespaceWatch:
 					if !ok {
 						return
 					}
-					switch event.Type {
-					case kubewatch.Error:
-						errs <- errors.Errorf("receiving namespace event: %v", event)
-					default:
-						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
-						if err != nil {
-							errs <- errors.Wrapf(err, "listing the namespace resources")
-						}
+					newNamespaces := []string{}
 
-						hit := false
-						newNamespaces := []string{}
-
-						for _, item := range namespacesResources.Items {
-							namespace := item.Namespace
-							_, hit = kubeconfigsByNamespace[namespace]
-							if !hit {
-								newNamespaces = append(newNamespaces, namespace)
-								continue
-							}
+					for _, ns := range resourceNamespaces {
+						// TODO-JAKE are we sure we need this. Looks like there is a cocurrent map read and map write here
+						// TODO-JAKE we willl only need to do this once, I might be best to keep a set/map of the current
+						// namespaces that are used
+						if _, hit := kubeconfigsByNamespace.Load(ns.Name); !hit {
+							newNamespaces = append(newNamespaces, ns.Name)
+							continue
 						}
-						if hit {
-							// add a watch for all the new namespaces
-							// REFACTOR
-							for _, namespace := range newNamespaces {
-								/* Setup namespaced watch for KubeConfig for new namespace */
-								{
-									kubeconfigs, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
-									if err != nil {
-										// INFO-JAKE not sure if we want to do something else
-										// but since this is occuring in async I think it should be fine
-										errs <- errors.Wrapf(err, "initial new namespace KubeConfig list")
-										continue
-									}
-									kubeconfigsByNamespace[namespace] = kubeconfigs
-								}
-								kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
+					}
+					// TODO-JAKE I think we could get rid of this if statement if needed.
+					if len(newNamespaces) > 0 {
+						// add a watch for all the new namespaces
+						// REFACTOR
+						for _, namespace := range newNamespaces {
+							/* Setup namespaced watch for KubeConfig for new namespace */
+							{
+								kubeconfigs, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
 								if err != nil {
-									// INFO-JAKE is this what we really want to do when there is an error?
-									errs <- errors.Wrapf(err, "starting new namespace KubeConfig watch")
+									// INFO-JAKE not sure if we want to do something else
+									// but since this is occuring in async I think it should be fine
+									errs <- errors.Wrapf(err, "initial new namespace KubeConfig list")
 									continue
 								}
+								kubeconfigsByNamespace.Store(namespace, kubeconfigs)
+							}
+							kubeConfigNamespacesChan, kubeConfigErrs, err := c.kubeConfig.Watch(namespace, opts)
+							if err != nil {
+								// TODO-JAKE if we do decide to have the namespaceErrs from the watch namespaces functionality
+								// , then we could add it here namespaceErrs <- error(*) . the namespaceErrs is coming from the
+								// ResourceNamespaceLister currently
+								// INFO-JAKE is this what we really want to do when there is an error?
+								errs <- errors.Wrapf(err, "starting new namespace KubeConfig watch")
+								continue
+							}
 
-								// INFO-JAKE I think this is appropriate, becasue
-								// we want to watch the errors coming off the namespace
-								done.Add(1)
-								go func(namespace string) {
-									defer done.Done()
-									errutils.AggregateErrs(ctx, errs, kubeConfigErrs, namespace+"-new-namespace-kubeconfigs")
-								}(namespace)
-								/* Watch for changes and update snapshot */
-								// REFACTOR
-								go func(namespace string) {
-									for {
+							// INFO-JAKE I think this is appropriate, becasue
+							// we want to watch the errors coming off the namespace
+							done.Add(1)
+							go func(namespace string) {
+								defer done.Done()
+								errutils.AggregateErrs(ctx, errs, kubeConfigErrs, namespace+"-new-namespace-kubeconfigs")
+							}(namespace)
+							/* Watch for changes and update snapshot */
+							// REFACTOR
+							go func(namespace string) {
+								for {
+									select {
+									case <-ctx.Done():
+										return
+									case kubeConfigList, ok := <-kubeConfigNamespacesChan:
+										if !ok {
+											return
+										}
 										select {
 										case <-ctx.Done():
 											return
-										case kubeConfigList, ok := <-kubeConfigNamespacesChan:
-											if !ok {
-												return
-											}
-											select {
-											case <-ctx.Done():
-												return
-											case kubeConfigChan <- kubeConfigListWithNamespace{list: kubeConfigList, namespace: namespace}:
-											}
+										case kubeConfigChan <- kubeConfigListWithNamespace{list: kubeConfigList, namespace: namespace}:
 										}
 									}
-								}(namespace)
-							}
+								}
+							}(namespace)
 						}
 					}
 				}
@@ -424,11 +445,13 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				)
 
 				// merge lists by namespace
-				kubeconfigsByNamespace[namespace] = kubeConfigNamespacedList.list
+				kubeconfigsByNamespace.Store(namespace, kubeConfigNamespacedList.list)
 				var kubeConfigList KubeConfigList
-				for _, kubeconfigs := range kubeconfigsByNamespace {
-					kubeConfigList = append(kubeConfigList, kubeconfigs...)
-				}
+				kubeconfigsByNamespace.Range(func(key interface{}, value interface{}) bool {
+					mocks := value.(KubeConfigList)
+					kubeConfigList = append(kubeConfigList, mocks...)
+					return true
+				})
 				currentSnapshot.Kubeconfigs = kubeConfigList.Sort()
 			}
 		}

@@ -16,10 +16,13 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/test/helpers"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -59,6 +62,11 @@ var _ = Describe("V1Emitter", func() {
 		clusterResourceClient     ClusterResourceClient
 		mockCustomTypeClient      MockCustomTypeClient
 		podClient                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
+		resourceNamespaceLister   resources.ResourceNamespaceLister
+		kubeCache                 cache.KubeCoreCache
+	)
+	const (
+		TIME_BETWEEN_MESSAGES = 5
 	)
 	NewSimpleMockResourceWithLabels := func(namespace, name string, labels map[string]string) *SimpleMockResource {
 		resource := NewSimpleMockResource(namespace, name)
@@ -97,7 +105,7 @@ var _ = Describe("V1Emitter", func() {
 	}
 
 	createNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
-		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace5, namespace6)
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespaces...)
 		Expect(err).NotTo(HaveOccurred())
 		for _, ns := range namespaces {
 			if _, hit := createdNamespaces[ns]; !hit {
@@ -118,7 +126,12 @@ var _ = Describe("V1Emitter", func() {
 		namespace4 = helpers.RandString(8)
 		namespace5 = helpers.RandString(8)
 		namespace6 = helpers.RandString(8)
+
 		kube = helpers.MustKubeClient()
+		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
+		resourceNamespaceLister = namespace.NewKubeResourceNamespaceLister(kube, kubeCache)
+
 		createNamespaces(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
@@ -190,7 +203,7 @@ var _ = Describe("V1Emitter", func() {
 
 		podClient, err = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(ctx, podClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
+		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, resourceNamespaceLister)
 	})
 	AfterEach(func() {
 		err := os.Unsetenv(statusutils.PodNamespaceEnvName)

@@ -4,7 +4,6 @@ package v1alpha1
 
 import (
 	"bytes"
-	"os"
 	"sync"
 	"time"
 
@@ -14,15 +13,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	skstats "github.com/solo-io/solo-kit/pkg/stats"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubewatch "k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -89,20 +85,22 @@ type TestingEmitter interface {
 	MockResource() MockResourceClient
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient) TestingEmitter {
-	return NewTestingEmitterWithEmit(mockResourceClient, make(chan struct{}))
+func NewTestingEmitter(mockResourceClient MockResourceClient, resourceNamespaceLister resources.ResourceNamespaceLister) TestingEmitter {
+	return NewTestingEmitterWithEmit(mockResourceClient, resourceNamespaceLister, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, resourceNamespaceLister resources.ResourceNamespaceLister, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
-		mockResource: mockResourceClient,
-		forceEmit:    emit,
+		mockResource:            mockResourceClient,
+		resourceNamespaceLister: resourceNamespaceLister,
+		forceEmit:               emit,
 	}
 }
 
 type testingEmitter struct {
-	forceEmit    <-chan struct{}
-	mockResource MockResourceClient
+	forceEmit               <-chan struct{}
+	mockResource            MockResourceClient
+	resourceNamespaceLister resources.ResourceNamespaceLister
 }
 
 func (c *testingEmitter) Register() error {
@@ -158,7 +156,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	var initialMockResourceList MockResourceList
 
 	currentSnapshot := TestingSnapshot{}
-	mocksByNamespace := make(map[string]MockResourceList)
+	mocksByNamespace := sync.Map{}
 
 	// watched namespaces
 	for _, namespace := range watchNamespaces {
@@ -169,7 +167,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				return nil, nil, errors.Wrapf(err, "initial MockResource list")
 			}
 			initialMockResourceList = append(initialMockResourceList, mocks...)
-			mocksByNamespace[namespace] = mocks
+			mocksByNamespace.Store(namespace, mocks)
 		}
 		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, watchedNamespacesWatchOptions)
 		if err != nil {
@@ -206,21 +204,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		// by Expression Selectors
 
 		// first get the renaiming namespaces
-		var k kubernetes.Interface
 		excludeNamespacesFieldDesciptors := ""
 
-		// TODO-JAKE REFACTOR, this must be added another way
-		// TODO-JAKE should not be from KUBECONFIG, might need to use the abstraction for namespace Resources
-		// I do not think this would work in a real scenario
-		cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
-		if err != nil {
-			return nil, nil, err
-		}
-		k, err = kubernetes.NewForConfig(cfg)
-		if err != nil {
-			return nil, nil, err
-		}
+		// TODO-JAKE may want to add some comments around how the snapshot_emitter
+		// event_loop and resource clients -> resource client implementations work in a README.md
+		// this would be helpful for documentation purposes
 
+		// TODO implement how we will be able to delete resources from namespaces that are deleted
+
+		// TODO-JAKE REFACTOR, we can refactor how the watched namespaces are added up to make a exclusion namespaced fields
 		var buffer bytes.Buffer
 		for i, ns := range watchNamespaces {
 			buffer.WriteString("metadata.name!=")
@@ -231,14 +223,29 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		}
 		excludeNamespacesFieldDesciptors = buffer.String()
 
+		// we should only be watching namespaces that have the selectors that we want to be watching
+		// TODO-JAKE need to add in the other namespaces that will not be allowed, IE the exclusion list
 		// TODO-JAKE test that we can create a huge field selector of massive size
-		namespacesResources, err := k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		namespacesResources, err := c.resourceNamespaceLister.GetNamespaceResourceList(ctx, resources.ResourceNamespaceListOptions{
+			FieldSelectors: excludeNamespacesFieldDesciptors,
+		})
+
 		if err != nil {
 			return nil, nil, err
 		}
-		allOtherNamespaces := make([]string, len(namespacesResources.Items))
-		for i, ns := range namespacesResources.Items {
-			allOtherNamespaces[i] = ns.Namespace
+		allOtherNamespaces := make([]string, 0)
+		for _, ns := range namespacesResources {
+			// TODO-JAKE get the filters on the namespacing working
+			add := true
+			// TODO-JAKE need to implement the filtering of the field selectors in the resourceNamespaceLister
+			for _, wns := range watchNamespaces {
+				if ns.Name == wns {
+					add = false
+				}
+			}
+			if add {
+				allOtherNamespaces = append(allOtherNamespaces, ns.Name)
+			}
 		}
 
 		// nonWatchedNamespaces
@@ -251,7 +258,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					return nil, nil, errors.Wrapf(err, "initial MockResource list")
 				}
 				initialMockResourceList = append(initialMockResourceList, mocks...)
-				mocksByNamespace[namespace] = mocks
+				mocksByNamespace.Store(namespace, mocks)
 			}
 			mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
 			if err != nil {
@@ -283,7 +290,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 		}
 		// create watch on all namespaces, so that we can add resources from new namespaces
-		namespaceWatch, err := k.CoreV1().Namespaces().Watch(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
+		// TODO-JAKE this interface has to deal with the event types of kubernetes independently without the interface knowing about it.
+		// we will need a way to deal with DELETES and CREATES and updates seperately
+		namespaceWatch, _, err := c.resourceNamespaceLister.GetNamespaceResourceWatch(ctx, resources.ResourceNamespaceWatchOptions{
+			FieldSelectors: excludeNamespacesFieldDesciptors,
+		})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -293,80 +304,73 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				select {
 				case <-ctx.Done():
 					return
-				case event, ok := <-namespaceWatch.ResultChan():
+				case resourceNamespaces, ok := <-namespaceWatch:
 					if !ok {
 						return
 					}
-					switch event.Type {
-					case kubewatch.Error:
-						errs <- errors.Errorf("receiving namespace event: %v", event)
-					default:
-						namespacesResources, err := k.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespacesFieldDesciptors})
-						if err != nil {
-							errs <- errors.Wrapf(err, "listing the namespace resources")
-						}
+					newNamespaces := []string{}
 
-						newNamespaces := []string{}
-
-						for _, item := range namespacesResources.Items {
-							namespace := item.Namespace
-							// TODO-JAKE we might want to add a set of namespaces
-							// to the struct above, to manage it's list of namespaces
-							if _, hit := mocksByNamespace[namespace]; !hit {
-								newNamespaces = append(newNamespaces, namespace)
-								continue
-							}
+					for _, ns := range resourceNamespaces {
+						// TODO-JAKE are we sure we need this. Looks like there is a cocurrent map read and map write here
+						// TODO-JAKE we willl only need to do this once, I might be best to keep a set/map of the current
+						// namespaces that are used
+						if _, hit := mocksByNamespace.Load(ns.Name); !hit {
+							newNamespaces = append(newNamespaces, ns.Name)
+							continue
 						}
-						// TODO-JAKE I think we could get rid of this if statement if needed.
-						if len(newNamespaces) > 0 {
-							// add a watch for all the new namespaces
-							// REFACTOR
-							for _, namespace := range newNamespaces {
-								/* Setup namespaced watch for MockResource for new namespace */
-								{
-									mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
-									if err != nil {
-										// INFO-JAKE not sure if we want to do something else
-										// but since this is occuring in async I think it should be fine
-										errs <- errors.Wrapf(err, "initial new namespace MockResource list")
-										continue
-									}
-									mocksByNamespace[namespace] = mocks
-								}
-								mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+					}
+					// TODO-JAKE I think we could get rid of this if statement if needed.
+					if len(newNamespaces) > 0 {
+						// add a watch for all the new namespaces
+						// REFACTOR
+						for _, namespace := range newNamespaces {
+							/* Setup namespaced watch for MockResource for new namespace */
+							{
+								mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, ExpressionSelector: opts.ExpressionSelector})
 								if err != nil {
-									// INFO-JAKE is this what we really want to do when there is an error?
-									errs <- errors.Wrapf(err, "starting new namespace MockResource watch")
+									// INFO-JAKE not sure if we want to do something else
+									// but since this is occuring in async I think it should be fine
+									errs <- errors.Wrapf(err, "initial new namespace MockResource list")
 									continue
 								}
+								mocksByNamespace.Store(namespace, mocks)
+							}
+							mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+							if err != nil {
+								// TODO-JAKE if we do decide to have the namespaceErrs from the watch namespaces functionality
+								// , then we could add it here namespaceErrs <- error(*) . the namespaceErrs is coming from the
+								// ResourceNamespaceLister currently
+								// INFO-JAKE is this what we really want to do when there is an error?
+								errs <- errors.Wrapf(err, "starting new namespace MockResource watch")
+								continue
+							}
 
-								// INFO-JAKE I think this is appropriate, becasue
-								// we want to watch the errors coming off the namespace
-								done.Add(1)
-								go func(namespace string) {
-									defer done.Done()
-									errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
-								}(namespace)
-								/* Watch for changes and update snapshot */
-								// REFACTOR
-								go func(namespace string) {
-									for {
+							// INFO-JAKE I think this is appropriate, becasue
+							// we want to watch the errors coming off the namespace
+							done.Add(1)
+							go func(namespace string) {
+								defer done.Done()
+								errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
+							}(namespace)
+							/* Watch for changes and update snapshot */
+							// REFACTOR
+							go func(namespace string) {
+								for {
+									select {
+									case <-ctx.Done():
+										return
+									case mockResourceList, ok := <-mockResourceNamespacesChan:
+										if !ok {
+											return
+										}
 										select {
 										case <-ctx.Done():
 											return
-										case mockResourceList, ok := <-mockResourceNamespacesChan:
-											if !ok {
-												return
-											}
-											select {
-											case <-ctx.Done():
-												return
-											case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
-											}
+										case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
 										}
 									}
-								}(namespace)
-							}
+								}
+							}(namespace)
 						}
 					}
 				}
@@ -441,11 +445,13 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				)
 
 				// merge lists by namespace
-				mocksByNamespace[namespace] = mockResourceNamespacedList.list
+				mocksByNamespace.Store(namespace, mockResourceNamespacedList.list)
 				var mockResourceList MockResourceList
-				for _, mocks := range mocksByNamespace {
+				mocksByNamespace.Range(func(key interface{}, value interface{}) bool {
+					mocks := value.(MockResourceList)
 					mockResourceList = append(mockResourceList, mocks...)
-				}
+					return true
+				})
 				currentSnapshot.Mocks = mockResourceList.Sort()
 			}
 		}
