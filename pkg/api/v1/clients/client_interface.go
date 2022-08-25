@@ -128,6 +128,8 @@ type ListOpts struct {
 	//	 (2) the label key equal to version and the value equal to v1
 	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	ExpressionSelector string
+	// TODO-JAKE add in Field Selectors
+	FieldSelectors string
 }
 
 func (o ListOpts) WithDefaults() ListOpts {
@@ -164,7 +166,9 @@ type WatchOpts struct {
 	//	 (2) the label key equal to version and the value equal to v1
 	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	ExpressionSelector string
-	RefreshRate        time.Duration
+	// JAKE-TODO
+	FieldSelectors string
+	RefreshRate    time.Duration
 	// Cluster is ignored by aggregated watches, but is respected by multi cluster clients.
 	Cluster string
 }
