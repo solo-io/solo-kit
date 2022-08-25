@@ -156,11 +156,7 @@ func (client *{{ lower_camel .Name }}Client) Watch(namespace string, opts client
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-{{- if eq .Name "FakeResource" }}
-					case {{ lower_camel .PluralName }}Chan <- convertTo{{ .Name }}(resourceList, namespace):
-{{- else }}
-					case {{ lower_camel .PluralName }}Chan <- convertTo{{ .Name }}(resourceList, ""):
-{{- end }}
+					case {{ lower_camel .PluralName }}Chan <- convertTo{{ .Name }}(resourceList):
 					case <-opts.Ctx.Done():
 						close({{ lower_camel .PluralName }}Chan)
 						return
@@ -174,16 +170,7 @@ func (client *{{ lower_camel .Name }}Client) Watch(namespace string, opts client
 	return {{ lower_camel .PluralName }}Chan, errs, nil
 }
 
-func convertTo{{ .Name }}(resources resources.ResourceList, namespace string) {{ .Name }}List {
-{{- if eq .Name "FakeResource" }}
-	if namespace == "slow-watch-namespace" {
-		// This is _only_ utilized by FakeResource, specifically to test out fix for https://github.com/solo-io/gloo/issues/5554.
-		// The general premise is that we need the ability to _conditionally_ have slow watchers to observe
-		// what currentSnapshot.Fakes is over time.  We expect it to _not_ lose data when initial watchers report data.
-		time.Sleep(5 * time.Second)
-	}
-
-{{- end }}
+func convertTo{{ .Name }}(resources resources.ResourceList) {{ .Name }}List {
 	var {{ lower_camel .Name }}List {{ .Name }}List
 	for _, resource := range resources {
 		{{ lower_camel .Name }}List = append({{ lower_camel .Name }}List, resource.(*{{ .Name }}))
