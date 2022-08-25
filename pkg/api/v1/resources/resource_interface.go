@@ -88,6 +88,8 @@ type ResourceNamespaceListOptions struct {
 	// of the namespace by using metadata.name!=<namespace-name>
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
 	FieldSelectors string
+	// TODO-JAKE add description
+	ExpressionSelectors string
 }
 
 // ResourceNamespaceWatchOptions provides the options for watching Resource Namespaces
@@ -97,6 +99,8 @@ type ResourceNamespaceWatchOptions struct {
 	// of the namespace by using metadata.name!=<namespace-name>
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
 	FieldSelectors string
+	// TODO-JAKE add description
+	ExpressionSelectors string
 }
 
 // ResoruceNamespace is the namespaces that resources can be found. ResourceNamespaces are
