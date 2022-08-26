@@ -62,7 +62,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		namespace1, namespace2         string
 		namespace3, namespace4         string
 		namespace5, namespace6         string
-		createdNamespaces 			   map[string]bool
 		name1, name2        = "angela"+helpers.RandString(3), "bob"+helpers.RandString(3)
 		name3, name4       = "susan" + helpers.RandString(3), "jim" + helpers.RandString(3)
 		labels1 = map[string]string{"env": "test"}
@@ -94,12 +93,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 	createNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
 		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespaces...)
 		Expect(err).NotTo(HaveOccurred())
-		// add namespaces to created list for clean up
-		for _,ns := range namespaces {
-			if _,hit := createdNamespaces[ns]; !hit {
-				createdNamespaces[ns] = true
-			}
-		}
 	}
 
 	createNamespaceWithLabel := func(ctx context.Context, kube kubernetes.Interface, namespace string, labels map[string]string) {
@@ -110,10 +103,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			},
 		}, metav1.CreateOptions{})	
 		Expect(err).ToNot(HaveOccurred())
-		// add namespace to created list for clean up
-		if _, hit := createdNamespaces[namespace]; !hit {
-			createdNamespaces[namespace] = true
-		}
 	}
 
 	deleteNonDefaultKubeNamespaces := func(ctx context.Context, kube kubernetes.Interface) {
@@ -131,12 +120,16 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).ToNot(HaveOccurred())
 	}
 
+	deleteNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespaces...)
+		Expect(err).NotTo(HaveOccurred())
+	}	
+
 	BeforeEach(func() {
 		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx = context.Background()
-		createdNamespaces = make(map[string]bool)
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		namespace3 = helpers.RandString(8)
@@ -189,12 +182,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
-		namespacesToDelete := []string{}
-		for namespace,_ := range createdNamespaces {
-			namespacesToDelete = append(namespacesToDelete, namespace)
-		}
-		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespacesToDelete...)
-		Expect(err).NotTo(HaveOccurred())
+		deleteNonDefaultKubeNamespaces(ctx, kube)
 
 {{- range .Resources }}
 {{- if .ClusterScoped }}
@@ -783,7 +771,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				}
 			}
 
-			assertNoMatchingMocks := func() {
+			assertNoMocksSent := func() {
 				drain:
 					for {
 						select {
@@ -843,7 +831,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 {{- else }}
 
@@ -852,7 +840,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 {{- end }}
 
@@ -864,7 +852,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a }...) 
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 {{- else }}
 
@@ -891,7 +879,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			{{ lower_camel .Name }}3b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 {{- end }}
 
@@ -920,7 +908,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			{{ lower_camel .Name }}5a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a }...) 
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 {{- else }}
 
@@ -1015,7 +1003,214 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- end }}
 		})
 	})
-	// TODO-JAKE need to write a test that deletes a namespace, see if it gets rid of all resources on that namespace from the snapshot
+
+	Context("Tracking resources on namespaces that are deleted", func () {
+		It("Should not contain resources from a deleted namespace", func () {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:         ctx,
+				RefreshRate: time.Second,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+
+			/*
+				MockResource
+			*/
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+				drain:
+					for {
+						select {
+						case snap = <-snapshots:
+							for _, expected := range expectMocks {
+								if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+									continue drain
+								}
+							}
+							for _, unexpected := range unexpectMocks {
+								if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+									continue drain
+								}
+							}
+							break drain
+						case err := <-errs:
+							Expect(err).NotTo(HaveOccurred())
+						case <-time.After(time.Second * 10):
+							nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
+							nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
+							combined := append(nsList1, nsList2...)
+							Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+						}
+					}
+				}
+
+				mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				watched := MockResourceList{mockResource1a, mockResource1b}
+				assertSnapshotMocks(watched, nil)
+
+				deleteNamespaces(ctx, kube, namespace1, namespace2)
+				notWatched := MockResourceList{mockResource1a, mockResource1b}
+				assertSnapshotMocks(nil, notWatched)	
+		})
+
+		It("Should not contain resources from a deleted namespace, that is filtered", func () {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:         ctx,
+				RefreshRate: time.Second,
+				ExpressionSelector: labelExpression1,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *{{ .GoName }}Snapshot
+
+			assertNoMocksSent := func() {
+				drain:
+					for {
+						select {
+						case snap = <-snapshots:
+							if len(snap.Mocks) == 0 {
+								continue drain
+							}
+							Fail("expected that no snapshots containing resources would be recieved " + log.Sprintf("%v", snap))	
+						case err := <-errs:
+							Expect(err).NotTo(HaveOccurred())
+						case <-time.After(time.Second * 5):
+							// this means that we have not recieved any mocks that we are not expecting
+							return
+						}
+					}
+			}
+{{- range .Resources }}
+
+			/*
+				{{ .Name }}
+			*/
+
+			// clean up the namespaces and set back to default namespaces
+			deleteNonDefaultKubeNamespaces(ctx, kube)
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			assertSnapshot{{ .PluralName }} := func(expect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List, unexpect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List) {
+				drain:
+					for {
+						select {
+						case snap = <-snapshots:
+							for _, expected := range expect{{ .PluralName }} {
+								if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+									continue drain
+								}
+							}
+							for _, unexpected := range unexpect{{ .PluralName }} {
+								if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+									continue drain
+								}
+							}
+							break drain
+						case err := <-errs:
+							Expect(err).NotTo(HaveOccurred())
+						case <-time.After(time.Second * 10):
+		{{- if .ClusterScoped }}
+							combined, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
+		{{- else }}
+							nsList1, _ := {{ lower_camel .Name }}Client.List(namespace1, clients.ListOpts{})
+							nsList2, _ := {{ lower_camel .Name }}Client.List(namespace2, clients.ListOpts{})
+							combined := append(nsList1, nsList2...)
+		{{- end }}
+							Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+						}
+					}
+			}	
+
+{{- if .ClusterScoped }}
+
+			// TODO need to add in ClusterScoped
+			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
+			assertNoMocksSent()
+
+{{- else }}
+
+			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
+			assertNoMocksSent()
+
+{{- end }}
+
+			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			assertNoMocksSent()
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+{{- if .ClusterScoped }}
+
+			// TODO need to add in ClusterScoped
+			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
+			assertNoMocksSent()
+
+{{- else }}
+
+			{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			{{ lower_camel .Name }}2b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b }
+			assertSnapshotMocks(watched, notWatched)
+
+{{- end }}
+
+			// TODO-JAKE need to ensure that this will work for each resource
+			deleteNamespaces(ctx, kube, namespace3)	
+			notWatched = append(notWatched, {{ lower_camel .Name }}2a)
+			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2b}	
+			assertSnapshotMocks(watched, notWatched)	
+
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+
+{{- if .ClusterScoped }}
+
+			// TODO need to add in ClusterScoped
+			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
+			assertNoMocksSent()
+
+{{- else }}
+
+			{{ lower_camel .Name }}3a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := append(watched, {{ lower_camel .Name }}3a)
+			assertSnapshotMocks(watched, notWatched)
+
+{{- end }}
+
+			deleteNamespaces(ctx, kube, namespace4)	
+			notWatched = append(notWatched, {{ lower_camel .Name }}2b)
+			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a}	
+			assertSnapshotMocks(watched, notWatched)
+{{- end }}
+		})
+	})
+
 })
 
 `))

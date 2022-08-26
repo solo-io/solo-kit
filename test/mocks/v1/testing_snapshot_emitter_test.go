@@ -47,7 +47,6 @@ var _ = Describe("V1Emitter", func() {
 		namespace1, namespace2    string
 		namespace3, namespace4    string
 		namespace5, namespace6    string
-		createdNamespaces         map[string]bool
 		name1, name2              = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		name3, name4              = "susan" + helpers.RandString(3), "jim" + helpers.RandString(3)
 		labels1                   = map[string]string{"env": "test"}
@@ -109,12 +108,6 @@ var _ = Describe("V1Emitter", func() {
 	createNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
 		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespaces...)
 		Expect(err).NotTo(HaveOccurred())
-		// add namespaces to created list for clean up
-		for _, ns := range namespaces {
-			if _, hit := createdNamespaces[ns]; !hit {
-				createdNamespaces[ns] = true
-			}
-		}
 	}
 
 	createNamespaceWithLabel := func(ctx context.Context, kube kubernetes.Interface, namespace string, labels map[string]string) {
@@ -125,10 +118,6 @@ var _ = Describe("V1Emitter", func() {
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).ToNot(HaveOccurred())
-		// add namespace to created list for clean up
-		if _, hit := createdNamespaces[namespace]; !hit {
-			createdNamespaces[namespace] = true
-		}
 	}
 
 	deleteNonDefaultKubeNamespaces := func(ctx context.Context, kube kubernetes.Interface) {
@@ -146,12 +135,16 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
+	deleteNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespaces...)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
 	BeforeEach(func() {
 		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx = context.Background()
-		createdNamespaces = make(map[string]bool)
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
 		namespace3 = helpers.RandString(8)
@@ -243,12 +236,7 @@ var _ = Describe("V1Emitter", func() {
 		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
-		namespacesToDelete := []string{}
-		for namespace, _ := range createdNamespaces {
-			namespacesToDelete = append(namespacesToDelete, namespace)
-		}
-		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespacesToDelete...)
-		Expect(err).NotTo(HaveOccurred())
+		deleteNonDefaultKubeNamespaces(ctx, kube)
 		clusterResourceClient.Delete(name1, clients.DeleteOpts{})
 		clusterResourceClient.Delete(name2, clients.DeleteOpts{})
 	})
@@ -2070,7 +2058,7 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 
-			assertNoMatchingMocks := func() {
+			assertNoMocksSent := func() {
 			drain:
 				for {
 					select {
@@ -2123,7 +2111,7 @@ var _ = Describe("V1Emitter", func() {
 			simpleMockResource1b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -2140,7 +2128,7 @@ var _ = Describe("V1Emitter", func() {
 			simpleMockResource3b, err := simpleMockResourceClient.Write(NewSimpleMockResourceWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, SimpleMockResourceList{simpleMockResource3a, simpleMockResource3b}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			simpleMockResource4a, err := simpleMockResourceClient.Write(NewSimpleMockResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -2228,7 +2216,7 @@ var _ = Describe("V1Emitter", func() {
 			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := MockResourceList{mockResource1a, mockResource1b}
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -2245,7 +2233,7 @@ var _ = Describe("V1Emitter", func() {
 			mockResource3b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, MockResourceList{mockResource3a, mockResource3b}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			mockResource4a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -2333,7 +2321,7 @@ var _ = Describe("V1Emitter", func() {
 			fakeResource1b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := FakeResourceList{fakeResource1a, fakeResource1b}
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -2350,7 +2338,7 @@ var _ = Describe("V1Emitter", func() {
 			fakeResource3b, err := fakeResourceClient.Write(NewFakeResourceWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, FakeResourceList{fakeResource3a, fakeResource3b}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			fakeResource4a, err := fakeResourceClient.Write(NewFakeResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -2438,7 +2426,7 @@ var _ = Describe("V1Emitter", func() {
 			anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -2455,7 +2443,7 @@ var _ = Describe("V1Emitter", func() {
 			anotherMockResource3b, err := anotherMockResourceClient.Write(NewAnotherMockResourceWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, AnotherMockResourceList{anotherMockResource3a, anotherMockResource3b}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			anotherMockResource4a, err := anotherMockResourceClient.Write(NewAnotherMockResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -2540,7 +2528,7 @@ var _ = Describe("V1Emitter", func() {
 			clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := ClusterResourceList{clusterResource1a}
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -2548,7 +2536,7 @@ var _ = Describe("V1Emitter", func() {
 			clusterResource2a, err := clusterResourceClient.Write(NewClusterResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, ClusterResourceList{clusterResource2a}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			clusterResource3a, err := clusterResourceClient.Write(NewClusterResourceWithLabels(namespace1, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -2565,7 +2553,7 @@ var _ = Describe("V1Emitter", func() {
 			clusterResource5a, err := clusterResourceClient.Write(NewClusterResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, ClusterResourceList{clusterResource5a}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			clusterResource6a, err := clusterResourceClient.Write(NewClusterResourceWithLabels(namespace5, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -2628,7 +2616,7 @@ var _ = Describe("V1Emitter", func() {
 			mockCustomType1b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := MockCustomTypeList{mockCustomType1a, mockCustomType1b}
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -2645,7 +2633,7 @@ var _ = Describe("V1Emitter", func() {
 			mockCustomType3b, err := mockCustomTypeClient.Write(NewMockCustomTypeWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, MockCustomTypeList{mockCustomType3a, mockCustomType3b}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			mockCustomType4a, err := mockCustomTypeClient.Write(NewMockCustomTypeWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -2733,7 +2721,7 @@ var _ = Describe("V1Emitter", func() {
 			pod1b, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod1a, pod1b}
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -2750,7 +2738,7 @@ var _ = Describe("V1Emitter", func() {
 			pod3b, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod3a, pod3b}...)
-			assertNoMatchingMocks()
+			assertNoMocksSent()
 
 			pod4a, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -2804,5 +2792,617 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotpods(nil, notWatched)
 		})
 	})
-	// TODO-JAKE need to write a test that deletes a namespace, see if it gets rid of all resources on that namespace from the snapshot
+
+	Context("Tracking resources on namespaces that are deleted", func() {
+		It("Should not contain resources from a deleted namespace", func() {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:         ctx,
+				RefreshRate: time.Second,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+
+			/*
+				MockResource
+			*/
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectMocks {
+							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectMocks {
+							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := MockResourceList{mockResource1a, mockResource1b}
+			assertSnapshotMocks(watched, nil)
+
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			notWatched := MockResourceList{mockResource1a, mockResource1b}
+			assertSnapshotMocks(nil, notWatched)
+		})
+
+		It("Should not contain resources from a deleted namespace, that is filtered", func() {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:                ctx,
+				RefreshRate:        time.Second,
+				ExpressionSelector: labelExpression1,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+
+			assertNoMocksSent := func() {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						if len(snap.Mocks) == 0 {
+							continue drain
+						}
+						Fail("expected that no snapshots containing resources would be recieved " + log.Sprintf("%v", snap))
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 5):
+						// this means that we have not recieved any mocks that we are not expecting
+						return
+					}
+				}
+			}
+
+			/*
+				SimpleMockResource
+			*/
+
+			// clean up the namespaces and set back to default namespaces
+			deleteNonDefaultKubeNamespaces(ctx, kube)
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			assertSnapshotSimplemocks := func(expectSimplemocks SimpleMockResourceList, unexpectSimplemocks SimpleMockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectSimplemocks {
+							if _, err := snap.Simplemocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectSimplemocks {
+							if _, err := snap.Simplemocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := simpleMockResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := simpleMockResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			simpleMockResource1a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			simpleMockResource1b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}
+			assertNoMocksSent()
+
+			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			assertNoMocksSent()
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			simpleMockResource2a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			simpleMockResource2b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := SimpleMockResourceList{simpleMockResource2a, simpleMockResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			// TODO-JAKE need to ensure that this will work for each resource
+			deleteNamespaces(ctx, kube, namespace3)
+			notWatched = append(notWatched, simpleMockResource2a)
+			watched = SimpleMockResourceList{simpleMockResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+
+			simpleMockResource3a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := append(watched, simpleMockResource3a)
+			assertSnapshotMocks(watched, notWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			notWatched = append(notWatched, simpleMockResource2b)
+			watched = SimpleMockResourceList{simpleMockResource3a}
+			assertSnapshotMocks(watched, notWatched)
+
+			/*
+				MockResource
+			*/
+
+			// clean up the namespaces and set back to default namespaces
+			deleteNonDefaultKubeNamespaces(ctx, kube)
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectMocks {
+							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectMocks {
+							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := MockResourceList{mockResource1a, mockResource1b}
+			assertNoMocksSent()
+
+			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			assertNoMocksSent()
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := MockResourceList{mockResource2a, mockResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			// TODO-JAKE need to ensure that this will work for each resource
+			deleteNamespaces(ctx, kube, namespace3)
+			notWatched = append(notWatched, mockResource2a)
+			watched = MockResourceList{mockResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+
+			mockResource3a, err := mockResourceClient.Write(NewMockResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := append(watched, mockResource3a)
+			assertSnapshotMocks(watched, notWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			notWatched = append(notWatched, mockResource2b)
+			watched = MockResourceList{mockResource3a}
+			assertSnapshotMocks(watched, notWatched)
+
+			/*
+				FakeResource
+			*/
+
+			// clean up the namespaces and set back to default namespaces
+			deleteNonDefaultKubeNamespaces(ctx, kube)
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			assertSnapshotFakes := func(expectFakes FakeResourceList, unexpectFakes FakeResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFakes {
+							if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFakes {
+							if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			fakeResource1a, err := fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource1b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := FakeResourceList{fakeResource1a, fakeResource1b}
+			assertNoMocksSent()
+
+			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			assertNoMocksSent()
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			fakeResource2a, err := fakeResourceClient.Write(NewFakeResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource2b, err := fakeResourceClient.Write(NewFakeResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := FakeResourceList{fakeResource2a, fakeResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			// TODO-JAKE need to ensure that this will work for each resource
+			deleteNamespaces(ctx, kube, namespace3)
+			notWatched = append(notWatched, fakeResource2a)
+			watched = FakeResourceList{fakeResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+
+			fakeResource3a, err := fakeResourceClient.Write(NewFakeResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := append(watched, fakeResource3a)
+			assertSnapshotMocks(watched, notWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			notWatched = append(notWatched, fakeResource2b)
+			watched = FakeResourceList{fakeResource3a}
+			assertSnapshotMocks(watched, notWatched)
+
+			/*
+				AnotherMockResource
+			*/
+
+			// clean up the namespaces and set back to default namespaces
+			deleteNonDefaultKubeNamespaces(ctx, kube)
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			assertSnapshotAnothermockresources := func(expectAnothermockresources AnotherMockResourceList, unexpectAnothermockresources AnotherMockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectAnothermockresources {
+							if _, err := snap.Anothermockresources.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectAnothermockresources {
+							if _, err := snap.Anothermockresources.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := anotherMockResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := anotherMockResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			anotherMockResource1a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}
+			assertNoMocksSent()
+
+			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			assertNoMocksSent()
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			anotherMockResource2a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			anotherMockResource2b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := AnotherMockResourceList{anotherMockResource2a, anotherMockResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			// TODO-JAKE need to ensure that this will work for each resource
+			deleteNamespaces(ctx, kube, namespace3)
+			notWatched = append(notWatched, anotherMockResource2a)
+			watched = AnotherMockResourceList{anotherMockResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+
+			anotherMockResource3a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := append(watched, anotherMockResource3a)
+			assertSnapshotMocks(watched, notWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			notWatched = append(notWatched, anotherMockResource2b)
+			watched = AnotherMockResourceList{anotherMockResource3a}
+			assertSnapshotMocks(watched, notWatched)
+
+			/*
+				ClusterResource
+			*/
+
+			// clean up the namespaces and set back to default namespaces
+			deleteNonDefaultKubeNamespaces(ctx, kube)
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			assertSnapshotClusterresources := func(expectClusterresources ClusterResourceList, unexpectClusterresources ClusterResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectClusterresources {
+							if _, err := snap.Clusterresources.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectClusterresources {
+							if _, err := snap.Clusterresources.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						combined, _ := clusterResourceClient.List(clients.ListOpts{})
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			// TODO need to add in ClusterScoped
+			clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := ClusterResourceList{clusterResource1a}
+			assertNoMocksSent()
+
+			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			assertNoMocksSent()
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			// TODO need to add in ClusterScoped
+			clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := ClusterResourceList{clusterResource1a}
+			assertNoMocksSent()
+
+			// TODO-JAKE need to ensure that this will work for each resource
+			deleteNamespaces(ctx, kube, namespace3)
+			notWatched = append(notWatched, clusterResource2a)
+			watched = ClusterResourceList{clusterResource2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+
+			// TODO need to add in ClusterScoped
+			clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := ClusterResourceList{clusterResource1a}
+			assertNoMocksSent()
+
+			deleteNamespaces(ctx, kube, namespace4)
+			notWatched = append(notWatched, clusterResource2b)
+			watched = ClusterResourceList{clusterResource3a}
+			assertSnapshotMocks(watched, notWatched)
+
+			/*
+				MockCustomType
+			*/
+
+			// clean up the namespaces and set back to default namespaces
+			deleteNonDefaultKubeNamespaces(ctx, kube)
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			assertSnapshotmcts := func(expectmcts MockCustomTypeList, unexpectmcts MockCustomTypeList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectmcts {
+							if _, err := snap.Mcts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectmcts {
+							if _, err := snap.Mcts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockCustomTypeClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockCustomTypeClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			mockCustomType1a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomType1b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := MockCustomTypeList{mockCustomType1a, mockCustomType1b}
+			assertNoMocksSent()
+
+			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			assertNoMocksSent()
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			mockCustomType2a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomType2b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := MockCustomTypeList{mockCustomType2a, mockCustomType2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			// TODO-JAKE need to ensure that this will work for each resource
+			deleteNamespaces(ctx, kube, namespace3)
+			notWatched = append(notWatched, mockCustomType2a)
+			watched = MockCustomTypeList{mockCustomType2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+
+			mockCustomType3a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace5, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := append(watched, mockCustomType3a)
+			assertSnapshotMocks(watched, notWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			notWatched = append(notWatched, mockCustomType2b)
+			watched = MockCustomTypeList{mockCustomType3a}
+			assertSnapshotMocks(watched, notWatched)
+
+			/*
+				Pod
+			*/
+
+			// clean up the namespaces and set back to default namespaces
+			deleteNonDefaultKubeNamespaces(ctx, kube)
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			assertSnapshotpods := func(expectpods github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList, unexpectpods github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectpods {
+							if _, err := snap.Pods.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectpods {
+							if _, err := snap.Pods.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := podClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := podClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			pod1a, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			pod1b, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			notWatched := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod1a, pod1b}
+			assertNoMocksSent()
+
+			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			assertNoMocksSent()
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			pod2a, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			pod2b, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod2a, pod2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			// TODO-JAKE need to ensure that this will work for each resource
+			deleteNamespaces(ctx, kube, namespace3)
+			notWatched = append(notWatched, pod2a)
+			watched = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod2b}
+			assertSnapshotMocks(watched, notWatched)
+
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+
+			pod3a, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace5, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := append(watched, pod3a)
+			assertSnapshotMocks(watched, notWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			notWatched = append(notWatched, pod2b)
+			watched = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod3a}
+			assertSnapshotMocks(watched, notWatched)
+		})
+	})
+
 })

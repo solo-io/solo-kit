@@ -162,7 +162,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 	currentSnapshot := KubeconfigsSnapshot{}
 	kubeconfigsByNamespace := sync.Map{}
 
-	if !watchNamespacesIsEmpty {
+	if !watchNamespacesIsEmpty || opts.ExpressionSelector == "" {
 		// then watch all resources on watch Namespaces
 
 		// watched namespaces
@@ -261,7 +261,6 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		for _, namespace := range allOtherNamespaces {
 			/* Setup namespaced watch for KubeConfig */
 			{
-				clien
 				kubeconfigs, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial KubeConfig list")

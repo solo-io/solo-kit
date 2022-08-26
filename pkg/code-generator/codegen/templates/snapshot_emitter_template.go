@@ -278,10 +278,12 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		// TODO-JAKE REFACTOR, we can refactor how the watched namespaces are added up to make a exclusion namespaced fields
 		var buffer bytes.Buffer
 		for i, ns := range watchNamespaces {
-			buffer.WriteString("metadata.name!=")
-			buffer.WriteString(ns)
-			if i < len(watchNamespaces)-1 {
-				buffer.WriteByte(',')
+			if ns != "" {
+				buffer.WriteString("metadata.name!=")
+				buffer.WriteString(ns)
+				if i < len(watchNamespaces)-1 {
+					buffer.WriteByte(',')
+				}
 			}
 		}
 		excludeNamespacesFieldDesciptors = buffer.String()
