@@ -158,10 +158,9 @@ var _ = Describe("V1Emitter", func() {
 
 	It("Should not overwrite initial listed resources for non-returned namespace watchers", func() {
 		/*
-			This test relies on some hardcoded logic in `resource_client_template.go`.  In particular:
-			`FakeResourceClient`, when used in conjunction with the `slowWatchNamespace` has an artificial
-			5s delay when getting back the results from .Watch.  The idea behind the test is that
-			we have a normal, unimpeded watch running in parallel with a slow watch to simulate a race condition.
+			This test makes use of the below-defined `NewSlowFakeResourceClient`, which itself is a wrapper around `FakeResourceClient`.
+			The idea is that we have a designated namespace (slowWatchNamespace), that has a 5s delay when calling .Watch.  With this
+			in place, we can simulate a race condition between a normal, unimpeded namespace (namespace1) and a slower namespace (slowWatchNamespace).
 		*/
 		ctx := context.Background()
 		err := emitter.Register()
