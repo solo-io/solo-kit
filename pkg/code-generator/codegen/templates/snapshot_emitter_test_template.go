@@ -142,16 +142,16 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		resourceNamespaceLister = namespace.NewKubeResourceNamespaceLister(kube, kubeCache)
 
-		deleteNonDefaultKubeNamespaces(ctx, kube)
-
 		createNamespaces(ctx, kube, namespace1, namespace2)
-		Expect(err).NotTo(HaveOccurred())
+
 {{- if $need_kube_config }}
+
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		clientset, err = apiext.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
+
 {{- end}}
 
 {{- range .Resources }}
@@ -1091,15 +1091,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 						}
 					}
 			}
-{{- range .Resources }}
-
+{{- $length := len .Resources }}
+{{- range $i, $r := .Resources }}
+{{ with $r }}
 			/*
 				{{ .Name }}
 			*/
-
-			// clean up the namespaces and set back to default namespaces
-			deleteNonDefaultKubeNamespaces(ctx, kube)
-			createNamespaces(ctx, kube, namespace1, namespace2)
 
 			assertSnapshot{{ .PluralName }} := func(expect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List, unexpect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List) {
 				drain:
@@ -1198,7 +1195,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}3a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := append(watched, {{ lower_camel .Name }}3a)
+			watched = append(watched, {{ lower_camel .Name }}3a)
 			assertSnapshotMocks(watched, notWatched)
 
 {{- end }}
@@ -1207,7 +1204,20 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			notWatched = append(notWatched, {{ lower_camel .Name }}2b)
 			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a}	
 			assertSnapshotMocks(watched, notWatched)
+
+			for _, r := range watched {
+				err = {{ lower_camel .Name }}Client.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+			}
+			assertNoMocksSent()
+
+{{/* after each resource we have to create the namespaces that were just deleted */}}
+{{if ne $length $i }}
+			createNamespaces(ctx, kube, namespace1, namespace2)
 {{- end }}
+
+{{- end }}{{/* end of with */}}
+{{- end }}{{/* end of range */}}
 		})
 	})
 
