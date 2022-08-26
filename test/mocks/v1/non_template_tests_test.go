@@ -48,9 +48,6 @@ var _ = Describe("V1Emitter", func() {
 		clusterResourceClient     ClusterResourceClient
 		mockCustomTypeClient      MockCustomTypeClient
 		podClient                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
-
-		fakeResource1a *FakeResource
-		fakeResource1b *FakeResource
 	)
 
 	BeforeEach(func() {
@@ -96,7 +93,7 @@ var _ = Describe("V1Emitter", func() {
 		// We create a resource client which has built in latency
 		originalFakeResourceClient, err := NewFakeResourceClient(ctx, fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		fakeResourceClient := NewSlowFakeResourceClient(originalFakeResourceClient, map[string]time.Duration{
+		fakeResourceClient = NewSlowFakeResourceClient(originalFakeResourceClient, map[string]time.Duration{
 			slowWatchNamespace: time.Second * 5,
 		})
 
@@ -141,19 +138,13 @@ var _ = Describe("V1Emitter", func() {
 		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient)
 
 		// create `FakeResource`s in "namespace1" and "slowWatchNamespace"
-		fakeResource1a, err = fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		_, err = fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		fakeResource1b, err = fakeResourceClient.Write(NewFakeResource(slowWatchNamespace, name1), clients.WriteOpts{Ctx: ctx})
+		_, err = fakeResourceClient.Write(NewFakeResource(slowWatchNamespace, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
 		kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, slowWatchNamespace)
-
-		// clean up created resources
-		err := fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("Should not overwrite initial listed resources for non-returned namespace watchers", func() {
