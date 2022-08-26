@@ -265,7 +265,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	mctsByNamespace := sync.Map{}
 	podsByNamespace := sync.Map{}
 
-	if !watchNamespacesIsEmpty {
+	if !watchNamespacesIsEmpty || opts.ExpressionSelector == "" {
 		// then watch all resources on watch Namespaces
 
 		// watched namespaces
@@ -504,7 +504,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		for _, namespace := range allOtherNamespaces {
 			/* Setup namespaced watch for SimpleMockResource */
 			{
-				clien
 				simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial SimpleMockResource list")
@@ -524,7 +523,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Setup namespaced watch for MockResource */
 			{
-				clien
 				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial MockResource list")
@@ -544,7 +542,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Setup namespaced watch for FakeResource */
 			{
-				clien
 				fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial FakeResource list")
@@ -564,7 +561,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Setup namespaced watch for AnotherMockResource */
 			{
-				clien
 				anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial AnotherMockResource list")
@@ -584,7 +580,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Setup namespaced watch for MockCustomType */
 			{
-				clien
 				mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial MockCustomType list")
@@ -604,7 +599,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Setup namespaced watch for Pod */
 			{
-				clien
 				pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial Pod list")

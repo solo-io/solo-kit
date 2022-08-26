@@ -200,7 +200,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	fcarsByNamespace := sync.Map{}
 	fakesByNamespace := sync.Map{}
 
-	if !watchNamespacesIsEmpty {
+	if !watchNamespacesIsEmpty || opts.ExpressionSelector == "" {
 		// then watch all resources on watch Namespaces
 
 		// watched namespaces
@@ -355,7 +355,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		for _, namespace := range allOtherNamespaces {
 			/* Setup namespaced watch for MockResource */
 			{
-				clien
 				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial MockResource list")
@@ -375,7 +374,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Setup namespaced watch for FrequentlyChangingAnnotationsResource */
 			{
-				clien
 				fcars, err := c.frequentlyChangingAnnotationsResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial FrequentlyChangingAnnotationsResource list")
@@ -395,7 +393,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Setup namespaced watch for FakeResource */
 			{
-				clien
 				fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial FakeResource list")

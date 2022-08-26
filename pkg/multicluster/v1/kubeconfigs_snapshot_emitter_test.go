@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/solo-kit/api/multicluster/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/log"
@@ -21,6 +23,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	// Needed to run tests in GKE
@@ -64,11 +68,41 @@ var _ = Describe("V1Emitter", func() {
 	createNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
 		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespaces...)
 		Expect(err).NotTo(HaveOccurred())
+		// add namespaces to created list for clean up
 		for _, ns := range namespaces {
 			if _, hit := createdNamespaces[ns]; !hit {
 				createdNamespaces[ns] = true
 			}
 		}
+	}
+
+	createNamespaceWithLabel := func(ctx context.Context, kube kubernetes.Interface, namespace string, labels map[string]string) {
+		_, err := kube.CoreV1().Namespaces().Create(ctx, &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   namespace,
+				Labels: labels,
+			},
+		}, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+		// add namespace to created list for clean up
+		if _, hit := createdNamespaces[namespace]; !hit {
+			createdNamespaces[namespace] = true
+		}
+	}
+
+	deleteNonDefaultKubeNamespaces := func(ctx context.Context, kube kubernetes.Interface) {
+		// clean up your local environment
+		namespaces, err := kube.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+		Expect(err).ToNot(HaveOccurred())
+		defaultNamespaces := map[string]bool{"kube-node-lease": true, "kube-public": true, "kube-system": true, "local-path-storage": true, "default": true}
+		var namespacesToDelete []string
+		for _, ns := range namespaces.Items {
+			if _, hit := defaultNamespaces[ns.Name]; !hit {
+				namespacesToDelete = append(namespacesToDelete, ns.Name)
+			}
+		}
+		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespacesToDelete...)
+		Expect(err).ToNot(HaveOccurred())
 	}
 
 	BeforeEach(func() {
@@ -88,6 +122,8 @@ var _ = Describe("V1Emitter", func() {
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		resourceNamespaceLister = namespace.NewKubeResourceNamespaceLister(kube, kubeCache)
+
+		deleteNonDefaultKubeNamespaces(ctx, kube)
 
 		createNamespaces(ctx, kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
@@ -184,7 +220,7 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotkubeconfigs(nil, KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b})
 		})
 
-		It("should be able to track resources that are labeled on other namespaces", func() {
+		It("should be able to track all resources that are on labeled namespaces", func() {
 			ctx := context.Background()
 			err := emitter.Register()
 			Expect(err).NotTo(HaveOccurred())
@@ -264,40 +300,46 @@ var _ = Describe("V1Emitter", func() {
 			watched = append(watched, KubeConfigList{kubeConfig3a, kubeConfig3b}...)
 			assertSnapshotMocks(watched, nil)
 
-			createNamespaces(ctx, kube, namespace3, namespace4)
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaces(ctx, kube, namespace4)
 			kubeConfig4a, err := kubeConfigClient.Write(NewKubeConfig(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig4b, err := kubeConfigClient.Write(NewKubeConfig(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := KubeConfigList{kubeConfig4a, kubeConfig4b}
-			assertNoMessageSent()
+			watched = append(watched, kubeConfig4a)
+			notWatched := KubeConfigList{kubeConfig4b}
+			assertSnapshotMocks(watched, notWatched)
 
 			kubeConfig5a, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig5b, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, KubeConfigList{kubeConfig5a, kubeConfig5b}...)
+			watched = append(watched, kubeConfig5a)
+			notWatched = append(notWatched, kubeConfig5b)
 			assertSnapshotMocks(watched, notWatched)
 
 			kubeConfig6a, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace3, name3, labels2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig6b, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace4, name3, labels2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, KubeConfigList{kubeConfig6a, kubeConfig6b}...)
-			assertNoMessageSent()
+			watched = append(watched, kubeConfig6a)
+			notWatched = append(notWatched, kubeConfig6b)
+			assertSnapshotMocks(watched, notWatched)
 
-			createNamespaces(ctx, kube, namespace5, namespace6)
+			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
+			createNamespaces(ctx, kube, namespace6)
 
 			kubeConfig7a, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace5, name1, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig7b, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace6, name1, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, KubeConfigList{kubeConfig7a, kubeConfig7b}...)
+			watched = append(watched, kubeConfig7a)
+			notWatched = append(notWatched, kubeConfig7b)
 			assertSnapshotMocks(watched, notWatched)
 
-			kubeConfig8a, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace5, name2, labels2), clients.WriteOpts{Ctx: ctx})
+			kubeConfig8a, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace6, name2, labels2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			kubeConfig8b, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace6, name2, labels2), clients.WriteOpts{Ctx: ctx})
+			kubeConfig8b, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace6, name3, labels2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, KubeConfigList{kubeConfig8a, kubeConfig8b}...)
 			assertNoMessageSent()
@@ -313,15 +355,15 @@ var _ = Describe("V1Emitter", func() {
 			err = kubeConfigClient.Delete(kubeConfig1b.GetMetadata().Namespace, kubeConfig1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, KubeConfigList{kubeConfig1a, kubeConfig1b}...)
-			watched = KubeConfigList{kubeConfig2a, kubeConfig2b, kubeConfig3a, kubeConfig3b, kubeConfig5a, kubeConfig5b, kubeConfig7a, kubeConfig7b}
+			watched = KubeConfigList{kubeConfig2a, kubeConfig2b, kubeConfig3a, kubeConfig3b, kubeConfig4a, kubeConfig5a, kubeConfig6a, kubeConfig7a}
 			assertSnapshotkubeconfigs(watched, notWatched)
 
-			err = kubeConfigClient.Delete(kubeConfig3a.GetMetadata().Namespace, kubeConfig2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			err = kubeConfigClient.Delete(kubeConfig2a.GetMetadata().Namespace, kubeConfig2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			err = kubeConfigClient.Delete(kubeConfig2b.GetMetadata().Namespace, kubeConfig2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, KubeConfigList{kubeConfig2a, kubeConfig2b}...)
-			watched = KubeConfigList{kubeConfig3a, kubeConfig3b, kubeConfig5a, kubeConfig5b, kubeConfig7a, kubeConfig7b}
+			watched = KubeConfigList{kubeConfig3a, kubeConfig3b, kubeConfig4a, kubeConfig5a, kubeConfig6a, kubeConfig7a}
 			assertSnapshotkubeconfigs(watched, notWatched)
 
 			err = kubeConfigClient.Delete(kubeConfig3a.GetMetadata().Namespace, kubeConfig3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
@@ -329,22 +371,22 @@ var _ = Describe("V1Emitter", func() {
 			err = kubeConfigClient.Delete(kubeConfig3b.GetMetadata().Namespace, kubeConfig3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, KubeConfigList{kubeConfig3a, kubeConfig3b}...)
-			watched = KubeConfigList{kubeConfig5a, kubeConfig5b, kubeConfig7a, kubeConfig7b}
+			watched = KubeConfigList{kubeConfig4a, kubeConfig5a, kubeConfig6a, kubeConfig7a}
 			assertSnapshotkubeconfigs(watched, notWatched)
 
+			err = kubeConfigClient.Delete(kubeConfig4a.GetMetadata().Namespace, kubeConfig4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
 			err = kubeConfigClient.Delete(kubeConfig5a.GetMetadata().Namespace, kubeConfig5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			err = kubeConfigClient.Delete(kubeConfig5b.GetMetadata().Namespace, kubeConfig5b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, KubeConfigList{kubeConfig5a, kubeConfig5b}...)
-			watched = KubeConfigList{kubeConfig7a, kubeConfig7b}
+			watched = KubeConfigList{kubeConfig6a, kubeConfig7a}
 			assertSnapshotkubeconfigs(watched, notWatched)
 
+			err = kubeConfigClient.Delete(kubeConfig6a.GetMetadata().Namespace, kubeConfig6a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
 			err = kubeConfigClient.Delete(kubeConfig7a.GetMetadata().Namespace, kubeConfig7a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			err = kubeConfigClient.Delete(kubeConfig7b.GetMetadata().Namespace, kubeConfig7b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, KubeConfigList{kubeConfig7a, kubeConfig7b}...)
+			notWatched = append(notWatched, KubeConfigList{kubeConfig6a, kubeConfig7a}...)
 			assertSnapshotkubeconfigs(nil, notWatched)
 		})
 	})
@@ -504,21 +546,22 @@ var _ = Describe("V1Emitter", func() {
 			notWatched := KubeConfigList{kubeConfig1a, kubeConfig1b}
 			assertNoMatchingMocks()
 
-			createNamespaces(ctx, kube, namespace3, namespace4)
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
 
 			kubeConfig2a, err := kubeConfigClient.Write(NewKubeConfig(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig2b, err := kubeConfigClient.Write(NewKubeConfig(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = KubeConfigList{kubeConfig2a, kubeConfig2b}
-			assertNoMatchingMocks()
+			watched := KubeConfigList{kubeConfig2a, kubeConfig2b}
+			assertSnapshotMocks(watched, notWatched)
 
 			kubeConfig3a, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace1, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig3b, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := KubeConfigList{kubeConfig3a, kubeConfig3b}
-			assertSnapshotMocks(watched, notWatched)
+			notWatched = append(notWatched, KubeConfigList{kubeConfig3a, kubeConfig3b}...)
+			assertNoMatchingMocks()
 
 			kubeConfig4a, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -540,8 +583,8 @@ var _ = Describe("V1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig6b, err := kubeConfigClient.Write(NewKubeConfigWithLabels(namespace6, name3, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, KubeConfigList{kubeConfig6a, kubeConfig6b}...)
-			assertSnapshotMocks(watched, notWatched)
+			notWatched = append(notWatched, KubeConfigList{kubeConfig6a, kubeConfig6b}...)
+			assertNoMessageSent()
 
 			kubeConfig7a, err := kubeConfigClient.Write(NewKubeConfig(namespace5, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -556,12 +599,12 @@ var _ = Describe("V1Emitter", func() {
 			}
 			assertNoMessageSent()
 
-			err = kubeConfigClient.Delete(kubeConfig3a.GetMetadata().Namespace, kubeConfig3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			err = kubeConfigClient.Delete(kubeConfig2a.GetMetadata().Namespace, kubeConfig2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			err = kubeConfigClient.Delete(kubeConfig3b.GetMetadata().Namespace, kubeConfig3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			err = kubeConfigClient.Delete(kubeConfig2b.GetMetadata().Namespace, kubeConfig2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, KubeConfigList{kubeConfig3a, kubeConfig3b}...)
-			watched = KubeConfigList{kubeConfig4a, kubeConfig4b, kubeConfig6a, kubeConfig6b}
+			notWatched = append(notWatched, KubeConfigList{kubeConfig2a, kubeConfig2b}...)
+			watched = KubeConfigList{kubeConfig4a, kubeConfig4b}
 			assertSnapshotkubeconfigs(watched, notWatched)
 
 			err = kubeConfigClient.Delete(kubeConfig4a.GetMetadata().Namespace, kubeConfig4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
@@ -569,15 +612,8 @@ var _ = Describe("V1Emitter", func() {
 			err = kubeConfigClient.Delete(kubeConfig4b.GetMetadata().Namespace, kubeConfig4b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			notWatched = append(notWatched, KubeConfigList{kubeConfig4a, kubeConfig4b}...)
-			watched = KubeConfigList{kubeConfig6a, kubeConfig6b}
-			assertSnapshotkubeconfigs(watched, notWatched)
-
-			err = kubeConfigClient.Delete(kubeConfig6a.GetMetadata().Namespace, kubeConfig6a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			err = kubeConfigClient.Delete(kubeConfig6b.GetMetadata().Namespace, kubeConfig6b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, KubeConfigList{kubeConfig6a, kubeConfig6b}...)
 			assertSnapshotkubeconfigs(nil, notWatched)
 		})
 	})
+	// TODO-JAKE need to write a test that deletes a namespace, see if it gets rid of all resources on that namespace from the snapshot
 })

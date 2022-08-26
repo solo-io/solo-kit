@@ -162,7 +162,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	currentSnapshot := TestingSnapshot{}
 	mocksByNamespace := sync.Map{}
 
-	if !watchNamespacesIsEmpty {
+	if !watchNamespacesIsEmpty || opts.ExpressionSelector == "" {
 		// then watch all resources on watch Namespaces
 
 		// watched namespaces
@@ -217,10 +217,12 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		// TODO-JAKE REFACTOR, we can refactor how the watched namespaces are added up to make a exclusion namespaced fields
 		var buffer bytes.Buffer
 		for i, ns := range watchNamespaces {
-			buffer.WriteString("metadata.name!=")
-			buffer.WriteString(ns)
-			if i < len(watchNamespaces)-1 {
-				buffer.WriteByte(',')
+			if ns != "" {
+				buffer.WriteString("metadata.name!=")
+				buffer.WriteString(ns)
+				if i < len(watchNamespaces)-1 {
+					buffer.WriteByte(',')
+				}
 			}
 		}
 		excludeNamespacesFieldDesciptors = buffer.String()
@@ -261,7 +263,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		for _, namespace := range allOtherNamespaces {
 			/* Setup namespaced watch for MockResource */
 			{
-				clien
 				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "initial MockResource list")

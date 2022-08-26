@@ -26,13 +26,10 @@ type kubeResourceNamespaceLister struct {
 
 // GetNamespaceResourceList is the kubernetes implementation that returns the list of namespaces
 func (kns *kubeResourceNamespaceLister) GetNamespaceResourceList(ctx context.Context, opts resources.ResourceNamespaceListOptions) (resources.ResourceNamespaceList, error) {
-	clopts := clients.ListOpts{FieldSelectors: opts.FieldSelectors}
-	namespaces, err := kns.namespace.List(clopts)
+	namespaces, err := kns.namespace.List(clients.TranslateResourceNamespaceListToListOptions(opts))
 	if err != nil {
 		return nil, err
 	}
-	// convert
-
 	return convertNamespaceListToResourceNamespace(namespaces), nil
 }
 

@@ -182,3 +182,10 @@ func (o WatchOpts) WithDefaults() WatchOpts {
 	}
 	return o
 }
+
+// TODO-JAKE maybe they should be the same type of options?
+// TranslateResourceNamespaceListToListOptions translates the resource namespace list options to List Options
+func TranslateResourceNamespaceListToListOptions(rnlo resources.ResourceNamespaceListOptions) ListOpts {
+	clopts := ListOpts{FieldSelectors: rnlo.FieldSelectors, ExpressionSelector: rnlo.ExpressionSelectors}
+	return clopts
+}

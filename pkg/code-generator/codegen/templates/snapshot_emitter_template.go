@@ -214,7 +214,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- end }}
 {{- end }}
 
-	if ! watchNamespacesIsEmpty {
+	if ! watchNamespacesIsEmpty || opts.ExpressionSelector == "" {
 		// then watch all resources on watch Namespaces
 
 		// watched namespaces
