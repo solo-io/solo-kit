@@ -91,7 +91,7 @@ func (client *kubeNamespaceClient) List(opts clients.ListOpts) (KubeNamespaceLis
 	if err != nil {
 		return nil, err
 	}
-	return convertToKubeNamespace(resourceList, ""), nil
+	return convertToKubeNamespace(resourceList), nil
 }
 
 func (client *kubeNamespaceClient) Watch(opts clients.WatchOpts) (<-chan KubeNamespaceList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *kubeNamespaceClient) Watch(opts clients.WatchOpts) (<-chan KubeNam
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case kubenamespacesChan <- convertToKubeNamespace(resourceList, ""):
+				case kubenamespacesChan <- convertToKubeNamespace(resourceList):
 				case <-opts.Ctx.Done():
 					close(kubenamespacesChan)
 					return
@@ -121,7 +121,7 @@ func (client *kubeNamespaceClient) Watch(opts clients.WatchOpts) (<-chan KubeNam
 	return kubenamespacesChan, errs, nil
 }
 
-func convertToKubeNamespace(resources resources.ResourceList, namespace string) KubeNamespaceList {
+func convertToKubeNamespace(resources resources.ResourceList) KubeNamespaceList {
 	var kubeNamespaceList KubeNamespaceList
 	for _, resource := range resources {
 		kubeNamespaceList = append(kubeNamespaceList, resource.(*KubeNamespace))

@@ -8,9 +8,6 @@ var ResourceClientTemplate = template.Must(template.New("resource_reconciler").F
 
 import (
 	"context"
-{{- if eq .Name "FakeResource" }}
-	"time"
-{{- end }}
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -133,7 +130,7 @@ func (client *{{ lower_camel .Name }}Client) List(namespace string, opts clients
 	if err != nil {
 		return nil, err
 	}
-	return convertTo{{ .Name }}(resourceList, ""), nil
+	return convertTo{{ .Name }}(resourceList), nil
 }
 
 {{ if .ClusterScoped }}

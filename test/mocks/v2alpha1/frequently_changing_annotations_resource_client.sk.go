@@ -91,7 +91,7 @@ func (client *frequentlyChangingAnnotationsResourceClient) List(namespace string
 	if err != nil {
 		return nil, err
 	}
-	return convertToFrequentlyChangingAnnotationsResource(resourceList, ""), nil
+	return convertToFrequentlyChangingAnnotationsResource(resourceList), nil
 }
 
 func (client *frequentlyChangingAnnotationsResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan FrequentlyChangingAnnotationsResourceList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *frequentlyChangingAnnotationsResourceClient) Watch(namespace strin
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case fcarsChan <- convertToFrequentlyChangingAnnotationsResource(resourceList, ""):
+				case fcarsChan <- convertToFrequentlyChangingAnnotationsResource(resourceList):
 				case <-opts.Ctx.Done():
 					close(fcarsChan)
 					return
@@ -121,7 +121,7 @@ func (client *frequentlyChangingAnnotationsResourceClient) Watch(namespace strin
 	return fcarsChan, errs, nil
 }
 
-func convertToFrequentlyChangingAnnotationsResource(resources resources.ResourceList, namespace string) FrequentlyChangingAnnotationsResourceList {
+func convertToFrequentlyChangingAnnotationsResource(resources resources.ResourceList) FrequentlyChangingAnnotationsResourceList {
 	var frequentlyChangingAnnotationsResourceList FrequentlyChangingAnnotationsResourceList
 	for _, resource := range resources {
 		frequentlyChangingAnnotationsResourceList = append(frequentlyChangingAnnotationsResourceList, resource.(*FrequentlyChangingAnnotationsResource))

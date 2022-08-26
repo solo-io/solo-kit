@@ -91,7 +91,7 @@ func (client *customResourceDefinitionClient) List(opts clients.ListOpts) (Custo
 	if err != nil {
 		return nil, err
 	}
-	return convertToCustomResourceDefinition(resourceList, ""), nil
+	return convertToCustomResourceDefinition(resourceList), nil
 }
 
 func (client *customResourceDefinitionClient) Watch(opts clients.WatchOpts) (<-chan CustomResourceDefinitionList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *customResourceDefinitionClient) Watch(opts clients.WatchOpts) (<-c
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case customresourcedefinitionChan <- convertToCustomResourceDefinition(resourceList, ""):
+				case customresourcedefinitionChan <- convertToCustomResourceDefinition(resourceList):
 				case <-opts.Ctx.Done():
 					close(customresourcedefinitionChan)
 					return
@@ -121,7 +121,7 @@ func (client *customResourceDefinitionClient) Watch(opts clients.WatchOpts) (<-c
 	return customresourcedefinitionChan, errs, nil
 }
 
-func convertToCustomResourceDefinition(resources resources.ResourceList, namespace string) CustomResourceDefinitionList {
+func convertToCustomResourceDefinition(resources resources.ResourceList) CustomResourceDefinitionList {
 	var customResourceDefinitionList CustomResourceDefinitionList
 	for _, resource := range resources {
 		customResourceDefinitionList = append(customResourceDefinitionList, resource.(*CustomResourceDefinition))

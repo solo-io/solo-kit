@@ -91,7 +91,7 @@ func (client *serviceClient) List(namespace string, opts clients.ListOpts) (Serv
 	if err != nil {
 		return nil, err
 	}
-	return convertToService(resourceList, ""), nil
+	return convertToService(resourceList), nil
 }
 
 func (client *serviceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan ServiceList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *serviceClient) Watch(namespace string, opts clients.WatchOpts) (<-
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case servicesChan <- convertToService(resourceList, ""):
+				case servicesChan <- convertToService(resourceList):
 				case <-opts.Ctx.Done():
 					close(servicesChan)
 					return
@@ -121,7 +121,7 @@ func (client *serviceClient) Watch(namespace string, opts clients.WatchOpts) (<-
 	return servicesChan, errs, nil
 }
 
-func convertToService(resources resources.ResourceList, namespace string) ServiceList {
+func convertToService(resources resources.ResourceList) ServiceList {
 	var serviceList ServiceList
 	for _, resource := range resources {
 		serviceList = append(serviceList, resource.(*Service))

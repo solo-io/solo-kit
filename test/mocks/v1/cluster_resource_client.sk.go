@@ -91,7 +91,7 @@ func (client *clusterResourceClient) List(opts clients.ListOpts) (ClusterResourc
 	if err != nil {
 		return nil, err
 	}
-	return convertToClusterResource(resourceList, ""), nil
+	return convertToClusterResource(resourceList), nil
 }
 
 func (client *clusterResourceClient) Watch(opts clients.WatchOpts) (<-chan ClusterResourceList, <-chan error, error) {
@@ -107,7 +107,7 @@ func (client *clusterResourceClient) Watch(opts clients.WatchOpts) (<-chan Clust
 			select {
 			case resourceList := <-resourcesChan:
 				select {
-				case clusterresourcesChan <- convertToClusterResource(resourceList, ""):
+				case clusterresourcesChan <- convertToClusterResource(resourceList):
 				case <-opts.Ctx.Done():
 					close(clusterresourcesChan)
 					return
@@ -121,7 +121,7 @@ func (client *clusterResourceClient) Watch(opts clients.WatchOpts) (<-chan Clust
 	return clusterresourcesChan, errs, nil
 }
 
-func convertToClusterResource(resources resources.ResourceList, namespace string) ClusterResourceList {
+func convertToClusterResource(resources resources.ResourceList) ClusterResourceList {
 	var clusterResourceList ClusterResourceList
 	for _, resource := range resources {
 		clusterResourceList = append(clusterResourceList, resource.(*ClusterResource))

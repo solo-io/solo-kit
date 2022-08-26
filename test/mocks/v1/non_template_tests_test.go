@@ -205,23 +205,23 @@ func NewSlowFakeResourceClient(client FakeResourceClient, latencyPerNs map[strin
 }
 
 func (s *slowFakeResourceClient) BaseClient() clients.ResourceClient {
-	return s.BaseClient()
+	return s.FakeResourceClient.BaseClient()
 }
 
 func (s *slowFakeResourceClient) Register() error {
-	return s.Register()
+	return s.FakeResourceClient.Register()
 }
 
 func (s *slowFakeResourceClient) Read(namespace, name string, opts clients.ReadOpts) (*FakeResource, error) {
-	return s.Read(namespace, name, opts)
+	return s.FakeResourceClient.Read(namespace, name, opts)
 }
 
 func (s *slowFakeResourceClient) Write(resource *FakeResource, opts clients.WriteOpts) (*FakeResource, error) {
-	return s.Write(resource, opts)
+	return s.FakeResourceClient.Write(resource, opts)
 }
 
 func (s *slowFakeResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	return s.Delete(namespace, name, opts)
+	return s.FakeResourceClient.Delete(namespace, name, opts)
 }
 
 func (s *slowFakeResourceClient) List(namespace string, opts clients.ListOpts) (FakeResourceList, error) {
@@ -229,7 +229,7 @@ func (s *slowFakeResourceClient) List(namespace string, opts clients.ListOpts) (
 	if ok {
 		time.Sleep(nsLatency)
 	}
-	return s.List(namespace, opts)
+	return s.FakeResourceClient.List(namespace, opts)
 }
 
 func (s *slowFakeResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan FakeResourceList, <-chan error, error) {
@@ -237,5 +237,5 @@ func (s *slowFakeResourceClient) Watch(namespace string, opts clients.WatchOpts)
 	if ok {
 		time.Sleep(nsLatency)
 	}
-	return s.Watch(namespace, opts)
+	return s.FakeResourceClient.Watch(namespace, opts)
 }
