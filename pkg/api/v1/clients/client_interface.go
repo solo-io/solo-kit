@@ -193,11 +193,11 @@ func TranslateWatchOptsIntoListOpts(wopts WatchOpts) ListOpts {
 // TODO-JAKE maybe they should be the same type of options?
 // TranslateResourceNamespaceListToListOptions translates the resource namespace list options to List Options
 func TranslateResourceNamespaceListToListOptions(lopts resources.ResourceNamespaceListOptions) ListOpts {
-	clopts := ListOpts{Ctx: lopts.Ctx, FieldSelectors: lopts.FieldSelectors, ExpressionSelector: lopts.ExpressionSelector}
+	clopts := ListOpts{Ctx: lopts.Ctx, ExpressionSelector: lopts.ExpressionSelector}
 	return clopts
 }
 
 func TranslateResourceNamespaceListToWatchOptions(wopts resources.ResourceNamespaceWatchOptions) WatchOpts {
-	clopts := WatchOpts{Ctx: wopts.Ctx, FieldSelectors: wopts.FieldSelectors, ExpressionSelector: wopts.ExpressionSelector}
+	clopts := WatchOpts{Ctx: wopts.Ctx, ExpressionSelector: wopts.ExpressionSelector}
 	return clopts
 }

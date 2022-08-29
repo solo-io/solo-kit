@@ -100,6 +100,9 @@ type testingEmitter struct {
 	forceEmit               <-chan struct{}
 	mockResource            MockResourceClient
 	resourceNamespaceLister resources.ResourceNamespaceLister
+	// namespacesWatching is the set of namespaces that we are watching. This is helpful
+	// when Expression Selector is set on the Watch Opts in Snapshot().
+	namespacesWatching sync.Map
 }
 
 func (c *testingEmitter) Register() error {
@@ -116,6 +119,15 @@ func (c *testingEmitter) MockResource() MockResourceClient {
 // TODO-JAKE may want to add some comments around how the snapshot_emitter
 // event_loop and resource clients -> resource client implementations work in a README.md
 // this would be helpful for documentation purposes
+
+// TODO-JAKE this interface has to deal with the event types of kubernetes independently without the interface knowing about it.
+// we will need a way to deal with DELETES and CREATES and updates seperately
+// I believe this is delt with in the last tests, but I want to check the snapshots once more.
+// with the interface, we have lost the ability to know the event type.
+// so the interface must be able to identify the type of event that occured as well
+// not just return the list of namespaces
+
+// TODO-JAKE test that we can create a huge field selector of massive size
 
 func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error) {
 
@@ -176,6 +188,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Watch for changes and update snapshot */
 			go func(namespace string) {
+				defer func () {
+					c.namespacesWatching.Delete(namespace)
+				}()
+				c.namespacesWatching.Store(namespace, true)
 				for {
 					select {
 					case <-ctx.Done():
@@ -196,9 +212,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 	// watch all other namespaces that fit the Expression Selectors
 	if opts.ExpressionSelector != "" {
-		// watch resources of non-watched namespaces that fit the Expression
-		// TODO-JAKE might want to get rid of the FieldSelectors
-		//setting up the options for both Listing and Watching namespaces
+		// watch resources of non-watched namespaces that fit the Expression Selector
 		namespaceListOptions := resources.ResourceNamespaceListOptions{
 			Ctx:                opts.Ctx,
 			ExpressionSelector: opts.ExpressionSelector,
@@ -208,7 +222,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			ExpressionSelector: opts.ExpressionSelector,
 		}
 
-		// TODO-JAKE test that we can create a huge field selector of massive size
 		filterNamespaces := resources.ResourceNamespaceList{}
 		for _, ns := range watchNamespaces {
 			if ns != "" {
@@ -263,10 +276,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		// create watch on all namespaces, so that we can add all resources from new namespaces
 		// we will be watching namespaces that meet the Expression Selector filter
 
-		// TODO-JAKE this interface has to deal with the event types of kubernetes independently without the interface knowing about it.
-		// we will need a way to deal with DELETES and CREATES and updates seperately
-		// I believe this is delt with in the last tests, but I want to check the snapshots once more.
-
 		// watch for new namespaces
 		// TODO-JAKE not sure if I need to watch the <- chan error here... or not
 		namespaceWatch, _, err := c.resourceNamespaceLister.GetNamespaceResourceWatch(namespaceWatchOptions, filterNamespaces, errs)
@@ -283,26 +292,23 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					if !ok {
 						return
 					}
-					// TODO-JAKE with the interface, we have lost the ability to know the event type.
-					// so the interface must be able to identify the type of event that occured as well
-					// not just return the list of namespaces
-					newNamespaces := []string{}
+					// get the list of new namespaces, if there is a new namespace
+					// get the list of resources from that namespace, and add
+					// a watch for new resources created/deleted on that namespace
 
-					// TODO-JAKE get a map of the namespaces that are currently being watched
+					newNamespaces := []string{}
 					for _, ns := range resourceNamespaces {
-						if _, hit := mocksByNamespace.Load(ns.Name); !hit {
+						if _, hit := c.namespacesWatching.Load(ns.Name); !hit {
 							newNamespaces = append(newNamespaces, ns.Name)
 							continue
 						}
 					}
-					// add a watch for all the new namespaces
+
 					for _, namespace := range newNamespaces {
 						/* Setup namespaced watch for MockResource for new namespace */
 						{
 							mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								// INFO-JAKE not sure if we want to do something else
-								// but since this is occuring in async I think it should be fine
 								errs <- errors.Wrapf(err, "initial new namespace MockResource list")
 								continue
 							}
@@ -314,6 +320,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							// , then we could add it here namespaceErrs <- error(*) . the namespaceErrs is coming from the
 							// ResourceNamespaceLister currently
 							// INFO-JAKE is this what we really want to do when there is an error?
+							// TODO-JAKE ensure that the MockResource is set to the correct format
 							errs <- errors.Wrapf(err, "starting new namespace MockResource watch")
 							continue
 						}
@@ -324,8 +331,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
 						}(namespace)
 						/* Watch for changes and update snapshot */
-						// REFACTOR
 						go func(namespace string) {
+							defer func () {
+								c.namespacesWatching.Delete(namespace)
+							}()
+							c.namespacesWatching.Store(namespace, true)
 							for {
 								select {
 								case <-ctx.Done():

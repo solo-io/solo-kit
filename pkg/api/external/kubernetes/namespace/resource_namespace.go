@@ -138,7 +138,6 @@ func (client *kubeResourceNamespaceClient) GetNamespaceResourceWatch(opts resour
 				default:
 					resourceNamespaceList, err := client.GetNamespaceResourceList(resources.ResourceNamespaceListOptions{
 						Ctx:                opts.Ctx,
-						FieldSelectors:     excludeNamespaces,
 						ExpressionSelector: opts.ExpressionSelector,
 					}, filtered)
 					if err != nil {
