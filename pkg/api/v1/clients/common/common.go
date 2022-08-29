@@ -37,11 +37,8 @@ func KubeResourceWatch(cache cache.Cache, listFunc ResourceListFunc, namespace s
 	// prevent flooding the channel with duplicates
 	var previous *resources.ResourceList
 	updateResourceList := func() {
-		list, err := listFunc(namespace, clients.ListOpts{
-			Ctx:                opts.Ctx,
-			Selector:           opts.Selector,
-			ExpressionSelector: opts.ExpressionSelector,
-		})
+		lopts := clients.TranslateWatchOptsIntoListOpts(opts)
+		list, err := listFunc(namespace, lopts)
 		if err != nil {
 			errs <- err
 			return

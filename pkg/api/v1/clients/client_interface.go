@@ -139,6 +139,8 @@ func (o ListOpts) WithDefaults() ListOpts {
 	return o
 }
 
+// TODO-JAKE do we want to combine the WatchOpts, ListOpts, and ResourceNamespaceOpts???
+
 // RefreshRate is currently ignored by the Kubernetes ResourceClient implementation.
 // To achieve a similar behavior you can use the KubeResourceClientFactory.ResyncPeriod field. The difference is that it
 // will apply to all the watches started by clients built with the factory.
@@ -183,9 +185,19 @@ func (o WatchOpts) WithDefaults() WatchOpts {
 	return o
 }
 
+func TranslateWatchOptsIntoListOpts(wopts WatchOpts) ListOpts {
+	clopts := ListOpts{Ctx: wopts.Ctx, FieldSelectors: wopts.FieldSelectors, ExpressionSelector: wopts.ExpressionSelector, Selector: wopts.Selector}
+	return clopts
+}
+
 // TODO-JAKE maybe they should be the same type of options?
 // TranslateResourceNamespaceListToListOptions translates the resource namespace list options to List Options
-func TranslateResourceNamespaceListToListOptions(rnlo resources.ResourceNamespaceListOptions) ListOpts {
-	clopts := ListOpts{FieldSelectors: rnlo.FieldSelectors, ExpressionSelector: rnlo.ExpressionSelectors}
+func TranslateResourceNamespaceListToListOptions(lopts resources.ResourceNamespaceListOptions) ListOpts {
+	clopts := ListOpts{Ctx: lopts.Ctx, FieldSelectors: lopts.FieldSelectors, ExpressionSelector: lopts.ExpressionSelector}
+	return clopts
+}
+
+func TranslateResourceNamespaceListToWatchOptions(wopts resources.ResourceNamespaceWatchOptions) WatchOpts {
+	clopts := WatchOpts{Ctx: wopts.Ctx, FieldSelectors: wopts.FieldSelectors, ExpressionSelector: wopts.ExpressionSelector}
 	return clopts
 }

@@ -83,24 +83,28 @@ type CustomInputResource interface {
 
 // ResourceNamespaceListOptions provides the options for listing Resoiurce Namespaces
 type ResourceNamespaceListOptions struct {
+	// Ctx is the context
+	Ctx context.Context
 	// FieldSelectors are used to filter out specific fields that are associated with
 	// the Namespace. IE if using Kubernetes you can filter namespaces by the name
 	// of the namespace by using metadata.name!=<namespace-name>
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
 	FieldSelectors string
 	// TODO-JAKE add description
-	ExpressionSelectors string
+	ExpressionSelector string
 }
 
 // ResourceNamespaceWatchOptions provides the options for watching Resource Namespaces
 type ResourceNamespaceWatchOptions struct {
+	// Ctx is the context
+	Ctx context.Context
 	// FieldSelectors are used to filter out specific fields that are associated with
 	// the Namespace. IE if using Kubernetes you can filter namespaces by the name
 	// of the namespace by using metadata.name!=<namespace-name>
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
 	FieldSelectors string
 	// TODO-JAKE add description
-	ExpressionSelectors string
+	ExpressionSelector string
 }
 
 // ResoruceNamespace is the namespaces that resources can be found. ResourceNamespaces are
@@ -118,11 +122,12 @@ type ResourceNamespaceList []ResourceNamespace
 // resources can be found.
 type ResourceNamespaceLister interface {
 	// GetNamespaceResourceList returns the list of the namespaces that resources
-	// can be found.
-	GetNamespaceResourceList(ctx context.Context, opts ResourceNamespaceListOptions) (ResourceNamespaceList, error)
+	// can be found. The list returned will not contain namespacesToFilter.
+	GetNamespaceResourceList(opts ResourceNamespaceListOptions, namespacesToFilter ResourceNamespaceList) (ResourceNamespaceList, error)
 	// GetNamespaceResourceWatch returns a watch that receives events when namespaces
-	// are updated or created.
-	GetNamespaceResourceWatch(ctx context.Context, opts ResourceNamespaceWatchOptions) (chan ResourceNamespaceList, <-chan error, error)
+	// are updated or created. The channel will not return namespacesToFilter. Use the errs for when
+	// errors are async.
+	GetNamespaceResourceWatch(opts ResourceNamespaceWatchOptions, namespacesToFilter ResourceNamespaceList, errs chan error) (chan ResourceNamespaceList, <-chan error, error)
 }
 
 type ResourceList []Resource
