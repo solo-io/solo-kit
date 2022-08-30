@@ -168,7 +168,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 	errs := make(chan error)
 	hasWatchedNamespaces := len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
-	watchNamespacesIsEmpty := !hasWatchedNamespaces
 	var done sync.WaitGroup
 	ctx := opts.Ctx
 
@@ -202,7 +201,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	fcarsByNamespace := sync.Map{}
 	fakesByNamespace := sync.Map{}
 
-	if !watchNamespacesIsEmpty || opts.ExpressionSelector == "" {
+	if hasWatchedNamespaces|| opts.ExpressionSelector == "" {
 		// then watch all resources on watch Namespaces
 
 		// watched namespaces
