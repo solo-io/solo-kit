@@ -128,8 +128,6 @@ type ListOpts struct {
 	//	 (2) the label key equal to version and the value equal to v1
 	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	ExpressionSelector string
-	// TODO-JAKE add in Field Selectors
-	FieldSelectors string
 }
 
 func (o ListOpts) WithDefaults() ListOpts {
@@ -138,8 +136,6 @@ func (o ListOpts) WithDefaults() ListOpts {
 	}
 	return o
 }
-
-// TODO-JAKE do we want to combine the WatchOpts, ListOpts, and ResourceNamespaceOpts???
 
 // RefreshRate is currently ignored by the Kubernetes ResourceClient implementation.
 // To achieve a similar behavior you can use the KubeResourceClientFactory.ResyncPeriod field. The difference is that it
@@ -168,9 +164,7 @@ type WatchOpts struct {
 	//	 (2) the label key equal to version and the value equal to v1
 	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	ExpressionSelector string
-	// JAKE-TODO
-	FieldSelectors string
-	RefreshRate    time.Duration
+	RefreshRate        time.Duration
 	// Cluster is ignored by aggregated watches, but is respected by multi cluster clients.
 	Cluster string
 }
@@ -186,17 +180,17 @@ func (o WatchOpts) WithDefaults() WatchOpts {
 }
 
 func TranslateWatchOptsIntoListOpts(wopts WatchOpts) ListOpts {
-	clopts := ListOpts{Ctx: wopts.Ctx, FieldSelectors: wopts.FieldSelectors, ExpressionSelector: wopts.ExpressionSelector, Selector: wopts.Selector}
+	clopts := ListOpts{Ctx: wopts.Ctx, ExpressionSelector: wopts.ExpressionSelector, Selector: wopts.Selector}
 	return clopts
 }
 
-// TODO-JAKE maybe they should be the same type of options?
 // TranslateResourceNamespaceListToListOptions translates the resource namespace list options to List Options
 func TranslateResourceNamespaceListToListOptions(lopts resources.ResourceNamespaceListOptions) ListOpts {
 	clopts := ListOpts{Ctx: lopts.Ctx, ExpressionSelector: lopts.ExpressionSelector}
 	return clopts
 }
 
+// TranslateResourceNamespaceListToWatchOptions translates the resource namespace watch options to Watch Options
 func TranslateResourceNamespaceListToWatchOptions(wopts resources.ResourceNamespaceWatchOptions) WatchOpts {
 	clopts := WatchOpts{Ctx: wopts.Ctx, ExpressionSelector: wopts.ExpressionSelector}
 	return clopts

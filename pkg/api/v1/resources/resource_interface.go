@@ -81,16 +81,20 @@ type CustomInputResource interface {
 	MarshalStatus() (v1.Status, error)
 }
 
-// ResourceNamespaceListOptions provides the options for listing Resoiurce Namespaces
+// ResourceNamespaceListOptions provides the options for listing Resource Namespaces
 type ResourceNamespaceListOptions struct {
 	// Ctx is the context
 	Ctx context.Context
-	// FieldSelectors are used to filter out specific fields that are associated with
-	// the Namespace. IE if using Kubernetes you can filter namespaces by the name
-	// of the namespace by using metadata.name!=<namespace-name>
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
-	FieldSelectors string
-	// TODO-JAKE add description
+
+	// Equality-based label requirements
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	// Equality-based requirements allow filtering by label keys and values.
+	// Matching objects must satisfy all of the specified label constraints,
+	// though they may have additional labels as well.
+	// Example:
+	//	{product: edge} would return all objects with a label key equal to
+	//	product and label value equal to edge
+	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	ExpressionSelector string
 }
 
@@ -98,12 +102,15 @@ type ResourceNamespaceListOptions struct {
 type ResourceNamespaceWatchOptions struct {
 	// Ctx is the context
 	Ctx context.Context
-	// FieldSelectors are used to filter out specific fields that are associated with
-	// the Namespace. IE if using Kubernetes you can filter namespaces by the name
-	// of the namespace by using metadata.name!=<namespace-name>
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
-	FieldSelectors string
-	// TODO-JAKE add description
+	// Equality-based label requirements
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	// Equality-based requirements allow filtering by label keys and values.
+	// Matching objects must satisfy all of the specified label constraints,
+	// though they may have additional labels as well.
+	// Example:
+	//	{product: edge} would return all objects with a label key equal to
+	//	product and label value equal to edge
+	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
 	ExpressionSelector string
 }
 
@@ -121,13 +128,13 @@ type ResourceNamespaceList []ResourceNamespace
 // ResourceNamespaceLister is anything that can list and watch namespaces that
 // resources can be found.
 type ResourceNamespaceLister interface {
-	// GetNamespaceResourceList returns the list of the namespaces that resources
+	// GetResourceNamespaceList returns the list of the namespaces that resources
 	// can be found. The list returned will not contain namespacesToFilter.
-	GetNamespaceResourceList(opts ResourceNamespaceListOptions, namespacesToFilter ResourceNamespaceList) (ResourceNamespaceList, error)
-	// GetNamespaceResourceWatch returns a watch that receives events when namespaces
+	GetResourceNamespaceList(opts ResourceNamespaceListOptions, namespacesToFilter ResourceNamespaceList) (ResourceNamespaceList, error)
+	// GetResourceNamespaceWatch returns a watch that receives events when namespaces
 	// are updated or created. The channel will not return namespacesToFilter. Use the errs for when
 	// errors are async.
-	GetNamespaceResourceWatch(opts ResourceNamespaceWatchOptions, namespacesToFilter ResourceNamespaceList, errs chan error) (chan ResourceNamespaceList, <-chan error, error)
+	GetResourceNamespaceWatch(opts ResourceNamespaceWatchOptions, namespacesToFilter ResourceNamespaceList) (chan ResourceNamespaceList, <-chan error, error)
 }
 
 type ResourceList []Resource

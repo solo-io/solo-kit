@@ -198,6 +198,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 
 		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 		createNamespaces(ctx, kube, namespace4)
+
 		mockResource4a, err := mockResourceClient.Write(NewMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResource4b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
@@ -338,6 +339,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 
 		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 		createNamespaces(ctx, kube, namespace4)
+
 		frequentlyChangingAnnotationsResource4a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource4b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
@@ -478,6 +480,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 
 		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 		createNamespaces(ctx, kube, namespace4)
+
 		fakeResource4a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource4b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
@@ -1419,6 +1422,88 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			notWatched := MockResourceList{mockResource1a, mockResource1b}
 			assertSnapshotMocks(nil, notWatched)
+
+			/*
+				FrequentlyChangingAnnotationsResource
+			*/
+			assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFcars {
+							if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFcars {
+							if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := MockResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+			assertSnapshotMocks(watched, nil)
+
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			notWatched := MockResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+			assertSnapshotMocks(nil, notWatched)
+
+			/*
+				FakeResource
+			*/
+			assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFakes {
+							if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFakes {
+							if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			watched := MockResourceList{fakeResource1a, fakeResource1b}
+			assertSnapshotMocks(watched, nil)
+
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+			notWatched := MockResourceList{fakeResource1a, fakeResource1b}
+			assertSnapshotMocks(nil, notWatched)
 		})
 
 		It("Should not contain resources from a deleted namespace, that is filtered", func() {
@@ -1491,7 +1576,6 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			notWatched := MockResourceList{mockResource1a, mockResource1b}
 			assertNoMocksSent()
 
-			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMocksSent()
 
@@ -1506,7 +1590,6 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			watched := MockResourceList{mockResource2a, mockResource2b}
 			assertSnapshotMocks(watched, notWatched)
 
-			// TODO-JAKE need to ensure that this will work for each resource
 			deleteNamespaces(ctx, kube, namespace3)
 			notWatched = append(notWatched, mockResource2a)
 			watched = MockResourceList{mockResource2b}
@@ -1529,6 +1612,8 @@ var _ = Describe("V2Alpha1Emitter", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 			assertNoMocksSent()
+
+			deleteNamespaces(ctx, kube, namespace5)
 
 			createNamespaces(ctx, kube, namespace1, namespace2)
 
@@ -1570,7 +1655,6 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			notWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
 			assertNoMocksSent()
 
-			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMocksSent()
 
@@ -1585,7 +1669,6 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			watched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}
 			assertSnapshotMocks(watched, notWatched)
 
-			// TODO-JAKE need to ensure that this will work for each resource
 			deleteNamespaces(ctx, kube, namespace3)
 			notWatched = append(notWatched, frequentlyChangingAnnotationsResource2a)
 			watched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2b}
@@ -1608,6 +1691,8 @@ var _ = Describe("V2Alpha1Emitter", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 			assertNoMocksSent()
+
+			deleteNamespaces(ctx, kube, namespace5)
 
 			createNamespaces(ctx, kube, namespace1, namespace2)
 
@@ -1649,7 +1734,6 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			notWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
 			assertNoMocksSent()
 
-			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMocksSent()
 
@@ -1664,7 +1748,6 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			watched := testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}
 			assertSnapshotMocks(watched, notWatched)
 
-			// TODO-JAKE need to ensure that this will work for each resource
 			deleteNamespaces(ctx, kube, namespace3)
 			notWatched = append(notWatched, fakeResource2a)
 			watched = testing_solo_io.FakeResourceList{fakeResource2b}
@@ -1688,7 +1771,8 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			}
 			assertNoMocksSent()
 
-			createNamespaces(ctx, kube, namespace1, namespace2)
+			deleteNamespaces(ctx, kube, namespace5)
+
 		})
 	})
 

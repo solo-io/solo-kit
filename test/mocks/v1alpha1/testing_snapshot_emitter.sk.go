@@ -97,8 +97,10 @@ func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, resourceNa
 }
 
 type testingEmitter struct {
-	forceEmit               <-chan struct{}
-	mockResource            MockResourceClient
+	forceEmit    <-chan struct{}
+	mockResource MockResourceClient
+	// resourceNamespaceLister is used to watch for new namespaces when they are created.
+	// It is used when Expression Selector is in the Watch Opts set in Snapshot().
 	resourceNamespaceLister resources.ResourceNamespaceLister
 	// namespacesWatching is the set of namespaces that we are watching. This is helpful
 	// when Expression Selector is set on the Watch Opts in Snapshot().
@@ -188,7 +190,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			}(namespace)
 			/* Watch for changes and update snapshot */
 			go func(namespace string) {
-				defer func () {
+				defer func() {
 					c.namespacesWatching.Delete(namespace)
 				}()
 				c.namespacesWatching.Store(namespace, true)
@@ -212,7 +214,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 	// watch all other namespaces that fit the Expression Selectors
 	if opts.ExpressionSelector != "" {
-		// watch resources of non-watched namespaces that fit the Expression Selector
+		// watch resources of non-watched namespaces that fit the expression selectors
 		namespaceListOptions := resources.ResourceNamespaceListOptions{
 			Ctx:                opts.Ctx,
 			ExpressionSelector: opts.ExpressionSelector,
@@ -228,11 +230,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
 			}
 		}
-		namespacesResources, err := c.resourceNamespaceLister.GetNamespaceResourceList(namespaceListOptions, filterNamespaces)
+		namespacesResources, err := c.resourceNamespaceLister.GetResourceNamespaceList(namespaceListOptions, filterNamespaces)
 		if err != nil {
 			return nil, nil, err
 		}
-		// non Watched Namespaces
+		// non watched namespaces
 		for _, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
 			/* Setup namespaced watch for MockResource */
@@ -276,11 +278,21 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		// create watch on all namespaces, so that we can add all resources from new namespaces
 		// we will be watching namespaces that meet the Expression Selector filter
 
-		// watch for new namespaces
-		// TODO-JAKE not sure if I need to watch the <- chan error here... or not
-		namespaceWatch, _, err := c.resourceNamespaceLister.GetNamespaceResourceWatch(namespaceWatchOptions, filterNamespaces, errs)
+		namespaceWatch, errsReceiver, err := c.resourceNamespaceLister.GetResourceNamespaceWatch(namespaceWatchOptions, filterNamespaces)
 		if err != nil {
 			return nil, nil, err
+		}
+		if errsReceiver != nil {
+			go func() {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case err = <-errsReceiver:
+						errs <- errors.Wrapf(err, "received error from watch on resource namespaces")
+					}
+				}
+			}()
 		}
 
 		go func() {
@@ -304,6 +316,26 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						}
 					}
 
+					// delete the missing/deleted namespaces
+					mapOfNamespaces := make(map[string]bool)
+					for _, ns := range resourceNamespaces {
+						mapOfNamespaces[ns.Name] = true
+					}
+
+					missingNamespaces := []string{}
+					c.namespacesWatching.Range(func(key interface{}, value interface{}) bool {
+						name := key.(string)
+						if _, hit := mapOfNamespaces[name]; !hit {
+							missingNamespaces = append(missingNamespaces, name)
+						}
+						return true
+					})
+
+					for _, ns := range missingNamespaces {
+						c.namespacesWatching.Delete(ns)
+						mocksByNamespace.Delete(ns)
+					}
+
 					for _, namespace := range newNamespaces {
 						/* Setup namespaced watch for MockResource for new namespace */
 						{
@@ -316,11 +348,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						}
 						mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, clients.WatchOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 						if err != nil {
-							// TODO-JAKE if we do decide to have the namespaceErrs from the watch namespaces functionality
-							// , then we could add it here namespaceErrs <- error(*) . the namespaceErrs is coming from the
-							// ResourceNamespaceLister currently
-							// INFO-JAKE is this what we really want to do when there is an error?
-							// TODO-JAKE ensure that the MockResource is set to the correct format
 							errs <- errors.Wrapf(err, "starting new namespace MockResource watch")
 							continue
 						}
@@ -332,7 +359,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						}(namespace)
 						/* Watch for changes and update snapshot */
 						go func(namespace string) {
-							defer func () {
+							defer func() {
 								c.namespacesWatching.Delete(namespace)
 							}()
 							c.namespacesWatching.Store(namespace, true)

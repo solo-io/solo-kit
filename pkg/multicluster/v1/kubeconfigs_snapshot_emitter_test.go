@@ -181,6 +181,7 @@ var _ = Describe("V1Emitter", func() {
 
 		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 		createNamespaces(ctx, kube, namespace4)
+
 		kubeConfig4a, err := kubeConfigClient.Write(NewKubeConfig(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		kubeConfig4b, err := kubeConfigClient.Write(NewKubeConfig(namespace4, name1), clients.WriteOpts{Ctx: ctx})
@@ -620,20 +621,20 @@ var _ = Describe("V1Emitter", func() {
 			var snap *TestingSnapshot
 
 			/*
-				MockResource
+				KubeConfig
 			*/
-			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			assertSnapshotkubeconfigs := func(expectkubeconfigs KubeConfigList, unexpectkubeconfigs KubeConfigList) {
 			drain:
 				for {
 					select {
 					case snap = <-snapshots:
-						for _, expected := range expectMocks {
-							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						for _, expected := range expectkubeconfigs {
+							if _, err := snap.Kubeconfigs.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 								continue drain
 							}
 						}
-						for _, unexpected := range unexpectMocks {
-							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						for _, unexpected := range unexpectkubeconfigs {
+							if _, err := snap.Kubeconfigs.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 								continue drain
 							}
 						}
@@ -641,23 +642,23 @@ var _ = Describe("V1Emitter", func() {
 					case err := <-errs:
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second * 10):
-						nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
-						nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
+						nsList1, _ := kubeConfigClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := kubeConfigClient.List(namespace2, clients.ListOpts{})
 						combined := append(nsList1, nsList2...)
 						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 					}
 				}
 			}
 
-			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			kubeConfig1a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := MockResourceList{mockResource1a, mockResource1b}
+			watched := MockResourceList{kubeConfig1a, kubeConfig1b}
 			assertSnapshotMocks(watched, nil)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
-			notWatched := MockResourceList{mockResource1a, mockResource1b}
+			notWatched := MockResourceList{kubeConfig1a, kubeConfig1b}
 			assertSnapshotMocks(nil, notWatched)
 		})
 
@@ -731,7 +732,6 @@ var _ = Describe("V1Emitter", func() {
 			notWatched := KubeConfigList{kubeConfig1a, kubeConfig1b}
 			assertNoMocksSent()
 
-			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMocksSent()
 
@@ -746,7 +746,6 @@ var _ = Describe("V1Emitter", func() {
 			watched := KubeConfigList{kubeConfig2a, kubeConfig2b}
 			assertSnapshotMocks(watched, notWatched)
 
-			// TODO-JAKE need to ensure that this will work for each resource
 			deleteNamespaces(ctx, kube, namespace3)
 			notWatched = append(notWatched, kubeConfig2a)
 			watched = KubeConfigList{kubeConfig2b}
@@ -770,7 +769,8 @@ var _ = Describe("V1Emitter", func() {
 			}
 			assertNoMocksSent()
 
-			createNamespaces(ctx, kube, namespace1, namespace2)
+			deleteNamespaces(ctx, kube, namespace5)
+
 		})
 	})
 

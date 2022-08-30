@@ -183,6 +183,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 
 		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 		createNamespaces(ctx, kube, namespace4)
+
 		mockResource4a, err := mockResourceClient.Write(NewMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResource4b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
@@ -744,7 +745,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			notWatched := MockResourceList{mockResource1a, mockResource1b}
 			assertNoMocksSent()
 
-			// TODO-JAKE we need to create namespaces at the end so that the other resources work too.
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMocksSent()
 
@@ -759,7 +759,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			watched := MockResourceList{mockResource2a, mockResource2b}
 			assertSnapshotMocks(watched, notWatched)
 
-			// TODO-JAKE need to ensure that this will work for each resource
 			deleteNamespaces(ctx, kube, namespace3)
 			notWatched = append(notWatched, mockResource2a)
 			watched = MockResourceList{mockResource2b}
@@ -783,7 +782,8 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			}
 			assertNoMocksSent()
 
-			createNamespaces(ctx, kube, namespace1, namespace2)
+			deleteNamespaces(ctx, kube, namespace5)
+
 		})
 	})
 
