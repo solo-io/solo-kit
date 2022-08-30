@@ -473,7 +473,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		kube = helpers.MustKubeClient()
 		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
-		resourceNamespaceLister = namespace.NewKubeResourceNamespaceLister(kube, kubeCache)
+		resourceNamespaceLister = namespace.NewKubeClientCacheResourceNamespaceLister(kube, kubeCache)
 
 		createNamespaces(ctx, kube, namespace1, namespace2)
 

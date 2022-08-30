@@ -388,7 +388,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 					}
 
 					// delete the missing/deleted namespaces
-					mapOfNamespaces := make(map[string]bool)
+					mapOfNamespaces := make(map[string]bool, len(resourceNamespaces))
 					for _,ns := range resourceNamespaces {
 						mapOfNamespaces[ns.Name] = true
 					}
@@ -405,7 +405,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 					for _, ns := range missingNamespaces {
 						c.namespacesWatching.Delete(ns)
 {{- range .Resources}}
-{{- if not .ClusterScoped }}
+{{- if (not .ClusterScoped) }}
 						{{ lower_camel .PluralName }}ByNamespace.Delete(ns)
 {{- end }}
 {{- end }}

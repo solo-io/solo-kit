@@ -467,7 +467,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					}
 
 					// delete the missing/deleted namespaces
-					mapOfNamespaces := make(map[string]bool)
+					mapOfNamespaces := make(map[string]bool, len(resourceNamespaces))
 					for _, ns := range resourceNamespaces {
 						mapOfNamespaces[ns.Name] = true
 					}

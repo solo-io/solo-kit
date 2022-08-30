@@ -15,29 +15,31 @@ import (
 )
 
 var _ resources.ResourceNamespaceLister = &kubeResourceNamespaceLister{}
-var _ resources.ResourceNamespaceLister = &kubeResourceNamespaceClient{}
+var _ resources.ResourceNamespaceLister = &kubeClientResourceNamespaceLister{}
 
-// if we use the list thingy I guess we could try it out, if it does not work, then lets move forward with the base client
-// solution, that uses the kubernetes interface...
-func NewKubeResourceNamespaceLister(kube kubernetes.Interface, cache cache.KubeCoreCache) resources.ResourceNamespaceLister {
+// NewKubeClientCacheResourceNamespaceLister will create a new resource namespace lister that requires the kubernestes
+// client and cache.
+func NewKubeClientCacheResourceNamespaceLister(kube kubernetes.Interface, cache cache.KubeCoreCache) resources.ResourceNamespaceLister {
 	return &kubeResourceNamespaceLister{
-		namespace: NewNamespaceClient(kube, cache),
+		client: NewNamespaceClient(kube, cache),
 	}
 }
 
+// NewKubeClientResourceNamespaceLister will create a new resource namespace lister that requires the kubernetes client
+// interface.
 func NewKubeClientResourceNamespaceLister(kube kubernetes.Interface) resources.ResourceNamespaceLister {
-	return &kubeResourceNamespaceClient{
+	return &kubeClientResourceNamespaceLister{
 		kube: kube,
 	}
 }
 
 type kubeResourceNamespaceLister struct {
-	namespace skkube.KubeNamespaceClient
+	client skkube.KubeNamespaceClient
 }
 
 // GetResourceNamespaceList is the kubernetes implementation that returns the list of namespaces
 func (kns *kubeResourceNamespaceLister) GetResourceNamespaceList(opts resources.ResourceNamespaceListOptions, filtered resources.ResourceNamespaceList) (resources.ResourceNamespaceList, error) {
-	namespaces, err := kns.namespace.List(clients.TranslateResourceNamespaceListToListOptions(opts))
+	namespaces, err := kns.client.List(clients.TranslateResourceNamespaceListToListOptions(opts))
 	if err != nil {
 		return nil, err
 	}
@@ -49,24 +51,23 @@ func (kns *kubeResourceNamespaceLister) GetResourceNamespaceList(opts resources.
 func (kns *kubeResourceNamespaceLister) GetResourceNamespaceWatch(opts resources.ResourceNamespaceWatchOptions, filtered resources.ResourceNamespaceList) (chan resources.ResourceNamespaceList, <-chan error, error) {
 	ctx := opts.Ctx
 	wopts := clients.TranslateResourceNamespaceListToWatchOptions(opts)
-	namespaceChan, errorChan, err := kns.namespace.Watch(wopts)
+	namespaceChan, errorChan, err := kns.client.Watch(wopts)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	resourceNamespaceChan := make(chan resources.ResourceNamespaceList)
 	go func() {
+		defer close(resourceNamespaceChan)
 		for {
 			select {
 			case namespaceList := <-namespaceChan:
 				select {
 				case resourceNamespaceChan <- kns.filter(convertNamespaceListToResourceNamespace(namespaceList), filtered):
 				case <-ctx.Done():
-					close(resourceNamespaceChan)
 					return
 				}
 			case <-ctx.Done():
-				close(resourceNamespaceChan)
 				return
 			}
 		}
@@ -92,19 +93,19 @@ func (kns *kubeResourceNamespaceLister) filter(namespaces resources.ResourceName
 }
 
 func convertNamespaceListToResourceNamespace(namespaces skkube.KubeNamespaceList) resources.ResourceNamespaceList {
-	l := resources.ResourceNamespaceList{}
-	for _, ns := range namespaces {
-		l = append(l, resources.ResourceNamespace{Name: ns.ObjectMeta.Name})
+	l := make(resources.ResourceNamespaceList, len(namespaces))
+	for i, ns := range namespaces {
+		l[i] = resources.ResourceNamespace{Name: ns.ObjectMeta.Name}
 	}
 	return l
 }
 
-type kubeResourceNamespaceClient struct {
+type kubeClientResourceNamespaceLister struct {
 	kube kubernetes.Interface
 }
 
 // GetResourceNamespaceList is the kubernetes implementation that returns the list of namespaces
-func (client *kubeResourceNamespaceClient) GetResourceNamespaceList(opts resources.ResourceNamespaceListOptions, filtered resources.ResourceNamespaceList) (resources.ResourceNamespaceList, error) {
+func (client *kubeClientResourceNamespaceLister) GetResourceNamespaceList(opts resources.ResourceNamespaceListOptions, filtered resources.ResourceNamespaceList) (resources.ResourceNamespaceList, error) {
 	excludeNamespaces := client.getExcludeFieldSelector(filtered)
 	namespaceList, err := client.kube.CoreV1().Namespaces().List(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespaces, LabelSelector: opts.ExpressionSelector})
 	if err != nil {
@@ -114,7 +115,7 @@ func (client *kubeResourceNamespaceClient) GetResourceNamespaceList(opts resourc
 }
 
 // GetResourceNamespaceWatch returns a watch for events that occur on kube namespaces returning a list of all the namespaces
-func (client *kubeResourceNamespaceClient) GetResourceNamespaceWatch(opts resources.ResourceNamespaceWatchOptions, filtered resources.ResourceNamespaceList) (chan resources.ResourceNamespaceList, <-chan error, error) {
+func (client *kubeClientResourceNamespaceLister) GetResourceNamespaceWatch(opts resources.ResourceNamespaceWatchOptions, filtered resources.ResourceNamespaceList) (chan resources.ResourceNamespaceList, <-chan error, error) {
 	excludeNamespaces := client.getExcludeFieldSelector(filtered)
 	namespaceWatcher, err := client.kube.CoreV1().Namespaces().Watch(opts.Ctx, metav1.ListOptions{FieldSelector: excludeNamespaces, LabelSelector: opts.ExpressionSelector})
 	if err != nil {
@@ -153,7 +154,7 @@ func (client *kubeResourceNamespaceClient) GetResourceNamespaceWatch(opts resour
 	return resourceNamespaceChan, errorChannel, nil
 }
 
-func (client *kubeResourceNamespaceClient) getExcludeFieldSelector(filtered resources.ResourceNamespaceList) string {
+func (client *kubeClientResourceNamespaceLister) getExcludeFieldSelector(filtered resources.ResourceNamespaceList) string {
 	var buffer bytes.Buffer
 	for i, rns := range filtered {
 		ns := rns.Name
