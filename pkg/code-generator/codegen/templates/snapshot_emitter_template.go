@@ -162,19 +162,13 @@ func (c *{{ lower_camel $.GoName }}Emitter) {{ .Name }}() {{ .ImportPrefix }}{{ 
 }
 {{- end}}
 
-// TODO-JAKE may want to add some comments around how the snapshot_emitter
-// event_loop and resource clients -> resource client implementations work in a README.md
-// this would be helpful for documentation purposes
-
-// TODO-JAKE this interface has to deal with the event types of kubernetes independently without the interface knowing about it.
-// we will need a way to deal with DELETES and CREATES and updates seperately
-// I believe this is delt with in the last tests, but I want to check the snapshots once more.
-// with the interface, we have lost the ability to know the event type.
-// so the interface must be able to identify the type of event that occured as well
-// not just return the list of namespaces
-
-// TODO-JAKE test that we can create a huge field selector of massive size
-
+// Snapshots will return a channel that can be used to receive snapshots of the 
+// state of the resources it is watching
+// when watching resources, you can set the watchNamespaces, and you can set the 
+// ExpressionSelector of the WatchOpts.  Setting watchNamespaces will watch for all resources
+// that are in the specified namespaces. In addition if ExpressionSelector of the WatchOpts is
+// set, then all namespaces that meet the label criteria of the ExpressionSelector will
+// also be watched.
 func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error) {
 
 	if len(watchNamespaces) == 0 {
@@ -190,6 +184,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 	errs := make(chan error)
 	hasWatchedNamespaces :=  len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
+	watchingLabeledNamespaces := ! (opts.ExpressionSelector == "")
 	var done sync.WaitGroup
 	ctx := opts.Ctx
 
@@ -216,8 +211,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 	{{ lower_camel .PluralName }}ByNamespace := sync.Map{}
 {{- end }}
 {{- end }}
-
-	if hasWatchedNamespaces || opts.ExpressionSelector == "" {
+	if hasWatchedNamespaces || ! watchingLabeledNamespaces {
 		// then watch all resources on watch Namespaces
 
 		// watched namespaces
@@ -274,7 +268,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 			}(namespace)
 		}
 	}
-	// watch all other namespaces that fit the Expression Selectors
+	// watch all other namespaces that are labeled and fit the Expression Selector
 	if opts.ExpressionSelector != "" {
 		// watch resources of non-watched namespaces that fit the expression selectors
 		namespaceListOptions := resources.ResourceNamespaceListOptions{
@@ -296,7 +290,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		if err != nil {
 			return nil, nil, err
 		}
-		// non watched namespaces
+		// non watched namespaces that are labeled
 		for _, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
 {{- range .Resources }}
@@ -378,24 +372,21 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 					// get the list of resources from that namespace, and add
 					// a watch for new resources created/deleted on that namespace
 
+					// get the new namespaces, and get a map of the namespaces
+					mapOfResourceNamespaces := make(map[string]bool, len(resourceNamespaces))
 					newNamespaces := []string{}
 					for _, ns := range resourceNamespaces {
 						if _, hit := c.namespacesWatching.Load(ns.Name); !hit {
 							newNamespaces = append(newNamespaces, ns.Name)
-							continue
 						}
+						mapOfResourceNamespaces[ns.Name] = true
 					}
 
-					// delete the missing/deleted namespaces
-					mapOfNamespaces := make(map[string]bool, len(resourceNamespaces))
-					for _,ns := range resourceNamespaces {
-						mapOfNamespaces[ns.Name] = true
-					}
-				
 					missingNamespaces := []string{}
+					// use the map of namespace resources to find missing/deleted namespaces
 					c.namespacesWatching.Range(func(key interface{}, value interface{}) bool {
 						name := key.(string)
-						if _, hit := mapOfNamespaces[name]; !hit {
+						if _, hit := mapOfResourceNamespaces[name]; !hit {
 							missingNamespaces = append(missingNamespaces, name)
 						}
 						return true
