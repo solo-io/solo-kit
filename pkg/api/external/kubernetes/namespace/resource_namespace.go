@@ -170,10 +170,10 @@ func (client *kubeClientResourceNamespaceLister) getExcludeFieldSelector(filtere
 }
 
 func convertNamespaceListToResourceNamespaceList(namespaceList *kubev1.NamespaceList) resources.ResourceNamespaceList {
-	resourceNamespaces := resources.ResourceNamespaceList{}
-	for _, item := range namespaceList.Items {
+	resourceNamespaces := make(resources.ResourceNamespaceList, len(namespaceList.Items))
+	for i, item := range namespaceList.Items {
 		ns := item.Name
-		resourceNamespaces = append(resourceNamespaces, resources.ResourceNamespace{Name: ns})
+		resourceNamespaces[i] = resources.ResourceNamespace{Name: ns}
 	}
 	return resourceNamespaces
 }
