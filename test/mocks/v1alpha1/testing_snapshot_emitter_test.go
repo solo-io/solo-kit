@@ -21,7 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -62,7 +62,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 	)
 	NewMockResourceWithLabels := func(namespace, name string, labels map[string]string) *MockResource {
 		resource := NewMockResource(namespace, name)
-		resource.Metadata.Labels = labels
+		resource.GetMetadata().Labels = labels
 		return resource
 	}
 
@@ -72,7 +72,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 	}
 
 	createNamespaceWithLabel := func(ctx context.Context, kube kubernetes.Interface, namespace string, labels map[string]string) {
-		_, err := kube.CoreV1().Namespaces().Create(ctx, &v1.Namespace{
+		_, err := kube.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   namespace,
 				Labels: labels,
@@ -494,6 +494,9 @@ var _ = Describe("V1Alpha1Emitter", func() {
 				}
 			}
 
+			/*
+				MockResource
+			*/
 			assertNoMocksSent := func() {
 			drain:
 				for {
@@ -512,9 +515,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 				}
 			}
 
-			/*
-				MockResource
-			*/
 			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
 			drain:
 				for {
@@ -689,6 +689,10 @@ var _ = Describe("V1Alpha1Emitter", func() {
 
 			var snap *TestingSnapshot
 
+			/*
+				MockResource
+			*/
+
 			assertNoMocksSent := func() {
 			drain:
 				for {
@@ -706,10 +710,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 					}
 				}
 			}
-
-			/*
-				MockResource
-			*/
 
 			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
 			drain:
@@ -760,8 +760,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			mockResourceNotWatched = append(mockResourceNotWatched, mockResource2a)
-			mockResourceWatched = MockResourceList{mockResource2b}
+			mockResourceNotWatched := MockResourceList{mockResource2a}
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
