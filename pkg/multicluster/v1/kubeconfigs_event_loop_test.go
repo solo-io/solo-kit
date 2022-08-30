@@ -15,6 +15,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	skNamespace "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
+	"github.com/solo-io/solo-kit/test/helpers"
 )
 
 var _ = Describe("KubeconfigsEventLoop", func() {
@@ -28,13 +31,17 @@ var _ = Describe("KubeconfigsEventLoop", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 
+		kube := helpers.MustKubeClient()
+		kubeCache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
+		resourceNamespaceLister := skNamespace.NewKubeClientCacheResourceNamespaceLister(kube, kubeCache)
+
 		kubeConfigClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		kubeConfigClient, err := NewKubeConfigClient(ctx, kubeConfigClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-
-		emitter = NewKubeconfigsEmitter(kubeConfigClient)
+		emitter = NewKubeconfigsEmitter(kubeConfigClient, resourceNamespaceLister)
 	})
 	It("runs sync function on a new snapshot", func() {
 		_, err = emitter.KubeConfig().Write(NewKubeConfig(namespace, "jerry"), clients.WriteOpts{})
