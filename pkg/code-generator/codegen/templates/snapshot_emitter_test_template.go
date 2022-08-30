@@ -194,8 +194,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a } 
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a } 
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -203,8 +203,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- end }}
 
@@ -212,8 +212,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace1, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}2a )
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}2a )
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -221,8 +221,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}2b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b }...)
-		assertSnapshotMocks(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b }...)
+		assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- end }}
 
@@ -230,8 +230,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		{{ lower_camel .Name }}3a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}3a )
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}3a )
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -239,8 +239,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}3b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b }...)
-		assertSnapshotMocks(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b }...)
+		assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- end }}
 
@@ -251,8 +251,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		{{ lower_camel .Name }}4a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}4a )
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}4a )
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -260,9 +260,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}4b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}4a)
-		notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4b }
-		assertSnapshotMocks(watched, notWatched)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}4a)
+		{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4b }
+		assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -271,8 +271,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		{{ lower_camel .Name }}5a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}5a )
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}5a )
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -280,9 +280,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}5b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}5a)
-		notWatched = append(notWatched, {{ lower_camel .Name }}5b)
-		assertSnapshotMocks(watched, notWatched)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}5a)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}5b)
+		assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -290,8 +290,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		{{ lower_camel .Name }}6a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace3, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}6a )
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}6a )
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -299,9 +299,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}6b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace4, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}6a)
-		notWatched = append(notWatched, {{ lower_camel .Name }}6b)
-		assertSnapshotMocks(watched, notWatched)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}6a)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}6b)
+		assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -312,8 +312,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		{{ lower_camel .Name }}7a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace5, name2, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}7a )
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}7a )
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -321,9 +321,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}7b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace6, name1, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}7a)
-		notWatched = append(notWatched, {{ lower_camel .Name }}7b)
-		assertSnapshotMocks(watched, notWatched)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}7a)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}7b)
+		assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -331,8 +331,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		{{ lower_camel .Name }}8a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace5, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, {{ lower_camel .Name }}8a )
-		assertSnapshot{{ .PluralName }}(watched, nil)
+		{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}8a )
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -340,10 +340,10 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		{{ lower_camel .Name }}8b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace6, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}8a, {{ lower_camel .Name }}8b }...)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}8a, {{ lower_camel .Name }}8b }...)
 		assertNoMessageSent()
 
-		for _, r := range notWatched {
+		for _, r := range {{ lower_camel .Name }}NotWatched {
 			err = {{ lower_camel .Name }}Client.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 		}
@@ -360,9 +360,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}2a,  {{ lower_camel .Name }}3a }
-		watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a, {{ lower_camel .Name }}8a}
-		assertSnapshot{{ .PluralName }}(watched, notWatched)
+		{{ lower_camel .Name }}NotWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}2a,  {{ lower_camel .Name }}3a }
+		{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a, {{ lower_camel .Name }}8a}
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- else }}
 
@@ -370,9 +370,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1b.GetMetadata().Namespace, {{ lower_camel .Name }}1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}...)
-		watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b, {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b, {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}
-		assertSnapshot{{ .PluralName }}(watched, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}...)
+		{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b, {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b, {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -382,9 +382,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a}...)
-		watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a, {{ lower_camel .Name }}8a}
-		assertSnapshot{{ .PluralName }}(watched, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a}...)
+		{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a, {{ lower_camel .Name }}8a}
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- else }}
 
@@ -392,9 +392,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2b.GetMetadata().Namespace, {{ lower_camel .Name }}2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b}...)
-		watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b, {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}
-		assertSnapshot{{ .PluralName }}(watched, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b}...)
+		{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b, {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -402,9 +402,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}6a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a }...)
-		watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a, {{ lower_camel .Name }}8a}
-		assertSnapshot{{ .PluralName }}(watched, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a }...)
+		{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a, {{ lower_camel .Name }}8a}
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- else }}
 
@@ -412,9 +412,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}3b.GetMetadata().Namespace, {{ lower_camel .Name }}3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b}...)
-		watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}			
-		assertSnapshot{{ .PluralName }}(watched, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b}...)
+		{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}			
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -422,9 +422,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}7a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a }...)
-		watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}8a}
-		assertSnapshot{{ .PluralName }}(watched, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a }...)
+		{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}8a}
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- else }}
 
@@ -432,9 +432,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}5a.GetMetadata().Namespace, {{ lower_camel .Name }}5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a, {{ lower_camel .Name }}5b}...)
-		watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}			
-		assertSnapshot{{ .PluralName }}(watched, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a, {{ lower_camel .Name }}5b}...)
+		{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}			
+		assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -442,8 +442,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}8a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}8a }...)
-		assertSnapshot{{ .PluralName }}(nil, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}8a }...)
+		assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)
 
 {{- else }}
 
@@ -451,8 +451,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 		err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}7a.GetMetadata().Namespace, {{ lower_camel .Name }}7a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}...)
-		assertSnapshot{{ .PluralName }}(nil, notWatched)
+		{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a}...)
+		assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 {{- end }}
@@ -840,8 +840,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -849,7 +849,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
+			{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
 			assertNoMocksSent()
 
 {{- end }}
@@ -861,8 +861,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, {{ lower_camel .Name }}2a ) 
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}2a ) 
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -870,8 +870,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}2b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b}
-			assertSnapshotMocks(watched, notWatched)			
+			{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b}
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)			
 
 {{- end }}
 
@@ -879,8 +879,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}3a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace1, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a } 
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a } 
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -888,7 +888,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}3b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b}...)
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}3b}...)
 			assertNoMocksSent()
 
 {{- end }}
@@ -897,8 +897,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}4a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, {{ lower_camel .Name }}4a ) 
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}4a ) 
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -906,8 +906,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}4b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}4b }...)
-			assertSnapshotMocks(watched, notWatched)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}4b }...)
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -917,8 +917,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}5a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, {{ lower_camel .Name }}5a)
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}5a)
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -926,7 +926,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}5b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace6, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a, {{ lower_camel .Name }}5b }...)
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a, {{ lower_camel .Name }}5b }...)
 			assertNoMessageSent()
 
 {{- end }}
@@ -935,8 +935,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}6a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace5, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, {{ lower_camel .Name }}6a) 
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}6a) 
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -944,7 +944,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}6b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}WithLabels(namespace6, name3, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}6b}...)
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}6b}...)
 			assertNoMessageSent()
 
 {{- end }}
@@ -954,8 +954,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}7a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name3), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, {{ lower_camel .Name }}7a) 
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}7a) 
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -963,10 +963,10 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}7b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace6, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a, {{ lower_camel .Name }}7b }...)
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a, {{ lower_camel .Name }}7b }...)
 			assertNoMessageSent()
 
-			for _, r := range notWatched {
+			for _, r := range {{ lower_camel .Name }}NotWatched {
 				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -978,14 +978,14 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}3a, {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a   }
-			notWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
-			assertSnapshot{{ .PluralName }}(watched, notWatched)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}3a, {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a   }
+			{{ lower_camel .Name }}NotWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a   }
-			notWatched = append(notWatched, {{ lower_camel .Name }}2a)
-			assertSnapshot{{ .PluralName }}(watched, notWatched)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a, {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a   }
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}2a)
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- else }}
 
@@ -993,9 +993,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}2b.GetMetadata().Namespace, {{ lower_camel .Name }}2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b}...)
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}4b}
-			assertSnapshot{{ .PluralName }}(watched, notWatched)
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b}...)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}4b}
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -1003,32 +1003,32 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a }
-			notWatched = append(notWatched, {{ lower_camel .Name }}3a)
-			assertSnapshot{{ .PluralName }}(watched, notWatched)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a }
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}3a)
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a }
-			notWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a }
-			assertSnapshot{{ .PluralName }}(watched, notWatched)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a, {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a }
+			{{ lower_camel .Name }}NotWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a }
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a }
-			notWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a }
-			assertSnapshot{{ .PluralName }}(watched, notWatched)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a, {{ lower_camel .Name }}7a }
+			{{ lower_camel .Name }}NotWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a }
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}6a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a }
-			notWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a }
-			assertSnapshot{{ .PluralName }}(watched, notWatched)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a }
+			{{ lower_camel .Name }}NotWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}6a }
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}7a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a }
-			assertSnapshot{{ .PluralName }}(nil, notWatched)
+			{{ lower_camel .Name }}NotWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a }
+			assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)
 
 {{- else }}
 
@@ -1036,8 +1036,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}4b.GetMetadata().Namespace, {{ lower_camel .Name }}4b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}4b}...)
-			assertSnapshot{{ .PluralName }}(nil, notWatched)
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}4a, {{ lower_camel .Name }}4b}...)
+			assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 {{- end }}
@@ -1098,12 +1098,12 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				Expect(err).NotTo(HaveOccurred())
 				{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
-				watched := MockResourceList{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}
-				assertSnapshotMocks(watched, nil)
+				{{ lower_camel .Name }}Watched := MockResourceList{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}
+				assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 				deleteNamespaces(ctx, kube, namespace1, namespace2)
-				notWatched := MockResourceList{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}
-				assertSnapshotMocks(nil, notWatched)	
+				{{ lower_camel .Name }}NotWatched := MockResourceList{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}
+				assertSnapshotMocks(nil, {{ lower_camel .Name }}NotWatched)	
 {{- end }}
 		})
 
@@ -1181,8 +1181,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -1190,7 +1190,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
+			{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
 			assertNoMocksSent()
 
 {{- end }}
@@ -1206,8 +1206,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a}
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a}
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
@@ -1215,15 +1215,15 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}2b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b }
-			assertSnapshotMocks(watched, notWatched)
+			{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a, {{ lower_camel .Name }}2b }
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
 			deleteNamespaces(ctx, kube, namespace3)	
-			notWatched = append(notWatched, {{ lower_camel .Name }}2a)
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2b}	
-			assertSnapshotMocks(watched, notWatched)	
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}2a)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2b}	
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)	
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 
@@ -1231,25 +1231,25 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}3a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a}
-			assertSnapshotMocks(watched, nil)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a}
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 			deleteNamespaces(ctx, kube, namespace4)	
-			assertSnapshotMocks(watched, nil)
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, nil)
 
 {{- else }}
 
 			{{ lower_camel .Name }}3a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, {{ lower_camel .Name }}3a)
-			assertSnapshotMocks(watched, notWatched)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}3a)
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 			deleteNamespaces(ctx, kube, namespace4)	
-			notWatched = append(notWatched, {{ lower_camel .Name }}2b)
-			watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a}	
-			assertSnapshotMocks(watched, notWatched)
+			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}2b)
+			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a}	
+			assertSnapshotMocks({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
-			for _, r := range watched {
+			for _, r := range {{ lower_camel .Name }}Watched {
 				err = {{ lower_camel .Name }}Client.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}

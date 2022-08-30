@@ -179,22 +179,22 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched := MockResourceList{mockResource1a, mockResource1b}
-		assertSnapshotMocks(watched, nil)
+		mockResourceWatched := MockResourceList{mockResource1a, mockResource1b}
+		assertSnapshotMocks(mockResourceWatched, nil)
 
 		mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, MockResourceList{mockResource2a, mockResource2b}...)
-		assertSnapshotMocks(watched, nil)
+		mockResourceWatched = append(mockResourceWatched, MockResourceList{mockResource2a, mockResource2b}...)
+		assertSnapshotMocks(mockResourceWatched, nil)
 
 		mockResource3a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResource3b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, MockResourceList{mockResource3a, mockResource3b}...)
-		assertSnapshotMocks(watched, nil)
+		mockResourceWatched = append(mockResourceWatched, MockResourceList{mockResource3a, mockResource3b}...)
+		assertSnapshotMocks(mockResourceWatched, nil)
 
 		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 		createNamespaces(ctx, kube, namespace4)
@@ -203,25 +203,25 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		mockResource4b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, mockResource4a)
-		notWatched := MockResourceList{mockResource4b}
-		assertSnapshotMocks(watched, notWatched)
+		mockResourceWatched = append(mockResourceWatched, mockResource4a)
+		mockResourceNotWatched := MockResourceList{mockResource4b}
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		mockResource5a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResource5b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, mockResource5a)
-		notWatched = append(notWatched, mockResource5b)
-		assertSnapshotMocks(watched, notWatched)
+		mockResourceWatched = append(mockResourceWatched, mockResource5a)
+		mockResourceNotWatched = append(mockResourceNotWatched, mockResource5b)
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		mockResource6a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace3, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResource6b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace4, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, mockResource6a)
-		notWatched = append(notWatched, mockResource6b)
-		assertSnapshotMocks(watched, notWatched)
+		mockResourceWatched = append(mockResourceWatched, mockResource6a)
+		mockResourceNotWatched = append(mockResourceNotWatched, mockResource6b)
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 		createNamespaces(ctx, kube, namespace6)
@@ -230,18 +230,18 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		mockResource7b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace6, name1, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, mockResource7a)
-		notWatched = append(notWatched, mockResource7b)
-		assertSnapshotMocks(watched, notWatched)
+		mockResourceWatched = append(mockResourceWatched, mockResource7a)
+		mockResourceNotWatched = append(mockResourceNotWatched, mockResource7b)
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		mockResource8a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace6, name2, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResource8b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace6, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, MockResourceList{mockResource8a, mockResource8b}...)
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource8a, mockResource8b}...)
 		assertNoMessageSent()
 
-		for _, r := range notWatched {
+		for _, r := range mockResourceNotWatched {
 			err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 		}
@@ -251,40 +251,40 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, MockResourceList{mockResource1a, mockResource1b}...)
-		watched = MockResourceList{mockResource2a, mockResource2b, mockResource3a, mockResource3b, mockResource4a, mockResource5a, mockResource6a, mockResource7a}
-		assertSnapshotMocks(watched, notWatched)
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource1a, mockResource1b}...)
+		mockResourceWatched = MockResourceList{mockResource2a, mockResource2b, mockResource3a, mockResource3b, mockResource4a, mockResource5a, mockResource6a, mockResource7a}
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, MockResourceList{mockResource2a, mockResource2b}...)
-		watched = MockResourceList{mockResource3a, mockResource3b, mockResource4a, mockResource5a, mockResource6a, mockResource7a}
-		assertSnapshotMocks(watched, notWatched)
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource2a, mockResource2b}...)
+		mockResourceWatched = MockResourceList{mockResource3a, mockResource3b, mockResource4a, mockResource5a, mockResource6a, mockResource7a}
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		err = mockResourceClient.Delete(mockResource3a.GetMetadata().Namespace, mockResource3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource3b.GetMetadata().Namespace, mockResource3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, MockResourceList{mockResource3a, mockResource3b}...)
-		watched = MockResourceList{mockResource4a, mockResource5a, mockResource6a, mockResource7a}
-		assertSnapshotMocks(watched, notWatched)
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource3a, mockResource3b}...)
+		mockResourceWatched = MockResourceList{mockResource4a, mockResource5a, mockResource6a, mockResource7a}
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		err = mockResourceClient.Delete(mockResource4a.GetMetadata().Namespace, mockResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource5a.GetMetadata().Namespace, mockResource5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, MockResourceList{mockResource5a, mockResource5b}...)
-		watched = MockResourceList{mockResource6a, mockResource7a}
-		assertSnapshotMocks(watched, notWatched)
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource5a, mockResource5b}...)
+		mockResourceWatched = MockResourceList{mockResource6a, mockResource7a}
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		err = mockResourceClient.Delete(mockResource6a.GetMetadata().Namespace, mockResource6a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = mockResourceClient.Delete(mockResource7a.GetMetadata().Namespace, mockResource7a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, MockResourceList{mockResource6a, mockResource7a}...)
-		assertSnapshotMocks(nil, notWatched)
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource6a, mockResource7a}...)
+		assertSnapshotMocks(nil, mockResourceNotWatched)
 
 		/*
 			FrequentlyChangingAnnotationsResource
@@ -320,22 +320,22 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
-		assertSnapshotFcars(watched, nil)
+		frequentlyChangingAnnotationsResourceWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, nil)
 
 		frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}...)
-		assertSnapshotMocks(watched, nil)
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}...)
+		assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, nil)
 
 		frequentlyChangingAnnotationsResource3a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource3b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b}...)
-		assertSnapshotMocks(watched, nil)
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b}...)
+		assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, nil)
 
 		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 		createNamespaces(ctx, kube, namespace4)
@@ -344,25 +344,25 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource4b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, frequentlyChangingAnnotationsResource4a)
-		notWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4b}
-		assertSnapshotMocks(watched, notWatched)
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource4a)
+		frequentlyChangingAnnotationsResourceNotWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4b}
+		assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 		frequentlyChangingAnnotationsResource5a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource5b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, frequentlyChangingAnnotationsResource5a)
-		notWatched = append(notWatched, frequentlyChangingAnnotationsResource5b)
-		assertSnapshotMocks(watched, notWatched)
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource5a)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource5b)
+		assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 		frequentlyChangingAnnotationsResource6a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace3, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource6b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace4, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, frequentlyChangingAnnotationsResource6a)
-		notWatched = append(notWatched, frequentlyChangingAnnotationsResource6b)
-		assertSnapshotMocks(watched, notWatched)
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource6a)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource6b)
+		assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 		createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 		createNamespaces(ctx, kube, namespace6)
@@ -371,18 +371,18 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource7b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace6, name1, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, frequentlyChangingAnnotationsResource7a)
-		notWatched = append(notWatched, frequentlyChangingAnnotationsResource7b)
-		assertSnapshotMocks(watched, notWatched)
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource7a)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource7b)
+		assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 		frequentlyChangingAnnotationsResource8a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace6, name2, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		frequentlyChangingAnnotationsResource8b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace6, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource8a, frequentlyChangingAnnotationsResource8b}...)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource8a, frequentlyChangingAnnotationsResource8b}...)
 		assertNoMessageSent()
 
-		for _, r := range notWatched {
+		for _, r := range frequentlyChangingAnnotationsResourceNotWatched {
 			err = frequentlyChangingAnnotationsResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 		}
@@ -392,40 +392,40 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}...)
-		watched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b, frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b, frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}
-		assertSnapshotFcars(watched, notWatched)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}...)
+		frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b, frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b, frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}...)
-		watched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b, frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}
-		assertSnapshotFcars(watched, notWatched)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}...)
+		frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b, frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource3a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource3b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b}...)
-		watched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}
-		assertSnapshotFcars(watched, notWatched)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b}...)
+		frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource4a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource5a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource5b}...)
-		watched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}
-		assertSnapshotFcars(watched, notWatched)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource5b}...)
+		frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource6a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource6a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource7a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource7a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}...)
-		assertSnapshotFcars(nil, notWatched)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource7a}...)
+		assertSnapshotFcars(nil, frequentlyChangingAnnotationsResourceNotWatched)
 
 		/*
 			FakeResource
@@ -461,22 +461,22 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
-		assertSnapshotFakes(watched, nil)
+		fakeResourceWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
+		assertSnapshotFakes(fakeResourceWatched, nil)
 
 		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}...)
-		assertSnapshotMocks(watched, nil)
+		fakeResourceWatched = append(fakeResourceWatched, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}...)
+		assertSnapshotMocks(fakeResourceWatched, nil)
 
 		fakeResource3a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource3b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b}...)
-		assertSnapshotMocks(watched, nil)
+		fakeResourceWatched = append(fakeResourceWatched, testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b}...)
+		assertSnapshotMocks(fakeResourceWatched, nil)
 
 		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 		createNamespaces(ctx, kube, namespace4)
@@ -485,25 +485,25 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource4b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, fakeResource4a)
-		notWatched := testing_solo_io.FakeResourceList{fakeResource4b}
-		assertSnapshotMocks(watched, notWatched)
+		fakeResourceWatched = append(fakeResourceWatched, fakeResource4a)
+		fakeResourceNotWatched := testing_solo_io.FakeResourceList{fakeResource4b}
+		assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 		fakeResource5a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource5b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, fakeResource5a)
-		notWatched = append(notWatched, fakeResource5b)
-		assertSnapshotMocks(watched, notWatched)
+		fakeResourceWatched = append(fakeResourceWatched, fakeResource5a)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource5b)
+		assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 		fakeResource6a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace3, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource6b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace4, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, fakeResource6a)
-		notWatched = append(notWatched, fakeResource6b)
-		assertSnapshotMocks(watched, notWatched)
+		fakeResourceWatched = append(fakeResourceWatched, fakeResource6a)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource6b)
+		assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 		createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 		createNamespaces(ctx, kube, namespace6)
@@ -512,18 +512,18 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource7b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace6, name1, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		watched = append(watched, fakeResource7a)
-		notWatched = append(notWatched, fakeResource7b)
-		assertSnapshotMocks(watched, notWatched)
+		fakeResourceWatched = append(fakeResourceWatched, fakeResource7a)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource7b)
+		assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 		fakeResource8a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace6, name2, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		fakeResource8b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace6, name3, labels2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource8a, fakeResource8b}...)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource8a, fakeResource8b}...)
 		assertNoMessageSent()
 
-		for _, r := range notWatched {
+		for _, r := range fakeResourceNotWatched {
 			err = fakeResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 		}
@@ -533,40 +533,40 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}...)
-		watched = testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b, fakeResource3a, fakeResource3b, fakeResource4a, fakeResource5a, fakeResource6a, fakeResource7a}
-		assertSnapshotFakes(watched, notWatched)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}...)
+		fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b, fakeResource3a, fakeResource3b, fakeResource4a, fakeResource5a, fakeResource6a, fakeResource7a}
+		assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
 
 		err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}...)
-		watched = testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b, fakeResource4a, fakeResource5a, fakeResource6a, fakeResource7a}
-		assertSnapshotFakes(watched, notWatched)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}...)
+		fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b, fakeResource4a, fakeResource5a, fakeResource6a, fakeResource7a}
+		assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
 
 		err = fakeResourceClient.Delete(fakeResource3a.GetMetadata().Namespace, fakeResource3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource3b.GetMetadata().Namespace, fakeResource3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b}...)
-		watched = testing_solo_io.FakeResourceList{fakeResource4a, fakeResource5a, fakeResource6a, fakeResource7a}
-		assertSnapshotFakes(watched, notWatched)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b}...)
+		fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource4a, fakeResource5a, fakeResource6a, fakeResource7a}
+		assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
 
 		err = fakeResourceClient.Delete(fakeResource4a.GetMetadata().Namespace, fakeResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource5a.GetMetadata().Namespace, fakeResource5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource5a, fakeResource5b}...)
-		watched = testing_solo_io.FakeResourceList{fakeResource6a, fakeResource7a}
-		assertSnapshotFakes(watched, notWatched)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource5a, fakeResource5b}...)
+		fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource6a, fakeResource7a}
+		assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
 
 		err = fakeResourceClient.Delete(fakeResource6a.GetMetadata().Namespace, fakeResource6a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = fakeResourceClient.Delete(fakeResource7a.GetMetadata().Namespace, fakeResource7a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource6a, fakeResource7a}...)
-		assertSnapshotFakes(nil, notWatched)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource6a, fakeResource7a}...)
+		assertSnapshotFakes(nil, fakeResourceNotWatched)
 	}
 
 	BeforeEach(func() {
@@ -1085,7 +1085,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := MockResourceList{mockResource1a, mockResource1b}
+			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
 			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
@@ -1095,22 +1095,22 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := MockResourceList{mockResource2a, mockResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			mockResourceWatched := MockResourceList{mockResource2a, mockResource2b}
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			mockResource3a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace1, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResource3b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, MockResourceList{mockResource3a, mockResource3b}...)
+			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource3a, mockResource3b}...)
 			assertNoMocksSent()
 
 			mockResource4a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResource4b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, MockResourceList{mockResource4a, mockResource4b}...)
-			assertSnapshotMocks(watched, notWatched)
+			mockResourceWatched = append(mockResourceWatched, MockResourceList{mockResource4a, mockResource4b}...)
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			createNamespaces(ctx, kube, namespace5, namespace6)
 
@@ -1118,24 +1118,24 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mockResource5b, err := mockResourceClient.Write(NewMockResource(namespace6, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, MockResourceList{mockResource5a, mockResource5b}...)
+			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource5a, mockResource5b}...)
 			assertNoMessageSent()
 
 			mockResource6a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace5, name3, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResource6b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace6, name3, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, MockResourceList{mockResource6a, mockResource6b}...)
+			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource6a, mockResource6b}...)
 			assertNoMessageSent()
 
 			mockResource7a, err := mockResourceClient.Write(NewMockResource(namespace5, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResource7b, err := mockResourceClient.Write(NewMockResource(namespace6, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, MockResourceList{mockResource7a, mockResource7b}...)
+			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource7a, mockResource7b}...)
 			assertNoMessageSent()
 
-			for _, r := range notWatched {
+			for _, r := range mockResourceNotWatched {
 				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -1145,16 +1145,16 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, MockResourceList{mockResource2a, mockResource2b}...)
-			watched = MockResourceList{mockResource4a, mockResource4b}
-			assertSnapshotMocks(watched, notWatched)
+			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource2a, mockResource2b}...)
+			mockResourceWatched = MockResourceList{mockResource4a, mockResource4b}
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			err = mockResourceClient.Delete(mockResource4a.GetMetadata().Namespace, mockResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			err = mockResourceClient.Delete(mockResource4b.GetMetadata().Namespace, mockResource4b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, MockResourceList{mockResource4a, mockResource4b}...)
-			assertSnapshotMocks(nil, notWatched)
+			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource4a, mockResource4b}...)
+			assertSnapshotMocks(nil, mockResourceNotWatched)
 
 			/*
 				FrequentlyChangingAnnotationsResource
@@ -1190,7 +1190,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+			frequentlyChangingAnnotationsResourceNotWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
 			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
@@ -1200,22 +1200,22 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			frequentlyChangingAnnotationsResourceWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}
+			assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 			frequentlyChangingAnnotationsResource3a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace1, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource3b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b}...)
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b}...)
 			assertNoMocksSent()
 
 			frequentlyChangingAnnotationsResource4a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource4b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource4b}...)
-			assertSnapshotMocks(watched, notWatched)
+			frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource4b}...)
+			assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 			createNamespaces(ctx, kube, namespace5, namespace6)
 
@@ -1223,24 +1223,24 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource5b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace6, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource5b}...)
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource5b}...)
 			assertNoMessageSent()
 
 			frequentlyChangingAnnotationsResource6a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace5, name3, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource6b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace6, name3, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource6b}...)
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource6a, frequentlyChangingAnnotationsResource6b}...)
 			assertNoMessageSent()
 
 			frequentlyChangingAnnotationsResource7a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace5, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource7b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace6, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource7a, frequentlyChangingAnnotationsResource7b}...)
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource7a, frequentlyChangingAnnotationsResource7b}...)
 			assertNoMessageSent()
 
-			for _, r := range notWatched {
+			for _, r := range frequentlyChangingAnnotationsResourceNotWatched {
 				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -1250,16 +1250,16 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}...)
-			watched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource4b}
-			assertSnapshotFcars(watched, notWatched)
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}...)
+			frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource4b}
+			assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource4a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource4b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource4b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource4b}...)
-			assertSnapshotFcars(nil, notWatched)
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource4b}...)
+			assertSnapshotFcars(nil, frequentlyChangingAnnotationsResourceNotWatched)
 
 			/*
 				FakeResource
@@ -1295,7 +1295,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
+			fakeResourceNotWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
 			assertNoMocksSent()
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
@@ -1305,22 +1305,22 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			fakeResourceWatched := testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}
+			assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 			fakeResource3a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace1, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource3b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b}...)
+			fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b}...)
 			assertNoMocksSent()
 
 			fakeResource4a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource4b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, testing_solo_io.FakeResourceList{fakeResource4a, fakeResource4b}...)
-			assertSnapshotMocks(watched, notWatched)
+			fakeResourceWatched = append(fakeResourceWatched, testing_solo_io.FakeResourceList{fakeResource4a, fakeResource4b}...)
+			assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 			createNamespaces(ctx, kube, namespace5, namespace6)
 
@@ -1328,24 +1328,24 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource5b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace6, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource5a, fakeResource5b}...)
+			fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource5a, fakeResource5b}...)
 			assertNoMessageSent()
 
 			fakeResource6a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace5, name3, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource6b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResourceWithLabels(namespace6, name3, labels1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource6a, fakeResource6b}...)
+			fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource6a, fakeResource6b}...)
 			assertNoMessageSent()
 
 			fakeResource7a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace5, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource7b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace6, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource7a, fakeResource7b}...)
+			fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource7a, fakeResource7b}...)
 			assertNoMessageSent()
 
-			for _, r := range notWatched {
+			for _, r := range fakeResourceNotWatched {
 				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -1355,16 +1355,16 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}...)
-			watched = testing_solo_io.FakeResourceList{fakeResource4a, fakeResource4b}
-			assertSnapshotFakes(watched, notWatched)
+			fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}...)
+			fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource4a, fakeResource4b}
+			assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
 
 			err = fakeResourceClient.Delete(fakeResource4a.GetMetadata().Namespace, fakeResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			err = fakeResourceClient.Delete(fakeResource4b.GetMetadata().Namespace, fakeResource4b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched = append(notWatched, testing_solo_io.FakeResourceList{fakeResource4a, fakeResource4b}...)
-			assertSnapshotFakes(nil, notWatched)
+			fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource4a, fakeResource4b}...)
+			assertSnapshotFakes(nil, fakeResourceNotWatched)
 		})
 	})
 
@@ -1416,12 +1416,12 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := MockResourceList{mockResource1a, mockResource1b}
-			assertSnapshotMocks(watched, nil)
+			mockResourceWatched := MockResourceList{mockResource1a, mockResource1b}
+			assertSnapshotMocks(mockResourceWatched, nil)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
-			notWatched := MockResourceList{mockResource1a, mockResource1b}
-			assertSnapshotMocks(nil, notWatched)
+			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
+			assertSnapshotMocks(nil, mockResourceNotWatched)
 
 			/*
 				FrequentlyChangingAnnotationsResource
@@ -1457,12 +1457,12 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := MockResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
-			assertSnapshotMocks(watched, nil)
+			frequentlyChangingAnnotationsResourceWatched := MockResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+			assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, nil)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
-			notWatched := MockResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
-			assertSnapshotMocks(nil, notWatched)
+			frequentlyChangingAnnotationsResourceNotWatched := MockResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+			assertSnapshotMocks(nil, frequentlyChangingAnnotationsResourceNotWatched)
 
 			/*
 				FakeResource
@@ -1498,12 +1498,12 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := MockResourceList{fakeResource1a, fakeResource1b}
-			assertSnapshotMocks(watched, nil)
+			fakeResourceWatched := MockResourceList{fakeResource1a, fakeResource1b}
+			assertSnapshotMocks(fakeResourceWatched, nil)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
-			notWatched := MockResourceList{fakeResource1a, fakeResource1b}
-			assertSnapshotMocks(nil, notWatched)
+			fakeResourceNotWatched := MockResourceList{fakeResource1a, fakeResource1b}
+			assertSnapshotMocks(nil, fakeResourceNotWatched)
 		})
 
 		It("Should not contain resources from a deleted namespace, that is filtered", func() {
@@ -1573,7 +1573,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := MockResourceList{mockResource1a, mockResource1b}
+			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
 			assertNoMocksSent()
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
@@ -1587,27 +1587,27 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := MockResourceList{mockResource2a, mockResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			mockResourceWatched := MockResourceList{mockResource2a, mockResource2b}
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			notWatched = append(notWatched, mockResource2a)
-			watched = MockResourceList{mockResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			mockResourceNotWatched = append(mockResourceNotWatched, mockResource2a)
+			mockResourceWatched = MockResourceList{mockResource2b}
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 
 			mockResource3a, err := mockResourceClient.Write(NewMockResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, mockResource3a)
-			assertSnapshotMocks(watched, notWatched)
+			mockResourceWatched = append(mockResourceWatched, mockResource3a)
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace4)
-			notWatched = append(notWatched, mockResource2b)
-			watched = MockResourceList{mockResource3a}
-			assertSnapshotMocks(watched, notWatched)
+			mockResourceNotWatched = append(mockResourceNotWatched, mockResource2b)
+			mockResourceWatched = MockResourceList{mockResource3a}
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
-			for _, r := range watched {
+			for _, r := range mockResourceWatched {
 				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -1652,7 +1652,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+			frequentlyChangingAnnotationsResourceNotWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
 			assertNoMocksSent()
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
@@ -1666,27 +1666,27 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			frequentlyChangingAnnotationsResourceWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}
+			assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			notWatched = append(notWatched, frequentlyChangingAnnotationsResource2a)
-			watched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource2a)
+			frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2b}
+			assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 
 			frequentlyChangingAnnotationsResource3a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, frequentlyChangingAnnotationsResource3a)
-			assertSnapshotMocks(watched, notWatched)
+			frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource3a)
+			assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace4)
-			notWatched = append(notWatched, frequentlyChangingAnnotationsResource2b)
-			watched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a}
-			assertSnapshotMocks(watched, notWatched)
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource2b)
+			frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a}
+			assertSnapshotMocks(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
 
-			for _, r := range watched {
+			for _, r := range frequentlyChangingAnnotationsResourceWatched {
 				err = frequentlyChangingAnnotationsResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -1731,7 +1731,7 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			notWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
+			fakeResourceNotWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
 			assertNoMocksSent()
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
@@ -1745,27 +1745,27 @@ var _ = Describe("V2Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched := testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			fakeResourceWatched := testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}
+			assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			notWatched = append(notWatched, fakeResource2a)
-			watched = testing_solo_io.FakeResourceList{fakeResource2b}
-			assertSnapshotMocks(watched, notWatched)
+			fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource2a)
+			fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource2b}
+			assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 
 			fakeResource3a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			watched = append(watched, fakeResource3a)
-			assertSnapshotMocks(watched, notWatched)
+			fakeResourceWatched = append(fakeResourceWatched, fakeResource3a)
+			assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace4)
-			notWatched = append(notWatched, fakeResource2b)
-			watched = testing_solo_io.FakeResourceList{fakeResource3a}
-			assertSnapshotMocks(watched, notWatched)
+			fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource2b)
+			fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource3a}
+			assertSnapshotMocks(fakeResourceWatched, fakeResourceNotWatched)
 
-			for _, r := range watched {
+			for _, r := range fakeResourceWatched {
 				err = fakeResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
