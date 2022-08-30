@@ -125,6 +125,10 @@ func (client *kubeClientResourceNamespaceLister) GetResourceNamespaceWatch(opts 
 	resourceNamespaceChan := make(chan resources.ResourceNamespaceList)
 	errorChannel := make(chan error)
 	go func() {
+		defer func() {
+			close(resourceNamespaceChan)
+			close(errorChannel)
+		}()
 		for {
 			select {
 			case <-opts.Ctx.Done():
