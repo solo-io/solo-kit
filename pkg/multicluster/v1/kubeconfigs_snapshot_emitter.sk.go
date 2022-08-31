@@ -105,6 +105,8 @@ type kubeconfigsEmitter struct {
 	// namespacesWatching is the set of namespaces that we are watching. This is helpful
 	// when Expression Selector is set on the Watch Opts in Snapshot().
 	namespacesWatching sync.Map
+	// updateNamespaces is used to perform locks and unlocks when watches on namespaces are being updated/created
+	updateNamespaces sync.Mutex
 }
 
 func (c *kubeconfigsEmitter) Register() error {
@@ -219,6 +221,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 
 		filterNamespaces := resources.ResourceNamespaceList{}
 		for _, ns := range watchNamespaces {
+			// we do not want to filter out "" which equals all namespaces
 			if ns != "" {
 				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
 			}
@@ -300,6 +303,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 					// get the list of new namespaces, if there is a new namespace
 					// get the list of resources from that namespace, and add
 					// a watch for new resources created/deleted on that namespace
+					c.updateNamespaces.Lock()
 
 					// get the new namespaces, and get a map of the namespaces
 					mapOfResourceNamespaces := make(map[string]bool, len(resourceNamespaces))
@@ -322,8 +326,9 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 					})
 
 					for _, ns := range missingNamespaces {
-						c.namespacesWatching.Delete(ns)
-						kubeconfigsByNamespace.Delete(ns)
+						// c.namespacesWatching.Delete(ns)
+						kubeConfigChan <- kubeConfigListWithNamespace{list: KubeConfigList{}, namespace: ns}
+						// kubeconfigsByNamespace.Delete(ns)
 					}
 
 					for _, namespace := range newNamespaces {
@@ -370,6 +375,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 							}
 						}(namespace)
 					}
+					c.updateNamespaces.Unlock()
 				}
 			}
 		}()

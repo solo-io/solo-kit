@@ -144,6 +144,8 @@ type {{ lower_camel .GoName }}Emitter struct {
 	// namespacesWatching is the set of namespaces that we are watching. This is helpful
 	// when Expression Selector is set on the Watch Opts in Snapshot().
 	namespacesWatching sync.Map
+	// updateNamespaces is used to perform locks and unlocks when watches on namespaces are being updated/created
+	updateNamespaces sync.Mutex
 }
 
 func (c *{{ lower_camel .GoName }}Emitter) Register() error {
@@ -282,6 +284,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 
 		filterNamespaces := resources.ResourceNamespaceList{}
 		for _, ns := range watchNamespaces {
+			// we do not want to filter out "" which equals all namespaces
 			if ns != "" {
 				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
 			}
@@ -371,6 +374,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 					// get the list of new namespaces, if there is a new namespace
 					// get the list of resources from that namespace, and add
 					// a watch for new resources created/deleted on that namespace
+					c.updateNamespaces.Lock()
 
 					// get the new namespaces, and get a map of the namespaces
 					mapOfResourceNamespaces := make(map[string]bool, len(resourceNamespaces))
@@ -393,10 +397,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 					})
 				
 					for _, ns := range missingNamespaces {
-						c.namespacesWatching.Delete(ns)
+						// c.namespacesWatching.Delete(ns)
 {{- range .Resources}}
 {{- if (not .ClusterScoped) }}
-						{{ lower_camel .PluralName }}ByNamespace.Delete(ns)
+						{{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ .ImportPrefix }}{{ .Name }}List{}, namespace: ns}
+						// {{ lower_camel .PluralName }}ByNamespace.Delete(ns)
 {{- end }}
 {{- end }}
 					}
@@ -453,6 +458,7 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 							}
 						}(namespace)
 					}
+					c.updateNamespaces.Unlock()
 				}
 			}
 		}()
@@ -465,7 +471,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "initial {{ .Name }} list")
 	}
-	{{ lower_camel .Name }}Chan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(opts)
+	// for Cluster scoped resources, we do not use Expression Selectors
+	{{ lower_camel .Name }}Chan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(clients.WatchOpts{
+		Ctx: opts.Ctx,
+		Selector: opts.Selector,
+	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "starting {{ .Name }} watch")
 	}

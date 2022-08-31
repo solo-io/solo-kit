@@ -44,6 +44,8 @@ var _ = Describe("V1Emitter", func() {
 		namespace5, namespace6  string
 		name1, name2            = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		name3, name4            = "susan" + helpers.RandString(3), "jim" + helpers.RandString(3)
+		name5, name6            = "melisa" + helpers.RandString(3), "blake" + helpers.RandString(3)
+		name7, name8            = "britany" + helpers.RandString(3), "john" + helpers.RandString(3)
 		labels1                 = map[string]string{"env": "test"}
 		labels2                 = map[string]string{"env": "testenv", "owner": "foo"}
 		labelExpression1        = "env in (test)"
@@ -95,6 +97,18 @@ var _ = Describe("V1Emitter", func() {
 	deleteNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespaces...)
 		Expect(err).NotTo(HaveOccurred())
+	}
+
+	// getNewNamespaces is used to generate new namespace names, so that we do not have to wait
+	// when deleting namespaces in runNamespacedSelectorsWithWatchNamespaces. Since
+	// runNamespacedSelectorsWithWatchNamespaces uses watchNamespaces set to namespace1 and
+	// namespace2, this will work. Because the emitter willl only be watching namespaces that are
+	// labeled.
+	getNewNamespaces := func() {
+		namespace3 = helpers.RandString(8)
+		namespace4 = helpers.RandString(8)
+		namespace5 = helpers.RandString(8)
+		namespace6 = helpers.RandString(8)
 	}
 
 	runNamespacedSelectorsWithWatchNamespaces := func() {
@@ -266,6 +280,10 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		kubeConfigNotWatched = append(kubeConfigNotWatched, KubeConfigList{kubeConfig6a, kubeConfig7a}...)
 		assertSnapshotkubeconfigs(nil, kubeConfigNotWatched)
+
+		// clean up environment
+		deleteNamespaces(ctx, kube, namespace3, namespace4, namespace5, namespace6)
+		getNewNamespaces()
 	}
 
 	BeforeEach(func() {
@@ -423,31 +441,29 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
+
 			kubeConfig1a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-
 			assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b}, nil)
+
 			kubeConfig2a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig2b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-
 			assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b}, nil)
 
 			err = kubeConfigClient.Delete(kubeConfig2a.GetMetadata().Namespace, kubeConfig2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			err = kubeConfigClient.Delete(kubeConfig2b.GetMetadata().Namespace, kubeConfig2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-
 			assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b}, KubeConfigList{kubeConfig2a, kubeConfig2b})
 
 			err = kubeConfigClient.Delete(kubeConfig1a.GetMetadata().Namespace, kubeConfig1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			err = kubeConfigClient.Delete(kubeConfig1b.GetMetadata().Namespace, kubeConfig1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-
 			assertSnapshotkubeconfigs(nil, KubeConfigList{kubeConfig1a, kubeConfig1b, kubeConfig2a, kubeConfig2b})
 		})
 
@@ -601,6 +617,10 @@ var _ = Describe("V1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfigNotWatched = append(kubeConfigNotWatched, KubeConfigList{kubeConfig4a, kubeConfig4b}...)
 			assertSnapshotkubeconfigs(nil, kubeConfigNotWatched)
+
+			// clean up environment
+			deleteNamespaces(ctx, kube, namespace3, namespace4, namespace5, namespace6)
+			getNewNamespaces()
 		})
 	})
 
@@ -745,8 +765,9 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotkubeconfigs(kubeConfigWatched, kubeConfigNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			kubeConfigNotWatched = KubeConfigList{kubeConfig2a}
-			assertSnapshotkubeconfigs(kubeConfigWatched, kubeConfigNotWatched)
+			kubeConfigWatched = KubeConfigList{kubeConfig2b}
+			kubeConfigNotWatched = append(kubeConfigNotWatched, kubeConfig2a)
+			assertSnapshotClusterresources(kubeConfigWatched, kubeConfigNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 
@@ -763,8 +784,9 @@ var _ = Describe("V1Emitter", func() {
 			for _, r := range kubeConfigWatched {
 				err = kubeConfigClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
+				kubeConfigNotWatched = append(kubeConfigNotWatched, r)
 			}
-			assertNokubeconfigsSent()
+			assertSnapshotkubeconfigs(nil, kubeConfigNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace5)
 

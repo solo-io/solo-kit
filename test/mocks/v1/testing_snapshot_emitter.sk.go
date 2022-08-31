@@ -125,6 +125,8 @@ type testingEmitter struct {
 	// namespacesWatching is the set of namespaces that we are watching. This is helpful
 	// when Expression Selector is set on the Watch Opts in Snapshot().
 	namespacesWatching sync.Map
+	// updateNamespaces is used to perform locks and unlocks when watches on namespaces are being updated/created
+	updateNamespaces sync.Mutex
 }
 
 func (c *testingEmitter) Register() error {
@@ -462,6 +464,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 		filterNamespaces := resources.ResourceNamespaceList{}
 		for _, ns := range watchNamespaces {
+			// we do not want to filter out "" which equals all namespaces
 			if ns != "" {
 				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
 			}
@@ -683,6 +686,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					// get the list of new namespaces, if there is a new namespace
 					// get the list of resources from that namespace, and add
 					// a watch for new resources created/deleted on that namespace
+					c.updateNamespaces.Lock()
 
 					// get the new namespaces, and get a map of the namespaces
 					mapOfResourceNamespaces := make(map[string]bool, len(resourceNamespaces))
@@ -705,13 +709,19 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					})
 
 					for _, ns := range missingNamespaces {
-						c.namespacesWatching.Delete(ns)
-						simplemocksByNamespace.Delete(ns)
-						mocksByNamespace.Delete(ns)
-						fakesByNamespace.Delete(ns)
-						anothermockresourcesByNamespace.Delete(ns)
-						mctsByNamespace.Delete(ns)
-						podsByNamespace.Delete(ns)
+						// c.namespacesWatching.Delete(ns)
+						simpleMockResourceChan <- simpleMockResourceListWithNamespace{list: SimpleMockResourceList{}, namespace: ns}
+						// simplemocksByNamespace.Delete(ns)
+						mockResourceChan <- mockResourceListWithNamespace{list: MockResourceList{}, namespace: ns}
+						// mocksByNamespace.Delete(ns)
+						fakeResourceChan <- fakeResourceListWithNamespace{list: FakeResourceList{}, namespace: ns}
+						// fakesByNamespace.Delete(ns)
+						anotherMockResourceChan <- anotherMockResourceListWithNamespace{list: AnotherMockResourceList{}, namespace: ns}
+						// anothermockresourcesByNamespace.Delete(ns)
+						mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: MockCustomTypeList{}, namespace: ns}
+						// mctsByNamespace.Delete(ns)
+						podChan <- podListWithNamespace{list: github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{}, namespace: ns}
+						// podsByNamespace.Delete(ns)
 					}
 
 					for _, namespace := range newNamespaces {
@@ -903,6 +913,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							}
 						}(namespace)
 					}
+					c.updateNamespaces.Unlock()
 				}
 			}
 		}()
@@ -921,7 +932,11 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "initial ClusterResource list")
 	}
-	clusterResourceChan, clusterResourceErrs, err := c.clusterResource.Watch(opts)
+	// for Cluster scoped resources, we do not use Expression Selectors
+	clusterResourceChan, clusterResourceErrs, err := c.clusterResource.Watch(clients.WatchOpts{
+		Ctx:      opts.Ctx,
+		Selector: opts.Selector,
+	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "starting ClusterResource watch")
 	}

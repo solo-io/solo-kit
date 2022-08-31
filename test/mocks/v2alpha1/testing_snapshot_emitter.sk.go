@@ -113,6 +113,8 @@ type testingEmitter struct {
 	// namespacesWatching is the set of namespaces that we are watching. This is helpful
 	// when Expression Selector is set on the Watch Opts in Snapshot().
 	namespacesWatching sync.Map
+	// updateNamespaces is used to perform locks and unlocks when watches on namespaces are being updated/created
+	updateNamespaces sync.Mutex
 }
 
 func (c *testingEmitter) Register() error {
@@ -313,6 +315,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 
 		filterNamespaces := resources.ResourceNamespaceList{}
 		for _, ns := range watchNamespaces {
+			// we do not want to filter out "" which equals all namespaces
 			if ns != "" {
 				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
 			}
@@ -450,6 +453,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					// get the list of new namespaces, if there is a new namespace
 					// get the list of resources from that namespace, and add
 					// a watch for new resources created/deleted on that namespace
+					c.updateNamespaces.Lock()
 
 					// get the new namespaces, and get a map of the namespaces
 					mapOfResourceNamespaces := make(map[string]bool, len(resourceNamespaces))
@@ -472,10 +476,13 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					})
 
 					for _, ns := range missingNamespaces {
-						c.namespacesWatching.Delete(ns)
-						mocksByNamespace.Delete(ns)
-						fcarsByNamespace.Delete(ns)
-						fakesByNamespace.Delete(ns)
+						// c.namespacesWatching.Delete(ns)
+						mockResourceChan <- mockResourceListWithNamespace{list: MockResourceList{}, namespace: ns}
+						// mocksByNamespace.Delete(ns)
+						frequentlyChangingAnnotationsResourceChan <- frequentlyChangingAnnotationsResourceListWithNamespace{list: FrequentlyChangingAnnotationsResourceList{}, namespace: ns}
+						// fcarsByNamespace.Delete(ns)
+						fakeResourceChan <- fakeResourceListWithNamespace{list: testing_solo_io.FakeResourceList{}, namespace: ns}
+						// fakesByNamespace.Delete(ns)
 					}
 
 					for _, namespace := range newNamespaces {
@@ -580,6 +587,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							}
 						}(namespace)
 					}
+					c.updateNamespaces.Unlock()
 				}
 			}
 		}()
