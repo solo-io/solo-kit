@@ -760,7 +760,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			mockResourceNotWatched := MockResourceList{mockResource2a}
+			mockResourceNotWatched = MockResourceList{mockResource2a}
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)

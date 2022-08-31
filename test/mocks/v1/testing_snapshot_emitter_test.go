@@ -3299,7 +3299,7 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotSimplemocks(simpleMockResourceWatched, simpleMockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			simpleMockResourceNotWatched := SimpleMockResourceList{simpleMockResource2a}
+			simpleMockResourceNotWatched = SimpleMockResourceList{simpleMockResource2a}
 			assertSnapshotSimplemocks(simpleMockResourceWatched, simpleMockResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
@@ -3395,7 +3395,7 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			mockResourceNotWatched := MockResourceList{mockResource2a}
+			mockResourceNotWatched = MockResourceList{mockResource2a}
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
@@ -3491,7 +3491,7 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			fakeResourceNotWatched := FakeResourceList{fakeResource2a}
+			fakeResourceNotWatched = FakeResourceList{fakeResource2a}
 			assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
@@ -3587,7 +3587,7 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotAnothermockresources(anotherMockResourceWatched, anotherMockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			anotherMockResourceNotWatched := AnotherMockResourceList{anotherMockResource2a}
+			anotherMockResourceNotWatched = AnotherMockResourceList{anotherMockResource2a}
 			assertSnapshotAnothermockresources(anotherMockResourceWatched, anotherMockResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
@@ -3674,10 +3674,11 @@ var _ = Describe("V1Emitter", func() {
 			clusterResource2a, err := clusterResourceClient.Write(NewClusterResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			clusterResourceWatched = ClusterResourceList{clusterResource2a}
-			assertSnapshotClusterresources(clusterResourceWatched, nil)
+			clusterResourceNotWatched := ClusterResourceList{}
+			assertSnapshotClusterresources(clusterResourceWatched, clusterResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			clusterResourceNotWatched := ClusterResourceList{clusterResource2a}
+			clusterResourceNotWatched = ClusterResourceList{clusterResource2a}
 			assertSnapshotClusterresources(clusterResourceWatched, clusterResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
@@ -3765,7 +3766,7 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotmcts(mockCustomTypeWatched, mockCustomTypeNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			mockCustomTypeNotWatched := MockCustomTypeList{mockCustomType2a}
+			mockCustomTypeNotWatched = MockCustomTypeList{mockCustomType2a}
 			assertSnapshotmcts(mockCustomTypeWatched, mockCustomTypeNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
@@ -3861,7 +3862,7 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotpods(podWatched, podNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			podNotWatched := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod2a}
+			podNotWatched = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod2a}
 			assertSnapshotpods(podWatched, podNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)

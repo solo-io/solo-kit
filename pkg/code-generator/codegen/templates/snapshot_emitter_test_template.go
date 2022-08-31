@@ -1214,7 +1214,8 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a}
-			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
+			{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ }
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- else }}
 
@@ -1228,7 +1229,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- end }}
 
 			deleteNamespaces(ctx, kube, namespace3)	
-			{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a }
+			{{ lower_camel .Name }}NotWatched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a }
 			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)	
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)

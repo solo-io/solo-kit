@@ -745,7 +745,7 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotkubeconfigs(kubeConfigWatched, kubeConfigNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
-			kubeConfigNotWatched := KubeConfigList{kubeConfig2a}
+			kubeConfigNotWatched = KubeConfigList{kubeConfig2a}
 			assertSnapshotkubeconfigs(kubeConfigWatched, kubeConfigNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
