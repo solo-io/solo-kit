@@ -111,6 +111,13 @@ var _ = Describe("V1Emitter", func() {
 		namespace6 = helpers.RandString(8)
 	}
 
+	// getNewNamespaces1and2 is used to generate new namespaces for namespace 1 and 2.
+	// used for the same reason as getNewNamespaces() above
+	getNewNamespaces1and2 := func() {
+		namespace1 = helpers.RandString(8)
+		namespace2 = helpers.RandString(8)
+	}
+
 	runNamespacedSelectorsWithWatchNamespaces := func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -684,13 +691,22 @@ var _ = Describe("V1Emitter", func() {
 
 			kubeConfig1a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfigWatched := KubeConfigList{kubeConfig1a, kubeConfig1b}
 			assertSnapshotkubeconfigs(kubeConfigWatched, nil)
+			err = kubeConfigClient.Delete(kubeConfig1a.GetMetadata().Namespace, kubeConfig1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = kubeConfigClient.Delete(kubeConfig1b.GetMetadata().Namespace, kubeConfig1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			kubeConfigNotWatched := KubeConfigList{kubeConfig1a, kubeConfig1b}
+			assertSnapshotkubeconfigs(nil, kubeConfigNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 		})
 

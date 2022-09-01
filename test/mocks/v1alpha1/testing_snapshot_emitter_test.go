@@ -115,6 +115,13 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		namespace6 = helpers.RandString(8)
 	}
 
+	// getNewNamespaces1and2 is used to generate new namespaces for namespace 1 and 2.
+	// used for the same reason as getNewNamespaces() above
+	getNewNamespaces1and2 := func() {
+		namespace1 = helpers.RandString(8)
+		namespace2 = helpers.RandString(8)
+	}
+
 	runNamespacedSelectorsWithWatchNamespaces := func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -699,13 +706,22 @@ var _ = Describe("V1Alpha1Emitter", func() {
 
 			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResourceWatched := MockResourceList{mockResource1a, mockResource1b}
 			assertSnapshotMocks(mockResourceWatched, nil)
+			err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
+			assertSnapshotMocks(nil, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 		})
 

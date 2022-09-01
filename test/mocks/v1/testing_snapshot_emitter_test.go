@@ -154,6 +154,13 @@ var _ = Describe("V1Emitter", func() {
 		namespace6 = helpers.RandString(8)
 	}
 
+	// getNewNamespaces1and2 is used to generate new namespaces for namespace 1 and 2.
+	// used for the same reason as getNewNamespaces() above
+	getNewNamespaces1and2 := func() {
+		namespace1 = helpers.RandString(8)
+		namespace2 = helpers.RandString(8)
+	}
+
 	runNamespacedSelectorsWithWatchNamespaces := func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -3030,13 +3037,22 @@ var _ = Describe("V1Emitter", func() {
 
 			simpleMockResource1a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			simpleMockResource1b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			simpleMockResource1b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			simpleMockResourceWatched := SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}
 			assertSnapshotSimplemocks(simpleMockResourceWatched, nil)
+			err = simpleMockResourceClient.Delete(simpleMockResource1a.GetMetadata().Namespace, simpleMockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = simpleMockResourceClient.Delete(simpleMockResource1b.GetMetadata().Namespace, simpleMockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			simpleMockResourceNotWatched := SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}
+			assertSnapshotSimplemocks(nil, simpleMockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 
 			/*
@@ -3071,13 +3087,22 @@ var _ = Describe("V1Emitter", func() {
 
 			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResourceWatched := MockResourceList{mockResource1a, mockResource1b}
 			assertSnapshotMocks(mockResourceWatched, nil)
+			err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
+			assertSnapshotMocks(nil, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 
 			/*
@@ -3112,13 +3137,22 @@ var _ = Describe("V1Emitter", func() {
 
 			fakeResource1a, err := fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			fakeResource1b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			fakeResource1b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			fakeResourceWatched := FakeResourceList{fakeResource1a, fakeResource1b}
 			assertSnapshotFakes(fakeResourceWatched, nil)
+			err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeResourceNotWatched := FakeResourceList{fakeResource1a, fakeResource1b}
+			assertSnapshotFakes(nil, fakeResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 
 			/*
@@ -3153,13 +3187,22 @@ var _ = Describe("V1Emitter", func() {
 
 			anotherMockResource1a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			anotherMockResourceWatched := AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}
 			assertSnapshotAnothermockresources(anotherMockResourceWatched, nil)
+			err = anotherMockResourceClient.Delete(anotherMockResource1a.GetMetadata().Namespace, anotherMockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = anotherMockResourceClient.Delete(anotherMockResource1b.GetMetadata().Namespace, anotherMockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			anotherMockResourceNotWatched := AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}
+			assertSnapshotAnothermockresources(nil, anotherMockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 
 			/*
@@ -3192,13 +3235,22 @@ var _ = Describe("V1Emitter", func() {
 
 			clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			clusterResource1b, err := clusterResourceClient.Write(NewClusterResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			clusterResource1b, err := clusterResourceClient.Write(NewClusterResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			clusterResourceWatched := ClusterResourceList{clusterResource1a, clusterResource1b}
 			assertSnapshotClusterresources(clusterResourceWatched, nil)
+			err = clusterResourceClient.Delete(clusterResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = clusterResourceClient.Delete(clusterResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			clusterResourceNotWatched := ClusterResourceList{clusterResource1a, clusterResource1b}
+			assertSnapshotClusterresources(nil, clusterResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 
 			/*
@@ -3233,13 +3285,22 @@ var _ = Describe("V1Emitter", func() {
 
 			mockCustomType1a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			mockCustomType1b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			mockCustomType1b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockCustomTypeWatched := MockCustomTypeList{mockCustomType1a, mockCustomType1b}
 			assertSnapshotmcts(mockCustomTypeWatched, nil)
+			err = mockCustomTypeClient.Delete(mockCustomType1a.GetMetadata().Namespace, mockCustomType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockCustomTypeClient.Delete(mockCustomType1b.GetMetadata().Namespace, mockCustomType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			mockCustomTypeNotWatched := MockCustomTypeList{mockCustomType1a, mockCustomType1b}
+			assertSnapshotmcts(nil, mockCustomTypeNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 
 			/*
@@ -3274,13 +3335,22 @@ var _ = Describe("V1Emitter", func() {
 
 			pod1a, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			pod1b, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			pod1b, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			podWatched := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod1a, pod1b}
 			assertSnapshotpods(podWatched, nil)
+			err = podClient.Delete(pod1a.GetMetadata().Namespace, pod1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = podClient.Delete(pod1b.GetMetadata().Namespace, pod1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			podNotWatched := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod1a, pod1b}
+			assertSnapshotpods(nil, podNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 			assertNoMessageSent()
+
+			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
 		})
 

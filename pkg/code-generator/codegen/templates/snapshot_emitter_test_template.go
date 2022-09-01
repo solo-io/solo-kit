@@ -141,6 +141,13 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		namespace6 = helpers.RandString(8)
 	}
 
+	// getNewNamespaces1and2 is used to generate new namespaces for namespace 1 and 2.
+	// used for the same reason as getNewNamespaces() above
+	getNewNamespaces1and2 := func() {
+		namespace1 = helpers.RandString(8)
+		namespace2 = helpers.RandString(8)
+	}
+
 	runNamespacedSelectorsWithWatchNamespaces := func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -1146,15 +1153,31 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 				{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
-				{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+				{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 				{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}
 				assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
+{{- if .ClusterScoped }}
+				err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+{{- else }}
+				err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1a.GetMetadata().Namespace, {{ lower_camel .Name }}1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				err = {{ lower_camel .Name }}Client.Delete({{ lower_camel .Name }}1b.GetMetadata().Namespace, {{ lower_camel .Name }}1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+{{- end }}
+
+				{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}
+				assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)
+
 				deleteNamespaces(ctx, kube, namespace1, namespace2)
 				assertNoMessageSent()
-				createNamespaces(ctx, kube, namespace1, namespace2)
 
+				getNewNamespaces1and2()
+				createNamespaces(ctx, kube, namespace1, namespace2)
 {{- end }}
 		})
 
