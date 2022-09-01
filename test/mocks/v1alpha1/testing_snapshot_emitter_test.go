@@ -46,10 +46,8 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		namespace5, namespace6  string
 		name1, name2            = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		name3, name4            = "susan" + helpers.RandString(3), "jim" + helpers.RandString(3)
-		name5, name6            = "melisa" + helpers.RandString(3), "blake" + helpers.RandString(3)
-		name7, name8            = "britany" + helpers.RandString(3), "john" + helpers.RandString(3)
+		name5                   = "melisa" + helpers.RandString(3)
 		labels1                 = map[string]string{"env": "test"}
-		labels2                 = map[string]string{"env": "testenv", "owner": "foo"}
 		labelExpression1        = "env in (test)"
 		cfg                     *rest.Config
 		clientset               *apiext.Clientset
@@ -188,13 +186,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		mockResourceWatched := MockResourceList{mockResource1a, mockResource1b}
 		assertSnapshotMocks(mockResourceWatched, nil)
 
-		mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResourceWatched = append(mockResourceWatched, MockResourceList{mockResource2a, mockResource2b}...)
-		assertSnapshotMocks(mockResourceWatched, nil)
-
 		mockResource3a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResource3b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
@@ -221,32 +212,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		mockResourceNotWatched = append(mockResourceNotWatched, mockResource5b)
 		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
-		mockResource6a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace3, name3, labels2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource6b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace4, name3, labels2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResourceWatched = append(mockResourceWatched, mockResource6a)
-		mockResourceNotWatched = append(mockResourceNotWatched, mockResource6b)
-		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
-
-		createNamespaceWithLabel(ctx, kube, namespace5, labels1)
-		createNamespaces(ctx, kube, namespace6)
-
-		mockResource7a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace5, name1, labels1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource7b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace6, name1, labels1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResourceWatched = append(mockResourceWatched, mockResource7a)
-		mockResourceNotWatched = append(mockResourceNotWatched, mockResource7b)
-		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
-
-		mockResource8a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace6, name2, labels2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource8b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace6, name3, labels2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource8a, mockResource8b}...)
-		assertNoMessageSent()
-
 		for _, r := range mockResourceNotWatched {
 			err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -258,15 +223,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource1a, mockResource1b}...)
-		mockResourceWatched = MockResourceList{mockResource2a, mockResource2b, mockResource3a, mockResource3b, mockResource4a, mockResource5a, mockResource6a, mockResource7a}
-		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
-
-		err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource2a, mockResource2b}...)
-		mockResourceWatched = MockResourceList{mockResource3a, mockResource3b, mockResource4a, mockResource5a, mockResource6a, mockResource7a}
+		mockResourceWatched = MockResourceList{mockResource3a, mockResource3b, mockResource4a, mockResource5a}
 		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		err = mockResourceClient.Delete(mockResource3a.GetMetadata().Namespace, mockResource3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
@@ -274,7 +231,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		err = mockResourceClient.Delete(mockResource3b.GetMetadata().Namespace, mockResource3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource3a, mockResource3b}...)
-		mockResourceWatched = MockResourceList{mockResource4a, mockResource5a, mockResource6a, mockResource7a}
+		mockResourceWatched = MockResourceList{mockResource4a, mockResource5a}
 		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 		err = mockResourceClient.Delete(mockResource4a.GetMetadata().Namespace, mockResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
@@ -282,18 +239,10 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		err = mockResourceClient.Delete(mockResource5a.GetMetadata().Namespace, mockResource5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource5a, mockResource5b}...)
-		mockResourceWatched = MockResourceList{mockResource6a, mockResource7a}
-		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
-
-		err = mockResourceClient.Delete(mockResource6a.GetMetadata().Namespace, mockResource6a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = mockResourceClient.Delete(mockResource7a.GetMetadata().Namespace, mockResource7a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource6a, mockResource7a}...)
 		assertSnapshotMocks(nil, mockResourceNotWatched)
 
 		// clean up environment
-		deleteNamespaces(ctx, kube, namespace3, namespace4, namespace5, namespace6)
+		deleteNamespaces(ctx, kube, namespace3, namespace4)
 		getNewNamespaces()
 	}
 
@@ -582,20 +531,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			mockResourceWatched := MockResourceList{mockResource2a, mockResource2b}
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
-			mockResource3a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace1, name2, labels1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResource3b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace2, name2, labels1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource3a, mockResource3b}...)
-			assertNoMocksSent()
-
-			mockResource4a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResource4b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResourceWatched = append(mockResourceWatched, MockResourceList{mockResource4a, mockResource4b}...)
-			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
-
 			createNamespaces(ctx, kube, namespace5, namespace6)
 
 			mockResource5a, err := mockResourceClient.Write(NewMockResource(namespace5, name2), clients.WriteOpts{Ctx: ctx})
@@ -603,13 +538,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			mockResource5b, err := mockResourceClient.Write(NewMockResource(namespace6, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource5a, mockResource5b}...)
-			assertNoMessageSent()
-
-			mockResource6a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace5, name3, labels1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResource6b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace6, name3, labels1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource6a, mockResource6b}...)
 			assertNoMessageSent()
 
 			mockResource7a, err := mockResourceClient.Write(NewMockResource(namespace5, name4), clients.WriteOpts{Ctx: ctx})
@@ -630,14 +558,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource2a, mockResource2b}...)
-			mockResourceWatched = MockResourceList{mockResource4a, mockResource4b}
-			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
-
-			err = mockResourceClient.Delete(mockResource4a.GetMetadata().Namespace, mockResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			err = mockResourceClient.Delete(mockResource4b.GetMetadata().Namespace, mockResource4b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource4a, mockResource4b}...)
 			assertSnapshotMocks(nil, mockResourceNotWatched)
 
 			// clean up environment
@@ -743,24 +663,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 				MockResource
 			*/
 
-			assertNoMocksSent := func() {
-			drain:
-				for {
-					select {
-					case snap = <-snapshots:
-						if len(snap.Mocks) == 0 {
-							continue drain
-						}
-						Fail("expected that no snapshots containing resources would be recieved " + log.Sprintf("%v", snap))
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
-
 			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
 			drain:
 				for {
@@ -788,16 +690,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 				}
 			}
 
-			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
-			assertNoMocksSent()
-
-			deleteNamespaces(ctx, kube, namespace1, namespace2)
-			assertNoMocksSent()
-
 			// create namespaces
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -806,24 +698,14 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 			mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
+			mockResourceNotWatched := MockResourceList{}
 			mockResourceWatched := MockResourceList{mockResource2a, mockResource2b}
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace3)
+
 			mockResourceWatched = MockResourceList{mockResource2b}
 			mockResourceNotWatched = append(mockResourceNotWatched, mockResource2a)
-			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
-
-			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
-
-			mockResource3a, err := mockResourceClient.Write(NewMockResource(namespace5, name1), clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			mockResourceWatched = append(mockResourceWatched, mockResource3a)
-			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
-
-			deleteNamespaces(ctx, kube, namespace4)
-			mockResourceNotWatched = append(mockResourceNotWatched, mockResource2b)
-			mockResourceWatched = MockResourceList{mockResource3a}
 			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			for _, r := range mockResourceWatched {
@@ -833,8 +715,8 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			}
 			assertSnapshotMocks(nil, mockResourceNotWatched)
 
-			deleteNamespaces(ctx, kube, namespace5)
-
+			deleteNamespaces(ctx, kube, namespace4)
+			getNewNamespaces()
 		})
 	})
 
