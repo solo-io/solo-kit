@@ -653,6 +653,20 @@ var _ = Describe("V1Alpha1Emitter", func() {
 
 			var snap *TestingSnapshot
 
+			assertNoMessageSent := func() {
+				for {
+					select {
+					case snap = <-snapshots:
+						Fail("expected that no snapshots would be recieved " + log.Sprintf("%v", snap))
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 5):
+						// this means that we have not recieved any mocks that we are not expecting
+						return
+					}
+				}
+			}
+
 			/*
 				MockResource
 			*/
@@ -691,8 +705,8 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			assertSnapshotMocks(mockResourceWatched, nil)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
-			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
-			assertSnapshotMocks(nil, mockResourceNotWatched)
+			assertNoMessageSent()
+			createNamespaces(ctx, kube, namespace1, namespace2)
 		})
 
 		It("Should not contain resources from a deleted namespace, that is filtered", func() {
@@ -782,7 +796,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			deleteNamespaces(ctx, kube, namespace3)
 			mockResourceWatched = MockResourceList{mockResource2b}
 			mockResourceNotWatched = append(mockResourceNotWatched, mockResource2a)
-			assertSnapshotClusterresources(mockResourceWatched, mockResourceNotWatched)
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace5, labels1)
 

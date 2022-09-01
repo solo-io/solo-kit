@@ -1094,6 +1094,20 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			var snap *{{ .GoName }}Snapshot
 
+			assertNoMessageSent := func() {
+				for {
+					select {
+					case snap = <-snapshots:
+						Fail("expected that no snapshots would be recieved " + log.Sprintf("%v", snap))
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 5):
+						// this means that we have not recieved any mocks that we are not expecting
+						return
+					}
+				}
+			}
+
 {{- range .Resources }}
 
 			/*
@@ -1138,8 +1152,9 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 				deleteNamespaces(ctx, kube, namespace1, namespace2)
-				{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b}
-				assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)	
+				assertNoMessageSent()
+				createNamespaces(ctx, kube, namespace1, namespace2)
+
 {{- end }}
 		})
 
@@ -1217,6 +1232,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 {{- if .ClusterScoped }}
 
+			// cluster scoped resources never get deleted from a namespace delete
 			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}Watched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
@@ -1244,13 +1260,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a}
-			{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a }
-			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}2a)
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 			deleteNamespaces(ctx, kube, namespace3)	
-			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}2a)
-			assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)
+			assertNo{{ .PluralName }}Sent()
 
 {{- else }}
 
@@ -1264,7 +1278,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			deleteNamespaces(ctx, kube, namespace3)
 			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2b }
 			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ lower_camel .Name }}2a)
-			assertSnapshotClusterresources({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -1274,11 +1288,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			{{ lower_camel .Name }}3a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name3), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			{{ lower_camel .Name }}Watched = {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}3a}
-			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
+			{{ lower_camel .Name }}Watched = append({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}3a)
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, nil)
 
 			deleteNamespaces(ctx, kube, namespace4)	
-			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)
+			assertNo{{ .PluralName }}Sent()
 
 {{- else }}
 

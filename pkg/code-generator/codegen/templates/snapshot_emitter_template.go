@@ -386,6 +386,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 						mapOfResourceNamespaces[ns.Name] = true
 					}
 
+					for _, ns := range watchNamespaces {
+						mapOfResourceNamespaces[ns] = true
+					}
+
 					missingNamespaces := []string{}
 					// use the map of namespace resources to find missing/deleted namespaces
 					c.namespacesWatching.Range(func(key interface{}, value interface{}) bool {
