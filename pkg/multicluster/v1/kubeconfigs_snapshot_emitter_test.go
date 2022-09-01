@@ -320,9 +320,9 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
-			kubeConfig1a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			kubeConfig1a, err := kubeConfigClient.Write(NewKubeConfig(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotkubeconfigs(KubeConfigList{kubeConfig1a, kubeConfig1b}, nil)

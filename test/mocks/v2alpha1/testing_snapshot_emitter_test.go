@@ -556,9 +556,9 @@ var _ = Describe("V2Alpha1Emitter", func() {
 					}
 				}
 			}
-			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
@@ -613,9 +613,9 @@ var _ = Describe("V2Alpha1Emitter", func() {
 					}
 				}
 			}
-			frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, nil)
@@ -670,9 +670,9 @@ var _ = Describe("V2Alpha1Emitter", func() {
 					}
 				}
 			}
-			fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, nil)

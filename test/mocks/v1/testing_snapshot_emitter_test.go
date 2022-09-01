@@ -978,9 +978,9 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
-			simpleMockResource1a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			simpleMockResource1a, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			simpleMockResource1b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			simpleMockResource1b, err := simpleMockResourceClient.Write(NewSimpleMockResource(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotSimplemocks(SimpleMockResourceList{simpleMockResource1a, simpleMockResource1b}, nil)
@@ -1035,9 +1035,9 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
-			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
@@ -1092,9 +1092,9 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
-			fakeResource1a, err := fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			fakeResource1a, err := fakeResourceClient.Write(NewFakeResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			fakeResource1b, err := fakeResourceClient.Write(NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			fakeResource1b, err := fakeResourceClient.Write(NewFakeResource(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotFakes(FakeResourceList{fakeResource1a, fakeResource1b}, nil)
@@ -1149,9 +1149,9 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
-			anotherMockResource1a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			anotherMockResource1a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			anotherMockResource1b, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotAnothermockresources(AnotherMockResourceList{anotherMockResource1a, anotherMockResource1b}, nil)
@@ -1204,7 +1204,7 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
-			clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			clusterResource1a, err := clusterResourceClient.Write(NewClusterResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotClusterresources(ClusterResourceList{clusterResource1a}, nil)
@@ -1253,9 +1253,9 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
-			mockCustomType1a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			mockCustomType1a, err := mockCustomTypeClient.Write(NewMockCustomType(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			mockCustomType1b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			mockCustomType1b, err := mockCustomTypeClient.Write(NewMockCustomType(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotmcts(MockCustomTypeList{mockCustomType1a, mockCustomType1b}, nil)
@@ -1310,9 +1310,9 @@ var _ = Describe("V1Emitter", func() {
 					}
 				}
 			}
-			pod1a, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			pod1a, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			pod1b, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			pod1b, err := podClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotpods(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{pod1a, pod1b}, nil)
