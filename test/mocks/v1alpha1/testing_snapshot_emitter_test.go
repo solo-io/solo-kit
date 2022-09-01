@@ -335,9 +335,9 @@ var _ = Describe("V1Alpha1Emitter", func() {
 					}
 				}
 			}
-			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, nam5), clients.WriteOpts{Ctx: ctx})
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
-			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, nam5), clients.WriteOpts{Ctx: ctx})
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name5), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
