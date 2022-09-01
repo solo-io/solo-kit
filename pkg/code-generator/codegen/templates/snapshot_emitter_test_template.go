@@ -107,20 +107,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	deleteNonDefaultKubeNamespaces := func(ctx context.Context, kube kubernetes.Interface) {
-		// clean up your local environment
-		namespaces, err := kube.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		defaultNamespaces := map[string]bool{"kube-node-lease": true, "kube-public": true, "kube-system": true, "local-path-storage": true, "default": true}
-		var namespacesToDelete []string
-		for _,ns := range namespaces.Items {
-			if _, hit := defaultNamespaces[ns.Name]; ! hit{
-				namespacesToDelete = append(namespacesToDelete, ns.Name)
-			}
-		}
-		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespacesToDelete...)	
-		Expect(err).ToNot(HaveOccurred())
-	}
 
 	deleteNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespaces...)
@@ -161,19 +147,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 		var snap *{{ .GoName }}Snapshot
 
-		assertNoMessageSent := func() {
-			for {
-				select {
-				case snap = <-snapshots:
-					Fail("expected that no snapshots would be recieved " + log.Sprintf("%v", snap))	
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 5):
-					// this means that we have not recieved any mocks that we are not expecting
-					return
-				}
-			}
-		}
 {{- range .Resources }}
 
 		/*
@@ -277,7 +250,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			err = {{ lower_camel .Name }}Client.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 		}
-		assertNoMessageSent()
 
 {{- end }}
 
@@ -389,7 +361,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
-		deleteNonDefaultKubeNamespaces(ctx, kube)
+		kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 
 {{- range .Resources }}
 {{- if .ClusterScoped }}
@@ -647,46 +619,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 			var snap *{{ .GoName }}Snapshot
 
-			assertNoMessageSent := func() {
-				for {
-					select {
-					case snap = <-snapshots:
-						Fail("expected that no snapshots wouldbe recieved " + log.Sprintf("%v", snap))	
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
-
-
 {{- range .Resources }}
 
 			/*
 				{{ .Name }}
 			*/
-
-{{- if (not .ClusterScoped) }}
-			assertNo{{ .PluralName }}Sent := func() {
-				drain:
-					for {
-						select {
-						case snap = <-snapshots:
-							if len(snap.{{ upper_camel .PluralName }}) == 0 {
-								continue drain
-							}
-							Fail("expected that no snapshots containing resources would be recieved " + log.Sprintf("%v", snap))	
-						case err := <-errs:
-							Expect(err).NotTo(HaveOccurred())
-						case <-time.After(time.Second * 5):
-							// this means that we have not recieved any mocks that we are not expecting
-							return
-						}
-					}
-			}
-{{- end }}
 
 			assertSnapshot{{ .PluralName }} := func(expect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List, unexpect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List) {
 				drain:
@@ -734,7 +671,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			{{ lower_camel .Name }}1b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}NotWatched := {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a, {{ lower_camel .Name }}1b }
-			assertNo{{ .PluralName }}Sent()
+			assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)
 
 {{- end }}
 
@@ -775,20 +712,19 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			{{ lower_camel .Name }}5b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace6, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}5a, {{ lower_camel .Name }}5b }...)
-			assertNoMessageSent()
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)	
 
 			{{ lower_camel .Name }}7a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace5, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}7b, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace6, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			{{ lower_camel .Name }}NotWatched = append({{ lower_camel .Name }}NotWatched, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}7a, {{ lower_camel .Name }}7b }...)
-			assertNoMessageSent()
+			assertSnapshot{{ .PluralName }}({{ lower_camel .Name }}Watched, {{ lower_camel .Name }}NotWatched)	
 
 			for _, r := range {{ lower_camel .Name }}NotWatched {
 				err = {{ lower_camel .Name }}Client.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
-			assertNoMessageSent()
 
 {{- end }}
 
@@ -843,20 +779,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 
 			var snap *{{ .GoName }}Snapshot
-
-			assertNoMessageSent := func() {
-				for {
-					select {
-					case snap = <-snapshots:
-						Fail("expected that no snapshots would be recieved " + log.Sprintf("%v", snap))
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
 
 {{- range .Resources }}
 
@@ -917,7 +839,6 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				assertSnapshot{{ .PluralName }}(nil, {{ lower_camel .Name }}NotWatched)
 
 				deleteNamespaces(ctx, kube, namespace1, namespace2)
-				assertNoMessageSent()
 
 				getNewNamespaces1and2()
 				createNamespaces(ctx, kube, namespace1, namespace2)

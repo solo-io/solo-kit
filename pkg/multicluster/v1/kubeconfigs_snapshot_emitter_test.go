@@ -77,21 +77,6 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	deleteNonDefaultKubeNamespaces := func(ctx context.Context, kube kubernetes.Interface) {
-		// clean up your local environment
-		namespaces, err := kube.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		defaultNamespaces := map[string]bool{"kube-node-lease": true, "kube-public": true, "kube-system": true, "local-path-storage": true, "default": true}
-		var namespacesToDelete []string
-		for _, ns := range namespaces.Items {
-			if _, hit := defaultNamespaces[ns.Name]; !hit {
-				namespacesToDelete = append(namespacesToDelete, ns.Name)
-			}
-		}
-		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespacesToDelete...)
-		Expect(err).ToNot(HaveOccurred())
-	}
-
 	deleteNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespaces...)
 		Expect(err).NotTo(HaveOccurred())
@@ -130,20 +115,6 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		var snap *KubeconfigsSnapshot
-
-		assertNoMessageSent := func() {
-			for {
-				select {
-				case snap = <-snapshots:
-					Fail("expected that no snapshots would be recieved " + log.Sprintf("%v", snap))
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 5):
-					// this means that we have not recieved any mocks that we are not expecting
-					return
-				}
-			}
-		}
 
 		/*
 			KubeConfig
@@ -212,7 +183,6 @@ var _ = Describe("V1Emitter", func() {
 			err = kubeConfigClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 		}
-		assertNoMessageSent()
 
 		err = kubeConfigClient.Delete(kubeConfig1a.GetMetadata().Namespace, kubeConfig1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
@@ -273,7 +243,7 @@ var _ = Describe("V1Emitter", func() {
 		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
-		deleteNonDefaultKubeNamespaces(ctx, kube)
+		kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 	})
 
 	Context("Tracking watched namespaces", func() {
@@ -437,40 +407,9 @@ var _ = Describe("V1Emitter", func() {
 
 			var snap *KubeconfigsSnapshot
 
-			assertNoMessageSent := func() {
-				for {
-					select {
-					case snap = <-snapshots:
-						Fail("expected that no snapshots wouldbe recieved " + log.Sprintf("%v", snap))
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
-
 			/*
 				KubeConfig
 			*/
-			assertNokubeconfigsSent := func() {
-			drain:
-				for {
-					select {
-					case snap = <-snapshots:
-						if len(snap.Kubeconfigs) == 0 {
-							continue drain
-						}
-						Fail("expected that no snapshots containing resources would be recieved " + log.Sprintf("%v", snap))
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
 
 			assertSnapshotkubeconfigs := func(expectkubeconfigs KubeConfigList, unexpectkubeconfigs KubeConfigList) {
 			drain:
@@ -504,7 +443,7 @@ var _ = Describe("V1Emitter", func() {
 			kubeConfig1b, err := kubeConfigClient.Write(NewKubeConfig(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfigNotWatched := KubeConfigList{kubeConfig1a, kubeConfig1b}
-			assertNokubeconfigsSent()
+			assertSnapshotkubeconfigs(nil, kubeConfigNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -523,20 +462,19 @@ var _ = Describe("V1Emitter", func() {
 			kubeConfig5b, err := kubeConfigClient.Write(NewKubeConfig(namespace6, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfigNotWatched = append(kubeConfigNotWatched, KubeConfigList{kubeConfig5a, kubeConfig5b}...)
-			assertNoMessageSent()
+			assertSnapshotkubeconfigs(kubeConfigWatched, kubeConfigNotWatched)
 
 			kubeConfig7a, err := kubeConfigClient.Write(NewKubeConfig(namespace5, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfig7b, err := kubeConfigClient.Write(NewKubeConfig(namespace6, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			kubeConfigNotWatched = append(kubeConfigNotWatched, KubeConfigList{kubeConfig7a, kubeConfig7b}...)
-			assertNoMessageSent()
+			assertSnapshotkubeconfigs(kubeConfigWatched, kubeConfigNotWatched)
 
 			for _, r := range kubeConfigNotWatched {
 				err = kubeConfigClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
-			assertNoMessageSent()
 
 			err = kubeConfigClient.Delete(kubeConfig2a.GetMetadata().Namespace, kubeConfig2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -564,20 +502,6 @@ var _ = Describe("V1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var snap *KubeconfigsSnapshot
-
-			assertNoMessageSent := func() {
-				for {
-					select {
-					case snap = <-snapshots:
-						Fail("expected that no snapshots would be recieved " + log.Sprintf("%v", snap))
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
 
 			/*
 				KubeConfig
@@ -624,7 +548,6 @@ var _ = Describe("V1Emitter", func() {
 			assertSnapshotkubeconfigs(nil, kubeConfigNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
-			assertNoMessageSent()
 
 			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)

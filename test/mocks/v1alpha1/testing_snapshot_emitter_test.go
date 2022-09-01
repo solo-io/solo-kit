@@ -81,21 +81,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	deleteNonDefaultKubeNamespaces := func(ctx context.Context, kube kubernetes.Interface) {
-		// clean up your local environment
-		namespaces, err := kube.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		defaultNamespaces := map[string]bool{"kube-node-lease": true, "kube-public": true, "kube-system": true, "local-path-storage": true, "default": true}
-		var namespacesToDelete []string
-		for _, ns := range namespaces.Items {
-			if _, hit := defaultNamespaces[ns.Name]; !hit {
-				namespacesToDelete = append(namespacesToDelete, ns.Name)
-			}
-		}
-		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespacesToDelete...)
-		Expect(err).ToNot(HaveOccurred())
-	}
-
 	deleteNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespaces...)
 		Expect(err).NotTo(HaveOccurred())
@@ -134,20 +119,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		var snap *TestingSnapshot
-
-		assertNoMessageSent := func() {
-			for {
-				select {
-				case snap = <-snapshots:
-					Fail("expected that no snapshots would be recieved " + log.Sprintf("%v", snap))
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 5):
-					// this means that we have not recieved any mocks that we are not expecting
-					return
-				}
-			}
-		}
 
 		/*
 			MockResource
@@ -216,7 +187,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 		}
-		assertNoMessageSent()
 
 		err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
@@ -288,7 +258,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
-		deleteNonDefaultKubeNamespaces(ctx, kube)
+		kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 	})
 
 	Context("Tracking watched namespaces", func() {
@@ -452,40 +422,9 @@ var _ = Describe("V1Alpha1Emitter", func() {
 
 			var snap *TestingSnapshot
 
-			assertNoMessageSent := func() {
-				for {
-					select {
-					case snap = <-snapshots:
-						Fail("expected that no snapshots wouldbe recieved " + log.Sprintf("%v", snap))
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
-
 			/*
 				MockResource
 			*/
-			assertNoMocksSent := func() {
-			drain:
-				for {
-					select {
-					case snap = <-snapshots:
-						if len(snap.Mocks) == 0 {
-							continue drain
-						}
-						Fail("expected that no snapshots containing resources would be recieved " + log.Sprintf("%v", snap))
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
 
 			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
 			drain:
@@ -519,7 +458,7 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
-			assertNoMocksSent()
+			assertSnapshotMocks(nil, mockResourceNotWatched)
 
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
@@ -538,20 +477,19 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			mockResource5b, err := mockResourceClient.Write(NewMockResource(namespace6, name2), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource5a, mockResource5b}...)
-			assertNoMessageSent()
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			mockResource7a, err := mockResourceClient.Write(NewMockResource(namespace5, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResource7b, err := mockResourceClient.Write(NewMockResource(namespace6, name4), clients.WriteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource7a, mockResource7b}...)
-			assertNoMessageSent()
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
 
 			for _, r := range mockResourceNotWatched {
 				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 			}
-			assertNoMessageSent()
 
 			err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
@@ -579,20 +517,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var snap *TestingSnapshot
-
-			assertNoMessageSent := func() {
-				for {
-					select {
-					case snap = <-snapshots:
-						Fail("expected that no snapshots would be recieved " + log.Sprintf("%v", snap))
-					case err := <-errs:
-						Expect(err).NotTo(HaveOccurred())
-					case <-time.After(time.Second * 5):
-						// this means that we have not recieved any mocks that we are not expecting
-						return
-					}
-				}
-			}
 
 			/*
 				MockResource
@@ -639,7 +563,6 @@ var _ = Describe("V1Alpha1Emitter", func() {
 			assertSnapshotMocks(nil, mockResourceNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
-			assertNoMessageSent()
 
 			getNewNamespaces1and2()
 			createNamespaces(ctx, kube, namespace1, namespace2)
