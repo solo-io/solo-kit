@@ -209,6 +209,22 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	return resourceList, nil
 }
 
+func (rc *ResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	// TODO(kdorosh) THIS WAS COPIED FROM READ.. why is this called? in memory k8s svc?
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+	resource, ok := rc.cache.Get(rc.key(namespace, name))
+	if !ok {
+		return nil, errors.NewNotExistErr(namespace, name)
+	}
+
+	// avoid data races
+	clone := resources.Clone(resource)
+	return clone, nil
+}
+
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
 	resourcesChan := make(chan resources.ResourceList)

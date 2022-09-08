@@ -16,6 +16,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -121,6 +122,31 @@ func (rc *serviceResourceClient) Write(resource resources.Resource, opts clients
 
 	// return a read object to update the resource version
 	return rc.Read(serviceObj.Namespace, serviceObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *serviceResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	// TODO(kdorosh): have the bytes..
+	patch := `[{"op": "replace", "path": "/status", "value": {"foo":"bar"}}]`
+	data := []byte(patch)
+	popts := metav1.PatchOptions{}
+	serviceObj, err := rc.Kube.CoreV1().Services(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching serviceObj from kubernetes")
+	}
+	resource := FromKubeService(serviceObj)
+
+	if resource == nil {
+		return nil, errors.Errorf("serviceObj %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *serviceResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

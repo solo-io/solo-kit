@@ -127,6 +127,10 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	return rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{Ctx: opts.Ctx})
 }
 
+func (rc *ResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	panic("not implemented")
+}
+
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
 	if namespace == "" {

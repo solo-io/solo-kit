@@ -2,6 +2,8 @@ package kube
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -10,6 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	types "k8s.io/apimachinery/pkg/types"
 
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -334,6 +337,51 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	})
 
 	return resourceList, nil
+}
+
+func (rc *ResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	if err := rc.validateNamespace(namespace); err != nil {
+		return nil, err
+	}
+
+	ctx := opts.Ctx
+
+	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName), tag.Insert(KeyOpKind, "patch")); err == nil {
+		ctx = ctxWithTags
+	}
+
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshalling input resource")
+	}
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
+	data := []byte(patch)
+	popts := metav1.PatchOptions{}
+
+	stats.Record(ctx, MInFlight.M(1))
+	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Patch(ctx, name, types.JSONPatchType, data, popts)
+	stats.Record(ctx, MInFlight.M(-1))
+	if err != nil {
+		fmt.Printf("KDOROSH12345 patch raw error getting %s in ns %s %v\n", name, namespace, err)
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching resource from kubernetes")
+	}
+	fmt.Printf("KDOROSH12345 patch raw no error for %s in ns %s \n", name, namespace)
+	if !rc.matchesClientGVK(*resourceCrd) {
+		return nil, errors.Errorf("cannot patch %v resource with %v client", resourceCrd.GroupVersionKind().String(), rc.crd.GroupVersionKind().String())
+	}
+	resource, err := rc.convertCrdToResource(resourceCrd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "converting output crd")
+	}
+	return resource, nil
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {

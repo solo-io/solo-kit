@@ -2,7 +2,9 @@ package reporter
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"k8s.io/client-go/util/retry"
 
@@ -213,6 +215,7 @@ type ReporterResourceClient interface {
 	Kind() string
 	Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error)
 	Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error)
+	Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error)
 }
 
 type Reporter interface {
@@ -266,18 +269,33 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
+		// fmt.Printf("KDOROSH get status for resource %v\n", resource)
+
+		// TODO(kdorosh) parallelize this???
+
+		now := time.Now()
+
 		if status.Equal(resourceStatus) {
+			fmt.Printf("KDOROSH solokit skip status for resource %v\n", resource.GetMetadata().Ref())
+			fmt.Printf("KDOROSH how long Writing a single Report took: %v ms\n", time.Now().Sub(now).Milliseconds())
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
 
 		r.statusClient.SetStatus(resourceToWrite, status)
 		var updatedResource resources.Resource
+
+		cnt := 0
+
+		now2 := time.Now()
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
+			cnt++
+			fmt.Printf("KDOROSH solokit update status for resource %v , attempt num: %d\n", resource.GetMetadata().Ref(), cnt)
 			updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
 			return writeErr
 		})
+		fmt.Printf("KDOROSH how long retry on conflict ALONE took for %v: %v ms\n", resourceToWrite.GetMetadata().Ref(), time.Now().Sub(now2).Milliseconds())
 
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
@@ -291,6 +309,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
 			delete(resourceErrs, resource)
 		}
+		fmt.Printf("KDOROSH how long Writing a single Report took for %v: %v ms\n", resourceToWrite.GetMetadata().Ref(), time.Now().Sub(now).Milliseconds())
 	}
 	return merr.ErrorOrNil()
 }
@@ -300,7 +319,21 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
 func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
 	var readErr error
+
+	// TODO(kdorosh) just update with kubectl patch and parallelize caller? (with max 10 concurrency??)
+	// read takes 400ms, write takes 1200ms.. let's write a client that patches only...
+	_, patchErr := client.Patch(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.PatchOpts{Ctx: ctx}, resourceToWrite)
+	if strings.Contains(resourceToWrite.GetMetadata().Ref().Key(), "vs") {
+		fmt.Printf("KDOROSH1234 resource %v patchErr isnotexist %v patchErr: %v\n", resourceToWrite.GetMetadata().Ref(), errors.IsNotExist(readErr), patchErr)
+	}
+	if patchErr != nil && !errors.IsNotExist(readErr) && !strings.Contains(patchErr.Error(), "not found") { // TODO(kdorosh) this is a hack, but it's a hack
+		return resourceToWrite, resourceToWrite, patchErr
+	}
+	return resourceToWrite, resourceToWrite, nil
+
+	now2 := time.Now()
 	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
+	fmt.Printf("KDOROSH how long literally Reading a single resource took for %v: %v ms\n", resourceToWrite.GetMetadata().Ref(), time.Now().Sub(now2).Milliseconds())
 	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
 		return nil, resourceToWrite, nil
 	}
@@ -315,10 +348,13 @@ func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResou
 			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
 		}
 	}
+	now := time.Now()
 	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 	if writeErr == nil {
+		fmt.Printf("KDOROSH how long literally Writing a single resource took for %v: %v ms\n", resourceToWrite.GetMetadata().Ref(), time.Now().Sub(now).Milliseconds())
 		return updatedResource, resourceToWrite, nil
 	}
+
 	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 	if readErr != nil {
 		if errors.IsResourceVersion(writeErr) {

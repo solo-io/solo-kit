@@ -17,6 +17,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -191,6 +192,35 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 	// return a read object to update the resource version
 	return rc.Read(secret.Namespace, secret.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *ResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	// TODO(kdorosh): have the bytes..
+	patch := `[{"op": "replace", "path": "/status", "value": {"foo":"bar"}}]`
+	data := []byte(patch)
+	popts := metav1.PatchOptions{}
+	secret, err := rc.Kube.CoreV1().Secrets(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching secret from kubernetes")
+	}
+
+	resource, err := rc.fromKubeResource(opts.Ctx, secret)
+	if err == NotOurResource {
+		return nil, errors.Errorf("secret %v is not kind %v", name, rc.Kind())
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return resource, nil
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
