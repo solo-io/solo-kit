@@ -210,18 +210,35 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 }
 
 func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
-	// TODO(kdorosh) THIS WAS COPIED FROM READ.. why is this called? in memory k8s svc?
-	if err := resources.ValidateName(name); err != nil {
-		return nil, errors.Wrapf(err, "validation error")
+
+	res, err := rc.Read(namespace, name, clients.ReadOpts{
+		Ctx:     opts.Ctx,
+		Cluster: opts.Cluster,
+	})
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "error reading before applying status")
 	}
-	opts = opts.WithDefaults()
-	resource, ok := rc.cache.Get(rc.key(namespace, name))
+
+	inputRes, ok := res.(resources.InputResource)
 	if !ok {
-		return nil, errors.NewNotExistErr(namespace, name)
+		return nil, errors.Errorf("error converting resource of type %T to input resource to apply status", res)
+	}
+
+	inputRes.SetStatus(inputResource.GetStatus())
+	inputRes.SetNamespacedStatuses(inputResource.GetNamespacedStatuses())
+
+	updatedRes, err := rc.Write(inputRes, clients.WriteOpts{
+		Ctx:               opts.Ctx,
+		OverwriteExisting: true,
+	})
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "error writing to apply status")
 	}
 
 	// avoid data races
-	clone := resources.Clone(resource)
+	clone := resources.Clone(updatedRes)
 	return clone, nil
 }
 
