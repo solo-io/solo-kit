@@ -2,6 +2,7 @@ package kubesecret
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -200,10 +201,14 @@ func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.Apply
 	}
 	opts = opts.WithDefaults()
 
-	// TODO(kdorosh): have the bytes..
-	patch := `[{"op": "replace", "path": "/status", "value": {"foo":"bar"}}]`
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshalling input resource")
+	}
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}
+
 	secret, err := rc.Kube.CoreV1().Secrets(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
 	if err != nil {
 		if apierrors.IsNotFound(err) {

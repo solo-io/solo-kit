@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sort"
 
 	kubeservice "github.com/solo-io/solo-kit/api/external/kubernetes/service"
@@ -130,10 +132,14 @@ func (rc *serviceResourceClient) ApplyStatus(namespace, name string, opts client
 	}
 	opts = opts.WithDefaults()
 
-	// TODO(kdorosh): have the bytes..
-	patch := `[{"op": "replace", "path": "/status", "value": {"foo":"bar"}}]`
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshalling input resource")
+	}
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}
+
 	serviceObj, err := rc.Kube.CoreV1().Services(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
