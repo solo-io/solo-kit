@@ -367,13 +367,11 @@ func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.Apply
 	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Patch(ctx, name, types.JSONPatchType, data, popts)
 	stats.Record(ctx, MInFlight.M(-1))
 	if err != nil {
-		fmt.Printf("KDOROSH12345 patch raw error getting %s in ns %s %v\n", name, namespace, err)
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
 		return nil, errors.Wrapf(err, "patching resource from kubernetes")
 	}
-	fmt.Printf("KDOROSH12345 patch raw no error for %s in ns %s \n", name, namespace)
 	if !rc.matchesClientGVK(*resourceCrd) {
 		return nil, errors.Errorf("cannot patch %v resource with %v client", resourceCrd.GroupVersionKind().String(), rc.crd.GroupVersionKind().String())
 	}

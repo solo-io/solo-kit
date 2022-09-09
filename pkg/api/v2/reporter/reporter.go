@@ -2,16 +2,13 @@ package reporter
 
 import (
 	"context"
-	"fmt"
 	"strings"
-	"time"
 
 	"k8s.io/client-go/util/retry"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -269,33 +266,18 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
-		// fmt.Printf("KDOROSH get status for resource %v\n", resource)
-
-		// TODO(kdorosh) parallelize this???
-
-		now := time.Now()
-
 		if status.Equal(resourceStatus) {
-			fmt.Printf("KDOROSH solokit skip status for resource %v\n", resource.GetMetadata().Ref())
-			fmt.Printf("KDOROSH how long Writing a single Report took: %v ms\n", time.Now().Sub(now).Milliseconds())
 			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
 			continue
 		}
 
 		r.statusClient.SetStatus(resourceToWrite, status)
 		var updatedResource resources.Resource
-
-		cnt := 0
-
-		now2 := time.Now()
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			var writeErr error
-			cnt++
-			fmt.Printf("KDOROSH solokit update status for resource %v , attempt num: %d\n", resource.GetMetadata().Ref(), cnt)
 			updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
 			return writeErr
 		})
-		fmt.Printf("KDOROSH how long retry on conflict ALONE took for %v: %v ms\n", resourceToWrite.GetMetadata().Ref(), time.Now().Sub(now2).Milliseconds())
 
 		if writeErr != nil {
 			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
@@ -309,7 +291,6 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
 			delete(resourceErrs, resource)
 		}
-		fmt.Printf("KDOROSH how long Writing a single Report took for %v: %v ms\n", resourceToWrite.GetMetadata().Ref(), time.Now().Sub(now).Milliseconds())
 	}
 	return merr.ErrorOrNil()
 }
@@ -319,63 +300,11 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 //    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
 func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
 	var readErr error
-
-	// TODO(kdorosh) just update with kubectl patch and parallelize caller? (with max 10 concurrency??)
-	// read takes 400ms, write takes 1200ms.. let's write a client that patches only...
 	_, patchErr := client.ApplyStatus(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ApplyStatusOpts{Ctx: ctx}, resourceToWrite)
-	if strings.Contains(resourceToWrite.GetMetadata().Ref().Key(), "vs") {
-		fmt.Printf("KDOROSH1234 resource %v patchErr isnotexist %v patchErr: %v\n", resourceToWrite.GetMetadata().Ref(), errors.IsNotExist(readErr), patchErr)
-	}
-	if patchErr != nil && !errors.IsNotExist(readErr) && !strings.Contains(patchErr.Error(), "not found") { // TODO(kdorosh) this is a hack, but it's a hack
+	if patchErr != nil && !errors.IsNotExist(readErr) {
 		return resourceToWrite, resourceToWrite, patchErr
 	}
 	return resourceToWrite, resourceToWrite, nil
-
-	now2 := time.Now()
-	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
-	fmt.Printf("KDOROSH how long literally Reading a single resource took for %v: %v ms\n", resourceToWrite.GetMetadata().Ref(), time.Now().Sub(now2).Milliseconds())
-	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
-		return nil, resourceToWrite, nil
-	}
-	if readErr == nil {
-		// set resourceToWrite to the resource we read but with the new status and new messages
-		// Note: it's possible that this resourceFromRead is newer than the resourceToWrite and therefore the status will be out of sync.
-		//    If so, we will soon recalculate the status. The interim incorrect status is not dangerous since the status is informational only.
-		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
-		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
-		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
-			resourceToWrite = inputResourceFromRead
-			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
-		}
-	}
-	now := time.Now()
-	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-	if writeErr == nil {
-		fmt.Printf("KDOROSH how long literally Writing a single resource took for %v: %v ms\n", resourceToWrite.GetMetadata().Ref(), time.Now().Sub(now).Milliseconds())
-		return updatedResource, resourceToWrite, nil
-	}
-
-	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
-	if readErr != nil {
-		if errors.IsResourceVersion(writeErr) {
-			// we don't want to return the unwrapped resource version writeErr if we also had a read error
-			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
-			return nil, resourceToWrite, errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict; readErr %v", readErr)
-		}
-		return nil, resourceToWrite, writeErr
-	}
-
-	// we successfully read an updated version of the resource we are
-	// trying to update. let's update resourceToWrite for the next iteration
-	equal, _ := hashutils.HashableEqual(updatedResource, resourceToWrite)
-	if !equal {
-		// different hash, something important was done, do not try again:
-		return updatedResource, resourceToWrite, nil
-	}
-	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	r.statusClient.SetStatus(resourceToWriteUpdated, r.statusClient.GetStatus(resourceToWrite))
-
-	return updatedResource, resourceToWriteUpdated, writeErr
 }
 
 func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
