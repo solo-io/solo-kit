@@ -272,39 +272,31 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 		}
 
 		r.statusClient.SetStatus(resourceToWrite, status)
-		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
-			var writeErr error
-			updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
-			return writeErr
+			return r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
 		})
 
+		if errors.IsNotExist(writeErr) {
+			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
+			delete(resourceErrs, resource)
+			continue
+		}
+
 		if writeErr != nil {
-			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
+			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().GetName())
 			logger.Warn(err)
 			merr = multierror.Append(merr, err)
 			continue
 		}
-		if updatedResource != nil {
-			logger.Debugf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
-		} else {
-			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
-			delete(resourceErrs, resource)
-		}
+		logger.Debugf("wrote report for %v : %v", resource.GetMetadata().Ref(), status)
+
 	}
 	return merr.ErrorOrNil()
 }
 
-// Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
-//    to avoid confusion about whether this may update the resource rather than just its status.
-//    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
-	var readErr error
-	_, patchErr := client.ApplyStatus(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ApplyStatusOpts{Ctx: ctx}, resourceToWrite)
-	if patchErr != nil && !errors.IsNotExist(readErr) {
-		return resourceToWrite, resourceToWrite, patchErr
-	}
-	return resourceToWrite, resourceToWrite, nil
+func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) error {
+	_, patchErr := client.ApplyStatus(resourceToWrite.GetMetadata().GetNamespace(), resourceToWrite.GetMetadata().GetName(), clients.ApplyStatusOpts{Ctx: ctx}, resourceToWrite)
+	return patchErr
 }
 
 func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {
