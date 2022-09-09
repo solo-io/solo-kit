@@ -2,6 +2,8 @@ package namespace
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sort"
 
 	"github.com/bugsnag/bugsnag-go/errors"
@@ -17,6 +19,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -120,6 +123,35 @@ func (rc *namespaceResourceClient) Write(resource resources.Resource, opts clien
 
 	// return a read object to update the resource version
 	return rc.Read(namespaceObj.Namespace, namespaceObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *namespaceResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	if err := resources.ValidateName(name); err != nil {
+		return nil, eris.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	if err != nil {
+		return nil, eris.Wrapf(err, "marshalling input resource")
+	}
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
+	data := []byte(patch)
+	popts := metav1.PatchOptions{}
+
+	namespaceObj, err := rc.Kube.CoreV1().Namespaces().Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, skerrors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, eris.Wrapf(err, "reading namespaceObj from kubernetes")
+	}
+	resource := FromKubeNamespace(namespaceObj)
+
+	if resource == nil {
+		return nil, eris.Errorf("namespaceObj %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *namespaceResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
