@@ -2,6 +2,8 @@ package customresourcedefinition
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sort"
 
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -18,6 +20,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type customResourceDefinitionResourceClient struct {
@@ -122,6 +125,34 @@ func (rc *customResourceDefinitionResourceClient) Write(resource resources.Resou
 
 	// return a read object to update the resource version
 	return rc.Read(customResourceDefinitionObj.Namespace, customResourceDefinitionObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *customResourceDefinitionResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshalling input resource")
+	}
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
+	data := []byte(patch)
+	popts := metav1.PatchOptions{}
+	customResourceDefinitionObj, err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching customResourceDefinitionObj from kubernetes")
+	}
+	resource := FromKubeCustomResourceDefinition(customResourceDefinitionObj)
+
+	if resource == nil {
+		return nil, errors.Errorf("customResourceDefinitionObj %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *customResourceDefinitionResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

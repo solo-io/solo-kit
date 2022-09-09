@@ -2,6 +2,8 @@ package pod
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sort"
 
 	kubepod "github.com/solo-io/solo-kit/api/external/kubernetes/pod"
@@ -16,6 +18,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -124,35 +127,32 @@ func (rc *podResourceClient) Write(resource resources.Resource, opts clients.Wri
 }
 
 func (rc *podResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
-	res, err := rc.Read(namespace, name, clients.ReadOpts{
-		Ctx:     opts.Ctx,
-		Cluster: opts.Cluster,
-	})
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
 
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
 	if err != nil {
-		return nil, errors.Wrapf(err, "error reading before applying status")
+		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
+	data := []byte(patch)
+	popts := metav1.PatchOptions{}
 
-	inputRes, ok := res.(resources.InputResource)
-	if !ok {
-		return nil, errors.Errorf("error converting resource of type %T to input resource to apply status", res)
-	}
-
-	inputRes.SetStatus(inputResource.GetStatus())
-	inputRes.SetNamespacedStatuses(inputResource.GetNamespacedStatuses())
-
-	updatedRes, err := rc.Write(inputRes, clients.WriteOpts{
-		Ctx:               opts.Ctx,
-		OverwriteExisting: true,
-	})
-
+	podObj, err := rc.Kube.CoreV1().Pods(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error writing to apply status")
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching podObj from kubernetes")
 	}
+	resource := FromKubePod(podObj)
 
-	// avoid data races
-	clone := resources.Clone(updatedRes)
-	return clone, nil
+	if resource == nil {
+		return nil, errors.Errorf("podObj %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *podResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

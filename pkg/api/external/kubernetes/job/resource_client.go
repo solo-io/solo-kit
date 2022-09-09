@@ -2,6 +2,8 @@ package job
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sort"
 
 	kubejob "github.com/solo-io/solo-kit/api/external/kubernetes/job"
@@ -16,6 +18,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -121,6 +124,34 @@ func (rc *jobResourceClient) Write(resource resources.Resource, opts clients.Wri
 
 	// return a read object to update the resource version
 	return rc.Read(jobObj.Namespace, jobObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *jobResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshalling input resource")
+	}
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
+	data := []byte(patch)
+	popts := metav1.PatchOptions{}
+	jobObj, err := rc.Kube.BatchV1().Jobs(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching job from kubernetes")
+	}
+	resource := FromKubeJob(jobObj)
+
+	if resource == nil {
+		return nil, errors.Errorf("job %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *jobResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

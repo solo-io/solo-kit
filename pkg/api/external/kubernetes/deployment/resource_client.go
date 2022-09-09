@@ -2,6 +2,8 @@ package deployment
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sort"
 
 	kubedeployment "github.com/solo-io/solo-kit/api/external/kubernetes/deployment"
@@ -16,6 +18,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -121,6 +124,34 @@ func (rc *deploymentResourceClient) Write(resource resources.Resource, opts clie
 
 	// return a read object to update the resource version
 	return rc.Read(deploymentObj.Namespace, deploymentObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *deploymentResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshalling input resource")
+	}
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
+	data := []byte(patch)
+	popts := metav1.PatchOptions{}
+	deploymentObj, err := rc.Kube.AppsV1().Deployments(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching deployment from kubernetes")
+	}
+	resource := FromKubeDeployment(deploymentObj)
+
+	if resource == nil {
+		return nil, errors.Errorf("deployment %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *deploymentResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
