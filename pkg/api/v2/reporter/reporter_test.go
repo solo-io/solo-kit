@@ -305,76 +305,27 @@ var _ = Describe("Reporter", func() {
 			reporter = rep.NewReporter("test", statusClient, mockedResourceClient)
 		})
 
-		It("checks to make sure a resource exists before writing to it", func() {
-			res := v1.NewMockResource("", "mocky")
-			resourceErrs := rep.ResourceReports{
-				res: rep.Report{Errors: fmt.Errorf("pocky")},
-			}
-
-			readOpts := clients.ReadOpts{
-				Ctx: reporterCtx,
-			}
-			writeOpts := clients.WriteOpts{
-				Ctx: reporterCtx,
-			}
-
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(nil, errors.NewNotExistErr("", "mocky"))
-			// Since the resource doesn't exist, we shouldn't write to it.
-			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(nil, nil).Times(0)
-
-			err := reporter.WriteReports(ctx, resourceErrs, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(len(resourceErrs)).To(Equal(0))
-		})
-
 		It("handles multiple conflict", func() {
 			res := v1.NewMockResource("", "mocky")
 			resourceErrs := rep.ResourceReports{
 				res: rep.Report{Errors: fmt.Errorf("everyone makes mistakes")},
 			}
 
-			readOpts := clients.ReadOpts{
+			applyOpts := clients.ApplyStatusOpts{
 				Ctx: reporterCtx,
-			}
-			writeOpts := clients.WriteOpts{
-				Ctx:               reporterCtx,
-				OverwriteExisting: true,
 			}
 
 			// first write fails due to resource version
-			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(res, nil).Times(2)
+			mockedResourceClient.EXPECT().ApplyStatus(res.Metadata.Namespace, res.Metadata.Name, applyOpts, gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
 
 			// we retry, and fail again on resource version error
-			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(res, nil).Times(2)
+			mockedResourceClient.EXPECT().ApplyStatus(res.Metadata.Namespace, res.Metadata.Name, applyOpts, gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
 
 			// this time we succeed to write the status
-			mockedResourceClient.EXPECT().Write(gomock.Any(), writeOpts).Return(res, nil)
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, readOpts).Return(res, nil)
+			mockedResourceClient.EXPECT().ApplyStatus(res.Metadata.Namespace, res.Metadata.Name, applyOpts, gomock.Any()).Return(res, nil)
 
 			err := reporter.WriteReports(ctx, resourceErrs, nil)
 			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("doesn't infinite retry on resource version write error and read errors (e.g., no read RBAC)", func() {
-			res := v1.NewMockResource("", "mocky")
-			resourceErrs := rep.ResourceReports{
-				res: rep.Report{Errors: fmt.Errorf("everyone makes mistakes")},
-			}
-
-			resVerErr := errors.NewResourceVersionErr("ns", "name", "given", "expected")
-
-			// first write fails due to resource version
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, nil) // resource exists
-			mockedResourceClient.EXPECT().Write(gomock.Any(), gomock.Any()).Return(nil, resVerErr)
-			mockedResourceClient.EXPECT().Read(res.Metadata.Namespace, res.Metadata.Name, gomock.Any()).Return(nil, errors.Errorf("no read RBAC")).Times(2)
-
-			err := reporter.WriteReports(context.TODO(), resourceErrs, nil)
-			Expect(err).To(HaveOccurred())
-			flattenedErrs := err.(*multierror.Error).WrappedErrors()
-			Expect(flattenedErrs).To(HaveLen(1))
-			Expect(flattenedErrs[0]).To(MatchError(ContainSubstring(resVerErr.Error())))
 		})
 	})
 })
