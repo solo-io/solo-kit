@@ -106,7 +106,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	return clone, nil
 }
 
-func (rc *ResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
 	panic("not implemented")
 }
 

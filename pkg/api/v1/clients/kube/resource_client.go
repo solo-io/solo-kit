@@ -339,7 +339,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	return resourceList, nil
 }
 
-func (rc *ResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}

@@ -209,7 +209,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	return resourceList, nil
 }
 
-func (rc *ResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
 	// TODO(kdorosh) THIS WAS COPIED FROM READ.. why is this called? in memory k8s svc?
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")

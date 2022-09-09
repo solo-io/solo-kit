@@ -114,7 +114,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	return rc.Read(configMap.Namespace, configMap.Name, clients.ReadOpts{Ctx: opts.Ctx})
 }
 
-func (rc *ResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}

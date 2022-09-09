@@ -215,7 +215,7 @@ type ReporterResourceClient interface {
 	Kind() string
 	Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error)
 	Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error)
-	Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error)
+	ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error)
 }
 
 type Reporter interface {
@@ -322,7 +322,7 @@ func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResou
 
 	// TODO(kdorosh) just update with kubectl patch and parallelize caller? (with max 10 concurrency??)
 	// read takes 400ms, write takes 1200ms.. let's write a client that patches only...
-	_, patchErr := client.Patch(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.PatchOpts{Ctx: ctx}, resourceToWrite)
+	_, patchErr := client.ApplyStatus(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ApplyStatusOpts{Ctx: ctx}, resourceToWrite)
 	if strings.Contains(resourceToWrite.GetMetadata().Ref().Key(), "vs") {
 		fmt.Printf("KDOROSH1234 resource %v patchErr isnotexist %v patchErr: %v\n", resourceToWrite.GetMetadata().Ref(), errors.IsNotExist(readErr), patchErr)
 	}

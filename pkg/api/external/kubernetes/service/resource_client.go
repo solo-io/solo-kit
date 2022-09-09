@@ -124,7 +124,7 @@ func (rc *serviceResourceClient) Write(resource resources.Resource, opts clients
 	return rc.Read(serviceObj.Namespace, serviceObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
 }
 
-func (rc *serviceResourceClient) Patch(namespace, name string, opts clients.PatchOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (rc *serviceResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}
