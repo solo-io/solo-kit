@@ -234,6 +234,13 @@ func (c *testResourceClient) Write(resource resources.Resource, opts clients.Wri
 	return nil, nil
 }
 
+func (c *testResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, resource resources.InputResource) (resources.Resource, error) {
+	if c.errorOnWrite {
+		return nil, errors.Errorf("apply status should not have been called")
+	}
+	return nil, nil
+}
+
 func (c *testResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	panic("implement me")
 }
