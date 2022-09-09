@@ -210,8 +210,6 @@ func (e ResourceReports) ValidateStrict() error {
 // Minimal set of client operations required for reporters.
 type ReporterResourceClient interface {
 	Kind() string
-	Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error)
-	Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error)
 	ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error)
 }
 

@@ -175,6 +175,21 @@ func (mr *MockResourceClientMockRecorder) List(namespace, opts interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockResourceClient)(nil).List), namespace, opts)
 }
 
+// ApplyStatus mocks base method
+func (m *MockResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, resource resources.InputResource) (resources.Resource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyStatus", namespace, name, opts, resource)
+	ret0, _ := ret[0].(resources.Resource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ApplyStatus indicates an expected call of ApplyStatus
+func (mr *MockResourceClientMockRecorder) ApplyStatus(namespace, name, opts, resource interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyStatus", reflect.TypeOf((*MockResourceClient)(nil).ApplyStatus), namespace, name, opts, resource)
+}
+
 // Watch mocks base method
 func (m *MockResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	m.ctrl.T.Helper()
