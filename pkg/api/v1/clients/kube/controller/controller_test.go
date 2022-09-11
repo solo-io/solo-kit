@@ -2,6 +2,7 @@ package controller_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -43,6 +44,29 @@ var _ = Describe("Test KubeController", func() {
 			err            error
 		)
 
+		const (
+			name1  = "res-1"
+			value1 = "test"
+			name2  = "res-2"
+			value2 = "secondNamespaceValue"
+		)
+
+		getResultFromkMockResource := func(namespace, name, value string) {
+			select {
+			case res := <-resultChan:
+				Expect(res.Namespace).To(BeEquivalentTo(namespace))
+				Expect(res.Name).To(BeEquivalentTo(name))
+				Expect(res.Kind).To(BeEquivalentTo("MockResource"))
+				Expect(res.Spec).To(Not(BeNil()))
+
+				fieldValue, ok := (*res.Spec)["someDumbField"]
+				Expect(ok).To(BeTrue())
+				Expect(fieldValue).To(BeEquivalentTo(value))
+			case <-time.After(50 * time.Millisecond):
+				Fail("timed out waiting for watch event")
+			}
+		}
+
 		BeforeEach(func() {
 			clientset = fake.NewSimpleClientset(mocksv1.MockResourceCrd)
 			resyncPeriod = time.Duration(0)
@@ -76,23 +100,7 @@ var _ = Describe("Test KubeController", func() {
 			err = util.CreateMockResource(ctx, clientset, namespace1, "res-1", "test")
 			Expect(err).NotTo(HaveOccurred())
 
-			for {
-				select {
-				case res := <-resultChan:
-					Expect(res.Namespace).To(BeEquivalentTo(namespace1))
-					Expect(res.Name).To(BeEquivalentTo("res-1"))
-					Expect(res.Kind).To(BeEquivalentTo("MockResource"))
-					Expect(res.Spec).To(Not(BeNil()))
-
-					fieldValue, ok := (*res.Spec)["someDumbField"]
-					Expect(ok).To(BeTrue())
-					Expect(fieldValue).To(BeEquivalentTo("test"))
-					return
-				case <-time.After(50 * time.Millisecond):
-					Fail("timed out waiting for watch event")
-					return
-				}
-			}
+			getResultFromkMockResource(namespace1, name1, value1)
 		})
 
 		It("does not react to events in a non relevant namespace", func() {
@@ -106,6 +114,37 @@ var _ = Describe("Test KubeController", func() {
 			case <-time.After(100 * time.Millisecond):
 				Succeed()
 			}
+		})
+
+		It("can add new informers so that events can be received on the new informer", func() {
+			err = util.CreateMockResource(ctx, clientset, namespace1, name1, value1)
+			Expect(err).NotTo(HaveOccurred())
+
+			newInformer := cache.NewSharedIndexInformer(
+				listWatchForClientAndNamespace(ctx, clientset, namespace2),
+				&solov1.Resource{},
+				resyncPeriod,
+				cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+			)
+
+			getResultFromkMockResource(namespace1, name1, value1)
+
+			// create the second value that we want to look at, but do not set up the informer quit
+			// yet, we still want to ensure that the controller does not learn about the new resource
+			// until the new informer has been added to the kube controller
+			err = util.CreateMockResource(ctx, clientset, namespace2, name2, value2)
+			Expect(err).NotTo(HaveOccurred())
+
+			select {
+			case res := <-resultChan:
+				Fail(fmt.Sprintf("Should not have received the resource %s from Namespace %s as the informer has not yet been added to the KubeController yet", res.Name, res.Namespace))
+			case <-time.After(100 * time.Millisecond):
+			}
+
+			err = kubeController.AddNewInformer(newInformer)
+			Expect(err).NotTo(HaveOccurred())
+
+			getResultFromkMockResource(namespace2, name2, value2)
 		})
 	})
 
