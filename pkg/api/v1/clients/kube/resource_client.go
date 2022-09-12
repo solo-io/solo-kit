@@ -361,12 +361,13 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
-	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
+	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}
 
 	stats.Record(ctx, MInFlight.M(1))
-	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Patch(ctx, name, types.JSONPatchType, data, popts)
+	// merge patch type is important so multi-namespace status reporting is honored
+	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Patch(ctx, name, types.MergePatchType, data, popts)
 	stats.Record(ctx, MInFlight.M(-1))
 	if err != nil {
 		if apierrors.IsNotFound(err) {

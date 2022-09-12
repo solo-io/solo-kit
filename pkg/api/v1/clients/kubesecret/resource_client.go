@@ -207,11 +207,11 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
-	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status", "value": %s}]`, string(bytes))
+	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}
-
-	secret, err := rc.Kube.CoreV1().Secrets(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, popts)
+	// merge patch type is important so multi-namespace status reporting is honored
+	secret, err := rc.Kube.CoreV1().Secrets(namespace).Patch(opts.Ctx, name, types.MergePatchType, data, popts)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
