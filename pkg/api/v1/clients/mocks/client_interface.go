@@ -176,18 +176,18 @@ func (mr *MockResourceClientMockRecorder) List(namespace, opts interface{}) *gom
 }
 
 // ApplyStatus mocks base method
-func (m *MockResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, resource resources.InputResource) (resources.Resource, error) {
+func (m *MockResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ApplyStatus", namespace, name, opts, resource)
+	ret := m.ctrl.Call(m, "ApplyStatus", statusClient, inputResource, opts)
 	ret0, _ := ret[0].(resources.Resource)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ApplyStatus indicates an expected call of ApplyStatus
-func (mr *MockResourceClientMockRecorder) ApplyStatus(namespace, name, opts, resource interface{}) *gomock.Call {
+func (mr *MockResourceClientMockRecorder) ApplyStatus(statusClient, inputResource, opts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyStatus", reflect.TypeOf((*MockResourceClient)(nil).ApplyStatus), namespace, name, opts, resource)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyStatus", reflect.TypeOf((*MockResourceClient)(nil).ApplyStatus), statusClient, inputResource, opts)
 }
 
 // Watch mocks base method
