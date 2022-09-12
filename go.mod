@@ -53,6 +53,7 @@ require (
 require (
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/frankban/quicktest v1.4.1 // indirect
+	github.com/gogo/protobuf v1.3.1
 	github.com/hashicorp/consul/sdk v0.3.0 // indirect
 	github.com/hashicorp/go-hclog v0.10.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
