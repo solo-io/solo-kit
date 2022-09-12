@@ -18,11 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var (
-	// Compile-time assertion
-	_ resources.Resource = new(Pod)
-)
-
 func NewPod(namespace, name string) *Pod {
 	pod := &Pod{}
 	pod.Pod.SetMetadata(&core.Metadata{

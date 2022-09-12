@@ -15,11 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var (
-	// Compile-time assertion
-	_ resources.InputResource = new(AnotherMockResource)
-)
-
 func NewAnotherMockResource(namespace, name string) *AnotherMockResource {
 	anothermockresource := &AnotherMockResource{}
 	anothermockresource.SetMetadata(&core.Metadata{

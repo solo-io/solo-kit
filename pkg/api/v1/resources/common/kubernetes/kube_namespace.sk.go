@@ -18,11 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var (
-	// Compile-time assertion
-	_ resources.Resource = new(KubeNamespace)
-)
-
 func NewKubeNamespace(namespace, name string) *KubeNamespace {
 	kubenamespace := &KubeNamespace{}
 	kubenamespace.KubeNamespace.SetMetadata(&core.Metadata{

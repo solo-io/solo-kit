@@ -14,11 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var (
-	// Compile-time assertion
-	_ resources.Resource = new(SimpleMockResource)
-)
-
 func NewSimpleMockResource(namespace, name string) *SimpleMockResource {
 	simplemockresource := &SimpleMockResource{}
 	simplemockresource.SetMetadata(&core.Metadata{

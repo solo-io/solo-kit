@@ -7,7 +7,10 @@
 package v1
 
 import (
-	any1 "github.com/golang/protobuf/ptypes/any"
+	reflect "reflect"
+	sync "sync"
+
+	any "github.com/golang/protobuf/ptypes/any"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	_struct "github.com/golang/protobuf/ptypes/struct"
@@ -18,8 +21,6 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -108,7 +109,7 @@ type SimpleMockResource struct {
 	// nested_message_list comment
 	NestedMessageList []*SimpleMockResource_NestedMessage `protobuf:"bytes,5,rep,name=nested_message_list,json=nestedMessageList,proto3" json:"nested_message_list,omitempty"`
 	// any comment
-	Any *any1.Any `protobuf:"bytes,11,opt,name=any,proto3" json:"any,omitempty"`
+	Any *any.Any `protobuf:"bytes,11,opt,name=any,proto3" json:"any,omitempty"`
 	// struct comment
 	Struct *_struct.Struct `protobuf:"bytes,12,opt,name=struct,proto3" json:"struct,omitempty"`
 	// mapped_struct comment
@@ -223,7 +224,7 @@ func (x *SimpleMockResource) GetNestedMessageList() []*SimpleMockResource_Nested
 	return nil
 }
 
-func (x *SimpleMockResource) GetAny() *any1.Any {
+func (x *SimpleMockResource) GetAny() *any.Any {
 	if x != nil {
 		return x.Any
 	}
@@ -530,7 +531,7 @@ var file_github_com_solo_io_solo_kit_test_mocks_api_v1_simple_mock_resources_pro
 	nil,                                      // 3: testing.solo.io.SimpleMockResource.MappedStructEntry
 	(*SimpleMockResource_NestedMessage)(nil), // 4: testing.solo.io.SimpleMockResource.NestedMessage
 	(*core.Metadata)(nil),                    // 5: core.solo.io.Metadata
-	(*any1.Any)(nil),                         // 6: google.protobuf.Any
+	(*any.Any)(nil),                          // 6: google.protobuf.Any
 	(*_struct.Struct)(nil),                   // 7: google.protobuf.Struct
 	(*wrappers.BoolValue)(nil),               // 8: google.protobuf.BoolValue
 	(*wrappers.Int32Value)(nil),              // 9: google.protobuf.Int32Value

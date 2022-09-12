@@ -18,11 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var (
-	// Compile-time assertion
-	_ resources.Resource = new(Deployment)
-)
-
 func NewDeployment(namespace, name string) *Deployment {
 	deployment := &Deployment{}
 	deployment.Deployment.SetMetadata(&core.Metadata{
