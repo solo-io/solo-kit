@@ -222,6 +222,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		filterNamespaces := resources.ResourceNamespaceList{}
 		for _, ns := range watchNamespaces {
 			// we do not want to filter out "" which equals all namespaces
+			// the reason is because we will never create a watch on ""(all namespaces) because
+			// doing so means we watch all resources regardless of namespace. Our intent is to
+			// watch only certain namespaces.
 			if ns != "" {
 				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
 			}
@@ -233,6 +236,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		// non watched namespaces that are labeled
 		for _, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
+			c.mockResource.RegisterNamespace(namespace)
 			/* Setup namespaced watch for MockResource */
 			{
 				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
@@ -330,12 +334,18 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					})
 
 					for _, ns := range missingNamespaces {
+						// TODO-JAKE clean this up, so that
+						// 1. we send a notification that there is an empty list
+						// 2. have a way to delete the namespace from the list as well.
+						// 3. any clean up of the resources to that are needed as well.
+
 						// c.namespacesWatching.Delete(ns)
 						mockResourceChan <- mockResourceListWithNamespace{list: MockResourceList{}, namespace: ns}
 						// mocksByNamespace.Delete(ns)
 					}
 
 					for _, namespace := range newNamespaces {
+						c.mockResource.RegisterNamespace(namespace)
 						/* Setup namespaced watch for MockResource for new namespace */
 						{
 							mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})

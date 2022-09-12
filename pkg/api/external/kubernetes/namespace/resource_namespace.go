@@ -159,6 +159,8 @@ func (client *kubeClientResourceNamespaceLister) GetResourceNamespaceWatch(opts 
 }
 
 func (client *kubeClientResourceNamespaceLister) getExcludeFieldSelector(filtered resources.ResourceNamespaceList) string {
+	// you can filter the namespaces by using metadata.name for more information on field selectors
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
 	var buffer bytes.Buffer
 	for i, rns := range filtered {
 		ns := rns.Name

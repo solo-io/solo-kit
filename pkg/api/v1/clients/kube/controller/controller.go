@@ -132,7 +132,7 @@ func (c *Controller) AddNewInformer(newInformer cache.SharedIndexInformer) error
 }
 
 // AddNewListOfInformers will add a list of new informers to the already running controller.
-// if the controller is not running, it will just append the informers to the controllers
+// If the controller is not running, it will just append the informers to the controllers
 // list of informers
 func (c *Controller) AddNewListOfInformers(newInformers []cache.SharedIndexInformer) error {
 	c.informers = append(c.informers, newInformers...)

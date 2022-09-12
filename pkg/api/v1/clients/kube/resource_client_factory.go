@@ -64,6 +64,8 @@ type SharedCache interface {
 
 	// Registers the client with the shared cache
 	Register(rc *ResourceClient) error
+	// RegisterNewNamespace will register the client with a new namespace
+	RegisterNewNamespace(namespace string, rc *ResourceClient) error
 	// Starts all informers in the factory's registry. Must be idempotent.
 	Start()
 	// Returns a lister for resources of the given type in the given namespace.
@@ -199,6 +201,7 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 	return nil
 }
 
+// addNewNamespaceToRegistry will create a watch for the resource client type and namespace
 func (f *ResourceClientSharedInformerFactory) addNewNamespaceToRegistry(ctx context.Context, ns string, rc *ResourceClient) (cache.SharedIndexInformer, error) {
 	nsCtx := ctx
 	resourceType := reflect.TypeOf(rc.crd.Version.Type)

@@ -32,6 +32,7 @@ type ResourceClient interface {
 	NewResource() resources.Resource
 	// Deprecated: implemented only by the kubernetes resource client. Will be removed from the interface.
 	Register() error
+	RegisterNamespace(namespace string) error
 	Read(namespace, name string, opts ReadOpts) (resources.Resource, error)
 	Write(resource resources.Resource, opts WriteOpts) (resources.Resource, error)
 	Delete(namespace, name string, opts DeleteOpts) error
