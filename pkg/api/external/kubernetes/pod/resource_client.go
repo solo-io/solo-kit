@@ -134,7 +134,7 @@ func (rc *podResourceClient) ApplyStatus(statusClient resources.StatusClient, in
 	}
 	opts = opts.WithDefaults()
 
-	bytes, err := json.Marshal(statusClient.GetStatus(inputResource))
+	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
