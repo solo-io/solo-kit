@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/specutils"
-
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
 	"github.com/solo-io/go-utils/stringutils"
@@ -18,6 +16,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -465,7 +464,7 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 			rc.resourceStatusUnmarshaler.UnmarshalStatus(resourceCrd.Status, withStatus)
 		}
 		if resourceCrd.Spec != nil {
-			if err := specutils.UnmarshalSpecMapToResource(*resourceCrd.Spec, resource); err != nil {
+			if err := protoutils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
 				return nil, errors.Wrapf(err, "reading crd spec on resource %v in namespace %v into %v", resourceCrd.Name, resourceCrd.Namespace, rc.resourceName)
 			}
 		}

@@ -5,10 +5,11 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	resources "github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	reflect "reflect"
 )
 
 // MockWatchAggregator is a mock of WatchAggregator interface
