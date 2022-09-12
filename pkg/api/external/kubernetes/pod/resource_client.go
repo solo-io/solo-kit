@@ -126,13 +126,15 @@ func (rc *podResourceClient) Write(resource resources.Resource, opts clients.Wri
 	return rc.Read(podObj.Namespace, podObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
 }
 
-func (rc *podResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (rc *podResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	name := inputResource.GetMetadata().GetName()
+	namespace := inputResource.GetMetadata().GetNamespace()
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	opts = opts.WithDefaults()
 
-	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	bytes, err := json.Marshal(statusClient.GetStatus(inputResource))
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}

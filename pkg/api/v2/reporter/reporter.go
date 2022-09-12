@@ -210,7 +210,7 @@ func (e ResourceReports) ValidateStrict() error {
 // Minimal set of client operations required for reporters.
 type ReporterResourceClient interface {
 	Kind() string
-	ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error)
+	ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error)
 }
 
 type Reporter interface {
@@ -293,7 +293,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 }
 
 func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) error {
-	_, patchErr := client.ApplyStatus(resourceToWrite.GetMetadata().GetNamespace(), resourceToWrite.GetMetadata().GetName(), clients.ApplyStatusOpts{Ctx: ctx}, resourceToWrite)
+	_, patchErr := client.ApplyStatus(r.statusClient, resourceToWrite, clients.ApplyStatusOpts{Ctx: ctx})
 	return patchErr
 }
 

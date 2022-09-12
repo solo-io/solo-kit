@@ -106,7 +106,9 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	return clone, nil
 }
 
-func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.ApplyStatusOpts, inputResource resources.InputResource) (resources.Resource, error) {
+func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	name := inputResource.GetMetadata().GetName()
+	namespace := inputResource.GetMetadata().GetNamespace()
 	res, err := rc.Read(namespace, name, clients.ReadOpts{
 		Ctx:     opts.Ctx,
 		Cluster: opts.Cluster,
@@ -121,9 +123,7 @@ func (rc *ResourceClient) ApplyStatus(namespace, name string, opts clients.Apply
 		return nil, errors.Errorf("error converting resource of type %T to input resource to apply status", res)
 	}
 
-	inputRes.SetStatus(inputResource.GetStatus())
-	inputRes.SetNamespacedStatuses(inputResource.GetNamespacedStatuses())
-
+	statusClient.SetStatus(inputRes, statusClient.GetStatus(inputResource))
 	updatedRes, err := rc.Write(inputRes, clients.WriteOpts{
 		Ctx:               opts.Ctx,
 		OverwriteExisting: true,

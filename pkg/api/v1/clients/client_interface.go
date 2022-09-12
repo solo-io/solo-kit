@@ -36,7 +36,7 @@ type ResourceClient interface {
 	Write(resource resources.Resource, opts WriteOpts) (resources.Resource, error)
 	Delete(namespace, name string, opts DeleteOpts) error
 	List(namespace string, opts ListOpts) (resources.ResourceList, error)
-	ApplyStatus(namespace, name string, opts ApplyStatusOpts, resource resources.InputResource) (resources.Resource, error)
+	ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts ApplyStatusOpts) (resources.Resource, error)
 	ResourceWatcher
 }
 
