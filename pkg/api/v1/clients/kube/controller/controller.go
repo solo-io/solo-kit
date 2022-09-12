@@ -131,6 +131,22 @@ func (c *Controller) AddNewInformer(newInformer cache.SharedIndexInformer) error
 	return nil
 }
 
+// AddNewListOfInformers will add a list of new informers to the already running controller.
+// if the controller is not running, it will just append the informers to the controllers
+// list of informers
+func (c *Controller) AddNewListOfInformers(newInformers []cache.SharedIndexInformer) error {
+	c.informers = append(c.informers, newInformers...)
+	if c.isRunning {
+		for _, in := range newInformers {
+			c.setupInformer(in)
+		}
+		if err := c.waitForCacheToSync(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // runWorker is a long-running function that will continually call the processNextWorkItem function
 // in order to read and process a message on the work queue.
 func (c *Controller) runWorker() {

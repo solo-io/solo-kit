@@ -52,6 +52,9 @@ type KubeCoreCache interface {
 	Cache
 	clustercache.ClusterCache
 
+	// RegisterNewNamespaceCache will register the namespace so that the resources
+	// are available in the cache listers.
+	RegisterNewNamespaceCache(ns string) error
 	// Deprecated: Use NamespacedPodLister instead
 	PodLister() kubelisters.PodLister
 	// Deprecated: Use NamespacedServiceLister instead
@@ -75,6 +78,18 @@ type kubeCoreCaches struct {
 	configMapListers map[string]kubelisters.ConfigMapLister
 	secretListers    map[string]kubelisters.SecretLister
 	namespaceLister  kubelisters.NamespaceLister
+	// ctx is the context of the cache
+	ctx context.Context
+	// client kubernetes client
+	client kubernetes.Interface
+	// kubeController is the controller used to start the informers, and is used to
+	// watch events that occur on the informers.  This is used to send information back to the
+	// [resource]listers.
+	kubeController *controller.Controller
+	// resyncDuration is the time
+	resyncDuration time.Duration
+	// informers are the kube resources that provide events
+	informers []cache.SharedIndexInformer
 
 	cacheUpdatedWatchers      []chan struct{}
 	cacheUpdatedWatchersMutex sync.Mutex
@@ -136,112 +151,134 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 	configMaps := map[string]kubelisters.ConfigMapLister{}
 	secrets := map[string]kubelisters.SecretLister{}
 
-	for _, nsToWatch := range namesapcesToWatch {
-		nsToWatch := nsToWatch
-		nsCtx := ctx
-		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(nsToWatch))); err == nil {
-			nsCtx = ctxWithTags
-		}
-
-		{
-			var typeCtx = nsCtx
-			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Pods")); err == nil {
-				typeCtx = ctxWithTags
-			}
-			// Pods
-			watch := client.CoreV1().Pods(nsToWatch).Watch
-			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Pods(nsToWatch).List(ctx, options)
-			}
-			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Pod{}, list, watch)
-			informers = append(informers, informer)
-			lister := kubelisters.NewPodLister(informer.GetIndexer())
-			pods[nsToWatch] = lister
-		}
-		{
-			var typeCtx = nsCtx
-			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Services")); err == nil {
-				typeCtx = ctxWithTags
-			}
-			// Services
-			watch := client.CoreV1().Services(nsToWatch).Watch
-			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Services(nsToWatch).List(ctx, options)
-			}
-			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Service{}, list, watch)
-			informers = append(informers, informer)
-			lister := kubelisters.NewServiceLister(informer.GetIndexer())
-			services[nsToWatch] = lister
-		}
-		{
-			var typeCtx = nsCtx
-			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "ConfigMap")); err == nil {
-				typeCtx = ctxWithTags
-			}
-			// ConfigMap
-			watch := client.CoreV1().ConfigMaps(nsToWatch).Watch
-			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().ConfigMaps(nsToWatch).List(ctx, options)
-			}
-			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.ConfigMap{}, list, watch)
-			informers = append(informers, informer)
-			lister := kubelisters.NewConfigMapLister(informer.GetIndexer())
-			configMaps[nsToWatch] = lister
-		}
-		{
-			var typeCtx = nsCtx
-			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Secrets")); err == nil {
-				typeCtx = ctxWithTags
-			}
-			// Secrets
-			watch := client.CoreV1().Secrets(nsToWatch).Watch
-			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Secrets(nsToWatch).List(ctx, options)
-			}
-			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Secret{}, list, watch)
-			informers = append(informers, informer)
-			lister := kubelisters.NewSecretLister(informer.GetIndexer())
-			secrets[nsToWatch] = lister
-		}
-
-	}
-
-	var namespaceLister kubelisters.NamespaceLister
-	if len(namesapcesToWatch) == 1 && namesapcesToWatch[0] == metav1.NamespaceAll {
-
-		// Pods
-		watch := client.CoreV1().Namespaces().Watch
-		list := func(options metav1.ListOptions) (runtime.Object, error) {
-			return client.CoreV1().Namespaces().List(ctx, options)
-		}
-		nsCtx := ctx
-		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(metav1.NamespaceAll)), tag.Insert(skkube.KeyKind, "Namespaces")); err == nil {
-			nsCtx = ctxWithTags
-		}
-		informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Namespace{}, list, watch)
-		informers = append(informers, informer)
-		namespaceLister = kubelisters.NewNamespaceLister(informer.GetIndexer())
-	}
-
 	k := &kubeCoreCaches{
 		podListers:       pods,
 		serviceListers:   services,
 		configMapListers: configMaps,
 		secretListers:    secrets,
-		namespaceLister:  namespaceLister,
+		client:           client,
+		ctx:              ctx,
+		resyncDuration:   resyncDuration,
+		informers:        informers,
 	}
 
-	kubeController := controller.NewController("kube-plugin-controller",
-		controller.NewLockingSyncHandler(k.updatedOccured), informers...,
+	for _, nsToWatch := range namesapcesToWatch {
+		k.addNewNamespace(nsToWatch)
+	}
+
+	// TODO allows add in the namespaceLister, all the time, or make it an option.
+	// TODO-JAKE the namespace lister is used for something in Gloo, we need to make sure that it is going to
+	// dealt with.  It might have side affects that I am unaware of, so please go and investigate that.
+
+	// TODO-JAKE please look into the Reconciler as well, those might need to updated too. I am not sure though, as they work differently.
+	if len(namesapcesToWatch) == 1 && namesapcesToWatch[0] == metav1.NamespaceAll {
+		k.addNamespaceLister()
+	}
+
+	k.kubeController = controller.NewController("kube-plugin-controller",
+		controller.NewLockingSyncHandler(k.updatedOccured), k.informers...,
 	)
 
 	stop := ctx.Done()
-	err := kubeController.Run(2, stop)
+	err := k.kubeController.Run(2, stop)
 	if err != nil {
 		return nil, err
 	}
 
 	return k, nil
+}
+
+func (c *kubeCoreCaches) addPod(namespace string, typeCtx context.Context) cache.SharedIndexInformer {
+	if ctxWithTags, err := tag.New(typeCtx, tag.Insert(skkube.KeyKind, "Pods")); err == nil {
+		typeCtx = ctxWithTags
+	}
+	watch := c.client.CoreV1().Pods(namespace).Watch
+	list := func(options metav1.ListOptions) (runtime.Object, error) {
+		return c.client.CoreV1().Pods(namespace).List(c.ctx, options)
+	}
+	informer := skkube.NewSharedInformer(typeCtx, c.resyncDuration, &v1.Pod{}, list, watch)
+	c.informers = append(c.informers, informer)
+	lister := kubelisters.NewPodLister(informer.GetIndexer())
+	c.podListers[namespace] = lister
+	return informer
+}
+
+func (c *kubeCoreCaches) addService(namespace string, typeCtx context.Context) cache.SharedIndexInformer {
+	if ctxWithTags, err := tag.New(typeCtx, tag.Insert(skkube.KeyKind, "Services")); err == nil {
+		typeCtx = ctxWithTags
+	}
+	watch := c.client.CoreV1().Services(namespace).Watch
+	list := func(options metav1.ListOptions) (runtime.Object, error) {
+		return c.client.CoreV1().Services(namespace).List(c.ctx, options)
+	}
+	informer := skkube.NewSharedInformer(typeCtx, c.resyncDuration, &v1.Service{}, list, watch)
+	c.informers = append(c.informers, informer)
+	lister := kubelisters.NewServiceLister(informer.GetIndexer())
+	c.serviceListers[namespace] = lister
+	return informer
+}
+
+func (c *kubeCoreCaches) addConfigMap(namespace string, typeCtx context.Context) cache.SharedIndexInformer {
+	if ctxWithTags, err := tag.New(typeCtx, tag.Insert(skkube.KeyKind, "ConfigMap")); err == nil {
+		typeCtx = ctxWithTags
+	}
+	watch := c.client.CoreV1().ConfigMaps(namespace).Watch
+	list := func(options metav1.ListOptions) (runtime.Object, error) {
+		return c.client.CoreV1().ConfigMaps(namespace).List(c.ctx, options)
+	}
+	informer := skkube.NewSharedInformer(typeCtx, c.resyncDuration, &v1.ConfigMap{}, list, watch)
+	c.informers = append(c.informers, informer)
+	lister := kubelisters.NewConfigMapLister(informer.GetIndexer())
+	c.configMapListers[namespace] = lister
+	return informer
+}
+
+func (c *kubeCoreCaches) addSecret(namespace string, typeCtx context.Context) cache.SharedIndexInformer {
+	if ctxWithTags, err := tag.New(typeCtx, tag.Insert(skkube.KeyKind, "Secrets")); err == nil {
+		typeCtx = ctxWithTags
+	}
+	watch := c.client.CoreV1().Secrets(namespace).Watch
+	list := func(options metav1.ListOptions) (runtime.Object, error) {
+		return c.client.CoreV1().Secrets(namespace).List(c.ctx, options)
+	}
+	informer := skkube.NewSharedInformer(typeCtx, c.resyncDuration, &v1.Secret{}, list, watch)
+	c.informers = append(c.informers, informer)
+	lister := kubelisters.NewSecretLister(informer.GetIndexer())
+	c.secretListers[namespace] = lister
+	return informer
+}
+
+func (c *kubeCoreCaches) addNamespaceLister() {
+	watch := c.client.CoreV1().Namespaces().Watch
+	list := func(options metav1.ListOptions) (runtime.Object, error) {
+		return c.client.CoreV1().Namespaces().List(c.ctx, options)
+	}
+	nsCtx := c.ctx
+	if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(metav1.NamespaceAll)), tag.Insert(skkube.KeyKind, "Namespaces")); err == nil {
+		nsCtx = ctxWithTags
+	}
+	informer := skkube.NewSharedInformer(nsCtx, c.resyncDuration, &v1.Namespace{}, list, watch)
+	c.informers = append(c.informers, informer)
+	c.namespaceLister = kubelisters.NewNamespaceLister(informer.GetIndexer())
+}
+
+func (k *kubeCoreCaches) addNewNamespace(namespace string) []cache.SharedIndexInformer {
+	nsCtx := k.ctx
+	if ctxWithTags, err := tag.New(k.ctx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(namespace))); err == nil {
+		nsCtx = ctxWithTags
+	}
+	podInformer := k.addPod(namespace, nsCtx)
+	serviceInformer := k.addService(namespace, nsCtx)
+	configMapInformer := k.addConfigMap(namespace, nsCtx)
+	secretInformer := k.addSecret(namespace, nsCtx)
+	return []cache.SharedIndexInformer{podInformer, serviceInformer, configMapInformer, secretInformer}
+}
+
+// RegisterNewNamespaceCache will create the cache informers for each resource type
+// this will add the informer to the kube controller so that events can be watched.
+func (k *kubeCoreCaches) RegisterNewNamespaceCache(namespace string) error {
+	informers := k.addNewNamespace(namespace)
+	return k.kubeController.AddNewListOfInformers(informers)
 }
 
 // Deprecated: Use NamespacedPodLister instead
