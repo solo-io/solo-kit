@@ -1,13 +1,14 @@
 package customresourcedefinition
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -134,11 +135,14 @@ func (rc *customResourceDefinitionResourceClient) ApplyStatus(statusClient resou
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	opts = opts.WithDefaults()
-
-	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	buf := &bytes.Buffer{}
+	var marshaller jsonpb.Marshaler
+	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
+	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
+	bytes := buf.Bytes()
 	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}

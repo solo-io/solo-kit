@@ -1,11 +1,12 @@
 package deployment
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 
+	"github.com/gogo/protobuf/jsonpb"
 	kubedeployment "github.com/solo-io/solo-kit/api/external/kubernetes/deployment"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -134,10 +135,14 @@ func (rc *deploymentResourceClient) ApplyStatus(statusClient resources.StatusCli
 	}
 	opts = opts.WithDefaults()
 
-	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	buf := &bytes.Buffer{}
+	var marshaller jsonpb.Marshaler
+	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
+	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
+	bytes := buf.Bytes()
 	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}

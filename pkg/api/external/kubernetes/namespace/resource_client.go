@@ -1,12 +1,13 @@
 package namespace
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 
 	"github.com/bugsnag/bugsnag-go/errors"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/rotisserie/eris"
 	kubenamespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -133,10 +134,14 @@ func (rc *namespaceResourceClient) ApplyStatus(statusClient resources.StatusClie
 	}
 	opts = opts.WithDefaults()
 
-	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	buf := &bytes.Buffer{}
+	var marshaller jsonpb.Marshaler
+	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
+	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
 	if err != nil {
 		return nil, eris.Wrapf(err, "marshalling input resource")
 	}
+	bytes := buf.Bytes()
 	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}

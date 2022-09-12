@@ -1,14 +1,15 @@
 package kube
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
@@ -357,10 +358,14 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 		ctx = ctxWithTags
 	}
 
-	bytes, err := json.Marshal(inputResource.GetNamespacedStatuses())
+	buf := &bytes.Buffer{}
+	var marshaller jsonpb.Marshaler
+	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
+	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
+	bytes := buf.Bytes()
 	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}
