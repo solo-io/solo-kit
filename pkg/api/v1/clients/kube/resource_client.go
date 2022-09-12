@@ -338,6 +338,8 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 
+	// JAKE-TODO we will need to update the validation list here as well.
+	// JAKE-TODO ensure that this is done as well for the other resource client too.
 	if err := rc.validateNamespace(namespace); err != nil {
 		return nil, nil, err
 	}
