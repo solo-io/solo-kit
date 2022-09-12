@@ -316,13 +316,13 @@ var _ = Describe("Reporter", func() {
 			}
 
 			// first write fails due to resource version
-			mockedResourceClient.EXPECT().ApplyStatus(res.Metadata.Namespace, res.Metadata.Name, applyOpts, gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
+			mockedResourceClient.EXPECT().ApplyStatus(gomock.Any(), gomock.Any(), applyOpts).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
 
 			// we retry, and fail again on resource version error
-			mockedResourceClient.EXPECT().ApplyStatus(res.Metadata.Namespace, res.Metadata.Name, applyOpts, gomock.Any()).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
+			mockedResourceClient.EXPECT().ApplyStatus(gomock.Any(), gomock.Any(), applyOpts).Return(nil, errors.NewResourceVersionErr("ns", "name", "given", "expected"))
 
 			// this time we succeed to write the status
-			mockedResourceClient.EXPECT().ApplyStatus(res.Metadata.Namespace, res.Metadata.Name, applyOpts, gomock.Any()).Return(res, nil)
+			mockedResourceClient.EXPECT().ApplyStatus(gomock.Any(), gomock.Any(), applyOpts).Return(res, nil)
 
 			err := reporter.WriteReports(ctx, resourceErrs, nil)
 			Expect(err).NotTo(HaveOccurred())
