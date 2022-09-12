@@ -82,6 +82,13 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 			Expect(func() { _ = kubeCache.Register(client1) }).To(Panic())
 		})
+		It("can register a new namespace even when the factory is running", func() {
+			kubeCache.Start()
+			Expect(kubeCache.IsRunning()).To(BeTrue())
+
+			err := kubeCache.RegisterNewNamespace("newNamespace", client2)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 
 	Describe("starting the factory", func() {
@@ -112,12 +119,13 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 		var (
 			clientset          *fake.Clientset
 			preStartGoroutines int
+			client             *kube.ResourceClient
 		)
 
 		BeforeEach(func() {
 			clientset = fake.NewSimpleClientset(mocksv1.MockResourceCrd)
 			// We need the resourceClient so that we can register its resourceType/namespaces with the cache
-			client := util.ClientForClientsetAndResource(clientset, kubeCache, mocksv1.MockResourceCrd, &mocksv1.MockResource{}, []string{namespace1})
+			client = util.ClientForClientsetAndResource(clientset, kubeCache, mocksv1.MockResourceCrd, &mocksv1.MockResource{}, []string{namespace1})
 			err := kubeCache.Register(client)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -190,6 +198,32 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				Expect(len(watchResults)).To(BeEquivalentTo(3))
 				Expect(watchResults).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1"))
+			})
+			It("should be able to register a new namespace", func() {
+				err := kubeCache.RegisterNewNamespace(namespace2, client)
+				Expect(err).NotTo(HaveOccurred())
+
+				var watchResults []string
+
+				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
+
+				go func() {
+					for {
+						select {
+						case <-ctx.Done():
+							return
+						case res := <-watch:
+							watchResults = append(watchResults, res.ObjectMeta.Name)
+						}
+					}
+				}()
+
+				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-2", "test")).To(BeNil())
+
+				<-ctx.Done()
+
+				Expect(len(watchResults)).To(BeEquivalentTo(1))
+				Expect(watchResults).To(ConsistOf("mock-res-2"))
 			})
 		})
 

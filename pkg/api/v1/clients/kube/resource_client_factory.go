@@ -120,6 +120,9 @@ type ResourceClientSharedInformerFactory struct {
 	// Determines how long the controller will wait for a watch channel to accept an event before aborting the delivery
 	watchTimeout time.Duration
 
+	// kubeController is the controller used to watch for events on the informers. It can be used to add new informers too.
+	kubeController *controller.Controller
+
 	// Mutexes
 	lock                      sync.Mutex
 	cacheUpdatedWatchersMutex sync.Mutex
@@ -132,6 +135,7 @@ func NotEmptyValue(ns string) string {
 	return ns
 }
 
+// NewSharedInformer creates a new Shared Index Informer with the list and watch template functions.
 func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType runtime.Object,
 	listFunc func(options metav1.ListOptions) (runtime.Object, error),
 	watchFunc func(context.Context, metav1.ListOptions) (kubewatch.Interface, error)) cache.SharedIndexInformer {
@@ -159,11 +163,13 @@ func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType 
 		},
 		objType,
 		resyncPeriod,
+		// TODO-JAKE make a note here, that is where we would want to look at creating namespace indexes if needed.
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 }
 
 // Creates a new SharedIndexInformer and adds it to the factory's informer registry.
+// This method is meant to be called once per rc namespace set, please call Register New Namespace when adding new namespaces.
 // NOTE: Currently we cannot share informers between resource clients, because the listWatch functions are configured
 // with the client's specific token. Hence, we must enforce a one-to-one relationship between informers and clients.
 func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error {
@@ -179,40 +185,46 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 		ctx = ctxWithTags
 	}
 
-	resourceType := reflect.TypeOf(rc.crd.Version.Type)
-	namespaces := rc.namespaceWhitelist // will always contain at least one element
+	// Create a shared informer for each of the given namespaces.
+	// NOTE: We do not distinguish between the value "" (all namespaces) and a regular namespace here.
+	// TODO-JAKE there is a special rule, when the namespaces is [""], we need an option
+	// to be able to change the Informer so that it does not watch on "", but only those namespaces
+	// that we want to watch.  This only happens if the client(user) is setting the namespaceLabelSelectors field in the API.
+	for _, ns := range rc.namespaceWhitelist {
+		if _, err := f.addNewNamespaceToRegistry(ctx, ns, rc); err != nil {
+			return err
+		}
+	}
 
+	return nil
+}
+
+func (f *ResourceClientSharedInformerFactory) addNewNamespaceToRegistry(ctx context.Context, ns string, rc *ResourceClient) (cache.SharedIndexInformer, error) {
+	nsCtx := ctx
+	resourceType := reflect.TypeOf(rc.crd.Version.Type)
+
+	// get the resync value
 	resyncPeriod := f.defaultResync
 	if rc.resyncPeriod != 0 {
 		resyncPeriod = rc.resyncPeriod
 	}
 
-	// Create a shared informer for each of the given namespaces.
-	// NOTE: We do not distinguish between the value "" (all namespaces) and a regular namespace here.
-	for _, ns := range namespaces {
-		// copy to variable, so we can send it to closures
-		ns := ns
-		// To nip configuration errors in the bud, error if the registry already contains an informer for the given resource/namespace.
-		if f.registry.get(resourceType, ns) != nil {
-			return errors.Errorf("Shared cache already contains informer for resource [%v] and namespace [%v]", resourceType, ns)
-
-		}
-
-		nsCtx := ctx
-		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(KeyNamespaceKind, NotEmptyValue(ns))); err == nil {
-			nsCtx = ctxWithTags
-		}
-
-		resourceList := rc.crdClientset.ResourcesV1().Resources(ns).List
-		list := func(options metav1.ListOptions) (runtime.Object, error) {
-			return resourceList(ctx, options)
-		}
-		watch := rc.crdClientset.ResourcesV1().Resources(ns).Watch
-		sharedInformer := NewSharedInformer(nsCtx, resyncPeriod, &v1.Resource{}, list, watch)
-		f.registry.add(resourceType, ns, sharedInformer)
+	// To nip configuration errors in the bud, error if the registry already contains an informer for the given resource/namespace.
+	if f.registry.get(resourceType, ns) != nil {
+		return nil, errors.Errorf("Shared cache already contains informer for resource [%v] and namespace [%v]", resourceType, ns)
+	}
+	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyNamespaceKind, NotEmptyValue(ns))); err == nil {
+		nsCtx = ctxWithTags
 	}
 
-	return nil
+	listResourceFunc := rc.crdClientset.ResourcesV1().Resources(ns).List
+	list := func(options metav1.ListOptions) (runtime.Object, error) {
+		return listResourceFunc(ctx, options)
+	}
+	watch := rc.crdClientset.ResourcesV1().Resources(ns).Watch
+	sharedInformer := NewSharedInformer(nsCtx, resyncPeriod, &v1.Resource{}, list, watch)
+	f.registry.add(resourceType, ns, sharedInformer)
+	return sharedInformer, nil
 }
 
 func (f *ResourceClientSharedInformerFactory) IsClusterCache() {}
@@ -238,10 +250,11 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 		ctx := f.ctx
 
 		// Collect all registered informers
+
 		sharedInformers := f.registry.list()
 
 		// Initialize a new kubernetes controller
-		kubeController := controller.NewController("solo-resource-controller",
+		f.kubeController = controller.NewController("solo-resource-controller",
 			controller.NewLockingCallbackHandler(f.updatedOccurred), sharedInformers...)
 
 		// Start the controller
@@ -249,7 +262,7 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 		go func() {
 			// If there is a problem with the ListWatch, the Run method might wait indefinitely for the informer caches
 			// to sync, so we start it in a goroutine to be able to timeout.
-			runResult <- kubeController.Run(2, ctx.Done())
+			runResult <- f.kubeController.Run(2, ctx.Done())
 		}()
 
 		// Fail if the caches have not synchronized after 10 seconds. This prevents the controller from hanging forever.
@@ -270,6 +283,26 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 		// Mark the factory as started
 		f.started = true
 	})
+}
+
+// RegisterNewNamespace is used when the resource client is running. This will add a new namespace to the
+// kube controller so that events can be received.
+func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace string, rc *ResourceClient) error {
+	if !f.IsRunning() {
+		contextutils.LoggerFrom(f.ctx).Panicf("failed to register the new namespace [%v] to the resource client [%v]", namespace, reflect.TypeOf(rc))
+	}
+	ctx := f.ctx
+	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
+		ctx = ctxWithTags
+	}
+	informer, err := f.addNewNamespaceToRegistry(ctx, namespace, rc)
+	if err != nil {
+		return err
+	}
+	if err := f.kubeController.AddNewInformer(informer); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *ResourceClientSharedInformerFactory) GetLister(namespace string, obj runtime.Object) (ResourceLister, error) {

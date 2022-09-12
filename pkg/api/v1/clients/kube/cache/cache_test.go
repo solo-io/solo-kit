@@ -35,6 +35,25 @@ var _ = Describe("kube core cache tests", func() {
 			selectors = labels.SelectorFromSet(make(map[string]string))
 		)
 
+		createNamespaceAndResource := func(namespace string) {
+			_, err := client.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.CoreV1().ConfigMaps(namespace).Create(ctx, &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cfg"}}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		validateNamespaceResource := func(namespace string) {
+			_, err := cache.NamespacedPodLister(namespace).List(selectors)
+			Expect(err).NotTo(HaveOccurred())
+			cfgMap, err := cache.NamespacedConfigMapLister(namespace).List(selectors)
+			Expect(err).NotTo(HaveOccurred())
+			cfgMap = cleanConfigMaps(cfgMap)
+			_, err = cache.NamespacedSecretLister(namespace).List(selectors)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfgMap).To(HaveLen(1))
+			Expect(cfgMap[0].Namespace).To(Equal(namespace))
+		}
+
 		BeforeEach(func() {
 			var err error
 			cfg, err = kubeutils.GetConfig("", "")
@@ -111,11 +130,7 @@ var _ = Describe("kube core cache tests", func() {
 					testns = fmt.Sprintf("test-%d", randomvalue)
 					testns2 = fmt.Sprintf("test2-%d", randomvalue)
 					for _, ns := range []string{testns, testns2} {
-						_, err := client.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
-						Expect(err).NotTo(HaveOccurred())
-						_, err = client.CoreV1().ConfigMaps(ns).Create(ctx, &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cfg"}}, metav1.CreateOptions{})
-						Expect(err).NotTo(HaveOccurred())
-
+						createNamespaceAndResource(ns)
 					}
 					var err error
 					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{testns, testns2})
@@ -130,27 +145,8 @@ var _ = Describe("kube core cache tests", func() {
 
 				It("can list resources for all listers", func() {
 					Expect(cache.NamespaceLister()).To(BeNil())
-					_, err := cache.NamespacedPodLister(testns).List(selectors)
-					Expect(err).NotTo(HaveOccurred())
-					cfgMaps, err := cache.NamespacedConfigMapLister(testns).List(selectors)
-					Expect(err).NotTo(HaveOccurred())
-					cfgMaps = cleanConfigMaps(cfgMaps)
-					_, err = cache.NamespacedSecretLister(testns).List(selectors)
-					Expect(err).NotTo(HaveOccurred())
-
-					Expect(cache.NamespaceLister()).To(BeNil())
-					_, err = cache.NamespacedPodLister(testns2).List(selectors)
-					Expect(err).NotTo(HaveOccurred())
-					cfgMaps2, err := cache.NamespacedConfigMapLister(testns2).List(selectors)
-					Expect(err).NotTo(HaveOccurred())
-					cfgMaps2 = cleanConfigMaps(cfgMaps2)
-					_, err = cache.NamespacedSecretLister(testns2).List(selectors)
-					Expect(err).NotTo(HaveOccurred())
-
-					Expect(cfgMaps).To(HaveLen(1))
-					Expect(cfgMaps2).To(HaveLen(1))
-					Expect(cfgMaps[0].Namespace).To(Equal(testns))
-					Expect(cfgMaps2[0].Namespace).To(Equal(testns2))
+					validateNamespaceResource(testns)
+					validateNamespaceResource(testns2)
 				})
 			})
 
@@ -159,6 +155,39 @@ var _ = Describe("kube core cache tests", func() {
 					var err error
 					_, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default", ""})
 					Expect(err).To(HaveOccurred())
+				})
+			})
+			Context("Register a new namespace", func() {
+				var (
+					initialNs    string
+					registeredNs string
+				)
+
+				BeforeEach(func() {
+					randomvalue := rand.Int31()
+					initialNs = fmt.Sprintf("initial-%d", randomvalue)
+					registeredNs = fmt.Sprintf("registered-%d", randomvalue)
+
+					createNamespaceAndResource(initialNs)
+
+					var err error
+					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{initialNs})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					client.CoreV1().Namespaces().Delete(ctx, initialNs, metav1.DeleteOptions{})
+					client.CoreV1().Namespaces().Delete(ctx, registeredNs, metav1.DeleteOptions{})
+				})
+
+				It("should be able to register a new namespace", func() {
+					createNamespaceAndResource(registeredNs)
+
+					err := cache.RegisterNewNamespaceCache(registeredNs)
+					Expect(err).NotTo(HaveOccurred())
+
+					validateNamespaceResource(initialNs)
+					validateNamespaceResource(registeredNs)
 				})
 			})
 		})

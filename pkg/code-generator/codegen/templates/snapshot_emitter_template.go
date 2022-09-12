@@ -197,10 +197,10 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 {{- range .Resources}}
 	/* Create channel for {{ .Name }} */
 {{- if (not .ClusterScoped) }}
-	type {{ lower_camel .Name }}ListWithNamespace struct {
-		list {{ .ImportPrefix }}{{ .Name }}List
-		namespace string
-	}
+type {{ lower_camel .Name }}ListWithNamespace struct {
+	list {{ .ImportPrefix }}{{ .Name }}List
+	namespace string
+}
 	{{ lower_camel .Name }}Chan := make(chan {{ lower_camel .Name }}ListWithNamespace)
 	var initial{{ upper_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List
 {{- end }}
