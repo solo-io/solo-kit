@@ -189,6 +189,27 @@ var _ = Describe("kube core cache tests", func() {
 					validateNamespaceResource(initialNs)
 					validateNamespaceResource(registeredNs)
 				})
+
+				It("should be able to register a new namespace after the namespace was previously registered then deleted", func() {
+					createNamespaceAndResource(registeredNs)
+
+					err := cache.RegisterNewNamespaceCache(registeredNs)
+					Expect(err).NotTo(HaveOccurred())
+
+					validateNamespaceResource(initialNs)
+					validateNamespaceResource(registeredNs)
+
+					client.CoreV1().Namespaces().Delete(ctx, registeredNs, metav1.DeleteOptions{})
+					// let the namespace be deleted
+					Eventually(func() bool {
+						_, err := client.CoreV1().Namespaces().Get(ctx, registeredNs, metav1.GetOptions{})
+						return err != nil
+					}, 10*time.Second, time.Second).Should(BeTrue())
+					createNamespaceAndResource(registeredNs)
+					// have to ensure that the configmap is created in the new namespace
+					time.Sleep(50 * time.Millisecond)
+					validateNamespaceResource(registeredNs)
+				})
 			})
 		})
 	})

@@ -173,7 +173,6 @@ func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType 
 		},
 		objType,
 		resyncPeriod,
-		// TODO-JAKE make a note here, that is where we would want to look at creating namespace indexes if needed.
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 }

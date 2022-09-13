@@ -170,14 +170,8 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 		k.addNewNamespace(nsToWatch)
 	}
 
-	// TODO allows add in the namespaceLister, all the time, or make it an option.
-	// TODO-JAKE the namespace lister is used for something in Gloo, we need to make sure that it is going to
-	// dealt with.  It might have side affects that I am unaware of, so please go and investigate that.
-
-	// TODO-JAKE please look into the Reconciler as well, those might need to updated too. I am not sure though, as they work differently.
-	if len(namesapcesToWatch) == 1 && namesapcesToWatch[0] == metav1.NamespaceAll {
-		k.addNamespaceLister()
-	}
+	// since we now allow namespaces to be registered dynamically we will always create the namespace lister
+	k.addNamespaceLister()
 
 	k.kubeController = controller.NewController("kube-plugin-controller",
 		controller.NewLockingSyncHandler(k.updatedOccured), k.informers...,
