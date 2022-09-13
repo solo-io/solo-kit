@@ -358,21 +358,32 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 		ctx = ctxWithTags
 	}
 
+	namespacedStatuses := inputResource.GetNamespacedStatuses().GetStatuses()
+	if len(namespacedStatuses) != 1 {
+		// we only expect our namespace to report here; we don't want to blow away statuses from other reporters
+		return nil, errors.Errorf("unexpected number of namespaces in input resource: %v", len(inputResource.GetNamespacedStatuses().GetStatuses()))
+	}
+	ns := ""
+	for loopNs, _ := range inputResource.GetNamespacedStatuses().GetStatuses() {
+		ns = loopNs
+	}
+	status := inputResource.GetNamespacedStatuses().GetStatuses()[ns]
+
 	buf := &bytes.Buffer{}
 	var marshaller jsonpb.Marshaler
-	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
-	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
+	marshaller.EmitDefaults = false        // keep status as small as possible
+	err := marshaller.Marshal(buf, status) // prefer jsonpb over json marshaller since it renders enum as string not int (state is human-readable)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
+
 	bytes := buf.Bytes()
-	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status/statuses/%s", "value": %s}]`, ns, string(bytes)) // only replace our status so other reporters are not affected (e.g. blue-green of gloo)
 	data := []byte(patch)
 	popts := metav1.PatchOptions{}
 
 	stats.Record(ctx, MInFlight.M(1))
-	// merge patch type is important so multi-namespace status reporting is honored
-	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Patch(ctx, name, types.MergePatchType, data, popts)
+	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Patch(ctx, name, types.JSONPatchType, data, popts)
 	stats.Record(ctx, MInFlight.M(-1))
 	if err != nil {
 		if apierrors.IsNotFound(err) {
