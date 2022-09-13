@@ -1,11 +1,15 @@
 package schemagen
 
 import (
+	"bytes"
 	"fmt"
 
 	"encoding/json"
 
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/errors"
 	"k8s.io/utils/pointer"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
@@ -117,16 +121,21 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 			},
 		}
 
-		statuses := core.NamespacedStatuses{
+		status := &core.NamespacedStatuses{
 			Statuses: map[string]*core.Status{},
 		}
-		statusBytes, err := json.Marshal(statuses)
+		var marshaller jsonpb.Marshaler
+		marshaller.EnumsAsInts = false  // prefer jsonpb over encoding/json marshaller since it renders enum as string not int (i.e., state is human-readable)
+		marshaller.EmitDefaults = false // keep status as small as possible
+		statusBuf := &bytes.Buffer{}
+		err := marshaller.Marshal(statusBuf, proto.MessageV1(status))
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "marshalling status resource")
 		}
-		statusesBytes, err := json.Marshal(statuses.Statuses)
+		statusBytes := statusBuf.Bytes()
+		statusesBytes, err := json.Marshal(status.Statuses)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "marshalling status.statuses resource")
 		}
 
 		// Either use the status defined on the spec, or a generic status
