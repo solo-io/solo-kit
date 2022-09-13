@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
@@ -107,6 +108,7 @@ type ResourceClient struct {
 	namespaceWhitelist        []string // Will contain at least metaV1.NamespaceAll ("")
 	resyncPeriod              time.Duration
 	resourceStatusUnmarshaler resources.StatusUnmarshaler
+	namespaceLock             sync.Mutex
 }
 
 func NewResourceClient(
@@ -156,7 +158,9 @@ func (rc *ResourceClient) RegisterNamespace(namespace string) error {
 	if err != nil {
 		return err
 	}
+	rc.namespaceLock.Lock()
 	rc.namespaceWhitelist = append(rc.namespaceWhitelist, namespace)
+	rc.namespaceLock.Unlock()
 	return nil
 }
 
@@ -472,6 +476,8 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 
 // Check whether the given namespace is in the whitelist or we allow all namespaces
 func (rc *ResourceClient) validateNamespace(namespace string) error {
+	rc.namespaceLock.Lock()
+	defer rc.namespaceLock.Unlock()
 	if !stringutils.ContainsAny([]string{namespace, metav1.NamespaceAll}, rc.namespaceWhitelist) {
 		return errors.Errorf("this client was not configured to access resources in the [%v] namespace. "+
 			"Allowed namespaces are %v", namespace, rc.namespaceWhitelist)

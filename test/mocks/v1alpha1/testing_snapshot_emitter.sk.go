@@ -334,13 +334,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					})
 
 					for _, ns := range missingNamespaces {
-						// TODO-JAKE clean this up, so that
-						// 1. we send a notification that there is an empty list
-						// 2. have a way to delete the namespace from the list as well.
-						// 3. any clean up of the resources to that are needed as well.
-						// c.namespacesWatching.Delete(ns)
 						mockResourceChan <- mockResourceListWithNamespace{list: MockResourceList{}, namespace: ns}
-						// mocksByNamespace.Delete(ns)
 					}
 
 					for _, namespace := range newNamespaces {

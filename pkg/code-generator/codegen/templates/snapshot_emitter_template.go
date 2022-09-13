@@ -405,15 +405,9 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 					})
 				
 					for _, ns := range missingNamespaces {
-						// TODO-JAKE clean this up, so that
-						// 1. we send a notification that there is an empty list
-						// 2. have a way to delete the namespace from the list as well.
-						// 3. any clean up of the resources to that are needed as well.
-						// c.namespacesWatching.Delete(ns)
 {{- range .Resources}}
 {{- if (not .ClusterScoped) }}
 						{{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ .ImportPrefix }}{{ .Name }}List{}, namespace: ns}
-						// {{ lower_camel .PluralName }}ByNamespace.Delete(ns)
 {{- end }}
 {{- end }}
 					}
