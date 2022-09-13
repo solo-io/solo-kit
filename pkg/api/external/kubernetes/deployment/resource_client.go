@@ -64,6 +64,10 @@ func ToKubeDeployment(resource resources.Resource) (*appsv1.Deployment, error) {
 
 var _ clients.ResourceClient = &deploymentResourceClient{}
 
+func (rc *deploymentResourceClient) RegisterNamespace(namespace string) error {
+	return nil
+}
+
 func (rc *deploymentResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")

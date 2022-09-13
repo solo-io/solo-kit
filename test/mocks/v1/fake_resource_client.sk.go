@@ -19,6 +19,7 @@ type FakeResourceWatcher interface {
 type FakeResourceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+	RegisterNamespace(namespace string) error
 	Read(namespace, name string, opts clients.ReadOpts) (*FakeResource, error)
 	Write(resource *FakeResource, opts clients.WriteOpts) (*FakeResource, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
@@ -57,6 +58,10 @@ func (client *fakeResourceClient) BaseClient() clients.ResourceClient {
 
 func (client *fakeResourceClient) Register() error {
 	return client.rc.Register()
+}
+
+func (client *fakeResourceClient) RegisterNamespace(namespace string) error {
+	return client.rc.RegisterNamespace(namespace)
 }
 
 func (client *fakeResourceClient) Read(namespace, name string, opts clients.ReadOpts) (*FakeResource, error) {

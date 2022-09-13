@@ -19,6 +19,7 @@ type FrequentlyChangingAnnotationsResourceWatcher interface {
 type FrequentlyChangingAnnotationsResourceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+	RegisterNamespace(namespace string) error
 	Read(namespace, name string, opts clients.ReadOpts) (*FrequentlyChangingAnnotationsResource, error)
 	Write(resource *FrequentlyChangingAnnotationsResource, opts clients.WriteOpts) (*FrequentlyChangingAnnotationsResource, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
@@ -57,6 +58,10 @@ func (client *frequentlyChangingAnnotationsResourceClient) BaseClient() clients.
 
 func (client *frequentlyChangingAnnotationsResourceClient) Register() error {
 	return client.rc.Register()
+}
+
+func (client *frequentlyChangingAnnotationsResourceClient) RegisterNamespace(namespace string) error {
+	return client.rc.RegisterNamespace(namespace)
 }
 
 func (client *frequentlyChangingAnnotationsResourceClient) Read(namespace, name string, opts clients.ReadOpts) (*FrequentlyChangingAnnotationsResource, error) {

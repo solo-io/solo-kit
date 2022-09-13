@@ -64,6 +64,10 @@ func ToKubeJob(resource resources.Resource) (*batchv1.Job, error) {
 
 var _ clients.ResourceClient = &jobResourceClient{}
 
+func (rc *jobResourceClient) RegisterNamespace(namespace string) error {
+	return nil
+}
+
 func (rc *jobResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")

@@ -64,6 +64,10 @@ func ToKubePod(resource resources.Resource) (*kubev1.Pod, error) {
 
 var _ clients.ResourceClient = &podResourceClient{}
 
+func (rc *podResourceClient) RegisterNamespace(namespace string) error {
+	return rc.cache.RegisterNewNamespaceCache(namespace)
+}
+
 func (rc *podResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")

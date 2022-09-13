@@ -465,6 +465,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		filterNamespaces := resources.ResourceNamespaceList{}
 		for _, ns := range watchNamespaces {
 			// we do not want to filter out "" which equals all namespaces
+			// the reason is because we will never create a watch on ""(all namespaces) because
+			// doing so means we watch all resources regardless of namespace. Our intent is to
+			// watch only certain namespaces.
 			if ns != "" {
 				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
 			}
@@ -476,6 +479,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		// non watched namespaces that are labeled
 		for _, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
+			c.simpleMockResource.RegisterNamespace(namespace)
 			/* Setup namespaced watch for SimpleMockResource */
 			{
 				simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
@@ -495,6 +499,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-simplemocks")
 			}(namespace)
+			c.mockResource.RegisterNamespace(namespace)
 			/* Setup namespaced watch for MockResource */
 			{
 				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
@@ -514,6 +519,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
 			}(namespace)
+			c.fakeResource.RegisterNamespace(namespace)
 			/* Setup namespaced watch for FakeResource */
 			{
 				fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
@@ -533,6 +539,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
 			}(namespace)
+			c.anotherMockResource.RegisterNamespace(namespace)
 			/* Setup namespaced watch for AnotherMockResource */
 			{
 				anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
@@ -552,6 +559,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-anothermockresources")
 			}(namespace)
+			c.mockCustomType.RegisterNamespace(namespace)
 			/* Setup namespaced watch for MockCustomType */
 			{
 				mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
@@ -571,6 +579,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
 			}(namespace)
+			c.pod.RegisterNamespace(namespace)
 			/* Setup namespaced watch for Pod */
 			{
 				pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
@@ -713,6 +722,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					})
 
 					for _, ns := range missingNamespaces {
+						// TODO-JAKE clean this up, so that
+						// 1. we send a notification that there is an empty list
+						// 2. have a way to delete the namespace from the list as well.
+						// 3. any clean up of the resources to that are needed as well.
 						// c.namespacesWatching.Delete(ns)
 						simpleMockResourceChan <- simpleMockResourceListWithNamespace{list: SimpleMockResourceList{}, namespace: ns}
 						// simplemocksByNamespace.Delete(ns)
@@ -729,6 +742,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					}
 
 					for _, namespace := range newNamespaces {
+						c.simpleMockResource.RegisterNamespace(namespace)
 						/* Setup namespaced watch for SimpleMockResource for new namespace */
 						{
 							simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
@@ -749,6 +763,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-new-namespace-simplemocks")
 						}(namespace)
+						c.mockResource.RegisterNamespace(namespace)
 						/* Setup namespaced watch for MockResource for new namespace */
 						{
 							mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
@@ -769,6 +784,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
 						}(namespace)
+						c.fakeResource.RegisterNamespace(namespace)
 						/* Setup namespaced watch for FakeResource for new namespace */
 						{
 							fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
@@ -789,6 +805,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-new-namespace-fakes")
 						}(namespace)
+						c.anotherMockResource.RegisterNamespace(namespace)
 						/* Setup namespaced watch for AnotherMockResource for new namespace */
 						{
 							anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
@@ -809,6 +826,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-new-namespace-anothermockresources")
 						}(namespace)
+						c.mockCustomType.RegisterNamespace(namespace)
 						/* Setup namespaced watch for MockCustomType for new namespace */
 						{
 							mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
@@ -829,6 +847,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-new-namespace-mcts")
 						}(namespace)
+						c.pod.RegisterNamespace(namespace)
 						/* Setup namespaced watch for Pod for new namespace */
 						{
 							pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})

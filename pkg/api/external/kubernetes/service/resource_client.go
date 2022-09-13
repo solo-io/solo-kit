@@ -64,6 +64,10 @@ func ToKubeService(resource resources.Resource) (*kubev1.Service, error) {
 
 var _ clients.ResourceClient = &serviceResourceClient{}
 
+func (rc *serviceResourceClient) RegisterNamespace(namespace string) error {
+	return rc.cache.RegisterNewNamespaceCache(namespace)
+}
+
 func (rc *serviceResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
