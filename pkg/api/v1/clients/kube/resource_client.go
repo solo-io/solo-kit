@@ -152,7 +152,12 @@ func (rc *ResourceClient) Register() error {
 }
 
 func (rc *ResourceClient) RegisterNamespace(namespace string) error {
-	return rc.sharedCache.RegisterNewNamespace(namespace, rc)
+	err := rc.sharedCache.RegisterNewNamespace(namespace, rc)
+	if err != nil {
+		return err
+	}
+	rc.namespaceWhitelist = append(rc.namespaceWhitelist, namespace)
+	return nil
 }
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
@@ -340,9 +345,6 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-
-	// JAKE-TODO we will need to update the validation list here as well.
-	// JAKE-TODO ensure that this is done as well for the other resource client too.
 	if err := rc.validateNamespace(namespace); err != nil {
 		return nil, nil, err
 	}
