@@ -144,7 +144,6 @@ var _ = Describe("kube core cache tests", func() {
 				})
 
 				It("can list resources for all listers", func() {
-					Expect(cache.NamespaceLister()).To(BeNil())
 					validateNamespaceResource(testns)
 					validateNamespaceResource(testns2)
 				})
