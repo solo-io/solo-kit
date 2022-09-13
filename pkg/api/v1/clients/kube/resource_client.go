@@ -364,15 +364,16 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 		return nil, errors.Errorf("unexpected number of namespaces in input resource: %v", len(inputResource.GetNamespacedStatuses().GetStatuses()))
 	}
 	ns := ""
-	for loopNs, _ := range inputResource.GetNamespacedStatuses().GetStatuses() {
+	for loopNs := range inputResource.GetNamespacedStatuses().GetStatuses() {
 		ns = loopNs
 	}
 	status := inputResource.GetNamespacedStatuses().GetStatuses()[ns]
 
 	buf := &bytes.Buffer{}
 	var marshaller jsonpb.Marshaler
-	marshaller.EmitDefaults = false        // keep status as small as possible
-	err := marshaller.Marshal(buf, status) // prefer jsonpb over json marshaller since it renders enum as string not int (state is human-readable)
+	marshaller.EnumsAsInts = false  // prefer jsonpb over encoding/json marshaller since it renders enum as string not int (i.e., state is human-readable)
+	marshaller.EmitDefaults = false // keep status as small as possible
+	err := marshaller.Marshal(buf, status)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
