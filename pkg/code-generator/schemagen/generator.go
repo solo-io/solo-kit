@@ -3,6 +3,8 @@ package schemagen
 import (
 	"fmt"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"k8s.io/kubernetes/staging/src/k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/utils/pointer"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
@@ -114,12 +116,32 @@ func GenerateOpenApiValidationSchemas(project *model.Project, options *Validatio
 			},
 		}
 
+		statuses := core.NamespacedStatuses{
+			Statuses: map[string]*core.Status{},
+		}
+		statusBytes, err := json.Marshal(statuses)
+		if err != nil {
+			return err
+		}
+		statusesBytes, err := json.Marshal(statuses.Statuses)
+		if err != nil {
+			return err
+		}
+
 		// Either use the status defined on the spec, or a generic status
 		statusSchema := specJsonSchema.Properties["status"]
 		if statusSchema.Type == "" {
 			statusSchema = apiextv1.JSONSchemaProps{
 				Type:                   "object",
 				XPreserveUnknownFields: pointer.BoolPtr(true),
+				Default:                &apiextv1.JSON{Raw: statusBytes},
+				Properties: map[string]apiextv1.JSONSchemaProps{
+					"statuses": {
+						Type:                   "object",
+						XPreserveUnknownFields: pointer.BoolPtr(true),
+						Default:                &apiextv1.JSON{Raw: statusesBytes},
+					},
+				},
 			}
 		}
 
