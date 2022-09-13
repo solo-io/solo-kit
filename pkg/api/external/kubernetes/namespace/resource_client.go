@@ -1,15 +1,13 @@
 package namespace
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"sort"
 
 	"github.com/bugsnag/bugsnag-go/errors"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/rotisserie/eris"
 	kubenamespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -134,19 +132,11 @@ func (rc *namespaceResourceClient) ApplyStatus(statusClient resources.StatusClie
 	}
 	opts = opts.WithDefaults()
 
-	buf := &bytes.Buffer{}
-	var marshaller jsonpb.Marshaler
-	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
-	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
+	data, err := shared.GetJsonPatchData(inputResource)
 	if err != nil {
-		return nil, eris.Wrapf(err, "marshalling input resource")
+		return nil, eris.Wrapf(err, "error getting status json patch data")
 	}
-	bytes := buf.Bytes()
-	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
-	data := []byte(patch)
-	popts := metav1.PatchOptions{}
-	// merge patch type is important so multi-namespace status reporting is honored
-	namespaceObj, err := rc.Kube.CoreV1().Namespaces().Patch(opts.Ctx, name, types.MergePatchType, data, popts)
+	namespaceObj, err := rc.Kube.CoreV1().Namespaces().Patch(opts.Ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, skerrors.NewNotExistErr(namespace, name, err)

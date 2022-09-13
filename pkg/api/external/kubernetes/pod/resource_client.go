@@ -1,13 +1,11 @@
 package pod
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"sort"
 
-	"github.com/golang/protobuf/jsonpb"
 	kubepod "github.com/solo-io/solo-kit/api/external/kubernetes/pod"
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -135,19 +133,11 @@ func (rc *podResourceClient) ApplyStatus(statusClient resources.StatusClient, in
 	}
 	opts = opts.WithDefaults()
 
-	buf := &bytes.Buffer{}
-	var marshaller jsonpb.Marshaler
-	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
-	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
+	data, err := shared.GetJsonPatchData(inputResource)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marshalling input resource")
+		return nil, errors.Wrapf(err, "error getting status json patch data")
 	}
-	bytes := buf.Bytes()
-	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
-	data := []byte(patch)
-	popts := metav1.PatchOptions{}
-	// merge patch type is important so multi-namespace status reporting is honored
-	podObj, err := rc.Kube.CoreV1().Pods(namespace).Patch(opts.Ctx, name, types.MergePatchType, data, popts)
+	podObj, err := rc.Kube.CoreV1().Pods(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)

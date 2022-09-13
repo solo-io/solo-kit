@@ -1,16 +1,14 @@
 package customresourcedefinition
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"sort"
 
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition"
 
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -135,19 +133,13 @@ func (rc *customResourceDefinitionResourceClient) ApplyStatus(statusClient resou
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	opts = opts.WithDefaults()
-	buf := &bytes.Buffer{}
-	var marshaller jsonpb.Marshaler
-	marshaller.EmitDefaults = true // important so merge patch doesn't keep old fields around!
-	err := marshaller.Marshal(buf, inputResource.GetNamespacedStatuses())
+
+	data, err := shared.GetJsonPatchData(inputResource)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marshalling input resource")
+		return nil, errors.Wrapf(err, "error getting status json patch data")
 	}
-	bytes := buf.Bytes()
-	patch := fmt.Sprintf(`{ "status": %s }`, string(bytes))
-	data := []byte(patch)
-	popts := metav1.PatchOptions{}
-	// merge patch type is important so multi-namespace status reporting is honored
-	customResourceDefinitionObj, err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Patch(opts.Ctx, name, types.MergePatchType, data, popts)
+
+	customResourceDefinitionObj, err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Patch(opts.Ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)

@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+// ApplyStatus is used by clients that don't support patch updates to resource statuses (e.g. consul, files, in-memory)
 func ApplyStatus(rc clients.ResourceClient, statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
 	name := inputResource.GetMetadata().GetName()
 	namespace := inputResource.GetMetadata().GetNamespace()
@@ -39,6 +40,9 @@ func ApplyStatus(rc clients.ResourceClient, statusClient resources.StatusClient,
 	return updatedRes, nil
 }
 
+// GetJsonPatchData returns the json patch data for the input resource.
+// Prefer using json patch for single api call status updates when supported (e.g. k8s) to avoid ratelimiting
+// to the k8s apiserver (e.g. https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350)
 func GetJsonPatchData(inputResource resources.InputResource) ([]byte, error) {
 	namespacedStatuses := inputResource.GetNamespacedStatuses().GetStatuses()
 	if len(namespacedStatuses) != 1 {
