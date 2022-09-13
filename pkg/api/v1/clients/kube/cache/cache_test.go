@@ -109,7 +109,6 @@ var _ = Describe("kube core cache tests", func() {
 			})
 
 			It("can list resources for all listers", func() {
-				Expect(cache.NamespaceLister()).To(BeNil())
 				_, err := cache.NamespacedPodLister("default").List(selectors)
 				Expect(err).NotTo(HaveOccurred())
 				_, err = cache.NamespacedConfigMapLister("default").List(selectors)
