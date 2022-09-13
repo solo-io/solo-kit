@@ -202,6 +202,8 @@ var _ = Describe("Reconciler", func() {
 	})
 })
 
+var _ clients.ResourceClient = &testResourceClient{}
+
 type testResourceClient struct {
 	errorOnRead  bool
 	errorOnWrite bool
@@ -217,6 +219,10 @@ func (c *testResourceClient) NewResource() resources.Resource {
 }
 
 func (c *testResourceClient) Register() error {
+	panic("implement me")
+}
+
+func (c *testResourceClient) RegisterNamespace(namespace string) error {
 	panic("implement me")
 }
 
