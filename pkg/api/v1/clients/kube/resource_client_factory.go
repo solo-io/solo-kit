@@ -294,9 +294,7 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 // RegisterNewNamespace is used when the resource client is running. This will add a new namespace to the
 // kube controller so that events can be received.
 func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace string, rc *ResourceClient) error {
-	if !f.IsRunning() {
-		contextutils.LoggerFrom(f.ctx).Panicf("failed to register the new namespace [%v] to the resource client [%v]", namespace, reflect.TypeOf(rc))
-	}
+	f.Start()
 	// we should only register a namespace once and only once
 	once, _ := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
 	once.(*sync.Once).Do(func() {
