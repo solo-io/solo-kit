@@ -67,7 +67,6 @@ require (
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/spf13/afero v1.3.4 // indirect
-	k8s.io/kubernetes v1.13.0
 )
 
 replace (

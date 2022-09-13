@@ -3,8 +3,9 @@ package schemagen
 import (
 	"fmt"
 
+	"encoding/json"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"k8s.io/kubernetes/staging/src/k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/utils/pointer"
 
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
