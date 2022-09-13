@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	kubejob "github.com/solo-io/solo-kit/api/external/kubernetes/job"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"

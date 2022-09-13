@@ -8,7 +8,7 @@ import (
 
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"

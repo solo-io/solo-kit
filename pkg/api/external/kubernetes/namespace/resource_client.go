@@ -7,7 +7,7 @@ import (
 	"sort"
 
 	"github.com/bugsnag/bugsnag-go/errors"
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/rotisserie/eris"
 	kubenamespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"

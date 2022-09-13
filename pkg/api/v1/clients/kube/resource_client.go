@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
