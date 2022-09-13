@@ -178,9 +178,6 @@ func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType 
 // NOTE: Currently we cannot share informers between resource clients, because the listWatch functions are configured
 // with the client's specific token. Hence, we must enforce a one-to-one relationship between informers and clients.
 func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-
 	ctx := f.ctx
 	if f.started {
 		contextutils.LoggerFrom(ctx).Panic("can't register informer after factory has started. This may change in the future.")
@@ -206,6 +203,9 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 // addNewNamespaceToRegistry will create a watch for the resource client type and namespace
 func (f *ResourceClientSharedInformerFactory) addNewNamespaceToRegistry(ctx context.Context, ns string, rc *ResourceClient) (cache.SharedIndexInformer, error) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	nsCtx := ctx
 	resourceType := reflect.TypeOf(rc.crd.Version.Type)
 
@@ -294,6 +294,8 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 // RegisterNewNamespace is used when the resource client is running. This will add a new namespace to the
 // kube controller so that events can be received.
 func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace string, rc *ResourceClient) error {
+	// when does the start function get called?
+	// the once function below is adding a namespace once and only once
 	f.Start()
 	// we should only register a namespace once and only once
 	once, _ := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
