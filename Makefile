@@ -7,7 +7,7 @@ PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
+GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
 
 #----------------------------------------------------------------------------------
 # Version, Release
