@@ -3,8 +3,9 @@ package stats
 import "go.opencensus.io/tag"
 
 var (
-	NamespaceKey = MustTag("namespace")
-	ResourceKey  = MustTag("resource")
+	NamespaceKey  = MustTag("namespace")
+	ResourceKey   = MustTag("resource")
+	SyncerNameKey = MustTag("syncer_name")
 )
 
 func MustTag(name string) tag.Key {
