@@ -75,12 +75,12 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			Expect(len(kubeCache.Informers())).To(BeEquivalentTo(1))
 		})
 
-		It("panics when attempting of register a client with a running factory", func() {
+		It("should not panic when attempting of register a client with a running factory", func() {
 			// Start without registering clients, just to set the "started" flag
 			kubeCache.Start()
 			Expect(kubeCache.IsRunning()).To(BeTrue())
 
-			Expect(func() { _ = kubeCache.Register(client1) }).To(Panic())
+			Expect(func() { _ = kubeCache.Register(client1) }).ToNot(Panic())
 		})
 		It("can register a new namespace even when the factory is running", func() {
 			kubeCache.Start()
