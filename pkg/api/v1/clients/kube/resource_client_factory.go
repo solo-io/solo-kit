@@ -180,24 +180,27 @@ func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType 
 func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error {
 	ctx := f.ctx
 	if f.started {
-		contextutils.LoggerFrom(ctx).Panic("can't register informer after factory has started. This may change in the future.")
-	}
+		for _, ns := range rc.namespaceWhitelist {
+			if err := f.RegisterNewNamespace(ns, rc); err != nil {
+				return err
+			}
+		}
+	} else {
+		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
+			ctx = ctxWithTags
+		}
 
-	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
-		ctx = ctxWithTags
-	}
-
-	// Create a shared informer for each of the given namespaces.
-	// NOTE: We do not distinguish between the value "" (all namespaces) and a regular namespace here.
-	// TODO-JAKE there is a special rule, when the namespaces is [""], we need an option
-	// to be able to change the Informer so that it does not watch on "", but only those namespaces
-	// that we want to watch.  This only happens if the client(user) is setting the namespaceLabelSelectors field in the API.
-	for _, ns := range rc.namespaceWhitelist {
-		if _, err := f.addNewNamespaceToRegistry(ctx, ns, rc); err != nil {
-			return err
+		// Create a shared informer for each of the given namespaces.
+		// NOTE: We do not distinguish between the value "" (all namespaces) and a regular namespace here.
+		// TODO-JAKE there is a special rule, when the namespaces is [""], we need an option
+		// to be able to change the Informer so that it does not watch on "", but only those namespaces
+		// that we want to watch.  This only happens if the client(user) is setting the namespaceLabelSelectors field in the API.
+		for _, ns := range rc.namespaceWhitelist {
+			if _, err := f.addNewNamespaceToRegistry(ctx, ns, rc); err != nil {
+				return err
+			}
 		}
 	}
-
 	return nil
 }
 
