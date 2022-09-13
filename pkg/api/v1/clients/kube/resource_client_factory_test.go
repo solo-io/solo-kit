@@ -138,6 +138,9 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			var watch <-chan solov1.Resource
 
 			BeforeEach(func() {
+				// there is a race condition when a go routine uses the watch
+				// before the entire test finishes
+				time.Sleep(50 * time.Millisecond)
 				watch = kubeCache.AddWatch(10)
 			})
 
