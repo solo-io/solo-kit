@@ -1,6 +1,10 @@
 package shared
 
 import (
+	"bytes"
+	"fmt"
+
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -33,4 +37,31 @@ func ApplyStatus(rc clients.ResourceClient, statusClient resources.StatusClient,
 		return nil, errors.Wrapf(err, "error writing to apply status")
 	}
 	return updatedRes, nil
+}
+
+func GetJsonPatchData(inputResource resources.InputResource) ([]byte, error) {
+	namespacedStatuses := inputResource.GetNamespacedStatuses().GetStatuses()
+	if len(namespacedStatuses) != 1 {
+		// we only expect our namespace to report here; we don't want to blow away statuses from other reporters
+		return nil, errors.Errorf("unexpected number of namespaces in input resource: %v", len(inputResource.GetNamespacedStatuses().GetStatuses()))
+	}
+	ns := ""
+	for loopNs := range inputResource.GetNamespacedStatuses().GetStatuses() {
+		ns = loopNs
+	}
+	status := inputResource.GetNamespacedStatuses().GetStatuses()[ns]
+
+	buf := &bytes.Buffer{}
+	var marshaller jsonpb.Marshaler
+	marshaller.EnumsAsInts = false  // prefer jsonpb over encoding/json marshaller since it renders enum as string not int (i.e., state is human-readable)
+	marshaller.EmitDefaults = false // keep status as small as possible
+	err := marshaller.Marshal(buf, status)
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshalling input resource")
+	}
+
+	bytes := buf.Bytes()
+	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status/statuses/%s", "value": %s}]`, ns, string(bytes)) // only replace our status so other reporters are not affected (e.g. blue-green of gloo)
+	data := []byte(patch)
+	return data, nil
 }

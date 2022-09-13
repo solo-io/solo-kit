@@ -1,21 +1,19 @@
 package kube
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	types "k8s.io/apimachinery/pkg/types"
 
 	"github.com/solo-io/go-utils/stringutils"
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
@@ -358,33 +356,13 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 		ctx = ctxWithTags
 	}
 
-	namespacedStatuses := inputResource.GetNamespacedStatuses().GetStatuses()
-	if len(namespacedStatuses) != 1 {
-		// we only expect our namespace to report here; we don't want to blow away statuses from other reporters
-		return nil, errors.Errorf("unexpected number of namespaces in input resource: %v", len(inputResource.GetNamespacedStatuses().GetStatuses()))
-	}
-	ns := ""
-	for loopNs := range inputResource.GetNamespacedStatuses().GetStatuses() {
-		ns = loopNs
-	}
-	status := inputResource.GetNamespacedStatuses().GetStatuses()[ns]
-
-	buf := &bytes.Buffer{}
-	var marshaller jsonpb.Marshaler
-	marshaller.EnumsAsInts = false  // prefer jsonpb over encoding/json marshaller since it renders enum as string not int (i.e., state is human-readable)
-	marshaller.EmitDefaults = false // keep status as small as possible
-	err := marshaller.Marshal(buf, status)
+	data, err := shared.GetJsonPatchData(inputResource)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marshalling input resource")
+		return nil, errors.Wrapf(err, "error getting status json patch data")
 	}
-
-	bytes := buf.Bytes()
-	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status/statuses/%s", "value": %s}]`, ns, string(bytes)) // only replace our status so other reporters are not affected (e.g. blue-green of gloo)
-	data := []byte(patch)
-	popts := metav1.PatchOptions{}
 
 	stats.Record(ctx, MInFlight.M(1))
-	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Patch(ctx, name, types.JSONPatchType, data, popts)
+	resourceCrd, err := rc.crdClientset.ResourcesV1().Resources(namespace).Patch(ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
 	stats.Record(ctx, MInFlight.M(-1))
 	if err != nil {
 		if apierrors.IsNotFound(err) {
