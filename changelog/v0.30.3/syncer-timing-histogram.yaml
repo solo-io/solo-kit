@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6780
+    resolvesIssue: false
+    description: >
+      Add a new stat to each syncer which records the duration of each call to Sync().
+      This stat will be exposed as a histogram in the Prometheus metrics. Specifically 
+      under the name '<syncer_name>_sync_time_sec'. Additionally it will expose a label to 
+      drill down to the individual syncers as there may be multiple. This label is 'syncer_name'.
+      The syncer itself will be exposed as the type name.
