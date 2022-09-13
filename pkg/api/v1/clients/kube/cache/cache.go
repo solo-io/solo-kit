@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -90,6 +91,9 @@ type kubeCoreCaches struct {
 	resyncDuration time.Duration
 	// informers are the kube resources that provide events
 	informers []cache.SharedIndexInformer
+
+	// registerNamespaceLock is a map string(namespace) -> sync.Once. Is used to register namespaces only once.
+	registerNamespaceLock sync.Map
 
 	cacheUpdatedWatchers      []chan struct{}
 	cacheUpdatedWatchersMutex sync.Mutex
@@ -277,8 +281,16 @@ func (k *kubeCoreCaches) addNewNamespace(namespace string) []cache.SharedIndexIn
 // RegisterNewNamespaceCache will create the cache informers for each resource type
 // this will add the informer to the kube controller so that events can be watched.
 func (k *kubeCoreCaches) RegisterNewNamespaceCache(namespace string) error {
-	informers := k.addNewNamespace(namespace)
-	return k.kubeController.AddNewListOfInformers(informers)
+	once, _ := k.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
+	onceFunc := once.(*sync.Once)
+	// TODO-JAKE should this panic?
+	onceFunc.Do(func() {
+		informers := k.addNewNamespace(namespace)
+		if err := k.kubeController.AddNewListOfInformers(informers); err != nil {
+			contextutils.LoggerFrom(k.ctx).Panicf("failed to add new list of informers to kube controller: %v", err)
+		}
+	})
+	return nil
 }
 
 // Deprecated: Use NamespacedPodLister instead

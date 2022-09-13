@@ -125,6 +125,9 @@ type ResourceClientSharedInformerFactory struct {
 	// kubeController is the controller used to watch for events on the informers. It can be used to add new informers too.
 	kubeController *controller.Controller
 
+	// registerNamespaceLock is a map of string(namespace) -> sync.Once. It is used to register a new namespace.
+	registerNamespaceLock sync.Map
+
 	// Mutexes
 	lock                      sync.Mutex
 	cacheUpdatedWatchersMutex sync.Mutex
@@ -294,17 +297,23 @@ func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace str
 	if !f.IsRunning() {
 		contextutils.LoggerFrom(f.ctx).Panicf("failed to register the new namespace [%v] to the resource client [%v]", namespace, reflect.TypeOf(rc))
 	}
-	ctx := f.ctx
-	if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
-		ctx = ctxWithTags
-	}
-	informer, err := f.addNewNamespaceToRegistry(ctx, namespace, rc)
-	if err != nil {
-		return err
-	}
-	if err := f.kubeController.AddNewInformer(informer); err != nil {
-		return err
-	}
+	// we should only register a namespace once and only once
+	once, _ := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
+	once.(*sync.Once).Do(func() {
+		ctx := f.ctx
+		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
+			ctx = ctxWithTags
+		}
+		informer, err := f.addNewNamespaceToRegistry(ctx, namespace, rc)
+		if err != nil {
+			// TODO-JAKE not sure if we want to panic here or to return an error.  But I feel like panics are ok.
+			contextutils.LoggerFrom(ctx).Panicf("failed to add new namespace to registry: %v", err)
+		}
+		if err := f.kubeController.AddNewInformer(informer); err != nil {
+			contextutils.LoggerFrom(ctx).Panicf("failed to add new informer to kube controller: %v", err)
+		}
+
+	})
 	return nil
 }
 

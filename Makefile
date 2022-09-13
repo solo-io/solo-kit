@@ -96,6 +96,9 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code update-licenses
 
+.PHONY: generate-all
+generate-all: generated-code
+
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
 	mkdir -p ${OUTPUT_DIR}
