@@ -261,14 +261,14 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
-		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
 		if status.Equal(resourceStatus) {
-			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
+			logger.Debugf("skipping report for %v as it has not changed", resource.GetMetadata().Ref())
 			continue
 		}
 
+		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		r.statusClient.SetStatus(resourceToWrite, status)
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
 			return r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
