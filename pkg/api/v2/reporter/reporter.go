@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -211,8 +210,7 @@ func (e ResourceReports) ValidateStrict() error {
 // Minimal set of client operations required for reporters.
 type ReporterResourceClient interface {
 	Kind() string
-	Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error)
-	Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error)
+	ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error)
 }
 
 type Reporter interface {
@@ -263,83 +261,40 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
-		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
 		if status.Equal(resourceStatus) {
-			logger.Debugf("skipping report for %v as it has not changed", resourceToWrite.GetMetadata().Ref())
+			logger.Debugf("skipping report for %v as it has not changed", resource.GetMetadata().Ref())
 			continue
 		}
 
+		resourceToWrite := resources.Clone(resource).(resources.InputResource)
 		r.statusClient.SetStatus(resourceToWrite, status)
-		var updatedResource resources.Resource
 		writeErr := errors.RetryOnConflict(retry.DefaultBackoff, func() error {
-			var writeErr error
-			updatedResource, resourceToWrite, writeErr = r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
-			return writeErr
+			return r.attemptUpdateStatus(ctx, client, resourceToWrite, status)
 		})
 
+		if errors.IsNotExist(writeErr) {
+			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
+			delete(resourceErrs, resource)
+			continue
+		}
+
 		if writeErr != nil {
-			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().Name)
+			err := errors.Wrapf(writeErr, "failed to write status %v for resource %v", status, resource.GetMetadata().GetName())
 			logger.Warn(err)
 			merr = multierror.Append(merr, err)
 			continue
 		}
-		if updatedResource != nil {
-			logger.Debugf("wrote report for %v : %v", updatedResource.GetMetadata().Ref(), status)
-		} else {
-			logger.Debugf("did not write report for %v : %v because resource was not found", resourceToWrite.GetMetadata().Ref(), status)
-			delete(resourceErrs, resource)
-		}
+		logger.Debugf("wrote report for %v : %v", resource.GetMetadata().Ref(), status)
+
 	}
 	return merr.ErrorOrNil()
 }
 
-// Ideally, this and its caller, WriteReports, would just take the resource ref and its status, rather than the resource itself,
-//    to avoid confusion about whether this may update the resource rather than just its status.
-//    However, this change is not worth the effort and risk right now. (Ariana, June 2020)
-func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) (resources.Resource, resources.InputResource, error) {
-	var readErr error
-	resourceFromRead, readErr := client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
-	if readErr != nil && errors.IsNotExist(readErr) { // resource has been deleted, don't re-create
-		return nil, resourceToWrite, nil
-	}
-	if readErr == nil {
-		// set resourceToWrite to the resource we read but with the new status and new messages
-		// Note: it's possible that this resourceFromRead is newer than the resourceToWrite and therefore the status will be out of sync.
-		//    If so, we will soon recalculate the status. The interim incorrect status is not dangerous since the status is informational only.
-		//    Also, the status is accurate for the resource as it's stored in Gloo's memory in the interim.
-		//    This is explained further here: https://github.com/solo-io/solo-kit/pull/360#discussion_r433397163
-		if inputResourceFromRead, ok := resourceFromRead.(resources.InputResource); ok {
-			resourceToWrite = inputResourceFromRead
-			r.statusClient.SetStatus(resourceToWrite, statusToWrite)
-		}
-	}
-	updatedResource, writeErr := client.Write(resourceToWrite, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-	if writeErr == nil {
-		return updatedResource, resourceToWrite, nil
-	}
-	updatedResource, readErr = client.Read(resourceToWrite.GetMetadata().Namespace, resourceToWrite.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
-	if readErr != nil {
-		if errors.IsResourceVersion(writeErr) {
-			// we don't want to return the unwrapped resource version writeErr if we also had a read error
-			// otherwise we could get into infinite retry loop if reads repeatedly failed (e.g., no read RBAC)
-			return nil, resourceToWrite, errors.Wrapf(writeErr, "unable to read updated resource, no reason to retry resource version conflict; readErr %v", readErr)
-		}
-		return nil, resourceToWrite, writeErr
-	}
-
-	// we successfully read an updated version of the resource we are
-	// trying to update. let's update resourceToWrite for the next iteration
-	equal, _ := hashutils.HashableEqual(updatedResource, resourceToWrite)
-	if !equal {
-		// different hash, something important was done, do not try again:
-		return updatedResource, resourceToWrite, nil
-	}
-	resourceToWriteUpdated := resources.Clone(updatedResource).(resources.InputResource)
-	r.statusClient.SetStatus(resourceToWriteUpdated, r.statusClient.GetStatus(resourceToWrite))
-
-	return updatedResource, resourceToWriteUpdated, writeErr
+func (r *reporter) attemptUpdateStatus(ctx context.Context, client ReporterResourceClient, resourceToWrite resources.InputResource, statusToWrite *core.Status) error {
+	_, patchErr := client.ApplyStatus(r.statusClient, resourceToWrite, clients.ApplyStatusOpts{Ctx: ctx})
+	return patchErr
 }
 
 func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[string]*core.Status) *core.Status {

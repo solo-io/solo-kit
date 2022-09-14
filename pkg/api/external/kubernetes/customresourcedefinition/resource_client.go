@@ -8,6 +8,7 @@ import (
 
 	"github.com/solo-io/solo-kit/api/external/kubernetes/customresourcedefinition"
 
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -18,6 +19,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type customResourceDefinitionResourceClient struct {
@@ -122,6 +124,34 @@ func (rc *customResourceDefinitionResourceClient) Write(resource resources.Resou
 
 	// return a read object to update the resource version
 	return rc.Read(customResourceDefinitionObj.Namespace, customResourceDefinitionObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *customResourceDefinitionResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	name := inputResource.GetMetadata().GetName()
+	namespace := inputResource.GetMetadata().GetNamespace()
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	data, err := shared.GetJsonPatchData(inputResource)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error getting status json patch data")
+	}
+
+	customResourceDefinitionObj, err := rc.apiExts.ApiextensionsV1().CustomResourceDefinitions().Patch(opts.Ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching customResourceDefinitionObj status from kubernetes")
+	}
+	resource := FromKubeCustomResourceDefinition(customResourceDefinitionObj)
+
+	if resource == nil {
+		return nil, errors.Errorf("customResourceDefinitionObj %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *customResourceDefinitionResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
