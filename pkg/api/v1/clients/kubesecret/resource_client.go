@@ -212,7 +212,7 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "patching secret from kubernetes")
+		return nil, errors.Wrapf(err, "patching secret status from kubernetes")
 	}
 
 	resource, err := rc.fromKubeResource(opts.Ctx, secret)

@@ -142,7 +142,7 @@ func (rc *podResourceClient) ApplyStatus(statusClient resources.StatusClient, in
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "patching podObj from kubernetes")
+		return nil, errors.Wrapf(err, "patching podObj status from kubernetes")
 	}
 	resource := FromKubePod(podObj)
 

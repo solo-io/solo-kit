@@ -368,7 +368,7 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "patching resource from kubernetes")
+		return nil, errors.Wrapf(err, "patching resource status from kubernetes")
 	}
 	if !rc.matchesClientGVK(*resourceCrd) {
 		return nil, errors.Errorf("cannot patch %v resource with %v client", resourceCrd.GroupVersionKind().String(), rc.crd.GroupVersionKind().String())

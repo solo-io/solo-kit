@@ -132,7 +132,7 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "patching configMap from kubernetes")
+		return nil, errors.Wrapf(err, "patching configMap status from kubernetes")
 	}
 	resource, err := rc.converter.FromKubeConfigMap(opts.Ctx, rc, configMap)
 	if err != nil {

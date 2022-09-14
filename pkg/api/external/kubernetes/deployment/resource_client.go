@@ -143,7 +143,7 @@ func (rc *deploymentResourceClient) ApplyStatus(statusClient resources.StatusCli
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "patching deployment from kubernetes")
+		return nil, errors.Wrapf(err, "patching deployment status from kubernetes")
 	}
 	resource := FromKubeDeployment(deploymentObj)
 

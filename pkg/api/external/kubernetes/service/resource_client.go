@@ -142,7 +142,7 @@ func (rc *serviceResourceClient) ApplyStatus(statusClient resources.StatusClient
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "patching serviceObj from kubernetes")
+		return nil, errors.Wrapf(err, "patching serviceObj status from kubernetes")
 	}
 	resource := FromKubeService(serviceObj)
 

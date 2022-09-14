@@ -142,7 +142,7 @@ func (rc *jobResourceClient) ApplyStatus(statusClient resources.StatusClient, in
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "patching job from kubernetes")
+		return nil, errors.Wrapf(err, "patching job status from kubernetes")
 	}
 	resource := FromKubeJob(jobObj)
 

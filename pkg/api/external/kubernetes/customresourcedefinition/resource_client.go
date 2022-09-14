@@ -144,7 +144,7 @@ func (rc *customResourceDefinitionResourceClient) ApplyStatus(statusClient resou
 		if apierrors.IsNotFound(err) {
 			return nil, errors.NewNotExistErr(namespace, name, err)
 		}
-		return nil, errors.Wrapf(err, "patching customResourceDefinitionObj from kubernetes")
+		return nil, errors.Wrapf(err, "patching customResourceDefinitionObj status from kubernetes")
 	}
 	resource := FromKubeCustomResourceDefinition(customResourceDefinitionObj)
 
