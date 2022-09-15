@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -18,7 +17,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -197,37 +195,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 	// return a read object to update the resource version
 	return rc.Read(secret.Namespace, secret.Name, clients.ReadOpts{Ctx: opts.Ctx})
-}
-
-func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	name := inputResource.GetMetadata().GetName()
-	namespace := inputResource.GetMetadata().GetNamespace()
-	if err := resources.ValidateName(name); err != nil {
-		return nil, errors.Wrapf(err, "validation error")
-	}
-	opts = opts.WithDefaults()
-
-	data, err := shared.GetJsonPatchData(inputResource)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error getting status json patch data")
-	}
-	secret, err := rc.Kube.CoreV1().Secrets(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, errors.NewNotExistErr(namespace, name, err)
-		}
-		return nil, errors.Wrapf(err, "patching secret status from kubernetes")
-	}
-
-	resource, err := rc.fromKubeResource(opts.Ctx, secret)
-	if err == NotOurResource {
-		return nil, errors.Errorf("secret %v is not kind %v", name, rc.Kind())
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return resource, nil
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

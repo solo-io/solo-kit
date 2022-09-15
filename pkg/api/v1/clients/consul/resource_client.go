@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -130,10 +129,6 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 	// return a read object to update the modify index
 	return rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{Ctx: opts.Ctx})
-}
-
-func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	return shared.ApplyStatus(rc, statusClient, inputResource, opts)
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

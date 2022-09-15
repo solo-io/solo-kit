@@ -205,10 +205,9 @@ var _ = Describe("Reconciler", func() {
 var _ clients.ResourceClient = &testResourceClient{}
 
 type testResourceClient struct {
-	errorOnRead        bool
-	errorOnWrite       bool
-	errorOnApplyStatus bool
-	base               clients.ResourceClient
+	errorOnRead  bool
+	errorOnWrite bool
+	base         clients.ResourceClient
 }
 
 func (c *testResourceClient) Kind() string {
@@ -237,13 +236,6 @@ func (c *testResourceClient) Read(namespace, name string, opts clients.ReadOpts)
 func (c *testResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	if c.errorOnWrite {
 		return nil, errors.Errorf("write should not have been called")
-	}
-	return nil, nil
-}
-
-func (c *testResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	if c.errorOnApplyStatus {
-		return nil, errors.Errorf("apply status should not have been called")
 	}
 	return nil, nil
 }

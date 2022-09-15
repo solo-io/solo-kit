@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -212,10 +211,6 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	sort.Stable(resourceList)
 
 	return resourceList, nil
-}
-
-func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	return shared.ApplyStatus(rc, statusClient, inputResource, opts)
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {

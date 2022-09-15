@@ -1,7 +1,0 @@
-changelog:
-  - type: FIX
-    resolvesIssue: false
-    description: >-
-      Improve scalability of v2 status reporter by using k8s patch instead of read then write.
-      Also updates the status written to render enums as strings rather than ints for readability.
-    issueLink: https://github.com/solo-io/gloo/issues/7076
