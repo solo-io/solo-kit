@@ -238,7 +238,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
 			newlyRegisteredNamespaces[i] = namespace
-			err := c.mockResource.RegisterNamespace(namespace)
+			err = c.mockResource.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
 			}
@@ -345,8 +345,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						mockResourceChan <- mockResourceListWithNamespace{list: MockResourceList{}, namespace: ns}
 					}
 
+					var err error
 					for _, namespace := range newNamespaces {
-						err := c.mockResource.RegisterNamespace(namespace)
+						err = c.mockResource.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
 							continue

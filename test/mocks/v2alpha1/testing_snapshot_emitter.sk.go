@@ -332,7 +332,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
 			newlyRegisteredNamespaces[i] = namespace
-			err := c.mockResource.RegisterNamespace(namespace)
+			err = c.mockResource.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
 			}
@@ -355,7 +355,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
 			}(namespace)
-			err := c.frequentlyChangingAnnotationsResource.RegisterNamespace(namespace)
+			err = c.frequentlyChangingAnnotationsResource.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the frequentlyChangingAnnotationsResource")
 			}
@@ -378,7 +378,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, frequentlyChangingAnnotationsResourceErrs, namespace+"-fcars")
 			}(namespace)
-			err := c.fakeResource.RegisterNamespace(namespace)
+			err = c.fakeResource.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the fakeResource")
 			}
@@ -505,8 +505,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						fakeResourceChan <- fakeResourceListWithNamespace{list: testing_solo_io.FakeResourceList{}, namespace: ns}
 					}
 
+					var err error
 					for _, namespace := range newNamespaces {
-						err := c.mockResource.RegisterNamespace(namespace)
+						err = c.mockResource.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
 							continue
@@ -531,7 +532,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
 						}(namespace)
-						err := c.frequentlyChangingAnnotationsResource.RegisterNamespace(namespace)
+						err = c.frequentlyChangingAnnotationsResource.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the frequentlyChangingAnnotationsResource")
 							continue
@@ -556,7 +557,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, frequentlyChangingAnnotationsResourceErrs, namespace+"-new-namespace-fcars")
 						}(namespace)
-						err := c.fakeResource.RegisterNamespace(namespace)
+						err = c.fakeResource.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the fakeResource")
 							continue

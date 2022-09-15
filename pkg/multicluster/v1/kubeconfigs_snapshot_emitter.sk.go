@@ -238,7 +238,7 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
 			newlyRegisteredNamespaces[i] = namespace
-			err := c.kubeConfig.RegisterNamespace(namespace)
+			err = c.kubeConfig.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the kubeConfig")
 			}
@@ -345,8 +345,9 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 						kubeConfigChan <- kubeConfigListWithNamespace{list: KubeConfigList{}, namespace: ns}
 					}
 
+					var err error
 					for _, namespace := range newNamespaces {
-						err := c.kubeConfig.RegisterNamespace(namespace)
+						err = c.kubeConfig.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the kubeConfig")
 							continue

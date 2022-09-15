@@ -481,7 +481,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
 			newlyRegisteredNamespaces[i] = namespace
-			err := c.simpleMockResource.RegisterNamespace(namespace)
+			err = c.simpleMockResource.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the simpleMockResource")
 			}
@@ -504,7 +504,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-simplemocks")
 			}(namespace)
-			err := c.mockResource.RegisterNamespace(namespace)
+			err = c.mockResource.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
 			}
@@ -527,7 +527,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
 			}(namespace)
-			err := c.fakeResource.RegisterNamespace(namespace)
+			err = c.fakeResource.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the fakeResource")
 			}
@@ -550,7 +550,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
 			}(namespace)
-			err := c.anotherMockResource.RegisterNamespace(namespace)
+			err = c.anotherMockResource.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the anotherMockResource")
 			}
@@ -573,7 +573,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-anothermockresources")
 			}(namespace)
-			err := c.mockCustomType.RegisterNamespace(namespace)
+			err = c.mockCustomType.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockCustomType")
 			}
@@ -596,7 +596,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
 			}(namespace)
-			err := c.pod.RegisterNamespace(namespace)
+			err = c.pod.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the pod")
 			}
@@ -753,8 +753,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						podChan <- podListWithNamespace{list: github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{}, namespace: ns}
 					}
 
+					var err error
 					for _, namespace := range newNamespaces {
-						err := c.simpleMockResource.RegisterNamespace(namespace)
+						err = c.simpleMockResource.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the simpleMockResource")
 							continue
@@ -779,7 +780,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-new-namespace-simplemocks")
 						}(namespace)
-						err := c.mockResource.RegisterNamespace(namespace)
+						err = c.mockResource.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
 							continue
@@ -804,7 +805,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
 						}(namespace)
-						err := c.fakeResource.RegisterNamespace(namespace)
+						err = c.fakeResource.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the fakeResource")
 							continue
@@ -829,7 +830,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-new-namespace-fakes")
 						}(namespace)
-						err := c.anotherMockResource.RegisterNamespace(namespace)
+						err = c.anotherMockResource.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the anotherMockResource")
 							continue
@@ -854,7 +855,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-new-namespace-anothermockresources")
 						}(namespace)
-						err := c.mockCustomType.RegisterNamespace(namespace)
+						err = c.mockCustomType.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockCustomType")
 							continue
@@ -879,7 +880,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-new-namespace-mcts")
 						}(namespace)
-						err := c.pod.RegisterNamespace(namespace)
+						err = c.pod.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the pod")
 							continue

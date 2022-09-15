@@ -297,13 +297,14 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 			return nil, nil, err
 		}
 		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
+		var err error
 		// non watched namespaces that are labeled
 		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
 			newlyRegisteredNamespaces[i] = namespace	
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
-			err := c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
+			err = c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the {{ lower_camel .Name }}")
 			}
@@ -420,10 +421,11 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 {{- end }}
 					}
 
+					var err error
 					for _, namespace := range newNamespaces {
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
-						err := c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
+						err = c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the {{ lower_camel .Name }}")
 							continue
