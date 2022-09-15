@@ -184,6 +184,8 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		}
 	}
 
+	contextutils.LoggerFrom(ctx).Infof("watching the following namespaces %v", watchNamespaces)
+
 	errs := make(chan error)
 	hasWatchedNamespaces :=  len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
 	watchingLabeledNamespaces := ! (opts.ExpressionSelector == "")
@@ -351,8 +353,10 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 				}
 			}(namespace)
 		}
-		// TODO-JAKE do we want this to be info or debug? I think it works well with info. It should not be too noisy.
-		contextutils.LoggerFrom(ctx).Infof("registered the new namespace [%v]", newlyRegisteredNamespaces)
+		if len(newlyRegisteredNamespaces) > 0 {
+			// TODO-JAKE do we want this to be info or debug? I think it works well with info. It should not be too noisy.
+			contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newlyRegisteredNamespaces)
+		}
 
 		// create watch on all namespaces, so that we can add all resources from new namespaces
 		// we will be watching namespaces that meet the Expression Selector filter
@@ -478,9 +482,11 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 							}
 						}(namespace)
 					}
-					// TODO-JAKE do we want to have this as a debug?  I think this is good enough and not noisy
-					contextutils.LoggerFrom(ctx).Infof("registered the new namespace [%v]", newNamespaces)
-					c.updateNamespaces.Unlock()
+					if len(newNamespaces) > 0 {
+						// TODO-JAKE do we want to have this as a debug?  I think this is good enough and not noisy
+						contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newNamespaces)
+						c.updateNamespaces.Unlock()
+					}
 				}
 			}
 		}()
