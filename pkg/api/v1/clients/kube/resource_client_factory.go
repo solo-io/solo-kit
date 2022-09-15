@@ -327,6 +327,7 @@ func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace str
 	}
 	once.(*sync.Once).Do(func() {
 		ctx := f.ctx
+		contextutils.LoggerFrom(ctx).Panicf("failed to add new namespace to registry")
 		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
 			ctx = ctxWithTags
 		}
