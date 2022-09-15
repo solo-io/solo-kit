@@ -7,6 +7,7 @@ import (
 	"github.com/bugsnag/bugsnag-go/errors"
 	"github.com/rotisserie/eris"
 	kubenamespace "github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -16,6 +17,8 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -123,6 +126,33 @@ func (rc *namespaceResourceClient) Write(resource resources.Resource, opts clien
 
 	// return a read object to update the resource version
 	return rc.Read(namespaceObj.Namespace, namespaceObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *namespaceResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	name := inputResource.GetMetadata().GetName()
+	namespace := inputResource.GetMetadata().GetNamespace()
+	if err := resources.ValidateName(name); err != nil {
+		return nil, eris.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	data, err := shared.GetJsonPatchData(inputResource)
+	if err != nil {
+		return nil, eris.Wrapf(err, "error getting status json patch data")
+	}
+	namespaceObj, err := rc.Kube.CoreV1().Namespaces().Patch(opts.Ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, skerrors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, eris.Wrapf(err, "reading namespaceObj from kubernetes")
+	}
+	resource := FromKubeNamespace(namespaceObj)
+
+	if resource == nil {
+		return nil, eris.Errorf("namespaceObj %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *namespaceResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

@@ -37,6 +37,7 @@ type ResourceClient interface {
 	Write(resource resources.Resource, opts WriteOpts) (resources.Resource, error)
 	Delete(namespace, name string, opts DeleteOpts) error
 	List(namespace string, opts ListOpts) (resources.ResourceList, error)
+	ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts ApplyStatusOpts) (resources.Resource, error)
 	ResourceWatcher
 }
 
@@ -98,6 +99,18 @@ type DeleteOpts struct {
 }
 
 func (o DeleteOpts) WithDefaults() DeleteOpts {
+	if o.Ctx == nil {
+		o.Ctx = context.TODO()
+	}
+	return o
+}
+
+type ApplyStatusOpts struct {
+	Ctx     context.Context
+	Cluster string
+}
+
+func (o ApplyStatusOpts) WithDefaults() ApplyStatusOpts {
 	if o.Ctx == nil {
 		o.Ctx = context.TODO()
 	}
