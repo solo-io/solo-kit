@@ -296,17 +296,22 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 		if err != nil {
 			return nil, nil, err
 		}
+		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
 		// non watched namespaces that are labeled
-		for _, resourceNamespace := range namespacesResources {
+		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
+			newlyRegisteredNamespaces[i] = namespace	
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
-			c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
+			err := c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the {{ lower_camel .Name }}")
+			}
 			/* Setup namespaced watch for {{ upper_camel .Name }} */
 			{
 				{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial {{ upper_camel .Name }} list")
+					return nil, nil, errors.Wrapf(err, "initial {{ upper_camel .Name }} list with new namespace")
 				}
 				initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List,{{ lower_camel .PluralName }}...)
 				{{ lower_camel .PluralName }}ByNamespace.Store(namespace, {{ lower_camel .PluralName }})
@@ -346,6 +351,9 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 				}
 			}(namespace)
 		}
+		// TODO-JAKE do we want this to be info or debug? I think it works well with info. It should not be too noisy.
+		contextutils.LoggerFrom(ctx).Infof("registered the new namespace [%v]", newlyRegisteredNamespaces)
+
 		// create watch on all namespaces, so that we can add all resources from new namespaces
 		// we will be watching namespaces that meet the Expression Selector filter
 
@@ -415,12 +423,16 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 					for _, namespace := range newNamespaces {
 {{- range .Resources }}
 {{- if (not .ClusterScoped) }}
-						c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
+						err := c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the {{ lower_camel .Name }}")
+							continue
+						}
 						/* Setup namespaced watch for {{ upper_camel .Name }} for new namespace */
 						{
 							{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace {{ upper_camel .Name }} list")
+								errs <- errors.Wrapf(err, "initial new namespace {{ upper_camel .Name }} list in namespace watch")
 								continue
 							}
 							{{ lower_camel .PluralName }}ByNamespace.Store(namespace, {{ lower_camel .PluralName }})
@@ -465,6 +477,8 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 							}
 						}(namespace)
 					}
+					// TODO-JAKE do we want to have this as a debug?  I think this is good enough and not noisy
+					contextutils.LoggerFrom(ctx).Infof("registered the new namespace [%v]", newNamespaces)
 					c.updateNamespaces.Unlock()
 				}
 			}

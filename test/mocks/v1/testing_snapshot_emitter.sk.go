@@ -476,15 +476,20 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		if err != nil {
 			return nil, nil, err
 		}
+		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
 		// non watched namespaces that are labeled
-		for _, resourceNamespace := range namespacesResources {
+		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
-			c.simpleMockResource.RegisterNamespace(namespace)
+			newlyRegisteredNamespaces[i] = namespace
+			err := c.simpleMockResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the simpleMockResource")
+			}
 			/* Setup namespaced watch for SimpleMockResource */
 			{
 				simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial SimpleMockResource list")
+					return nil, nil, errors.Wrapf(err, "initial SimpleMockResource list with new namespace")
 				}
 				initialSimpleMockResourceList = append(initialSimpleMockResourceList, simplemocks...)
 				simplemocksByNamespace.Store(namespace, simplemocks)
@@ -499,12 +504,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-simplemocks")
 			}(namespace)
-			c.mockResource.RegisterNamespace(namespace)
+			err := c.mockResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
+			}
 			/* Setup namespaced watch for MockResource */
 			{
 				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial MockResource list")
+					return nil, nil, errors.Wrapf(err, "initial MockResource list with new namespace")
 				}
 				initialMockResourceList = append(initialMockResourceList, mocks...)
 				mocksByNamespace.Store(namespace, mocks)
@@ -519,12 +527,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
 			}(namespace)
-			c.fakeResource.RegisterNamespace(namespace)
+			err := c.fakeResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the fakeResource")
+			}
 			/* Setup namespaced watch for FakeResource */
 			{
 				fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial FakeResource list")
+					return nil, nil, errors.Wrapf(err, "initial FakeResource list with new namespace")
 				}
 				initialFakeResourceList = append(initialFakeResourceList, fakes...)
 				fakesByNamespace.Store(namespace, fakes)
@@ -539,12 +550,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-fakes")
 			}(namespace)
-			c.anotherMockResource.RegisterNamespace(namespace)
+			err := c.anotherMockResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the anotherMockResource")
+			}
 			/* Setup namespaced watch for AnotherMockResource */
 			{
 				anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial AnotherMockResource list")
+					return nil, nil, errors.Wrapf(err, "initial AnotherMockResource list with new namespace")
 				}
 				initialAnotherMockResourceList = append(initialAnotherMockResourceList, anothermockresources...)
 				anothermockresourcesByNamespace.Store(namespace, anothermockresources)
@@ -559,12 +573,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-anothermockresources")
 			}(namespace)
-			c.mockCustomType.RegisterNamespace(namespace)
+			err := c.mockCustomType.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockCustomType")
+			}
 			/* Setup namespaced watch for MockCustomType */
 			{
 				mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial MockCustomType list")
+					return nil, nil, errors.Wrapf(err, "initial MockCustomType list with new namespace")
 				}
 				initialMockCustomTypeList = append(initialMockCustomTypeList, mcts...)
 				mctsByNamespace.Store(namespace, mcts)
@@ -579,12 +596,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
 			}(namespace)
-			c.pod.RegisterNamespace(namespace)
+			err := c.pod.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the pod")
+			}
 			/* Setup namespaced watch for Pod */
 			{
 				pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial Pod list")
+					return nil, nil, errors.Wrapf(err, "initial Pod list with new namespace")
 				}
 				initialPodList = append(initialPodList, pods...)
 				podsByNamespace.Store(namespace, pods)
@@ -663,6 +683,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				}
 			}(namespace)
 		}
+		// TODO-JAKE do we want this to be info or debug? I think it works well with info. It should not be too noisy.
+		contextutils.LoggerFrom(ctx).Infof("registered the new namespace [%v]", newlyRegisteredNamespaces)
+
 		// create watch on all namespaces, so that we can add all resources from new namespaces
 		// we will be watching namespaces that meet the Expression Selector filter
 
@@ -731,12 +754,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					}
 
 					for _, namespace := range newNamespaces {
-						c.simpleMockResource.RegisterNamespace(namespace)
+						err := c.simpleMockResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the simpleMockResource")
+							continue
+						}
 						/* Setup namespaced watch for SimpleMockResource for new namespace */
 						{
 							simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace SimpleMockResource list")
+								errs <- errors.Wrapf(err, "initial new namespace SimpleMockResource list in namespace watch")
 								continue
 							}
 							simplemocksByNamespace.Store(namespace, simplemocks)
@@ -752,12 +779,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, simpleMockResourceErrs, namespace+"-new-namespace-simplemocks")
 						}(namespace)
-						c.mockResource.RegisterNamespace(namespace)
+						err := c.mockResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
+							continue
+						}
 						/* Setup namespaced watch for MockResource for new namespace */
 						{
 							mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace MockResource list")
+								errs <- errors.Wrapf(err, "initial new namespace MockResource list in namespace watch")
 								continue
 							}
 							mocksByNamespace.Store(namespace, mocks)
@@ -773,12 +804,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
 						}(namespace)
-						c.fakeResource.RegisterNamespace(namespace)
+						err := c.fakeResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the fakeResource")
+							continue
+						}
 						/* Setup namespaced watch for FakeResource for new namespace */
 						{
 							fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace FakeResource list")
+								errs <- errors.Wrapf(err, "initial new namespace FakeResource list in namespace watch")
 								continue
 							}
 							fakesByNamespace.Store(namespace, fakes)
@@ -794,12 +829,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, fakeResourceErrs, namespace+"-new-namespace-fakes")
 						}(namespace)
-						c.anotherMockResource.RegisterNamespace(namespace)
+						err := c.anotherMockResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the anotherMockResource")
+							continue
+						}
 						/* Setup namespaced watch for AnotherMockResource for new namespace */
 						{
 							anothermockresources, err := c.anotherMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace AnotherMockResource list")
+								errs <- errors.Wrapf(err, "initial new namespace AnotherMockResource list in namespace watch")
 								continue
 							}
 							anothermockresourcesByNamespace.Store(namespace, anothermockresources)
@@ -815,12 +854,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, anotherMockResourceErrs, namespace+"-new-namespace-anothermockresources")
 						}(namespace)
-						c.mockCustomType.RegisterNamespace(namespace)
+						err := c.mockCustomType.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockCustomType")
+							continue
+						}
 						/* Setup namespaced watch for MockCustomType for new namespace */
 						{
 							mcts, err := c.mockCustomType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace MockCustomType list")
+								errs <- errors.Wrapf(err, "initial new namespace MockCustomType list in namespace watch")
 								continue
 							}
 							mctsByNamespace.Store(namespace, mcts)
@@ -836,12 +879,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-new-namespace-mcts")
 						}(namespace)
-						c.pod.RegisterNamespace(namespace)
+						err := c.pod.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the pod")
+							continue
+						}
 						/* Setup namespaced watch for Pod for new namespace */
 						{
 							pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace Pod list")
+								errs <- errors.Wrapf(err, "initial new namespace Pod list in namespace watch")
 								continue
 							}
 							podsByNamespace.Store(namespace, pods)
@@ -925,6 +972,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							}
 						}(namespace)
 					}
+					// TODO-JAKE do we want to have this as a debug?  I think this is good enough and not noisy
+					contextutils.LoggerFrom(ctx).Infof("registered the new namespace [%v]", newNamespaces)
 					c.updateNamespaces.Unlock()
 				}
 			}

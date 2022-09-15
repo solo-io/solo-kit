@@ -233,15 +233,20 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		if err != nil {
 			return nil, nil, err
 		}
+		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
 		// non watched namespaces that are labeled
-		for _, resourceNamespace := range namespacesResources {
+		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
-			c.mockResource.RegisterNamespace(namespace)
+			newlyRegisteredNamespaces[i] = namespace
+			err := c.mockResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
+			}
 			/* Setup namespaced watch for MockResource */
 			{
 				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial MockResource list")
+					return nil, nil, errors.Wrapf(err, "initial MockResource list with new namespace")
 				}
 				initialMockResourceList = append(initialMockResourceList, mocks...)
 				mocksByNamespace.Store(namespace, mocks)
@@ -275,6 +280,9 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				}
 			}(namespace)
 		}
+		// TODO-JAKE do we want this to be info or debug? I think it works well with info. It should not be too noisy.
+		contextutils.LoggerFrom(ctx).Infof("registered the new namespace [%v]", newlyRegisteredNamespaces)
+
 		// create watch on all namespaces, so that we can add all resources from new namespaces
 		// we will be watching namespaces that meet the Expression Selector filter
 
@@ -338,12 +346,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					}
 
 					for _, namespace := range newNamespaces {
-						c.mockResource.RegisterNamespace(namespace)
+						err := c.mockResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
+							continue
+						}
 						/* Setup namespaced watch for MockResource for new namespace */
 						{
 							mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace MockResource list")
+								errs <- errors.Wrapf(err, "initial new namespace MockResource list in namespace watch")
 								continue
 							}
 							mocksByNamespace.Store(namespace, mocks)
@@ -382,6 +394,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							}
 						}(namespace)
 					}
+					// TODO-JAKE do we want to have this as a debug?  I think this is good enough and not noisy
+					contextutils.LoggerFrom(ctx).Infof("registered the new namespace [%v]", newNamespaces)
 					c.updateNamespaces.Unlock()
 				}
 			}
