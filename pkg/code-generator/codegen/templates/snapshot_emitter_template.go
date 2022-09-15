@@ -184,13 +184,14 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 		}
 	}
 
-	contextutils.LoggerFrom(ctx).Infof("watching the following namespaces %v", watchNamespaces)
 
 	errs := make(chan error)
 	hasWatchedNamespaces :=  len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
 	watchingLabeledNamespaces := ! (opts.ExpressionSelector == "")
 	var done sync.WaitGroup
 	ctx := opts.Ctx
+
+	contextutils.LoggerFrom(ctx).Infof("watching the following namespaces %v", watchNamespaces)
 
 	// setting up the options for both listing and watching resources in namespaces
 	watchedNamespacesListOptions := clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector }
