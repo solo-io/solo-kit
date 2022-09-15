@@ -12,6 +12,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -154,6 +155,7 @@ func (rc *ResourceClient) Register() error {
 }
 
 func (rc *ResourceClient) RegisterNamespace(namespace string) error {
+	contextutils.LoggerFrom(context.TODO()).Infof("registering the namespace %v for the resource client [%v] name [%v]", namespace, reflect.TypeOf(rc), rc.resourceName)
 	err := rc.sharedCache.RegisterNewNamespace(namespace, rc)
 	if err != nil {
 		return err
