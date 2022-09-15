@@ -334,10 +334,6 @@ func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace str
 	}
 	onceSent.Once.Do(func() {
 		ctx := f.ctx
-		onceSent.Err = errors.Errors([]string{"there is an error in the once sent error this is what you wanted to see."})
-		if onceSent.Err != nil {
-			return
-		}
 		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
 			ctx = ctxWithTags
 		}
