@@ -320,28 +320,38 @@ func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace str
 	// in that event, we want to make sure that the cache has started, the reason is because
 	// we have to initiallize the default namespaces as well as this new namespace
 	f.Start()
-	// we should only register a namespace once and only once
-	once, loaded := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
-	if !loaded {
-		return nil
+
+	type OnceAndSent struct {
+		Err  error
+		Once *sync.Once
 	}
-	once.(*sync.Once).Do(func() {
+
+	// we should only register a namespace once and only once
+	once, loaded := f.registerNamespaceLock.LoadOrStore(namespace, &OnceAndSent{Once: &sync.Once{}})
+	onceSent := once.(*OnceAndSent)
+	if loaded {
+		return onceSent.Err
+	}
+	onceSent.Once.Do(func() {
 		ctx := f.ctx
-		contextutils.LoggerFrom(ctx).Panicf("failed to add new namespace to registry")
+		onceSent.Err = errors.Errors([]string{"there is an error in the once sent error this is what you wanted to see."})
+		if onceSent.Err != nil {
+			return
+		}
 		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
 			ctx = ctxWithTags
 		}
 		informer, err := f.addNewNamespaceToRegistry(ctx, namespace, rc)
 		if err != nil {
-			// TODO-JAKE not sure if we want to panic here or to return an error.  But I feel like panics are ok.
-			contextutils.LoggerFrom(ctx).Panicf("failed to add new namespace to registry: %v", err)
+			onceSent.Err = errors.Wrapf(err, "failed to add new namespace to registry:")
+			return
 		}
 		if err := f.kubeController.AddNewInformer(informer); err != nil {
-			contextutils.LoggerFrom(ctx).Panicf("failed to add new informer to kube controller: %v", err)
+			onceSent.Err = errors.Wrapf(err, "failed to add new informer to kube controller")
+			return
 		}
-
 	})
-	return nil
+	return onceSent.Err
 }
 
 func (f *ResourceClientSharedInformerFactory) GetLister(namespace string, obj runtime.Object) (ResourceLister, error) {
