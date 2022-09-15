@@ -297,7 +297,6 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 			return nil, nil, err
 		}
 		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
-		var err error
 		// non watched namespaces that are labeled
 		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
