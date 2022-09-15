@@ -204,6 +204,9 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 		// TODO-JAKE there is a special rule, when the namespaces is [""], we need an option
 		// to be able to change the Informer so that it does not watch on "", but only those namespaces
 		// that we want to watch.  This only happens if the client(user) is setting the namespaceLabelSelectors field in the API.
+		f.registryLock.Lock()
+		defer f.registryLock.Unlock()
+
 		for _, ns := range rc.namespaceWhitelist {
 			// we want to make sure that we have registered this namespace
 			f.registerNamespaceLock.LoadOrStore(ns, &sync.Once{})
@@ -217,9 +220,6 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 // addNewNamespaceToRegistry will create a watch for the resource client type and namespace
 func (f *ResourceClientSharedInformerFactory) addNewNamespaceToRegistry(ctx context.Context, ns string, rc *ResourceClient) (cache.SharedIndexInformer, error) {
-	f.registryLock.Lock()
-	defer f.registryLock.Unlock()
-
 	nsCtx := ctx
 	resourceType := reflect.TypeOf(rc.crd.Version.Type)
 
@@ -313,12 +313,18 @@ func (f *ResourceClientSharedInformerFactory) Start() {
 // RegisterNewNamespace is used when the resource client is running. This will add a new namespace to the
 // kube controller so that events can be received.
 func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace string, rc *ResourceClient) error {
+	f.registryLock.Lock()
+	defer f.registryLock.Unlock()
+
 	// because this is an exposed function, Register New Namespace could be called at any time
 	// in that event, we want to make sure that the cache has started, the reason is because
 	// we have to initiallize the default namespaces as well as this new namespace
 	f.Start()
 	// we should only register a namespace once and only once
-	once, _ := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
+	once, loaded := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
+	if !loaded {
+		return nil
+	}
 	once.(*sync.Once).Do(func() {
 		ctx := f.ctx
 		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
