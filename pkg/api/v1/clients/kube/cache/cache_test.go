@@ -109,6 +109,7 @@ var _ = Describe("kube core cache tests", func() {
 			})
 
 			It("can list resources for all listers", func() {
+				Expect(cache.NamespaceLister()).ToNot(BeNil())
 				_, err := cache.NamespacedPodLister("default").List(selectors)
 				Expect(err).NotTo(HaveOccurred())
 				_, err = cache.NamespacedConfigMapLister("default").List(selectors)
@@ -143,6 +144,7 @@ var _ = Describe("kube core cache tests", func() {
 				})
 
 				It("can list resources for all listers", func() {
+					Expect(cache.NamespaceLister()).ToNot(BeNil())
 					validateNamespaceResource(testns)
 					validateNamespaceResource(testns2)
 				})
