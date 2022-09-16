@@ -55,6 +55,11 @@ var (
 	}
 )
 
+type onceAndSent struct {
+	Err  error
+	Once *sync.Once
+}
+
 func init() {
 	view.Register(ListCountView, WatchCountView)
 }
@@ -321,14 +326,10 @@ func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace str
 	// we have to initiallize the default namespaces as well as this new namespace
 	f.Start()
 
-	type OnceAndSent struct {
-		Err  error
-		Once *sync.Once
-	}
-
-	// we should only register a namespace once and only once
-	once, loaded := f.registerNamespaceLock.LoadOrStore(namespace, &OnceAndSent{Once: &sync.Once{}})
-	onceSent := once.(*OnceAndSent)
+	// we should only register a (namespace, type) once and only once
+	mapToTypes, _ := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Map{})
+	once, loaded := mapToTypes.(*sync.Map).LoadOrStore(reflect.TypeOf(rc.crd.Version.Type), &onceAndSent{Once: &sync.Once{}})
+	onceSent := once.(*onceAndSent)
 	if loaded {
 		return onceSent.Err
 	}
