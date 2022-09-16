@@ -327,15 +327,20 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		if err != nil {
 			return nil, nil, err
 		}
+		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
 		// non watched namespaces that are labeled
-		for _, resourceNamespace := range namespacesResources {
+		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
-			c.mockResource.RegisterNamespace(namespace)
+			newlyRegisteredNamespaces[i] = namespace
+			err = c.mockResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
+			}
 			/* Setup namespaced watch for MockResource */
 			{
 				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial MockResource list")
+					return nil, nil, errors.Wrapf(err, "initial MockResource list with new namespace")
 				}
 				initialMockResourceList = append(initialMockResourceList, mocks...)
 				mocksByNamespace.Store(namespace, mocks)
@@ -350,12 +355,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
 			}(namespace)
-			c.frequentlyChangingAnnotationsResource.RegisterNamespace(namespace)
+			err = c.frequentlyChangingAnnotationsResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the frequentlyChangingAnnotationsResource")
+			}
 			/* Setup namespaced watch for FrequentlyChangingAnnotationsResource */
 			{
 				fcars, err := c.frequentlyChangingAnnotationsResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial FrequentlyChangingAnnotationsResource list")
+					return nil, nil, errors.Wrapf(err, "initial FrequentlyChangingAnnotationsResource list with new namespace")
 				}
 				initialFrequentlyChangingAnnotationsResourceList = append(initialFrequentlyChangingAnnotationsResourceList, fcars...)
 				fcarsByNamespace.Store(namespace, fcars)
@@ -370,12 +378,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, frequentlyChangingAnnotationsResourceErrs, namespace+"-fcars")
 			}(namespace)
-			c.fakeResource.RegisterNamespace(namespace)
+			err = c.fakeResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the fakeResource")
+			}
 			/* Setup namespaced watch for FakeResource */
 			{
 				fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial FakeResource list")
+					return nil, nil, errors.Wrapf(err, "initial FakeResource list with new namespace")
 				}
 				initialFakeResourceList = append(initialFakeResourceList, fakes...)
 				fakesByNamespace.Store(namespace, fakes)
@@ -427,6 +438,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				}
 			}(namespace)
 		}
+		if len(newlyRegisteredNamespaces) > 0 {
+			contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newlyRegisteredNamespaces)
+		}
+
 		// create watch on all namespaces, so that we can add all resources from new namespaces
 		// we will be watching namespaces that meet the Expression Selector filter
 
@@ -492,12 +507,17 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					}
 
 					for _, namespace := range newNamespaces {
-						c.mockResource.RegisterNamespace(namespace)
+						var err error
+						err = c.mockResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
+							continue
+						}
 						/* Setup namespaced watch for MockResource for new namespace */
 						{
 							mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace MockResource list")
+								errs <- errors.Wrapf(err, "initial new namespace MockResource list in namespace watch")
 								continue
 							}
 							mocksByNamespace.Store(namespace, mocks)
@@ -513,12 +533,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
 						}(namespace)
-						c.frequentlyChangingAnnotationsResource.RegisterNamespace(namespace)
+						err = c.frequentlyChangingAnnotationsResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the frequentlyChangingAnnotationsResource")
+							continue
+						}
 						/* Setup namespaced watch for FrequentlyChangingAnnotationsResource for new namespace */
 						{
 							fcars, err := c.frequentlyChangingAnnotationsResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace FrequentlyChangingAnnotationsResource list")
+								errs <- errors.Wrapf(err, "initial new namespace FrequentlyChangingAnnotationsResource list in namespace watch")
 								continue
 							}
 							fcarsByNamespace.Store(namespace, fcars)
@@ -534,12 +558,16 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, frequentlyChangingAnnotationsResourceErrs, namespace+"-new-namespace-fcars")
 						}(namespace)
-						c.fakeResource.RegisterNamespace(namespace)
+						err = c.fakeResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the fakeResource")
+							continue
+						}
 						/* Setup namespaced watch for FakeResource for new namespace */
 						{
 							fakes, err := c.fakeResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace FakeResource list")
+								errs <- errors.Wrapf(err, "initial new namespace FakeResource list in namespace watch")
 								continue
 							}
 							fakesByNamespace.Store(namespace, fakes)
@@ -596,7 +624,10 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							}
 						}(namespace)
 					}
-					c.updateNamespaces.Unlock()
+					if len(newNamespaces) > 0 {
+						contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newNamespaces)
+						c.updateNamespaces.Unlock()
+					}
 				}
 			}
 		}()

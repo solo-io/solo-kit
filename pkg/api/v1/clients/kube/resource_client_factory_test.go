@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/fake"
 	solov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -118,14 +119,19 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 		var (
 			clientset          *fake.Clientset
+			clientset2         *fake.Clientset
 			preStartGoroutines int
 			client             *kube.ResourceClient
+			client2            *kube.ResourceClient
 		)
 
 		BeforeEach(func() {
 			clientset = fake.NewSimpleClientset(mocksv1.MockResourceCrd)
-			// We need the resourceClient so that we can register its resourceType/namespaces with the cache
+			clientset2 = fake.NewSimpleClientset(mocksv1.AnotherMockResourceCrd)
+
 			client = util.ClientForClientsetAndResource(clientset, kubeCache, mocksv1.MockResourceCrd, &mocksv1.MockResource{}, []string{namespace1})
+			client2 = util.ClientForClientsetAndResource(clientset2, kubeCache, mocksv1.AnotherMockResourceCrd, &mocksv1.AnotherMockResource{}, []string{namespace1})
+
 			err := kubeCache.Register(client)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -227,6 +233,18 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				Expect(len(watchResults)).To(BeEquivalentTo(1))
 				Expect(watchResults).To(ConsistOf("mock-res-2"))
+			})
+
+			It("should be able to register two or more clients in a new namespace", func() {
+				err := client.RegisterNamespace(namespace2)
+				Expect(err).ToNot(HaveOccurred())
+				err = client2.RegisterNamespace(namespace2)
+				Expect(err).ToNot(HaveOccurred())
+
+				// it should fail here, saying that the client has not registered the informer for the namespace and the client
+				resources, err := client2.List(namespace2, clients.ListOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(resources)).To(BeEquivalentTo(0))
 			})
 		})
 

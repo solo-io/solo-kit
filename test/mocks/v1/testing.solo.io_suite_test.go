@@ -54,7 +54,7 @@ var (
 		testutils.ErrorNotOccuredOrNotFound(err)
 		err = clientset.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, "simplemocks.testing.solo.io", metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
-		// TOOD-JAKE known race condition occurs here https://storage.googleapis.com/solo-public-build-logs/log-286333d3-2840-4323-b508-7e351539a9f9.txt
+		// known race condition occurs here https://storage.googleapis.com/solo-public-build-logs/log-286333d3-2840-4323-b508-7e351539a9f9.txt
 		Expect(lock.ReleaseLock()).NotTo(HaveOccurred())
 	})
 

@@ -233,15 +233,20 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 		if err != nil {
 			return nil, nil, err
 		}
+		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
 		// non watched namespaces that are labeled
-		for _, resourceNamespace := range namespacesResources {
+		for i, resourceNamespace := range namespacesResources {
 			namespace := resourceNamespace.Name
-			c.kubeConfig.RegisterNamespace(namespace)
+			newlyRegisteredNamespaces[i] = namespace
+			err = c.kubeConfig.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the kubeConfig")
+			}
 			/* Setup namespaced watch for KubeConfig */
 			{
 				kubeconfigs, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "initial KubeConfig list")
+					return nil, nil, errors.Wrapf(err, "initial KubeConfig list with new namespace")
 				}
 				initialKubeConfigList = append(initialKubeConfigList, kubeconfigs...)
 				kubeconfigsByNamespace.Store(namespace, kubeconfigs)
@@ -275,6 +280,10 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 				}
 			}(namespace)
 		}
+		if len(newlyRegisteredNamespaces) > 0 {
+			contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newlyRegisteredNamespaces)
+		}
+
 		// create watch on all namespaces, so that we can add all resources from new namespaces
 		// we will be watching namespaces that meet the Expression Selector filter
 
@@ -338,12 +347,17 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 					}
 
 					for _, namespace := range newNamespaces {
-						c.kubeConfig.RegisterNamespace(namespace)
+						var err error
+						err = c.kubeConfig.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the kubeConfig")
+							continue
+						}
 						/* Setup namespaced watch for KubeConfig for new namespace */
 						{
 							kubeconfigs, err := c.kubeConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 							if err != nil {
-								errs <- errors.Wrapf(err, "initial new namespace KubeConfig list")
+								errs <- errors.Wrapf(err, "initial new namespace KubeConfig list in namespace watch")
 								continue
 							}
 							kubeconfigsByNamespace.Store(namespace, kubeconfigs)
@@ -382,7 +396,10 @@ func (c *kubeconfigsEmitter) Snapshots(watchNamespaces []string, opts clients.Wa
 							}
 						}(namespace)
 					}
-					c.updateNamespaces.Unlock()
+					if len(newNamespaces) > 0 {
+						contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newNamespaces)
+						c.updateNamespaces.Unlock()
+					}
 				}
 			}
 		}()

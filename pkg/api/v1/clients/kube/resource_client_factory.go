@@ -55,6 +55,11 @@ var (
 	}
 )
 
+type onceAndSent struct {
+	Err  error
+	Once *sync.Once
+}
+
 func init() {
 	view.Register(ListCountView, WatchCountView)
 }
@@ -201,9 +206,6 @@ func (f *ResourceClientSharedInformerFactory) Register(rc *ResourceClient) error
 
 		// Create a shared informer for each of the given namespaces.
 		// NOTE: We do not distinguish between the value "" (all namespaces) and a regular namespace here.
-		// TODO-JAKE there is a special rule, when the namespaces is [""], we need an option
-		// to be able to change the Informer so that it does not watch on "", but only those namespaces
-		// that we want to watch.  This only happens if the client(user) is setting the namespaceLabelSelectors field in the API.
 		for _, ns := range rc.namespaceWhitelist {
 			// we want to make sure that we have registered this namespace
 			f.registerNamespaceLock.LoadOrStore(ns, &sync.Once{})
@@ -317,24 +319,30 @@ func (f *ResourceClientSharedInformerFactory) RegisterNewNamespace(namespace str
 	// in that event, we want to make sure that the cache has started, the reason is because
 	// we have to initiallize the default namespaces as well as this new namespace
 	f.Start()
-	// we should only register a namespace once and only once
-	once, _ := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
-	once.(*sync.Once).Do(func() {
+
+	// we should only register a (namespace, type) once and only once
+	mapToTypes, _ := f.registerNamespaceLock.LoadOrStore(namespace, &sync.Map{})
+	once, loaded := mapToTypes.(*sync.Map).LoadOrStore(reflect.TypeOf(rc.crd.Version.Type), &onceAndSent{Once: &sync.Once{}})
+	onceSent := once.(*onceAndSent)
+	if loaded {
+		return onceSent.Err
+	}
+	onceSent.Once.Do(func() {
 		ctx := f.ctx
 		if ctxWithTags, err := tag.New(ctx, tag.Insert(KeyKind, rc.resourceName)); err == nil {
 			ctx = ctxWithTags
 		}
 		informer, err := f.addNewNamespaceToRegistry(ctx, namespace, rc)
 		if err != nil {
-			// TODO-JAKE not sure if we want to panic here or to return an error.  But I feel like panics are ok.
-			contextutils.LoggerFrom(ctx).Panicf("failed to add new namespace to registry: %v", err)
+			onceSent.Err = errors.Wrapf(err, "failed to add new namespace to registry:")
+			return
 		}
 		if err := f.kubeController.AddNewInformer(informer); err != nil {
-			contextutils.LoggerFrom(ctx).Panicf("failed to add new informer to kube controller: %v", err)
+			onceSent.Err = errors.Wrapf(err, "failed to add new informer to kube controller")
+			return
 		}
-
 	})
-	return nil
+	return onceSent.Err
 }
 
 func (f *ResourceClientSharedInformerFactory) GetLister(namespace string, obj runtime.Object) (ResourceLister, error) {

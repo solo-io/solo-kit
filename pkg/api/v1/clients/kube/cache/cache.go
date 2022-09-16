@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -23,6 +22,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
+
+// onceAndSent is used to capture errs made by once functions
+type onceAndSent struct {
+	Err  error
+	Once *sync.Once
+}
 
 type ServiceLister interface {
 	// List lists all Services in the indexer.
@@ -275,16 +280,15 @@ func (k *kubeCoreCaches) addNewNamespace(namespace string) []cache.SharedIndexIn
 // RegisterNewNamespaceCache will create the cache informers for each resource type
 // this will add the informer to the kube controller so that events can be watched.
 func (k *kubeCoreCaches) RegisterNewNamespaceCache(namespace string) error {
-	once, _ := k.registerNamespaceLock.LoadOrStore(namespace, &sync.Once{})
-	onceFunc := once.(*sync.Once)
-	// TODO-JAKE should this panic?
-	onceFunc.Do(func() {
+	once, _ := k.registerNamespaceLock.LoadOrStore(namespace, &onceAndSent{Once: &sync.Once{}})
+	onceFunc := once.(*onceAndSent)
+	onceFunc.Once.Do(func() {
 		informers := k.addNewNamespace(namespace)
 		if err := k.kubeController.AddNewListOfInformers(informers); err != nil {
-			contextutils.LoggerFrom(k.ctx).Panicf("failed to add new list of informers to kube controller: %v", err)
+			onceFunc.Err = errors.Wrapf(err, "failed to add new list of informers to kube controller")
 		}
 	})
-	return nil
+	return onceFunc.Err
 }
 
 // Deprecated: Use NamespacedPodLister instead
