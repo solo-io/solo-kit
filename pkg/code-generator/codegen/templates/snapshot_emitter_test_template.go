@@ -34,6 +34,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -45,6 +46,7 @@ import (
 	"k8s.io/client-go/rest"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	// Needed to run tests in GKE
@@ -59,6 +61,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
 	}
+
+	type metadataGetter interface {
+		GetMetadata() *core.Metadata
+	}
+
 	var (
 		ctx 				context.Context
 		namespace1, namespace2         string
@@ -132,6 +139,90 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		namespace2 = helpers.RandString(8)
 	}
 
+	getMapOfNamespaceResources := func() map[string][]string {
+		namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
+		namespaceResources := make(map[string][]string, len(namespaces))
+		for _, ns := range namespaces {
+			list, _ := mockResourceClient.List(ns, clients.ListOpts{})
+			for _, snap := range list {
+				snapMeta := snap.GetMetadata()
+				if _, hit := namespaceResources[snapMeta.Namespace]; hit {
+					namespaceResources[snap.GetMetadata().Namespace] = make([]string, 1)
+				}
+				namespaceResources[snapMeta.Namespace] = append(namespaceResources[snapMeta.Namespace], snapMeta.Name)
+			}
+		}
+		return namespaceResources
+	}
+
+	findNonMatchingResources := func(matchList, findList []metadataGetter) map[string][]string {
+		nonMatching := make(map[string][]string)
+		for _, snap := range matchList {
+			snapMeta := snap.GetMetadata()
+			matched := false
+			for _,pre := range findList {
+				preMeta := pre.GetMetadata()
+				if preMeta.Namespace == snapMeta.Namespace && preMeta.Name == snapMeta.Name {
+					matched = true
+					break
+				}
+			}
+			if ! matched {
+				if _, hit := nonMatching[snapMeta.Namespace]; hit {
+					nonMatching[snap.GetMetadata().Namespace] = make([]string, 1)
+				}
+				nonMatching[snapMeta.Namespace] = append(nonMatching[snapMeta.Namespace], snapMeta.Name)
+			}
+		}
+		return nonMatching
+	}
+
+	findMatchingResources := func(matchList, findList []metadataGetter) map[string][]string {
+		matching := make(map[string][]string)
+		for _, snap := range matchList {
+			snapMeta := snap.GetMetadata()
+			matched := false
+			for _,pre := range findList {
+				preMeta := pre.GetMetadata()
+				if preMeta.Namespace == snapMeta.Namespace && preMeta.Name == snapMeta.Name {
+					matched = true
+					break
+				}
+			}
+			if matched {
+				if _, hit := matching[snapMeta.Namespace]; hit {
+					matching[snap.GetMetadata().Namespace] = make([]string, 1)
+				}
+				matching[snapMeta.Namespace] = append(matching[snapMeta.Namespace], snapMeta.Name)
+			}
+		}
+		return matching
+	}
+
+	getMapOfResources := func(listOfResources []metadataGetter) map[string][]string {
+		resources := make(map[string][]string)
+		for _, snap := range listOfResources {
+			snapMeta := snap.GetMetadata()
+			if _, hit := resources[snapMeta.Namespace]; hit {
+				resources[snap.GetMetadata().Namespace] = make([]string, 1)
+			}
+			resources[snapMeta.Namespace] = append(resources[snapMeta.Namespace], snapMeta.Name)
+		}
+		return resources
+	}
+
+{{- range .Resources }}
+{{- if not .ClusterScoped }}
+	convert{{ .PluralName }}ToMetadataGetter := func(rl {{ .ImportPrefix }}{{ .Name }}List) []metadataGetter {
+		listConv := make([]metadataGetter, len(rl))
+		for i, r := range rl {
+			listConv[i] = r
+		}
+		return listConv
+	}
+{{- end }}
+{{- end }}
+
 	runNamespacedSelectorsWithWatchNamespaces := func() {
 		ctx := context.Background()
 		err := emitter.Register()
@@ -146,6 +237,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		Expect(err).NotTo(HaveOccurred())
 
 		var snap *{{ .GoName }}Snapshot
+		var previous *{{ .GoName }}Snapshot
 
 {{- range .Resources }}
 
@@ -157,6 +249,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 				for {
 					select {
 					case snap = <-snapshots:
+						previous = snap
 						for _, expected := range expect{{ .PluralName }} {
 							if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 								continue drain
@@ -173,12 +266,21 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 					case <-time.After(time.Second * 10):
 	{{- if .ClusterScoped }}
 						combined, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
-	{{- else }}
-						nsList1, _ := {{ lower_camel .Name }}Client.List(namespace1, clients.ListOpts{})
-						nsList2, _ := {{ lower_camel .Name }}Client.List(namespace2, clients.ListOpts{})
-						combined := append(nsList1, nsList2...)
-	{{- end }}
 						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+	{{- else }}
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
+
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convert{{ .PluralName }}ToMetadataGetter(expect{{ .PluralName }}), convert{{ .PluralName }}ToMetadataGetter(previous.{{ upper_camel .PluralName }}))
+							unexpectedResource = findMatchingResources(convert{{ .PluralName }}ToMetadataGetter(unexpect{{ .PluralName }}), convert{{ .PluralName }}ToMetadataGetter(previous.{{ upper_camel .PluralName }}))
+						} else {
+							expectedResources = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(expect{{ .PluralName }}))
+							unexpectedResource = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(unexpect{{ .PluralName }}))
+						}
+						namespaceResources := getMapOfNamespaceResources()
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+	{{- end }}
 					}
 				}
 		}	
@@ -618,6 +720,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Expect(err).NotTo(HaveOccurred())
 
 			var snap *{{ .GoName }}Snapshot
+			var previous *{{ .GoName }}Snapshot
 
 {{- range .Resources }}
 
@@ -630,6 +733,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 					for {
 						select {
 						case snap = <-snapshots:
+							previous = snap
 							for _, expected := range expect{{ .PluralName }} {
 								if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 									continue drain
@@ -646,12 +750,38 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 						case <-time.After(time.Second * 10):
 {{- if .ClusterScoped }}
 							combined, _ := {{ lower_camel .Name }}Client.List(clients.ListOpts{})
-{{- else }}
-							nsList1, _ := {{ lower_camel .Name }}Client.List(namespace1, clients.ListOpts{})
-							nsList2, _ := {{ lower_camel .Name }}Client.List(namespace2, clients.ListOpts{})
-							combined := append(nsList1, nsList2...)
-{{- end }}
 							Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+{{- else }}
+
+							var buffer bytes.Buffer
+							if previous != nil {
+								for _, sn := range previous.{{ upper_camel .PluralName }} {
+									buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))	
+									buffer.WriteByte('\n')
+								}
+							} else {
+								buffer.WriteString("****** NO PREVIOUS SNAP ********")
+							}
+							namespaces := []string{namespace1,namespace2,namespace3,namespace4,namespace5,namespace6}
+							for i, ns := range namespaces {
+								buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
+								list, _ := {{ lower_camel .Name }}Client.List(ns, clients.ListOpts{})
+								for _, sn := range list {
+									buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))	
+									buffer.WriteByte('\n')
+								}
+							}
+							buffer.WriteString("********** EXPECTED *********")
+							for _,snap := range expect{{ .PluralName }} {
+								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))	
+							}
+							buffer.WriteString("********* UNEXPECTED ***********")
+							for _,snap := range unexpect{{ .PluralName }}{
+								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))	
+							}
+
+							Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+{{- end }}
 						}
 					}
 			}	
@@ -951,6 +1081,93 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 
 {{- end }}{{/* end of with */}}
 {{- end }}{{/* end of range */}}
+		})
+
+		It("should be able to return a resource from a deleted namespace, after the namespace is re-created", func () {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:                ctx,
+				RefreshRate:        time.Second,
+				ExpressionSelector: labelExpression1,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+			var previous *TestingSnapshot
+
+{{- range .Resources }}
+{{ if not .ClusterScoped }}
+{{ if .HasStatus }}
+
+{{/* no need for anything else, this only works on clients that have kube resource factories, this will not work on clients that have memory resource factories.*/}}
+
+			/*
+			{{ .Name }}
+			*/
+			assertSnapshot{{ .PluralName }} := func(expect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List, unexpect{{ .PluralName }} {{ .ImportPrefix }}{{ .Name }}List) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						previous = snap
+						for _, expected := range expect{{ .PluralName }} {
+							if _, err := snap.{{ upper_camel .PluralName }}.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpect{{ .PluralName }} {
+							if _, err := snap.{{ upper_camel .PluralName }}.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
+
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convert{{ .PluralName }}ToMetadataGetter(expect{{ .PluralName }}), convert{{ .PluralName }}ToMetadataGetter(previous.{{ upper_camel .PluralName }}))
+							unexpectedResource = findMatchingResources(convert{{ .PluralName }}ToMetadataGetter(unexpect{{ .PluralName }}), convert{{ .PluralName }}ToMetadataGetter(previous.{{ upper_camel .PluralName }}))
+						} else {
+							expectedResources = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(expect{{ .PluralName }}))
+							unexpectedResource = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(unexpect{{ .PluralName }}))
+						}
+						namespaceResources := getMapOfNamespaceResources()
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+					}
+				}
+			}	
+
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+
+			{{ lower_camel .Name }}1a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a}, nil)
+
+			deleteNamespaces(ctx, kube, namespace3)
+			Eventually(func () bool {
+				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
+				return apierrors.IsNotFound(err)
+			}, 10*time.Second, 1 * time.Second).Should(BeTrue())
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+
+			{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshot{{ .PluralName }}({{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}2a}, {{ .ImportPrefix }}{{ .Name }}List{ {{ lower_camel .Name }}1a})
+
+			deleteNamespaces(ctx, kube, namespace3)
+			Eventually(func () bool {
+				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
+				return apierrors.IsNotFound(err)
+			}, 10*time.Second, 1 * time.Second).Should(BeTrue())
+{{- end }}
+{{- end }}
+{{- end }}
 		})
 	})
 
