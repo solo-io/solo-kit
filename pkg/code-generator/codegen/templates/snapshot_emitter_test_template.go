@@ -139,11 +139,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 		namespace2 = helpers.RandString(8)
 	}
 
-	getMapOfNamespaceResources := func() map[string][]string {
+	getMapOfNamespaceResources := func(getList func(string) ([]metadataGetter,error)) map[string][]string {
 		namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
 		namespaceResources := make(map[string][]string, len(namespaces))
 		for _, ns := range namespaces {
-			list, _ := mockResourceClient.List(ns, clients.ListOpts{})
+			list, _ := getList(ns)
 			for _, snap := range list {
 				snapMeta := snap.GetMetadata()
 				if _, hit := namespaceResources[snapMeta.Namespace]; hit {
@@ -278,7 +278,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 							expectedResources = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(expect{{ .PluralName }}))
 							unexpectedResource = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(unexpect{{ .PluralName }}))
 						}
-						namespaceResources := getMapOfNamespaceResources()
+						getList := func (ns string) ([]metadataGetter, error) {
+							l, err := {{ lower_camel .Name }}Client.List(ns, clients.ListOpts{})
+							return convert{{ .PluralName }}ToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
 						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 	{{- end }}
 					}
@@ -1083,6 +1087,16 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- end }}{{/* end of range */}}
 		})
 
+{{- $num_of_clients_supported := 0 }}
+{{- range .Resources }}
+{{ if not .ClusterScoped }}
+{{ if .HasStatus }}
+		{{ $num_of_clients_supported = inc $num_of_clients_supported }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{ if ge $num_of_clients_supported 1 }}
 		It("should be able to return a resource from a deleted namespace, after the namespace is re-created", func () {
 			ctx := context.Background()
 			err := emitter.Register()
@@ -1137,7 +1151,11 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 							expectedResources = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(expect{{ .PluralName }}))
 							unexpectedResource = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(unexpect{{ .PluralName }}))
 						}
-						namespaceResources := getMapOfNamespaceResources()
+						getList := func (ns string) ([]metadataGetter, error) {
+							l, err := {{ lower_camel .Name }}Client.List(ns, clients.ListOpts{})
+							return convert{{ .PluralName }}ToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
 						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
@@ -1169,6 +1187,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 {{- end }}
 {{- end }}
 		})
+{{- end }}{{/* if $num_of_clients_supported */}}
 	})
 
 	Context("use different resource namespace listers", func() {

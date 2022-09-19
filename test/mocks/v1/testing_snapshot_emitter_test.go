@@ -153,11 +153,11 @@ var _ = Describe("V1Emitter", func() {
 		namespace2 = helpers.RandString(8)
 	}
 
-	getMapOfNamespaceResources := func() map[string][]string {
+	getMapOfNamespaceResources := func(getList func(string) ([]metadataGetter, error)) map[string][]string {
 		namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
 		namespaceResources := make(map[string][]string, len(namespaces))
 		for _, ns := range namespaces {
-			list, _ := mockResourceClient.List(ns, clients.ListOpts{})
+			list, _ := getList(ns)
 			for _, snap := range list {
 				snapMeta := snap.GetMetadata()
 				if _, hit := namespaceResources[snapMeta.Namespace]; hit {
@@ -316,7 +316,11 @@ var _ = Describe("V1Emitter", func() {
 						expectedResources = getMapOfResources(convertSimplemocksToMetadataGetter(expectSimplemocks))
 						unexpectedResource = getMapOfResources(convertSimplemocksToMetadataGetter(unexpectSimplemocks))
 					}
-					namespaceResources := getMapOfNamespaceResources()
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := simpleMockResourceClient.List(ns, clients.ListOpts{})
+						return convertSimplemocksToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
 					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 				}
 			}
@@ -420,7 +424,11 @@ var _ = Describe("V1Emitter", func() {
 						expectedResources = getMapOfResources(convertMocksToMetadataGetter(expectMocks))
 						unexpectedResource = getMapOfResources(convertMocksToMetadataGetter(unexpectMocks))
 					}
-					namespaceResources := getMapOfNamespaceResources()
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := mockResourceClient.List(ns, clients.ListOpts{})
+						return convertMocksToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
 					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 				}
 			}
@@ -524,7 +532,11 @@ var _ = Describe("V1Emitter", func() {
 						expectedResources = getMapOfResources(convertFakesToMetadataGetter(expectFakes))
 						unexpectedResource = getMapOfResources(convertFakesToMetadataGetter(unexpectFakes))
 					}
-					namespaceResources := getMapOfNamespaceResources()
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := fakeResourceClient.List(ns, clients.ListOpts{})
+						return convertFakesToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
 					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 				}
 			}
@@ -628,7 +640,11 @@ var _ = Describe("V1Emitter", func() {
 						expectedResources = getMapOfResources(convertAnothermockresourcesToMetadataGetter(expectAnothermockresources))
 						unexpectedResource = getMapOfResources(convertAnothermockresourcesToMetadataGetter(unexpectAnothermockresources))
 					}
-					namespaceResources := getMapOfNamespaceResources()
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := anotherMockResourceClient.List(ns, clients.ListOpts{})
+						return convertAnothermockresourcesToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
 					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 				}
 			}
@@ -803,7 +819,11 @@ var _ = Describe("V1Emitter", func() {
 						expectedResources = getMapOfResources(convertmctsToMetadataGetter(expectmcts))
 						unexpectedResource = getMapOfResources(convertmctsToMetadataGetter(unexpectmcts))
 					}
-					namespaceResources := getMapOfNamespaceResources()
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := mockCustomTypeClient.List(ns, clients.ListOpts{})
+						return convertmctsToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
 					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 				}
 			}
@@ -907,7 +927,11 @@ var _ = Describe("V1Emitter", func() {
 						expectedResources = getMapOfResources(convertpodsToMetadataGetter(expectpods))
 						unexpectedResource = getMapOfResources(convertpodsToMetadataGetter(unexpectpods))
 					}
-					namespaceResources := getMapOfNamespaceResources()
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := podClient.List(ns, clients.ListOpts{})
+						return convertpodsToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
 					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 				}
 			}
@@ -3438,7 +3462,11 @@ var _ = Describe("V1Emitter", func() {
 							expectedResources = getMapOfResources(convertMocksToMetadataGetter(expectMocks))
 							unexpectedResource = getMapOfResources(convertMocksToMetadataGetter(unexpectMocks))
 						}
-						namespaceResources := getMapOfNamespaceResources()
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := mockResourceClient.List(ns, clients.ListOpts{})
+							return convertMocksToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
 						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
@@ -3500,7 +3528,11 @@ var _ = Describe("V1Emitter", func() {
 							expectedResources = getMapOfResources(convertAnothermockresourcesToMetadataGetter(expectAnothermockresources))
 							unexpectedResource = getMapOfResources(convertAnothermockresourcesToMetadataGetter(unexpectAnothermockresources))
 						}
-						namespaceResources := getMapOfNamespaceResources()
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := anotherMockResourceClient.List(ns, clients.ListOpts{})
+							return convertAnothermockresourcesToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
 						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}

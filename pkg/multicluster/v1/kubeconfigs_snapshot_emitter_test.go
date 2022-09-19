@@ -109,11 +109,11 @@ var _ = Describe("V1Emitter", func() {
 		namespace2 = helpers.RandString(8)
 	}
 
-	getMapOfNamespaceResources := func() map[string][]string {
+	getMapOfNamespaceResources := func(getList func(string) ([]metadataGetter, error)) map[string][]string {
 		namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
 		namespaceResources := make(map[string][]string, len(namespaces))
 		for _, ns := range namespaces {
-			list, _ := mockResourceClient.List(ns, clients.ListOpts{})
+			list, _ := getList(ns)
 			for _, snap := range list {
 				snapMeta := snap.GetMetadata()
 				if _, hit := namespaceResources[snapMeta.Namespace]; hit {
@@ -237,7 +237,11 @@ var _ = Describe("V1Emitter", func() {
 						expectedResources = getMapOfResources(convertkubeconfigsToMetadataGetter(expectkubeconfigs))
 						unexpectedResource = getMapOfResources(convertkubeconfigsToMetadataGetter(unexpectkubeconfigs))
 					}
-					namespaceResources := getMapOfNamespaceResources()
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := kubeConfigClient.List(ns, clients.ListOpts{})
+						return convertkubeconfigsToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
 					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 				}
 			}
@@ -753,22 +757,6 @@ var _ = Describe("V1Emitter", func() {
 			getNewNamespaces()
 		})
 
-		It("should be able to return a resource from a deleted namespace, after the namespace is re-created", func() {
-			ctx := context.Background()
-			err := emitter.Register()
-			Expect(err).NotTo(HaveOccurred())
-
-			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
-				Ctx:                ctx,
-				RefreshRate:        time.Second,
-				ExpressionSelector: labelExpression1,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			var snap *TestingSnapshot
-			var previous *TestingSnapshot
-
-		})
 	})
 
 	Context("use different resource namespace listers", func() {
