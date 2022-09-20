@@ -119,6 +119,7 @@ type Resource struct {
 	CustomImportPrefix string               // import prefix for the struct type the generated wrapper will wrap
 
 	SkipHashingAnnotations bool // if true, zero out annotations in the generated hash func
+	SpecHasHash            bool
 
 	Fields []*Field
 	Oneofs []*Oneof
