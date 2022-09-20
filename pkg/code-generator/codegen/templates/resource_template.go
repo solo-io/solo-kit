@@ -148,7 +148,6 @@ func (r *{{ .Name }}) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	{{- else }}
-
 	clone := r.{{ .Name }}.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
