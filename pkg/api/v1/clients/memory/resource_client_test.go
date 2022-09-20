@@ -23,6 +23,7 @@ var _ = Describe("Base", func() {
 	)
 	BeforeEach(func() {
 		client = NewResourceClient(NewInMemoryResourceCache(), &v1.MockResource{})
+		//TODO test for client without clone
 	})
 	AfterEach(func() {
 	})
