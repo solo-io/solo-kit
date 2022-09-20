@@ -81,6 +81,74 @@ func (r *{{ .Name }}) Hash(hasher hash.Hash64) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
+
+	{{- if $.SpecHasHash }}
+
+	_, err := hasher.Write([]byte(r.{{ .Name }}.Namespace))
+	if err != nil {
+		return 0, err
+	}
+	_, err = hasher.Write([]byte(r.{{ .Name }}.Name))
+	if err != nil {
+		return 0, err
+	}
+	_, err = hasher.Write([]byte(r.{{ .Name }}.UID))
+	if err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range r.Labels {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+	}
+	{{- if not $.SkipHashingAnnotations }}
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.Annotations {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+	}
+	{{- end }}
+	
+	_, err = r.{{ .Name }}.Spec.Hash(hasher)
+	if err != nil {
+		return 0, err
+	}
+
+	{{- else }}
+
 	clone := r.{{ .Name }}.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
@@ -92,6 +160,9 @@ func (r *{{ .Name }}) Hash(hasher hash.Hash64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
+
+	{{- end }}
 	return hasher.Sum64(), nil
 }
 

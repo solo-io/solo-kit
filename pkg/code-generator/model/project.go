@@ -78,6 +78,7 @@ type CustomResourceConfig struct {
 	ShortName              string `json:"short_name"`
 	ClusterScoped          bool   `json:"cluster_scoped"`
 	SkipHashingAnnotations bool   `json:"skip_hashing_annotations"`
+	SpecHasHash            bool   `json:"spec_has_hash"`
 	// set by load
 	Imported bool
 }
