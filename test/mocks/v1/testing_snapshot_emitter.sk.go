@@ -88,35 +88,38 @@ type TestingEmitter interface {
 	AnotherMockResource() AnotherMockResourceClient
 	ClusterResource() ClusterResourceClient
 	MockCustomType() MockCustomTypeClient
+	MockCustomSpecHashType() MockCustomSpecHashTypeClient
 	Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 }
 
-func NewTestingEmitter(simpleMockResourceClient SimpleMockResourceClient, mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
-	return NewTestingEmitterWithEmit(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, make(chan struct{}))
+func NewTestingEmitter(simpleMockResourceClient SimpleMockResourceClient, mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, mockCustomSpecHashTypeClient MockCustomSpecHashTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient) TestingEmitter {
+	return NewTestingEmitterWithEmit(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, mockCustomSpecHashTypeClient, podClient, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(simpleMockResourceClient SimpleMockResourceClient, mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(simpleMockResourceClient SimpleMockResourceClient, mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, mockCustomSpecHashTypeClient MockCustomSpecHashTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
-		simpleMockResource:  simpleMockResourceClient,
-		mockResource:        mockResourceClient,
-		fakeResource:        fakeResourceClient,
-		anotherMockResource: anotherMockResourceClient,
-		clusterResource:     clusterResourceClient,
-		mockCustomType:      mockCustomTypeClient,
-		pod:                 podClient,
-		forceEmit:           emit,
+		simpleMockResource:     simpleMockResourceClient,
+		mockResource:           mockResourceClient,
+		fakeResource:           fakeResourceClient,
+		anotherMockResource:    anotherMockResourceClient,
+		clusterResource:        clusterResourceClient,
+		mockCustomType:         mockCustomTypeClient,
+		mockCustomSpecHashType: mockCustomSpecHashTypeClient,
+		pod:                    podClient,
+		forceEmit:              emit,
 	}
 }
 
 type testingEmitter struct {
-	forceEmit           <-chan struct{}
-	simpleMockResource  SimpleMockResourceClient
-	mockResource        MockResourceClient
-	fakeResource        FakeResourceClient
-	anotherMockResource AnotherMockResourceClient
-	clusterResource     ClusterResourceClient
-	mockCustomType      MockCustomTypeClient
-	pod                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
+	forceEmit              <-chan struct{}
+	simpleMockResource     SimpleMockResourceClient
+	mockResource           MockResourceClient
+	fakeResource           FakeResourceClient
+	anotherMockResource    AnotherMockResourceClient
+	clusterResource        ClusterResourceClient
+	mockCustomType         MockCustomTypeClient
+	mockCustomSpecHashType MockCustomSpecHashTypeClient
+	pod                    github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 }
 
 func (c *testingEmitter) Register() error {
@@ -136,6 +139,9 @@ func (c *testingEmitter) Register() error {
 		return err
 	}
 	if err := c.mockCustomType.Register(); err != nil {
+		return err
+	}
+	if err := c.mockCustomSpecHashType.Register(); err != nil {
 		return err
 	}
 	if err := c.pod.Register(); err != nil {
@@ -166,6 +172,10 @@ func (c *testingEmitter) ClusterResource() ClusterResourceClient {
 
 func (c *testingEmitter) MockCustomType() MockCustomTypeClient {
 	return c.mockCustomType
+}
+
+func (c *testingEmitter) MockCustomSpecHashType() MockCustomSpecHashTypeClient {
+	return c.mockCustomSpecHashType
 }
 
 func (c *testingEmitter) Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient {
@@ -229,6 +239,14 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	mockCustomTypeChan := make(chan mockCustomTypeListWithNamespace)
 
 	var initialMockCustomTypeList MockCustomTypeList
+	/* Create channel for MockCustomSpecHashType */
+	type mockCustomSpecHashTypeListWithNamespace struct {
+		list      MockCustomSpecHashTypeList
+		namespace string
+	}
+	mockCustomSpecHashTypeChan := make(chan mockCustomSpecHashTypeListWithNamespace)
+
+	var initialMockCustomSpecHashTypeList MockCustomSpecHashTypeList
 	/* Create channel for Pod */
 	type podListWithNamespace struct {
 		list      github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
@@ -244,6 +262,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	fakesByNamespace := make(map[string]FakeResourceList)
 	anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
 	mctsByNamespace := make(map[string]MockCustomTypeList)
+	mcshtsByNamespace := make(map[string]MockCustomSpecHashTypeList)
 	podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
 
 	for _, namespace := range watchNamespaces {
@@ -342,6 +361,25 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
 		}(namespace)
+		/* Setup namespaced watch for MockCustomSpecHashType */
+		{
+			mcshts, err := c.mockCustomSpecHashType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial MockCustomSpecHashType list")
+			}
+			initialMockCustomSpecHashTypeList = append(initialMockCustomSpecHashTypeList, mcshts...)
+			mcshtsByNamespace[namespace] = mcshts
+		}
+		mockCustomSpecHashTypeNamespacesChan, mockCustomSpecHashTypeErrs, err := c.mockCustomSpecHashType.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting MockCustomSpecHashType watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, mockCustomSpecHashTypeErrs, namespace+"-mcshts")
+		}(namespace)
 		/* Setup namespaced watch for Pod */
 		{
 			pods, err := c.pod.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
@@ -413,6 +451,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						return
 					case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
 					}
+				case mockCustomSpecHashTypeList, ok := <-mockCustomSpecHashTypeNamespacesChan:
+					if !ok {
+						return
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case mockCustomSpecHashTypeChan <- mockCustomSpecHashTypeListWithNamespace{list: mockCustomSpecHashTypeList, namespace: namespace}:
+					}
 				case podList, ok := <-podNamespacesChan:
 					if !ok {
 						return
@@ -451,6 +498,8 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}()
 	/* Initialize snapshot for Mcts */
 	currentSnapshot.Mcts = initialMockCustomTypeList.Sort()
+	/* Initialize snapshot for Mcshts */
+	currentSnapshot.Mcshts = initialMockCustomSpecHashTypeList.Sort()
 	/* Initialize snapshot for Pods */
 	currentSnapshot.Pods = initialPodList.Sort()
 
@@ -627,6 +676,28 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					mockCustomTypeList = append(mockCustomTypeList, mcts...)
 				}
 				currentSnapshot.Mcts = mockCustomTypeList.Sort()
+			case mockCustomSpecHashTypeNamespacedList, ok := <-mockCustomSpecHashTypeChan:
+				if !ok {
+					return
+				}
+				record()
+
+				namespace := mockCustomSpecHashTypeNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"mock_custom_spec_hash_type",
+					mTestingResourcesIn,
+				)
+
+				// merge lists by namespace
+				mcshtsByNamespace[namespace] = mockCustomSpecHashTypeNamespacedList.list
+				var mockCustomSpecHashTypeList MockCustomSpecHashTypeList
+				for _, mcshts := range mcshtsByNamespace {
+					mockCustomSpecHashTypeList = append(mockCustomSpecHashTypeList, mcshts...)
+				}
+				currentSnapshot.Mcshts = mockCustomSpecHashTypeList.Sort()
 			case podNamespacedList, ok := <-podChan:
 				if !ok {
 					return

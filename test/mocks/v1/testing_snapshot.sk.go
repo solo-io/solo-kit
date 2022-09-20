@@ -22,6 +22,7 @@ type TestingSnapshot struct {
 	Anothermockresources AnotherMockResourceList
 	Clusterresources     ClusterResourceList
 	Mcts                 MockCustomTypeList
+	Mcshts               MockCustomSpecHashTypeList
 	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
 }
 
@@ -33,6 +34,7 @@ func (s TestingSnapshot) Clone() TestingSnapshot {
 		Anothermockresources: s.Anothermockresources.Clone(),
 		Clusterresources:     s.Clusterresources.Clone(),
 		Mcts:                 s.Mcts.Clone(),
+		Mcshts:               s.Mcshts.Clone(),
 		Pods:                 s.Pods.Clone(),
 	}
 }
@@ -57,6 +59,9 @@ func (s TestingSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	if _, err := s.hashMcts(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashMcshts(hasher); err != nil {
 		return 0, err
 	}
 	if _, err := s.hashPods(hasher); err != nil {
@@ -87,6 +92,10 @@ func (s TestingSnapshot) hashClusterresources(hasher hash.Hash64) (uint64, error
 
 func (s TestingSnapshot) hashMcts(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.Mcts.AsInterfaces()...)
+}
+
+func (s TestingSnapshot) hashMcshts(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Mcshts.AsInterfaces()...)
 }
 
 func (s TestingSnapshot) hashPods(hasher hash.Hash64) (uint64, error) {
@@ -126,6 +135,11 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("mcts", MctsHash))
+	McshtsHash, err := s.hashMcshts(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("mcshts", McshtsHash))
 	PodsHash, err := s.hashPods(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -146,6 +160,7 @@ type TestingSnapshotStringer struct {
 	Anothermockresources []string
 	Clusterresources     []string
 	Mcts                 []string
+	Mcshts               []string
 	Pods                 []string
 }
 
@@ -182,6 +197,11 @@ func (ss TestingSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  Mcshts %v\n", len(ss.Mcshts))
+	for _, name := range ss.Mcshts {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	s += fmt.Sprintf("  Pods %v\n", len(ss.Pods))
 	for _, name := range ss.Pods {
 		s += fmt.Sprintf("    %v\n", name)
@@ -203,6 +223,7 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 		Anothermockresources: s.Anothermockresources.NamespacesDotNames(),
 		Clusterresources:     s.Clusterresources.Names(),
 		Mcts:                 s.Mcts.NamespacesDotNames(),
+		Mcshts:               s.Mcshts.NamespacesDotNames(),
 		Pods:                 s.Pods.NamespacesDotNames(),
 	}
 }
