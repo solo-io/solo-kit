@@ -49,7 +49,7 @@ var _ = Describe("Base", func() {
 		kube = helpers.MustKubeClient()
 		err := kubeutils.CreateNamespacesInParallel(ctx, kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
-		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube, true)
+		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client, err = NewResourceClient(kube, &v1.MockResource{}, kubeCache, false)
 		Expect(err).NotTo(HaveOccurred())
@@ -101,7 +101,7 @@ var _ = Describe("Base", func() {
 			err := kubeutils.CreateNamespacesInParallel(ctx, kube, ns3)
 			Expect(err).NotTo(HaveOccurred())
 
-			kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube, true)
+			kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 			Expect(err).NotTo(HaveOccurred())
 			client, err = NewResourceClient(kube, &v1.MockResource{}, kubeCache, false)
 			Expect(err).NotTo(HaveOccurred())

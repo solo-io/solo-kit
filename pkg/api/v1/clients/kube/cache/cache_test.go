@@ -67,7 +67,7 @@ var _ = Describe("kube core cache tests", func() {
 
 			BeforeEach(func() {
 				var err error
-				cache, err = NewKubeCoreCache(ctx, client, true)
+				cache, err = NewKubeCoreCache(ctx, client)
 				Expect(err).NotTo(HaveOccurred())
 			})
 

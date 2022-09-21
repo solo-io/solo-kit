@@ -111,7 +111,7 @@ func NewCoreCacheForConfig(ctx context.Context, cluster string, restConfig *rest
 	if err != nil {
 		return nil
 	}
-	c, err := NewKubeCoreCache(ctx, kubeClient, true)
+	c, err := NewKubeCoreCache(ctx, kubeClient)
 	if err != nil {
 		return nil
 	}
@@ -137,9 +137,9 @@ func NewFromConfigWithOptions(resyncDuration time.Duration, namesapcesToWatch []
 
 // This context should live as long as the cache is desired. i.e. if the cache is shared
 // across clients, it should get a context that has a longer lifetime than the clients themselves
-func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface, createNamespaceLister bool) (*kubeCoreCaches, error) {
+func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCoreCaches, error) {
 	resyncDuration := 12 * time.Hour
-	return NewKubeCoreCacheWithOptions(ctx, client, resyncDuration, []string{metav1.NamespaceAll}, createNamespaceLister)
+	return NewKubeCoreCacheWithOptions(ctx, client, resyncDuration, []string{metav1.NamespaceAll}, true)
 }
 
 func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string, createNamespaceLister bool) (*kubeCoreCaches, error) {

@@ -72,7 +72,7 @@ var _ = Describe("WatchKubeconfigs", func() {
 		kubeCfg2, err := secretconverter.KubeCfgFromSecret(kubeCfgSecret2)
 		Expect(err).NotTo(HaveOccurred())
 
-		kubeCache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient, true)
+		kubeCache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 
 		kubeConfigs, errs, err := WatchKubeConfigs(context.TODO(), kubeClient, kubeCache)

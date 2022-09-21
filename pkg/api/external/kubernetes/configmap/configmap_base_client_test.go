@@ -38,7 +38,7 @@ var _ = Describe("Configmap base client", func() {
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
 		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespace)
-		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube, true)
+		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = NewConfigMapClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())

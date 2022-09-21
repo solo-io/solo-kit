@@ -37,7 +37,7 @@ var _ = Describe("Namespace base client", func() {
 		var err error
 		namespace = helpers.RandString(8)
 		kube = helpers.MustKubeClient()
-		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube, true)
+		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
 		client = newResourceClient(kube, kubeCache)
 		Expect(err).NotTo(HaveOccurred())
