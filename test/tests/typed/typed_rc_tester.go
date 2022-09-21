@@ -222,7 +222,7 @@ func (rct *KubeConfigMapRcTester) Setup(ctx context.Context, namespace string) f
 	kubeClient := helpers.MustKubeClient()
 	err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
-	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
+	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient, true)
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.KubeConfigMapClientFactory{
 		Clientset: kubeClient,
@@ -255,7 +255,7 @@ func (rct *KubeSecretRcTester) Setup(ctx context.Context, namespace string) fact
 	kubeClient := helpers.MustKubeClient()
 	err := kubeutils.CreateNamespacesInParallel(ctx, kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
-	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient)
+	kcache, err := cache.NewKubeCoreCache(context.TODO(), kubeClient, true)
 	Expect(err).NotTo(HaveOccurred())
 	return &factory.KubeSecretClientFactory{
 		Clientset: kubeClient,

@@ -45,7 +45,7 @@ var _ = Describe("Kube Secret Client Plain=True", func() {
 
 		err := kubeutils.CreateNamespacesInParallel(ctx, kube, ns1, ns2)
 		Expect(err).NotTo(HaveOccurred())
-		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube, true)
 		Expect(err).NotTo(HaveOccurred())
 		client, err = NewResourceClient(kube, &v1.MockResource{}, true, kcache)
 	})

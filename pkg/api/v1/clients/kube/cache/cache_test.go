@@ -67,7 +67,7 @@ var _ = Describe("kube core cache tests", func() {
 
 			BeforeEach(func() {
 				var err error
-				cache, err = NewKubeCoreCache(ctx, client)
+				cache, err = NewKubeCoreCache(ctx, client, true)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -104,7 +104,7 @@ var _ = Describe("kube core cache tests", func() {
 
 			BeforeEach(func() {
 				var err error
-				cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default"})
+				cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default"}, true)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -133,7 +133,7 @@ var _ = Describe("kube core cache tests", func() {
 						createNamespaceAndResource(ns)
 					}
 					var err error
-					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{testns, testns2})
+					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{testns, testns2}, true)
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -153,7 +153,7 @@ var _ = Describe("kube core cache tests", func() {
 			Context("Invalid namespaces", func() {
 				It("should error with invalid namespace config", func() {
 					var err error
-					_, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default", ""})
+					_, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{"default", ""}, true)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -171,7 +171,7 @@ var _ = Describe("kube core cache tests", func() {
 					createNamespaceAndResource(initialNs)
 
 					var err error
-					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{initialNs})
+					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{initialNs}, true)
 					Expect(err).NotTo(HaveOccurred())
 				})
 

@@ -111,7 +111,7 @@ func NewCoreCacheForConfig(ctx context.Context, cluster string, restConfig *rest
 	if err != nil {
 		return nil
 	}
-	c, err := NewKubeCoreCache(ctx, kubeClient)
+	c, err := NewKubeCoreCache(ctx, kubeClient, true)
 	if err != nil {
 		return nil
 	}
@@ -120,13 +120,14 @@ func NewCoreCacheForConfig(ctx context.Context, cluster string, restConfig *rest
 
 var _ clustercache.NewClusterCacheForConfig = NewCoreCacheForConfig
 
+// creates the namespace lister.
 func NewFromConfigWithOptions(resyncDuration time.Duration, namesapcesToWatch []string) clustercache.NewClusterCacheForConfig {
 	return func(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 		kubeClient, err := kubernetes.NewForConfig(restConfig)
 		if err != nil {
 			return nil
 		}
-		c, err := NewKubeCoreCacheWithOptions(ctx, kubeClient, resyncDuration, namesapcesToWatch)
+		c, err := NewKubeCoreCacheWithOptions(ctx, kubeClient, resyncDuration, namesapcesToWatch, true)
 		if err != nil {
 			return nil
 		}
@@ -136,12 +137,12 @@ func NewFromConfigWithOptions(resyncDuration time.Duration, namesapcesToWatch []
 
 // This context should live as long as the cache is desired. i.e. if the cache is shared
 // across clients, it should get a context that has a longer lifetime than the clients themselves
-func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCoreCaches, error) {
+func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface, createNamespaceLister bool) (*kubeCoreCaches, error) {
 	resyncDuration := 12 * time.Hour
-	return NewKubeCoreCacheWithOptions(ctx, client, resyncDuration, []string{metav1.NamespaceAll})
+	return NewKubeCoreCacheWithOptions(ctx, client, resyncDuration, []string{metav1.NamespaceAll}, createNamespaceLister)
 }
 
-func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string) (*kubeCoreCaches, error) {
+func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string, createNamespaceLister bool) (*kubeCoreCaches, error) {
 
 	if len(namesapcesToWatch) == 0 {
 		namesapcesToWatch = []string{metav1.NamespaceAll}
