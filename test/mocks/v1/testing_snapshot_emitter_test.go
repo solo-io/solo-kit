@@ -53,28 +53,29 @@ var _ = Describe("V1Emitter", func() {
 	}
 
 	var (
-		ctx                       context.Context
-		namespace1, namespace2    string
-		namespace3, namespace4    string
-		namespace5, namespace6    string
-		name1, name2              = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
-		name3, name4              = "susan" + helpers.RandString(3), "jim" + helpers.RandString(3)
-		name5                     = "melisa" + helpers.RandString(3)
-		labels1                   = map[string]string{"env": "test"}
-		labelExpression1          = "env in (test)"
-		cfg                       *rest.Config
-		clientset                 *apiext.Clientset
-		kube                      kubernetes.Interface
-		emitter                   TestingEmitter
-		simpleMockResourceClient  SimpleMockResourceClient
-		mockResourceClient        MockResourceClient
-		fakeResourceClient        FakeResourceClient
-		anotherMockResourceClient AnotherMockResourceClient
-		clusterResourceClient     ClusterResourceClient
-		mockCustomTypeClient      MockCustomTypeClient
-		podClient                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
-		resourceNamespaceLister   resources.ResourceNamespaceLister
-		kubeCache                 cache.KubeCoreCache
+		ctx                          context.Context
+		namespace1, namespace2       string
+		namespace3, namespace4       string
+		namespace5, namespace6       string
+		name1, name2                 = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
+		name3, name4                 = "susan" + helpers.RandString(3), "jim" + helpers.RandString(3)
+		name5                        = "melisa" + helpers.RandString(3)
+		labels1                      = map[string]string{"env": "test"}
+		labelExpression1             = "env in (test)"
+		cfg                          *rest.Config
+		clientset                    *apiext.Clientset
+		kube                         kubernetes.Interface
+		emitter                      TestingEmitter
+		simpleMockResourceClient     SimpleMockResourceClient
+		mockResourceClient           MockResourceClient
+		fakeResourceClient           FakeResourceClient
+		anotherMockResourceClient    AnotherMockResourceClient
+		clusterResourceClient        ClusterResourceClient
+		mockCustomTypeClient         MockCustomTypeClient
+		mockCustomSpecHashTypeClient MockCustomSpecHashTypeClient
+		podClient                    github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
+		resourceNamespaceLister      resources.ResourceNamespaceLister
+		kubeCache                    cache.KubeCoreCache
 	)
 	const (
 		TIME_BETWEEN_MESSAGES = 5
@@ -106,6 +107,11 @@ var _ = Describe("V1Emitter", func() {
 	}
 	NewMockCustomTypeWithLabels := func(namespace, name string, labels map[string]string) *MockCustomType {
 		resource := NewMockCustomType(namespace, name)
+		resource.GetMetadata().Labels = labels
+		return resource
+	}
+	NewMockCustomSpecHashTypeWithLabels := func(namespace, name string, labels map[string]string) *MockCustomSpecHashType {
+		resource := NewMockCustomSpecHashType(namespace, name)
 		resource.GetMetadata().Labels = labels
 		return resource
 	}
@@ -254,6 +260,13 @@ var _ = Describe("V1Emitter", func() {
 		return listConv
 	}
 	convertmctsToMetadataGetter := func(rl MockCustomTypeList) []metadataGetter {
+		listConv := make([]metadataGetter, len(rl))
+		for i, r := range rl {
+			listConv[i] = r
+		}
+		return listConv
+	}
+	convertmcshtsToMetadataGetter := func(rl MockCustomSpecHashTypeList) []metadataGetter {
 		listConv := make([]metadataGetter, len(rl))
 		for i, r := range rl {
 			listConv[i] = r
@@ -896,6 +909,114 @@ var _ = Describe("V1Emitter", func() {
 		getNewNamespaces()
 
 		/*
+			MockCustomSpecHashType
+		*/
+		assertSnapshotmcshts := func(expectmcshts MockCustomSpecHashTypeList, unexpectmcshts MockCustomSpecHashTypeList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					previous = snap
+					for _, expected := range expectmcshts {
+						if _, err := snap.Mcshts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectmcshts {
+						if _, err := snap.Mcshts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					var expectedResources map[string][]string
+					var unexpectedResource map[string][]string
+
+					if previous != nil {
+						expectedResources = findNonMatchingResources(convertmcshtsToMetadataGetter(expectmcshts), convertmcshtsToMetadataGetter(previous.Mcshts))
+						unexpectedResource = findMatchingResources(convertmcshtsToMetadataGetter(unexpectmcshts), convertmcshtsToMetadataGetter(previous.Mcshts))
+					} else {
+						expectedResources = getMapOfResources(convertmcshtsToMetadataGetter(expectmcshts))
+						unexpectedResource = getMapOfResources(convertmcshtsToMetadataGetter(unexpectmcshts))
+					}
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := mockCustomSpecHashTypeClient.List(ns, clients.ListOpts{})
+						return convertmcshtsToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
+					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+				}
+			}
+		}
+
+		mockCustomSpecHashType1a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashType1b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashTypeWatched := MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}
+		assertSnapshotmcshts(mockCustomSpecHashTypeWatched, nil)
+
+		mockCustomSpecHashType3a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashTypeWithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashType3b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashTypeWithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashTypeWatched = append(mockCustomSpecHashTypeWatched, MockCustomSpecHashTypeList{mockCustomSpecHashType3a, mockCustomSpecHashType3b}...)
+		assertSnapshotmcshts(mockCustomSpecHashTypeWatched, nil)
+
+		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+		createNamespaces(ctx, kube, namespace4)
+
+		mockCustomSpecHashType4a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashType4b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashTypeWatched = append(mockCustomSpecHashTypeWatched, mockCustomSpecHashType4a)
+		mockCustomSpecHashTypeNotWatched := MockCustomSpecHashTypeList{mockCustomSpecHashType4b}
+		assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+		mockCustomSpecHashType5a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashTypeWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashType5b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashTypeWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashTypeWatched = append(mockCustomSpecHashTypeWatched, mockCustomSpecHashType5a)
+		mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, mockCustomSpecHashType5b)
+		assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+		for _, r := range mockCustomSpecHashTypeNotWatched {
+			err = mockCustomSpecHashTypeClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType1a.GetMetadata().Namespace, mockCustomSpecHashType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType1b.GetMetadata().Namespace, mockCustomSpecHashType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}...)
+		mockCustomSpecHashTypeWatched = MockCustomSpecHashTypeList{mockCustomSpecHashType3a, mockCustomSpecHashType3b, mockCustomSpecHashType4a, mockCustomSpecHashType5a}
+		assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+		err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType3a.GetMetadata().Namespace, mockCustomSpecHashType3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType3b.GetMetadata().Namespace, mockCustomSpecHashType3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, MockCustomSpecHashTypeList{mockCustomSpecHashType3a, mockCustomSpecHashType3b}...)
+		mockCustomSpecHashTypeWatched = MockCustomSpecHashTypeList{mockCustomSpecHashType4a, mockCustomSpecHashType5a}
+		assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+		err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType4a.GetMetadata().Namespace, mockCustomSpecHashType4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType5a.GetMetadata().Namespace, mockCustomSpecHashType5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, MockCustomSpecHashTypeList{mockCustomSpecHashType5a, mockCustomSpecHashType5b}...)
+		assertSnapshotmcshts(nil, mockCustomSpecHashTypeNotWatched)
+
+		// clean up environment
+		deleteNamespaces(ctx, kube, namespace3, namespace4)
+		getNewNamespaces()
+
+		/*
 			Pod
 		*/
 		assertSnapshotpods := func(expectpods github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList, unexpectpods github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList) {
@@ -1085,6 +1206,13 @@ var _ = Describe("V1Emitter", func() {
 
 		mockCustomTypeClient, err = NewMockCustomTypeClient(ctx, mockCustomTypeClientFactory)
 		Expect(err).NotTo(HaveOccurred())
+		// MockCustomSpecHashType Constructor
+		mockCustomSpecHashTypeClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+
+		mockCustomSpecHashTypeClient, err = NewMockCustomSpecHashTypeClient(ctx, mockCustomSpecHashTypeClientFactory)
+		Expect(err).NotTo(HaveOccurred())
 		// Pod Constructor
 		podClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
@@ -1092,7 +1220,7 @@ var _ = Describe("V1Emitter", func() {
 
 		podClient, err = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodClient(ctx, podClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, resourceNamespaceLister)
+		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, mockCustomSpecHashTypeClient, podClient, resourceNamespaceLister)
 	})
 	AfterEach(func() {
 		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
@@ -1448,6 +1576,63 @@ var _ = Describe("V1Emitter", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			assertSnapshotmcts(nil, MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
+
+			/*
+				MockCustomSpecHashType
+			*/
+
+			assertSnapshotmcshts := func(expectmcshts MockCustomSpecHashTypeList, unexpectmcshts MockCustomSpecHashTypeList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectmcshts {
+							if _, err := snap.Mcshts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectmcshts {
+							if _, err := snap.Mcshts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockCustomSpecHashTypeClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockCustomSpecHashTypeClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+			mockCustomSpecHashType1a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace1, name5), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType1b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace2, name5), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotmcshts(MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}, nil)
+			mockCustomSpecHashType2a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType2b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotmcshts(MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b, mockCustomSpecHashType2a, mockCustomSpecHashType2b}, nil)
+
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType2a.GetMetadata().Namespace, mockCustomSpecHashType2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType2b.GetMetadata().Namespace, mockCustomSpecHashType2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotmcshts(MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}, MockCustomSpecHashTypeList{mockCustomSpecHashType2a, mockCustomSpecHashType2b})
+
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType1a.GetMetadata().Namespace, mockCustomSpecHashType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType1b.GetMetadata().Namespace, mockCustomSpecHashType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotmcshts(nil, MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b, mockCustomSpecHashType2a, mockCustomSpecHashType2b})
 
 			/*
 				Pod
@@ -1845,6 +2030,61 @@ var _ = Describe("V1Emitter", func() {
 			err = mockCustomTypeClient.Delete(mockCustomType1b.GetMetadata().Namespace, mockCustomType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			assertSnapshotmcts(nil, MockCustomTypeList{mockCustomType1a, mockCustomType1b, mockCustomType2a, mockCustomType2b})
+
+			/*
+				MockCustomSpecHashType
+			*/
+
+			assertSnapshotmcshts := func(expectmcshts MockCustomSpecHashTypeList, unexpectmcshts MockCustomSpecHashTypeList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectmcshts {
+							if _, err := snap.Mcshts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectmcshts {
+							if _, err := snap.Mcshts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockCustomSpecHashTypeClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockCustomSpecHashTypeClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			mockCustomSpecHashType1a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType1b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotmcshts(MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}, nil)
+
+			mockCustomSpecHashType2a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType2b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotmcshts(MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b, mockCustomSpecHashType2a, mockCustomSpecHashType2b}, nil)
+
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType2a.GetMetadata().Namespace, mockCustomSpecHashType2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType2b.GetMetadata().Namespace, mockCustomSpecHashType2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotmcshts(MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}, MockCustomSpecHashTypeList{mockCustomSpecHashType2a, mockCustomSpecHashType2b})
+
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType1a.GetMetadata().Namespace, mockCustomSpecHashType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType1b.GetMetadata().Namespace, mockCustomSpecHashType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotmcshts(nil, MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b, mockCustomSpecHashType2a, mockCustomSpecHashType2b})
 
 			/*
 				Pod
@@ -2530,6 +2770,114 @@ var _ = Describe("V1Emitter", func() {
 			getNewNamespaces()
 
 			/*
+				MockCustomSpecHashType
+			*/
+
+			assertSnapshotmcshts := func(expectmcshts MockCustomSpecHashTypeList, unexpectmcshts MockCustomSpecHashTypeList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						previous = snap
+						for _, expected := range expectmcshts {
+							if _, err := snap.Mcshts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectmcshts {
+							if _, err := snap.Mcshts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+
+						var buffer bytes.Buffer
+						if previous != nil {
+							for _, sn := range previous.Mcshts {
+								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
+								buffer.WriteByte('\n')
+							}
+						} else {
+							buffer.WriteString("****** NO PREVIOUS SNAP ********")
+						}
+						namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
+						for i, ns := range namespaces {
+							buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
+							list, _ := mockCustomSpecHashTypeClient.List(ns, clients.ListOpts{})
+							for _, sn := range list {
+								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
+								buffer.WriteByte('\n')
+							}
+						}
+						buffer.WriteString("********** EXPECTED *********")
+						for _, snap := range expectmcshts {
+							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
+						}
+						buffer.WriteString("********* UNEXPECTED ***********")
+						for _, snap := range unexpectmcshts {
+							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
+						}
+
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+					}
+				}
+			}
+
+			mockCustomSpecHashType1a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType1b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashTypeNotWatched := MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}
+
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			mockCustomSpecHashType2a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType2b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashTypeWatched := MockCustomSpecHashTypeList{mockCustomSpecHashType2a, mockCustomSpecHashType2b}
+			assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+			createNamespaces(ctx, kube, namespace5)
+			createNamespaceWithLabel(ctx, kube, namespace6, labels1)
+
+			mockCustomSpecHashType5a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace5, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType5b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace6, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, mockCustomSpecHashType5a)
+			mockCustomSpecHashTypeWatched = append(mockCustomSpecHashTypeWatched, mockCustomSpecHashType5b)
+			assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+			mockCustomSpecHashType7a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace5, name4), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType7b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace6, name4), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, mockCustomSpecHashType7a)
+			mockCustomSpecHashTypeWatched = append(mockCustomSpecHashTypeWatched, mockCustomSpecHashType7b)
+			assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+			for _, r := range mockCustomSpecHashTypeNotWatched {
+				err = mockCustomSpecHashTypeClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			for _, r := range mockCustomSpecHashTypeWatched {
+				err = mockCustomSpecHashTypeClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, r)
+			}
+			assertSnapshotmcshts(nil, mockCustomSpecHashTypeNotWatched)
+
+			// clean up environment
+			deleteNamespaces(ctx, kube, namespace3, namespace4, namespace5, namespace6)
+			getNewNamespaces()
+
+			/*
 				Pod
 			*/
 
@@ -2939,6 +3287,55 @@ var _ = Describe("V1Emitter", func() {
 
 			mockCustomTypeNotWatched := MockCustomTypeList{mockCustomType1a, mockCustomType1b}
 			assertSnapshotmcts(nil, mockCustomTypeNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+
+			getNewNamespaces1and2()
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			/*
+				MockCustomSpecHashType
+			*/
+			assertSnapshotmcshts := func(expectmcshts MockCustomSpecHashTypeList, unexpectmcshts MockCustomSpecHashTypeList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectmcshts {
+							if _, err := snap.Mcshts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectmcshts {
+							if _, err := snap.Mcshts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockCustomSpecHashTypeClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockCustomSpecHashTypeClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			mockCustomSpecHashType1a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType1b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashTypeWatched := MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}
+			assertSnapshotmcshts(mockCustomSpecHashTypeWatched, nil)
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType1a.GetMetadata().Namespace, mockCustomSpecHashType1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockCustomSpecHashTypeClient.Delete(mockCustomSpecHashType1b.GetMetadata().Namespace, mockCustomSpecHashType1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			mockCustomSpecHashTypeNotWatched := MockCustomSpecHashTypeList{mockCustomSpecHashType1a, mockCustomSpecHashType1b}
+			assertSnapshotmcshts(nil, mockCustomSpecHashTypeNotWatched)
 
 			deleteNamespaces(ctx, kube, namespace1, namespace2)
 
@@ -3356,6 +3753,65 @@ var _ = Describe("V1Emitter", func() {
 			getNewNamespaces()
 
 			/*
+				MockCustomSpecHashType
+			*/
+
+			assertSnapshotmcshts := func(expectmcshts MockCustomSpecHashTypeList, unexpectmcshts MockCustomSpecHashTypeList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectmcshts {
+							if _, err := snap.Mcshts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectmcshts {
+							if _, err := snap.Mcshts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockCustomSpecHashTypeClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockCustomSpecHashTypeClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			mockCustomSpecHashType2a, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashType2b, err := mockCustomSpecHashTypeClient.Write(NewMockCustomSpecHashType(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockCustomSpecHashTypeNotWatched := MockCustomSpecHashTypeList{}
+			mockCustomSpecHashTypeWatched := MockCustomSpecHashTypeList{mockCustomSpecHashType2a, mockCustomSpecHashType2b}
+			assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace3)
+
+			mockCustomSpecHashTypeWatched = MockCustomSpecHashTypeList{mockCustomSpecHashType2b}
+			mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, mockCustomSpecHashType2a)
+			assertSnapshotmcshts(mockCustomSpecHashTypeWatched, mockCustomSpecHashTypeNotWatched)
+
+			for _, r := range mockCustomSpecHashTypeWatched {
+				err = mockCustomSpecHashTypeClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				mockCustomSpecHashTypeNotWatched = append(mockCustomSpecHashTypeNotWatched, r)
+			}
+			assertSnapshotmcshts(nil, mockCustomSpecHashTypeNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			getNewNamespaces()
+
+			/*
 				Pod
 			*/
 
@@ -3568,7 +4024,7 @@ var _ = Describe("V1Emitter", func() {
 	Context("use different resource namespace listers", func() {
 		BeforeEach(func() {
 			resourceNamespaceLister = namespace.NewKubeClientResourceNamespaceLister(kube)
-			emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, resourceNamespaceLister)
+			emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, mockCustomSpecHashTypeClient, podClient, resourceNamespaceLister)
 		})
 
 		It("Should work with the Kube Client Namespace Lister", func() {

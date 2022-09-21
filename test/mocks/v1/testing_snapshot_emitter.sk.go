@@ -93,7 +93,7 @@ type TestingEmitter interface {
 	Pod() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 }
 
-func NewTestingEmitter(simpleMockResourceClient SimpleMockResourceClient, mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, resourceNamespaceLister resources.ResourceNamespaceLister) TestingEmitter {
+func NewTestingEmitter(simpleMockResourceClient SimpleMockResourceClient, mockResourceClient MockResourceClient, fakeResourceClient FakeResourceClient, anotherMockResourceClient AnotherMockResourceClient, clusterResourceClient ClusterResourceClient, mockCustomTypeClient MockCustomTypeClient, mockCustomSpecHashTypeClient MockCustomSpecHashTypeClient, podClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient, resourceNamespaceLister resources.ResourceNamespaceLister) TestingEmitter {
 	return NewTestingEmitterWithEmit(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, mockCustomSpecHashTypeClient, podClient, resourceNamespaceLister, make(chan struct{}))
 }
 
@@ -105,8 +105,8 @@ func NewTestingEmitterWithEmit(simpleMockResourceClient SimpleMockResourceClient
 		anotherMockResource:     anotherMockResourceClient,
 		clusterResource:         clusterResourceClient,
 		mockCustomType:          mockCustomTypeClient,
+		mockCustomSpecHashType:  mockCustomSpecHashTypeClient,
 		pod:                     podClient,
-		mockCustomSpecHashType: mockCustomSpecHashTypeClient,
 		resourceNamespaceLister: resourceNamespaceLister,
 		forceEmit:               emit,
 	}
@@ -263,7 +263,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 		namespace string
 	}
 	mockCustomSpecHashTypeChan := make(chan mockCustomSpecHashTypeListWithNamespace)
-
 	var initialMockCustomSpecHashTypeList MockCustomSpecHashTypeList
 	/* Create channel for Pod */
 	type podListWithNamespace struct {
@@ -279,6 +278,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	fakesByNamespace := sync.Map{}
 	anothermockresourcesByNamespace := sync.Map{}
 	mctsByNamespace := sync.Map{}
+	mcshtsByNamespace := sync.Map{}
 	podsByNamespace := sync.Map{}
 	if hasWatchedNamespaces || !watchingLabeledNamespaces {
 		// then watch all resources on watch Namespaces
@@ -295,18 +295,6 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				simplemocksByNamespace.Store(namespace, simplemocks)
 			}
 			simpleMockResourceNamespacesChan, simpleMockResourceErrs, err := c.simpleMockResource.Watch(namespace, watchedNamespacesWatchOptions)
-	simplemocksByNamespace := make(map[string]SimpleMockResourceList)
-	mocksByNamespace := make(map[string]MockResourceList)
-	fakesByNamespace := make(map[string]FakeResourceList)
-	anothermockresourcesByNamespace := make(map[string]AnotherMockResourceList)
-	mctsByNamespace := make(map[string]MockCustomTypeList)
-	mcshtsByNamespace := make(map[string]MockCustomSpecHashTypeList)
-	podsByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList)
-
-	for _, namespace := range watchNamespaces {
-		/* Setup namespaced watch for SimpleMockResource */
-		{
-			simplemocks, err := c.simpleMockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "starting SimpleMockResource watch")
 			}
@@ -392,6 +380,25 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
 			}(namespace)
+			/* Setup namespaced watch for MockCustomSpecHashType */
+			{
+				mcshts, err := c.mockCustomSpecHashType.List(namespace, watchedNamespacesListOptions)
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial MockCustomSpecHashType list")
+				}
+				initialMockCustomSpecHashTypeList = append(initialMockCustomSpecHashTypeList, mcshts...)
+				mcshtsByNamespace.Store(namespace, mcshts)
+			}
+			mockCustomSpecHashTypeNamespacesChan, mockCustomSpecHashTypeErrs, err := c.mockCustomSpecHashType.Watch(namespace, watchedNamespacesWatchOptions)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting MockCustomSpecHashType watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, mockCustomSpecHashTypeErrs, namespace+"-mcshts")
+			}(namespace)
 			/* Setup namespaced watch for Pod */
 			{
 				pods, err := c.pod.List(namespace, watchedNamespacesListOptions)
@@ -465,6 +472,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						case <-ctx.Done():
 							return
 						case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
+						}
+					case mockCustomSpecHashTypeList, ok := <-mockCustomSpecHashTypeNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case mockCustomSpecHashTypeChan <- mockCustomSpecHashTypeListWithNamespace{list: mockCustomSpecHashTypeList, namespace: namespace}:
 						}
 					case podList, ok := <-podNamespacesChan:
 						if !ok {
@@ -627,6 +643,29 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				defer done.Done()
 				errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-mcts")
 			}(namespace)
+			err = c.mockCustomSpecHashType.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockCustomSpecHashType")
+			}
+			/* Setup namespaced watch for MockCustomSpecHashType */
+			{
+				mcshts, err := c.mockCustomSpecHashType.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial MockCustomSpecHashType list with new namespace")
+				}
+				initialMockCustomSpecHashTypeList = append(initialMockCustomSpecHashTypeList, mcshts...)
+				mcshtsByNamespace.Store(namespace, mcshts)
+			}
+			mockCustomSpecHashTypeNamespacesChan, mockCustomSpecHashTypeErrs, err := c.mockCustomSpecHashType.Watch(namespace, clients.WatchOpts{Ctx: opts.Ctx})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting MockCustomSpecHashType watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, mockCustomSpecHashTypeErrs, namespace+"-mcshts")
+			}(namespace)
 			err = c.pod.RegisterNamespace(namespace)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the pod")
@@ -700,6 +739,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						case <-ctx.Done():
 							return
 						case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
+						}
+					case mockCustomSpecHashTypeList, ok := <-mockCustomSpecHashTypeNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case mockCustomSpecHashTypeChan <- mockCustomSpecHashTypeListWithNamespace{list: mockCustomSpecHashTypeList, namespace: namespace}:
 						}
 					case podList, ok := <-podNamespacesChan:
 						if !ok {
@@ -782,6 +830,7 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 						fakeResourceChan <- fakeResourceListWithNamespace{list: FakeResourceList{}, namespace: ns}
 						anotherMockResourceChan <- anotherMockResourceListWithNamespace{list: AnotherMockResourceList{}, namespace: ns}
 						mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: MockCustomTypeList{}, namespace: ns}
+						mockCustomSpecHashTypeChan <- mockCustomSpecHashTypeListWithNamespace{list: MockCustomSpecHashTypeList{}, namespace: ns}
 						podChan <- podListWithNamespace{list: github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{}, namespace: ns}
 					}
 
@@ -912,6 +961,31 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 							defer done.Done()
 							errutils.AggregateErrs(ctx, errs, mockCustomTypeErrs, namespace+"-new-namespace-mcts")
 						}(namespace)
+						err = c.mockCustomSpecHashType.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockCustomSpecHashType")
+							continue
+						}
+						/* Setup namespaced watch for MockCustomSpecHashType for new namespace */
+						{
+							mcshts, err := c.mockCustomSpecHashType.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+							if err != nil {
+								errs <- errors.Wrapf(err, "initial new namespace MockCustomSpecHashType list in namespace watch")
+								continue
+							}
+							mcshtsByNamespace.Store(namespace, mcshts)
+						}
+						mockCustomSpecHashTypeNamespacesChan, mockCustomSpecHashTypeErrs, err := c.mockCustomSpecHashType.Watch(namespace, clients.WatchOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+						if err != nil {
+							errs <- errors.Wrapf(err, "starting new namespace MockCustomSpecHashType watch")
+							continue
+						}
+
+						done.Add(1)
+						go func(namespace string) {
+							defer done.Done()
+							errutils.AggregateErrs(ctx, errs, mockCustomSpecHashTypeErrs, namespace+"-new-namespace-mcshts")
+						}(namespace)
 						err = c.pod.RegisterNamespace(namespace)
 						if err != nil {
 							errs <- errors.Wrapf(err, "there was an error registering the namespace to the pod")
@@ -991,6 +1065,15 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 									case <-ctx.Done():
 										return
 									case mockCustomTypeChan <- mockCustomTypeListWithNamespace{list: mockCustomTypeList, namespace: namespace}:
+									}
+								case mockCustomSpecHashTypeList, ok := <-mockCustomSpecHashTypeNamespacesChan:
+									if !ok {
+										return
+									}
+									select {
+									case <-ctx.Done():
+										return
+									case mockCustomSpecHashTypeChan <- mockCustomSpecHashTypeListWithNamespace{list: mockCustomSpecHashTypeList, namespace: namespace}:
 									}
 								case podList, ok := <-podNamespacesChan:
 									if !ok {
@@ -1246,11 +1329,13 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				)
 
 				// merge lists by namespace
-				mcshtsByNamespace[namespace] = mockCustomSpecHashTypeNamespacedList.list
+				mcshtsByNamespace.Store(namespace, mockCustomSpecHashTypeNamespacedList.list)
 				var mockCustomSpecHashTypeList MockCustomSpecHashTypeList
-				for _, mcshts := range mcshtsByNamespace {
-					mockCustomSpecHashTypeList = append(mockCustomSpecHashTypeList, mcshts...)
-				}
+				mcshtsByNamespace.Range(func(key interface{}, value interface{}) bool {
+					mocks := value.(MockCustomSpecHashTypeList)
+					mockCustomSpecHashTypeList = append(mockCustomSpecHashTypeList, mocks...)
+					return true
+				})
 				currentSnapshot.Mcshts = mockCustomSpecHashTypeList.Sort()
 			case podNamespacedList, ok := <-podChan:
 				if !ok {

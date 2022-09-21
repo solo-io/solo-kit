@@ -101,6 +101,8 @@ var _ = Describe("TestingEventLoop", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.MockCustomType().Write(NewMockCustomType(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
+		_, err = emitter.MockCustomSpecHashType().Write(NewMockCustomSpecHashType(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Pod().Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPod(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockTestingSyncer{}
