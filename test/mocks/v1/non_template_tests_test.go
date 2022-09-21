@@ -34,21 +34,22 @@ var _ = Describe("V1Emitter", func() {
 		return
 	}
 	var (
-		ctx                       context.Context
-		namespace1                string
-		slowWatchNamespace        string
-		name1                     = "angela" + helpers.RandString(3)
-		cfg                       *rest.Config
-		clientset                 *apiext.Clientset
-		kube                      kubernetes.Interface
-		emitter                   TestingEmitter
-		simpleMockResourceClient  SimpleMockResourceClient
-		mockResourceClient        MockResourceClient
-		fakeResourceClient        FakeResourceClient
-		anotherMockResourceClient AnotherMockResourceClient
-		clusterResourceClient     ClusterResourceClient
-		mockCustomTypeClient      MockCustomTypeClient
-		podClient                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
+		ctx                          context.Context
+		namespace1                   string
+		slowWatchNamespace           string
+		name1                        = "angela" + helpers.RandString(3)
+		cfg                          *rest.Config
+		clientset                    *apiext.Clientset
+		kube                         kubernetes.Interface
+		emitter                      TestingEmitter
+		simpleMockResourceClient     SimpleMockResourceClient
+		mockResourceClient           MockResourceClient
+		fakeResourceClient           FakeResourceClient
+		anotherMockResourceClient    AnotherMockResourceClient
+		clusterResourceClient        ClusterResourceClient
+		mockCustomTypeClient         MockCustomTypeClient
+		mockCustomSpecHashTypeClient MockCustomSpecHashTypeClient
+		podClient                    github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodClient
 	)
 
 	BeforeEach(func() {
@@ -129,6 +130,11 @@ var _ = Describe("V1Emitter", func() {
 
 		mockCustomTypeClient, err = NewMockCustomTypeClient(ctx, mockCustomTypeClientFactory)
 		Expect(err).NotTo(HaveOccurred())
+
+		mockCustomSpecHashTypeClient, err = NewMockCustomSpecHashTypeClient(ctx, &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		})
+		Expect(err).NotTo(HaveOccurred())
 		// Pod Constructor
 		podClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
@@ -138,7 +144,8 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		resourceNamespaceLister := namespace.NewKubeClientResourceNamespaceLister(kube)
-		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, podClient, resourceNamespaceLister)
+		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, mockCustomSpecHashTypeClient, podClient, resourceNamespaceLister)
+
 
 		// create `FakeResource`s in "namespace1" and "slowWatchNamespace"
 		_, err = fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
