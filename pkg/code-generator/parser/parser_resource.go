@@ -108,6 +108,7 @@ func getResources(project *model.Project, allProjectConfigs []*model.ProjectConf
 			GoPackage:              custom.Package,
 			ClusterScoped:          custom.ClusterScoped,
 			SkipHashingAnnotations: custom.SkipHashingAnnotations,
+			SpecHasHash:            custom.SpecHasHash,
 			CustomImportPrefix:     impPrefix,
 			SkipDocsGen:            true,
 			Project:                project,

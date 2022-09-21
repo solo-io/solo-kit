@@ -78,6 +78,7 @@ type CustomResourceConfig struct {
 	ShortName              string `json:"short_name"`
 	ClusterScoped          bool   `json:"cluster_scoped"`
 	SkipHashingAnnotations bool   `json:"skip_hashing_annotations"`
+	SpecHasHash            bool   `json:"spec_has_hash"`
 	// set by load
 	Imported bool
 }
@@ -118,6 +119,7 @@ type Resource struct {
 	CustomImportPrefix string               // import prefix for the struct type the generated wrapper will wrap
 
 	SkipHashingAnnotations bool // if true, zero out annotations in the generated hash func
+	SpecHasHash            bool
 
 	Fields []*Field
 	Oneofs []*Oneof

@@ -11,6 +11,13 @@
       "type": "MockCustomType",
       "plural_name": "mcts",
       "short_name": "mct"
+    },
+    {
+      "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype",
+      "type": "MockCustomSpecHashType",
+      "plural_name": "mcshts",
+      "short_name": "mcsht",
+      "spec_has_hash": true
     }
   ],
   "resource_groups": {
@@ -37,6 +44,10 @@
       },
       {
         "name": "MockCustomType",
+        "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
+      },
+      {
+        "name": "MockCustomSpecHashType",
         "package": "github.com/solo-io/solo-kit/test/mocks/api/v1/customtype"
       },
       {
