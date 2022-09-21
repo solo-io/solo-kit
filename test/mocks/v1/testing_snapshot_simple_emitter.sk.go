@@ -102,6 +102,8 @@ func (c *testingSimpleEmitter) Snapshots(ctx context.Context) (<-chan *TestingSn
 						currentSnapshot.Clusterresources = append(currentSnapshot.Clusterresources, typed)
 					case *MockCustomType:
 						currentSnapshot.Mcts = append(currentSnapshot.Mcts, typed)
+					case *MockCustomSpecHashType:
+						currentSnapshot.Mcshts = append(currentSnapshot.Mcshts, typed)
 					case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
 						currentSnapshot.Pods = append(currentSnapshot.Pods, typed)
 					default:
