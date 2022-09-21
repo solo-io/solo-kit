@@ -176,7 +176,7 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 	}
 
 	// since we now allow namespaces to be registered dynamically we will always create the namespace lister
-	k.addNamespaceLister()
+	// k.addNamespaceLister()
 
 	k.kubeController = controller.NewController("kube-plugin-controller",
 		controller.NewLockingSyncHandler(k.updatedOccured), k.informers...,
