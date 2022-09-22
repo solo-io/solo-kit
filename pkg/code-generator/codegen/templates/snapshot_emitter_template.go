@@ -9,9 +9,13 @@ import (
 // the snapshot emitter when new resources have been created or updated.
 // Snapshot Emitters will delegate to Resource Clients to list and watch defined
 // resources.
-
-// ClusterScoped - without namespacing, get all the resources within the entire cluster. There is one watch per resource.
-// this means that Expression Selectors will have no impact on namespaces.
+// Non-ClusterScoped - gets all the resources within the watched set of namespaces. If Watched Namespaces is
+// set to [""] then watches all namespaces.  If the Expression Selector on the WatchOpts is set, then it will watch
+// namespaces that meet the label criteria on the Expression Selector in addition to the watched namespaces.
+// If watched Namespaces is set to [""] with the Expression Selectors, then it only watches the namespaces that meet the
+// label criteria on the Expression Selectors.
+// ClusterScoped -- there is no namespacing. Gets all the resources within the entire cluster. There is one watch per resource.
+// Setting the Expression Selectors will have no impact on namespaces.
 // Not using ClusterScoped - allows for using namespacing, so that each namespace has it's own watch per resource.
 var ResourceGroupEmitterTemplate = template.Must(template.New("resource_group_emitter").Funcs(Funcs).Parse(
 	`package {{ .Project.ProjectConfig.Version }}
@@ -170,7 +174,8 @@ func (c *{{ lower_camel $.GoName }}Emitter) {{ .Name }}() {{ .ImportPrefix }}{{ 
 // ExpressionSelector of the WatchOpts.  Setting watchNamespaces will watch for all resources
 // that are in the specified namespaces. In addition if ExpressionSelector of the WatchOpts is
 // set, then all namespaces that meet the label criteria of the ExpressionSelector will
-// also be watched.
+// also be watched. If Expression Selector is set and watched namespaces is set to [""], then it
+// will only watch namespaces that meet the label expression selector criteria.
 func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error) {
 
 	if len(watchNamespaces) == 0 {
@@ -391,17 +396,17 @@ type {{ lower_camel .Name }}ListWithNamespace struct {
 					c.updateNamespaces.Lock()
 
 					// get the new namespaces, and get a map of the namespaces
-					mapOfResourceNamespaces := make(map[string]bool, len(resourceNamespaces))
+					mapOfResourceNamespaces := make(map[string]struct{}, len(resourceNamespaces))
 					newNamespaces := []string{}
 					for _, ns := range resourceNamespaces {
 						if _, hit := c.namespacesWatching.Load(ns.Name); !hit {
 							newNamespaces = append(newNamespaces, ns.Name)
 						}
-						mapOfResourceNamespaces[ns.Name] = true
+						mapOfResourceNamespaces[ns.Name] = struct{}{}
 					}
 
 					for _, ns := range watchNamespaces {
-						mapOfResourceNamespaces[ns] = true
+						mapOfResourceNamespaces[ns] = struct{}{}
 					}
 
 					missingNamespaces := []string{}

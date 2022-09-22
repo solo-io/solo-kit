@@ -146,7 +146,6 @@ var _ = Describe("V1Emitter", func() {
 		resourceNamespaceLister := namespace.NewKubeClientResourceNamespaceLister(kube)
 		emitter = NewTestingEmitter(simpleMockResourceClient, mockResourceClient, fakeResourceClient, anotherMockResourceClient, clusterResourceClient, mockCustomTypeClient, mockCustomSpecHashTypeClient, podClient, resourceNamespaceLister)
 
-
 		// create `FakeResource`s in "namespace1" and "slowWatchNamespace"
 		_, err = fakeResourceClient.Write(NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())

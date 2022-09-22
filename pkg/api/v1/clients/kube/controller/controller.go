@@ -108,6 +108,7 @@ func (c *Controller) waitForCacheToSync() error {
 	return nil
 }
 
+// setupInformer
 // 1. Get the function to tell if it has synced
 // 2. Register the event handler with the informer
 // 3. Run the informer
@@ -117,24 +118,10 @@ func (c *Controller) setupInformer(informer cache.SharedIndexInformer) {
 	go informer.Run(c.stopCh)
 }
 
-// AddNewInformer will add a new informer to the already running controller
-// if the controller is not running, it will just append the informer to the controllers
-// list of informers
-func (c *Controller) AddNewInformer(newInformer cache.SharedIndexInformer) error {
-	c.informers = append(c.informers, newInformer)
-	if c.isRunning {
-		c.setupInformer(newInformer)
-		if err := c.waitForCacheToSync(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// AddNewListOfInformers will add a list of new informers to the already running controller.
+// AddNewOfInformers will add a list of new informers to the already running controller.
 // If the controller is not running, it will just append the informers to the controllers
 // list of informers
-func (c *Controller) AddNewListOfInformers(newInformers []cache.SharedIndexInformer) error {
+func (c *Controller) AddNewOfInformers(newInformers ...cache.SharedIndexInformer) error {
 	c.informers = append(c.informers, newInformers...)
 	if c.isRunning {
 		for _, in := range newInformers {

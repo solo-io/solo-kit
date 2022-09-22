@@ -126,7 +126,8 @@ func (c *testingEmitter) MockResource() MockResourceClient {
 // ExpressionSelector of the WatchOpts.  Setting watchNamespaces will watch for all resources
 // that are in the specified namespaces. In addition if ExpressionSelector of the WatchOpts is
 // set, then all namespaces that meet the label criteria of the ExpressionSelector will
-// also be watched.
+// also be watched. If Expression Selector is set and watched namespaces is set to [""], then it
+// will only watch namespaces that meet the label expression selector criteria.
 func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error) {
 
 	if len(watchNamespaces) == 0 {
@@ -320,17 +321,17 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 					c.updateNamespaces.Lock()
 
 					// get the new namespaces, and get a map of the namespaces
-					mapOfResourceNamespaces := make(map[string]bool, len(resourceNamespaces))
+					mapOfResourceNamespaces := make(map[string]struct{}, len(resourceNamespaces))
 					newNamespaces := []string{}
 					for _, ns := range resourceNamespaces {
 						if _, hit := c.namespacesWatching.Load(ns.Name); !hit {
 							newNamespaces = append(newNamespaces, ns.Name)
 						}
-						mapOfResourceNamespaces[ns.Name] = true
+						mapOfResourceNamespaces[ns.Name] = struct{}{}
 					}
 
 					for _, ns := range watchNamespaces {
-						mapOfResourceNamespaces[ns] = true
+						mapOfResourceNamespaces[ns] = struct{}{}
 					}
 
 					missingNamespaces := []string{}

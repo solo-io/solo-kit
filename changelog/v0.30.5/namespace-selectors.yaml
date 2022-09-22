@@ -1,9 +1,10 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: BREAKING_CHANGE
     issueLink: https://github.com/solo-io/gloo/issues/5868 
+    resolvesIssue: false
     description: |
-      Added the ability to watch namespaces given be Expression Selectors in the Watch Opts
-      Watched Namespaces work as normally. When Expression Selectors the snapshot
+      Added the ability to watch namespaces given by Expression Selectors in the Watch Opts.
+      Watched Namespaces work as normally. When Expression Selectors are set the snapshot
       emitter will watch, in addition to the watched namespaces, namespaces that
       are labeled and meet the criteria of the Expression Selector. All resource 
-      clients will watch these namespaces, if set.
+      clients will watch these namespaces, if set, via the snapshot emitters.

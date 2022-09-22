@@ -6,7 +6,6 @@
 package v1
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -2182,34 +2181,22 @@ var _ = Describe("V1Emitter", func() {
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second * 10):
 
-						var buffer bytes.Buffer
-						if previous != nil {
-							for _, sn := range previous.Simplemocks {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						} else {
-							buffer.WriteString("****** NO PREVIOUS SNAP ********")
-						}
-						namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
-						for i, ns := range namespaces {
-							buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
-							list, _ := simpleMockResourceClient.List(ns, clients.ListOpts{})
-							for _, sn := range list {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						}
-						buffer.WriteString("********** EXPECTED *********")
-						for _, snap := range expectSimplemocks {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
-						buffer.WriteString("********* UNEXPECTED ***********")
-						for _, snap := range unexpectSimplemocks {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
 
-						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertSimplemocksToMetadataGetter(expectSimplemocks), convertSimplemocksToMetadataGetter(previous.Simplemocks))
+							unexpectedResource = findMatchingResources(convertSimplemocksToMetadataGetter(unexpectSimplemocks), convertSimplemocksToMetadataGetter(previous.Simplemocks))
+						} else {
+							expectedResources = getMapOfResources(convertSimplemocksToMetadataGetter(expectSimplemocks))
+							unexpectedResource = getMapOfResources(convertSimplemocksToMetadataGetter(unexpectSimplemocks))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := simpleMockResourceClient.List(ns, clients.ListOpts{})
+							return convertSimplemocksToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
 			}
@@ -2290,34 +2277,22 @@ var _ = Describe("V1Emitter", func() {
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second * 10):
 
-						var buffer bytes.Buffer
-						if previous != nil {
-							for _, sn := range previous.Mocks {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						} else {
-							buffer.WriteString("****** NO PREVIOUS SNAP ********")
-						}
-						namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
-						for i, ns := range namespaces {
-							buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
-							list, _ := mockResourceClient.List(ns, clients.ListOpts{})
-							for _, sn := range list {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						}
-						buffer.WriteString("********** EXPECTED *********")
-						for _, snap := range expectMocks {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
-						buffer.WriteString("********* UNEXPECTED ***********")
-						for _, snap := range unexpectMocks {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
 
-						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertMocksToMetadataGetter(expectMocks), convertMocksToMetadataGetter(previous.Mocks))
+							unexpectedResource = findMatchingResources(convertMocksToMetadataGetter(unexpectMocks), convertMocksToMetadataGetter(previous.Mocks))
+						} else {
+							expectedResources = getMapOfResources(convertMocksToMetadataGetter(expectMocks))
+							unexpectedResource = getMapOfResources(convertMocksToMetadataGetter(unexpectMocks))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := mockResourceClient.List(ns, clients.ListOpts{})
+							return convertMocksToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
 			}
@@ -2398,34 +2373,22 @@ var _ = Describe("V1Emitter", func() {
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second * 10):
 
-						var buffer bytes.Buffer
-						if previous != nil {
-							for _, sn := range previous.Fakes {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						} else {
-							buffer.WriteString("****** NO PREVIOUS SNAP ********")
-						}
-						namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
-						for i, ns := range namespaces {
-							buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
-							list, _ := fakeResourceClient.List(ns, clients.ListOpts{})
-							for _, sn := range list {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						}
-						buffer.WriteString("********** EXPECTED *********")
-						for _, snap := range expectFakes {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
-						buffer.WriteString("********* UNEXPECTED ***********")
-						for _, snap := range unexpectFakes {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
 
-						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertFakesToMetadataGetter(expectFakes), convertFakesToMetadataGetter(previous.Fakes))
+							unexpectedResource = findMatchingResources(convertFakesToMetadataGetter(unexpectFakes), convertFakesToMetadataGetter(previous.Fakes))
+						} else {
+							expectedResources = getMapOfResources(convertFakesToMetadataGetter(expectFakes))
+							unexpectedResource = getMapOfResources(convertFakesToMetadataGetter(unexpectFakes))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := fakeResourceClient.List(ns, clients.ListOpts{})
+							return convertFakesToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
 			}
@@ -2506,34 +2469,22 @@ var _ = Describe("V1Emitter", func() {
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second * 10):
 
-						var buffer bytes.Buffer
-						if previous != nil {
-							for _, sn := range previous.Anothermockresources {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						} else {
-							buffer.WriteString("****** NO PREVIOUS SNAP ********")
-						}
-						namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
-						for i, ns := range namespaces {
-							buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
-							list, _ := anotherMockResourceClient.List(ns, clients.ListOpts{})
-							for _, sn := range list {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						}
-						buffer.WriteString("********** EXPECTED *********")
-						for _, snap := range expectAnothermockresources {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
-						buffer.WriteString("********* UNEXPECTED ***********")
-						for _, snap := range unexpectAnothermockresources {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
 
-						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertAnothermockresourcesToMetadataGetter(expectAnothermockresources), convertAnothermockresourcesToMetadataGetter(previous.Anothermockresources))
+							unexpectedResource = findMatchingResources(convertAnothermockresourcesToMetadataGetter(unexpectAnothermockresources), convertAnothermockresourcesToMetadataGetter(previous.Anothermockresources))
+						} else {
+							expectedResources = getMapOfResources(convertAnothermockresourcesToMetadataGetter(expectAnothermockresources))
+							unexpectedResource = getMapOfResources(convertAnothermockresourcesToMetadataGetter(unexpectAnothermockresources))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := anotherMockResourceClient.List(ns, clients.ListOpts{})
+							return convertAnothermockresourcesToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
 			}
@@ -2686,34 +2637,22 @@ var _ = Describe("V1Emitter", func() {
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second * 10):
 
-						var buffer bytes.Buffer
-						if previous != nil {
-							for _, sn := range previous.Mcts {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						} else {
-							buffer.WriteString("****** NO PREVIOUS SNAP ********")
-						}
-						namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
-						for i, ns := range namespaces {
-							buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
-							list, _ := mockCustomTypeClient.List(ns, clients.ListOpts{})
-							for _, sn := range list {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						}
-						buffer.WriteString("********** EXPECTED *********")
-						for _, snap := range expectmcts {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
-						buffer.WriteString("********* UNEXPECTED ***********")
-						for _, snap := range unexpectmcts {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
 
-						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertmctsToMetadataGetter(expectmcts), convertmctsToMetadataGetter(previous.Mcts))
+							unexpectedResource = findMatchingResources(convertmctsToMetadataGetter(unexpectmcts), convertmctsToMetadataGetter(previous.Mcts))
+						} else {
+							expectedResources = getMapOfResources(convertmctsToMetadataGetter(expectmcts))
+							unexpectedResource = getMapOfResources(convertmctsToMetadataGetter(unexpectmcts))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := mockCustomTypeClient.List(ns, clients.ListOpts{})
+							return convertmctsToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
 			}
@@ -2794,34 +2733,22 @@ var _ = Describe("V1Emitter", func() {
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second * 10):
 
-						var buffer bytes.Buffer
-						if previous != nil {
-							for _, sn := range previous.Mcshts {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						} else {
-							buffer.WriteString("****** NO PREVIOUS SNAP ********")
-						}
-						namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
-						for i, ns := range namespaces {
-							buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
-							list, _ := mockCustomSpecHashTypeClient.List(ns, clients.ListOpts{})
-							for _, sn := range list {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						}
-						buffer.WriteString("********** EXPECTED *********")
-						for _, snap := range expectmcshts {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
-						buffer.WriteString("********* UNEXPECTED ***********")
-						for _, snap := range unexpectmcshts {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
 
-						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertmcshtsToMetadataGetter(expectmcshts), convertmcshtsToMetadataGetter(previous.Mcshts))
+							unexpectedResource = findMatchingResources(convertmcshtsToMetadataGetter(unexpectmcshts), convertmcshtsToMetadataGetter(previous.Mcshts))
+						} else {
+							expectedResources = getMapOfResources(convertmcshtsToMetadataGetter(expectmcshts))
+							unexpectedResource = getMapOfResources(convertmcshtsToMetadataGetter(unexpectmcshts))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := mockCustomSpecHashTypeClient.List(ns, clients.ListOpts{})
+							return convertmcshtsToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
 			}
@@ -2902,34 +2829,22 @@ var _ = Describe("V1Emitter", func() {
 						Expect(err).NotTo(HaveOccurred())
 					case <-time.After(time.Second * 10):
 
-						var buffer bytes.Buffer
-						if previous != nil {
-							for _, sn := range previous.Pods {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						} else {
-							buffer.WriteString("****** NO PREVIOUS SNAP ********")
-						}
-						namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
-						for i, ns := range namespaces {
-							buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
-							list, _ := podClient.List(ns, clients.ListOpts{})
-							for _, sn := range list {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))
-								buffer.WriteByte('\n')
-							}
-						}
-						buffer.WriteString("********** EXPECTED *********")
-						for _, snap := range expectpods {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
-						buffer.WriteString("********* UNEXPECTED ***********")
-						for _, snap := range unexpectpods {
-							buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))
-						}
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
 
-						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertpodsToMetadataGetter(expectpods), convertpodsToMetadataGetter(previous.Pods))
+							unexpectedResource = findMatchingResources(convertpodsToMetadataGetter(unexpectpods), convertpodsToMetadataGetter(previous.Pods))
+						} else {
+							expectedResources = getMapOfResources(convertpodsToMetadataGetter(expectpods))
+							unexpectedResource = getMapOfResources(convertpodsToMetadataGetter(unexpectpods))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := podClient.List(ns, clients.ListOpts{})
+							return convertpodsToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 					}
 				}
 			}
@@ -3939,7 +3854,7 @@ var _ = Describe("V1Emitter", func() {
 			Eventually(func() bool {
 				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
 				return apierrors.IsNotFound(err)
-			}, 10*time.Second, 1*time.Second).Should(BeTrue())
+			}, 15*time.Second, 1*time.Second).Should(BeTrue())
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 
 			mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace3, name2), clients.WriteOpts{Ctx: ctx})
@@ -3950,7 +3865,7 @@ var _ = Describe("V1Emitter", func() {
 			Eventually(func() bool {
 				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
 				return apierrors.IsNotFound(err)
-			}, 10*time.Second, 1*time.Second).Should(BeTrue())
+			}, 15*time.Second, 1*time.Second).Should(BeTrue())
 
 			/*
 				AnotherMockResource
@@ -4005,7 +3920,7 @@ var _ = Describe("V1Emitter", func() {
 			Eventually(func() bool {
 				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
 				return apierrors.IsNotFound(err)
-			}, 10*time.Second, 1*time.Second).Should(BeTrue())
+			}, 15*time.Second, 1*time.Second).Should(BeTrue())
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 
 			anotherMockResource2a, err := anotherMockResourceClient.Write(NewAnotherMockResource(namespace3, name2), clients.WriteOpts{Ctx: ctx})
@@ -4016,7 +3931,7 @@ var _ = Describe("V1Emitter", func() {
 			Eventually(func() bool {
 				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
 				return apierrors.IsNotFound(err)
-			}, 10*time.Second, 1*time.Second).Should(BeTrue())
+			}, 15*time.Second, 1*time.Second).Should(BeTrue())
 
 		})
 	})

@@ -141,7 +141,7 @@ var _ = Describe("Test KubeController", func() {
 			case <-time.After(100 * time.Millisecond):
 			}
 
-			err = kubeController.AddNewInformer(newInformer)
+			err = kubeController.AddNewOfInformers(newInformer)
 			Expect(err).NotTo(HaveOccurred())
 
 			getResultFromkMockResource(namespace2, name2, value2)

@@ -96,10 +96,8 @@ type kubeCoreCaches struct {
 	resyncDuration time.Duration
 	// informers are the kube resources that provide events
 	informers []cache.SharedIndexInformer
-
 	// registerNamespaceLock is a map string(namespace) -> sync.Once. Is used to register namespaces only once.
-	registerNamespaceLock sync.Map
-
+	registerNamespaceLock     sync.Map
 	cacheUpdatedWatchers      []chan struct{}
 	cacheUpdatedWatchersMutex sync.Mutex
 }
@@ -120,7 +118,7 @@ func NewCoreCacheForConfig(ctx context.Context, cluster string, restConfig *rest
 
 var _ clustercache.NewClusterCacheForConfig = NewCoreCacheForConfig
 
-// creates the namespace lister.
+// NewFromConfigWithOptions creates a new Cluster Cahce For Config function. The function will create the namespace lister by default.
 func NewFromConfigWithOptions(resyncDuration time.Duration, namesapcesToWatch []string) clustercache.NewClusterCacheForConfig {
 	return func(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
 		kubeClient, err := kubernetes.NewForConfig(restConfig)
@@ -135,6 +133,7 @@ func NewFromConfigWithOptions(resyncDuration time.Duration, namesapcesToWatch []
 	}
 }
 
+// NewKubeCoreCache will create a new kube Core Caches.  The namespace lister is created from this function.
 // This context should live as long as the cache is desired. i.e. if the cache is shared
 // across clients, it should get a context that has a longer lifetime than the clients themselves
 func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCoreCaches, error) {
@@ -142,6 +141,8 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 	return NewKubeCoreCacheWithOptions(ctx, client, resyncDuration, []string{metav1.NamespaceAll}, true)
 }
 
+// NewKubeCoreCacheWithOptions will create a new kube Core Cache. By setting the
+// createNamespaceLister the namespace lister will be created.
 func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string, createNamespaceLister bool) (*kubeCoreCaches, error) {
 
 	if len(namesapcesToWatch) == 0 {
@@ -286,7 +287,7 @@ func (k *kubeCoreCaches) RegisterNewNamespaceCache(namespace string) error {
 	onceFunc := once.(*onceAndSent)
 	onceFunc.Once.Do(func() {
 		informers := k.addNewNamespace(namespace)
-		if err := k.kubeController.AddNewListOfInformers(informers); err != nil {
+		if err := k.kubeController.AddNewOfInformers(informers...); err != nil {
 			onceFunc.Err = errors.Wrapf(err, "failed to add new list of informers to kube controller")
 		}
 	})

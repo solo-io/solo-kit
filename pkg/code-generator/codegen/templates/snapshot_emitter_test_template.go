@@ -757,34 +757,22 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 							Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 {{- else }}
 
-							var buffer bytes.Buffer
-							if previous != nil {
-								for _, sn := range previous.{{ upper_camel .PluralName }} {
-									buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))	
-									buffer.WriteByte('\n')
-								}
-							} else {
-								buffer.WriteString("****** NO PREVIOUS SNAP ********")
-							}
-							namespaces := []string{namespace1,namespace2,namespace3,namespace4,namespace5,namespace6}
-							for i, ns := range namespaces {
-								buffer.WriteString(fmt.Sprintf("*********** %d::%v ***********", i, ns))
-								list, _ := {{ lower_camel .Name }}Client.List(ns, clients.ListOpts{})
-								for _, sn := range list {
-									buffer.WriteString(fmt.Sprintf("namespace: %v name: %v   ", sn.GetMetadata().Namespace, sn.GetMetadata().Name))	
-									buffer.WriteByte('\n')
-								}
-							}
-							buffer.WriteString("********** EXPECTED *********")
-							for _,snap := range expect{{ .PluralName }} {
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))	
-							}
-							buffer.WriteString("********* UNEXPECTED ***********")
-							for _,snap := range unexpect{{ .PluralName }}{
-								buffer.WriteString(fmt.Sprintf("namespace: %v name: %v    ", snap.GetMetadata().Namespace, snap.GetMetadata().Name))	
-							}
+							var expectedResources map[string][]string
+							var unexpectedResource map[string][]string
 
-							Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", buffer.String()))
+							if previous != nil {
+								expectedResources = findNonMatchingResources(convert{{ .PluralName }}ToMetadataGetter(expect{{ .PluralName }}), convert{{ .PluralName }}ToMetadataGetter(previous.{{ upper_camel .PluralName }}))
+								unexpectedResource = findMatchingResources(convert{{ .PluralName }}ToMetadataGetter(unexpect{{ .PluralName }}), convert{{ .PluralName }}ToMetadataGetter(previous.{{ upper_camel .PluralName }}))
+							} else {
+								expectedResources = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(expect{{ .PluralName }}))
+								unexpectedResource = getMapOfResources(convert{{ .PluralName }}ToMetadataGetter(unexpect{{ .PluralName }}))
+							}
+							getList := func (ns string) ([]metadataGetter, error) {
+								l, err := {{ lower_camel .Name }}Client.List(ns, clients.ListOpts{})
+								return convert{{ .PluralName }}ToMetadataGetter(l), err
+							}
+							namespaceResources := getMapOfNamespaceResources(getList)
+							Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
 {{- end }}
 						}
 					}
@@ -1171,7 +1159,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Eventually(func () bool {
 				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
 				return apierrors.IsNotFound(err)
-			}, 10*time.Second, 1 * time.Second).Should(BeTrue())
+			}, 15*time.Second, 1 * time.Second).Should(BeTrue())
 			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
 
 			{{ lower_camel .Name }}2a, err := {{ lower_camel .Name }}Client.Write({{ .ImportPrefix }}New{{ .Name }}(namespace3, name2), clients.WriteOpts{Ctx: ctx})
@@ -1182,7 +1170,7 @@ var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func
 			Eventually(func () bool {
 				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
 				return apierrors.IsNotFound(err)
-			}, 10*time.Second, 1 * time.Second).Should(BeTrue())
+			}, 15*time.Second, 1 * time.Second).Should(BeTrue())
 {{- end }}
 {{- end }}
 {{- end }}

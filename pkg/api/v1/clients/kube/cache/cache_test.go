@@ -133,7 +133,7 @@ var _ = Describe("kube core cache tests", func() {
 						createNamespaceAndResource(ns)
 					}
 					var err error
-					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{testns, testns2}, true)
+					cache, err = NewKubeCoreCacheWithOptions(ctx, client, time.Hour, []string{testns, testns2}, false)
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -144,7 +144,7 @@ var _ = Describe("kube core cache tests", func() {
 				})
 
 				It("can list resources for all listers", func() {
-					Expect(cache.NamespaceLister()).ToNot(BeNil())
+					Expect(cache.NamespaceLister()).To(BeNil())
 					validateNamespaceResource(testns)
 					validateNamespaceResource(testns2)
 				})
