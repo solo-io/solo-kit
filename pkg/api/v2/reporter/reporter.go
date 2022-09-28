@@ -343,30 +343,37 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 }
 
 func trimStatus(status *core.Status) *core.Status {
-	if len(status.Reason) > 1024 {
-		// truncate status reason to a kilobyte
-		status.Reason = status.Reason[:1024]
+	// truncate status reason to a kilobyte, with max 100 keys in subresource statuses
+	return trimStatusForMaxSize(status, 1024, 100)
+}
+
+func trimStatusForMaxSize(status *core.Status, bytesPerKey, maxKeys int) *core.Status {
+	if len(status.Reason) > bytesPerKey {
+		status.Reason = status.Reason[:bytesPerKey]
 	}
 
-	// keep at most max 100 keys
-	if len(status.SubresourceStatuses) > 100 {
+	if len(status.SubresourceStatuses) > maxKeys {
 		// sort for idempotency
 		keys := make([]string, 0, len(status.SubresourceStatuses))
 		for key := range status.SubresourceStatuses {
 			keys = append(keys, key)
 		}
 		sort.Strings(keys)
-		trimmedSubresourceStatuses := make(map[string]*core.Status, 100)
-		for _, key := range keys[:100] {
+		trimmedSubresourceStatuses := make(map[string]*core.Status, maxKeys)
+		for _, key := range keys[:maxKeys] {
 			trimmedSubresourceStatuses[key] = status.SubresourceStatuses[key]
 		}
 		status.SubresourceStatuses = trimmedSubresourceStatuses
 	}
 
-	for k, v := range status.SubresourceStatuses {
+	for parentKey, parentStatus := range status.SubresourceStatuses {
 		// truncate subresources to a kilobyte per value
-		if len(v.Reason) > 1024 {
-			status.SubresourceStatuses[k].Reason = v.Reason[:1024]
+		if len(parentStatus.Reason) > bytesPerKey {
+			status.SubresourceStatuses[parentKey].Reason = parentStatus.Reason[:bytesPerKey]
+		}
+		for childKey, childStatus := range parentStatus.SubresourceStatuses {
+			// trim subresource statuses recursively, cutting max size by half so final size is bounded
+			parentStatus.SubresourceStatuses[childKey] = trimStatusForMaxSize(childStatus, bytesPerKey/2, maxKeys/2)
 		}
 	}
 	return status
