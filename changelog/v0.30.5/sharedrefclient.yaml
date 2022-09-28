@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    resolvesIssue: false
-    issueLink: https://github.com/solo-io/gloo/issues/7166
-    description: > 
-      Add an extension of the InMemoryResourceClient, called SharedRefResourceClient that does not clone resources on reads/writes.
