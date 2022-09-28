@@ -103,39 +103,71 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		var sb strings.Builder
-		for i := 0; i < 10000; i++ {
+		for i := 0; i < rep.MaxStatusBytes+1; i++ {
 			sb.WriteString("a")
 		}
 
-		// 10000 chars = 10000 bytes
+		// an error larger than our max (1kb) that should be truncated
 		veryLargeError := sb.String()
 
-		// 1024 chars = 1kb
-		trimmedErr := veryLargeError[:1024] // we expect to trim this to 1kb
+		trimmedErr := veryLargeError[:rep.MaxStatusBytes] // we expect to trim this to 1kb in parent. 1/2 more for each nested subresource
 
-		subresourceStatuses := map[string]*core.Status{}
-		for i := 0; i < 1000; i++ { // we have numerous keys, and expect to trim to 100 keys
+		recursivelyTrimmedErr := veryLargeError[:rep.MaxStatusBytes/2]      // we expect to trim this to 1kb/2
+		childRecursivelyTrimmedErr := veryLargeError[:rep.MaxStatusBytes/4] // we expect to trim this to 1kb/2
+
+		childSubresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and expect to trim to 100/2 keys
 			var sb strings.Builder
-			for j := 0; j < i; j++ {
+			for j := 0; j <= i; j++ {
 				sb.WriteString("a")
 			}
-			subresourceStatuses[fmt.Sprintf("subresource-%s", sb.String())] = &core.Status{
-				State:      core.Status_Warning,
-				Reason:     veryLargeError,
-				ReportedBy: "test",
+			childSubresourceStatuses[fmt.Sprintf("child-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              veryLargeError,
+				ReportedBy:          "test",
+				SubresourceStatuses: nil, // intentionally nil; only test recursive call once
+			}
+		}
+
+		subresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and expect to trim to 100 keys
+			var sb strings.Builder
+			for j := 0; j <= i; j++ {
+				sb.WriteString("a")
+			}
+			subresourceStatuses[fmt.Sprintf("parent-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              veryLargeError,
+				ReportedBy:          "test",
+				SubresourceStatuses: childSubresourceStatuses,
+			}
+		}
+
+		trimmedChildSubresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys/2; i++ { // we have numerous keys, and expect to trim to 100/2 keys
+			var sb strings.Builder
+			for j := 0; j <= i; j++ {
+				sb.WriteString("a")
+			}
+			trimmedChildSubresourceStatuses[fmt.Sprintf("child-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              childRecursivelyTrimmedErr,
+				ReportedBy:          "test",
+				SubresourceStatuses: nil, // intentionally nil; only test recursive call once
 			}
 		}
 
 		trimmedSubresourceStatuses := map[string]*core.Status{}
-		for i := 0; i < 100; i++ { // we expect a max of 100 keys
+		for i := 0; i < rep.MaxStatusKeys; i++ { // we expect a max of 100 keys
 			var sb strings.Builder
-			for j := 0; j < i; j++ {
+			for j := 0; j <= i; j++ {
 				sb.WriteString("a")
 			}
-			trimmedSubresourceStatuses[fmt.Sprintf("subresource-%s", sb.String())] = &core.Status{
-				State:      core.Status_Warning,
-				Reason:     trimmedErr,
-				ReportedBy: "test",
+			trimmedSubresourceStatuses[fmt.Sprintf("parent-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              recursivelyTrimmedErr,
+				ReportedBy:          "test",
+				SubresourceStatuses: trimmedChildSubresourceStatuses,
 			}
 		}
 

@@ -16,6 +16,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+const (
+	// 1024 chars = 1kb
+	MaxStatusBytes = 1024
+	MaxStatusKeys  = 100
+)
+
 type Report struct {
 	Warnings []string
 	Errors   error
@@ -344,10 +350,13 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 
 func trimStatus(status *core.Status) *core.Status {
 	// truncate status reason to a kilobyte, with max 100 keys in subresource statuses
-	return trimStatusForMaxSize(status, 1024, 100)
+	return trimStatusForMaxSize(status, MaxStatusBytes, MaxStatusKeys)
 }
 
 func trimStatusForMaxSize(status *core.Status, bytesPerKey, maxKeys int) *core.Status {
+	if status == nil {
+		return nil
+	}
 	if len(status.Reason) > bytesPerKey {
 		status.Reason = status.Reason[:bytesPerKey]
 	}
@@ -366,15 +375,8 @@ func trimStatusForMaxSize(status *core.Status, bytesPerKey, maxKeys int) *core.S
 		status.SubresourceStatuses = trimmedSubresourceStatuses
 	}
 
-	for parentKey, parentStatus := range status.SubresourceStatuses {
-		// truncate subresources to a kilobyte per value
-		if len(parentStatus.Reason) > bytesPerKey {
-			status.SubresourceStatuses[parentKey].Reason = parentStatus.Reason[:bytesPerKey]
-		}
-		for childKey, childStatus := range parentStatus.SubresourceStatuses {
-			// trim subresource statuses recursively, cutting max size by half so final size is bounded
-			parentStatus.SubresourceStatuses[childKey] = trimStatusForMaxSize(childStatus, bytesPerKey/2, maxKeys/2)
-		}
+	for key, childStatus := range status.SubresourceStatuses {
+		status.SubresourceStatuses[key] = trimStatusForMaxSize(childStatus, bytesPerKey/2, maxKeys/2)
 	}
 	return status
 }
