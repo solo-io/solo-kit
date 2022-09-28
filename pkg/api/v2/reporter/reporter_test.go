@@ -3,6 +3,7 @@ package reporter_test
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -36,6 +37,7 @@ var _ = Describe("Reporter", func() {
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", statusClient, mockResourceClient, fakeResourceClient)
 	})
+
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -93,6 +95,96 @@ var _ = Describe("Reporter", func() {
 			Reason:     "",
 			ReportedBy: "test",
 			Messages:   []string{"I'm just a message"},
+		}))
+	})
+
+	It("truncates large errors", func() {
+		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		var sb strings.Builder
+		for i := 0; i < rep.MaxStatusBytes+1; i++ {
+			sb.WriteString("a")
+		}
+
+		// an error larger than our max (1kb) that should be truncated
+		veryLargeError := sb.String()
+
+		trimmedErr := veryLargeError[:rep.MaxStatusBytes]                   // we expect to trim this to 1kb in parent. 1/2 more for each nested subresource
+		recursivelyTrimmedErr := veryLargeError[:rep.MaxStatusBytes/2]      // we expect to trim this to 1kb/2
+		childRecursivelyTrimmedErr := veryLargeError[:rep.MaxStatusBytes/4] // we expect to trim this to 1kb/4
+
+		childSubresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and expect to trim to num(parentkeys)/2 (i.e. rep.MaxStatusKeys/2)
+			var sb strings.Builder
+			for j := 0; j <= i; j++ {
+				sb.WriteString("a")
+			}
+			childSubresourceStatuses[fmt.Sprintf("child-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              veryLargeError,
+				ReportedBy:          "test",
+				SubresourceStatuses: nil, // intentionally nil; only test recursive call once
+			}
+		}
+
+		subresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and expect to trim to 100 keys (rep.MaxStatusKeys)
+			var sb strings.Builder
+			for j := 0; j <= i; j++ {
+				sb.WriteString("a")
+			}
+			subresourceStatuses[fmt.Sprintf("parent-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              veryLargeError,
+				ReportedBy:          "test",
+				SubresourceStatuses: childSubresourceStatuses,
+			}
+		}
+
+		trimmedChildSubresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys/2; i++ { // we expect to trim to num(parentkeys)/2 (i.e. rep.MaxStatusKeys/2)
+			var sb strings.Builder
+			for j := 0; j <= i; j++ {
+				sb.WriteString("a")
+			}
+			trimmedChildSubresourceStatuses[fmt.Sprintf("child-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              childRecursivelyTrimmedErr,
+				ReportedBy:          "test",
+				SubresourceStatuses: nil, // intentionally nil; only test recursive call once
+			}
+		}
+
+		trimmedSubresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys; i++ { // we expect to trim to 100 keys (rep.MaxStatusKeys)
+			var sb strings.Builder
+			for j := 0; j <= i; j++ {
+				sb.WriteString("a")
+			}
+			trimmedSubresourceStatuses[fmt.Sprintf("parent-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              recursivelyTrimmedErr,
+				ReportedBy:          "test",
+				SubresourceStatuses: trimmedChildSubresourceStatuses,
+			}
+		}
+
+		resourceErrs := rep.ResourceReports{
+			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf(veryLargeError)},
+		}
+		err = reporter.WriteReports(context.TODO(), resourceErrs, subresourceStatuses)
+		Expect(err).NotTo(HaveOccurred())
+
+		r1, err = mockResourceClient.Read(r1.GetMetadata().Namespace, r1.GetMetadata().Name, clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		status := statusClient.GetStatus(r1.(*v1.MockResource))
+		Expect(status).To(Equal(&core.Status{
+			State:               2,
+			Reason:              trimmedErr,
+			ReportedBy:          "test",
+			SubresourceStatuses: trimmedSubresourceStatuses,
 		}))
 	})
 

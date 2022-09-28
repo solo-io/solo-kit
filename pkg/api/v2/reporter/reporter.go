@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"k8s.io/client-go/util/retry"
@@ -13,6 +14,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+)
+
+const (
+	// 1024 chars = 1kb
+	MaxStatusBytes = 1024
+	MaxStatusKeys  = 100
 )
 
 type Report struct {
@@ -261,6 +268,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
+		status = trimStatus(status)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
 		if status.Equal(resourceStatus) {
@@ -338,4 +346,42 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		SubresourceStatuses: subresourceStatuses,
 		Messages:            messages,
 	}
+}
+
+func trimStatus(status *core.Status) *core.Status {
+	// truncate status reason to a kilobyte, with max 100 keys in subresource statuses
+	return trimStatusForMaxSize(status, MaxStatusBytes, MaxStatusKeys)
+}
+
+func trimStatusForMaxSize(status *core.Status, bytesPerKey, maxKeys int) *core.Status {
+	if status == nil {
+		return nil
+	}
+	if len(status.Reason) > bytesPerKey {
+		status.Reason = status.Reason[:bytesPerKey]
+	}
+
+	if len(status.SubresourceStatuses) > maxKeys {
+		// sort for idempotency
+		keys := make([]string, 0, len(status.SubresourceStatuses))
+		for key := range status.SubresourceStatuses {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		trimmedSubresourceStatuses := make(map[string]*core.Status, maxKeys)
+		for _, key := range keys[:maxKeys] {
+			trimmedSubresourceStatuses[key] = status.SubresourceStatuses[key]
+		}
+		status.SubresourceStatuses = trimmedSubresourceStatuses
+	}
+
+	for key, childStatus := range status.SubresourceStatuses {
+		// divide by two so total memory usage is bounded at: (num_keys * bytes_per_key) + (num_keys / 2 * bytes_per_key / 2) + ...
+		// 100 * 1024b + 50 * 512b + 25 * 256b + 12 * 128b + 6 * 64b + 3 * 32b + 1 * 16b ~= 136 kilobytes
+		//
+		// 2147483647 bytes is k8s -> etcd limit in grpc connection. 2147483647 / 136 ~= 15788 resources at limit before we see an issue
+		// https://github.com/solo-io/solo-projects/issues/4120
+		status.SubresourceStatuses[key] = trimStatusForMaxSize(childStatus, bytesPerKey/2, maxKeys/2)
+	}
+	return status
 }
