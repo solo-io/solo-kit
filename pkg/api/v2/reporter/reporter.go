@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"k8s.io/client-go/util/retry"
@@ -261,6 +262,7 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
+		status = trimStatus(status)
 		resourceStatus := r.statusClient.GetStatus(resource)
 
 		if status.Equal(resourceStatus) {
@@ -338,4 +340,34 @@ func (r *reporter) StatusFromReport(report Report, subresourceStatuses map[strin
 		SubresourceStatuses: subresourceStatuses,
 		Messages:            messages,
 	}
+}
+
+func trimStatus(status *core.Status) *core.Status {
+	if len(status.Reason) > 1024 {
+		// truncate status reason to a kilobyte
+		status.Reason = status.Reason[:1024]
+	}
+
+	// keep at most max 100 keys
+	if len(status.SubresourceStatuses) > 100 {
+		// sort for idempotency
+		keys := make([]string, 0, len(status.SubresourceStatuses))
+		for key := range status.SubresourceStatuses {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		trimmedSubresourceStatuses := make(map[string]*core.Status, 100)
+		for _, key := range keys[:100] {
+			trimmedSubresourceStatuses[key] = status.SubresourceStatuses[key]
+		}
+		status.SubresourceStatuses = trimmedSubresourceStatuses
+	}
+
+	for k, v := range status.SubresourceStatuses {
+		// truncate subresources to a kilobyte per value
+		if len(v.Reason) > 1024 {
+			status.SubresourceStatuses[k].Reason = v.Reason[:1024]
+		}
+	}
+	return status
 }

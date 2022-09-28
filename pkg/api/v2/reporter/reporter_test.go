@@ -3,6 +3,7 @@ package reporter_test
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -36,6 +37,7 @@ var _ = Describe("Reporter", func() {
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", statusClient, mockResourceClient, fakeResourceClient)
 	})
+
 	It("reports errors for resources", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -93,6 +95,66 @@ var _ = Describe("Reporter", func() {
 			Reason:     "",
 			ReportedBy: "test",
 			Messages:   []string{"I'm just a message"},
+		}))
+	})
+
+	It("truncates large errors", func() {
+		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		var sb strings.Builder
+		for i := 0; i < 10000; i++ {
+			sb.WriteString("a")
+		}
+
+		// 10000 chars = 10000 bytes
+		veryLargeError := sb.String()
+
+		// 1024 chars = 1kb
+		trimmedErr := veryLargeError[:1024] // we expect to trim this to 1kb
+
+		subresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < 1000; i++ { // we have numerous keys, and expect to trim to 100 keys
+			var sb strings.Builder
+			for j := 0; j < i; j++ {
+				sb.WriteString("a")
+			}
+			subresourceStatuses[fmt.Sprintf("subresource-%s", sb.String())] = &core.Status{
+				State:      core.Status_Warning,
+				Reason:     veryLargeError,
+				ReportedBy: "test",
+			}
+		}
+
+		trimmedSubresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < 100; i++ { // we expect a max of 100 keys
+			var sb strings.Builder
+			for j := 0; j < i; j++ {
+				sb.WriteString("a")
+			}
+			trimmedSubresourceStatuses[fmt.Sprintf("subresource-%s", sb.String())] = &core.Status{
+				State:      core.Status_Warning,
+				Reason:     trimmedErr,
+				ReportedBy: "test",
+			}
+		}
+
+		resourceErrs := rep.ResourceReports{
+			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf(veryLargeError)},
+		}
+		err = reporter.WriteReports(context.TODO(), resourceErrs, subresourceStatuses)
+		Expect(err).NotTo(HaveOccurred())
+
+		r1, err = mockResourceClient.Read(r1.GetMetadata().Namespace, r1.GetMetadata().Name, clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		status := statusClient.GetStatus(r1.(*v1.MockResource))
+		Expect(status).To(Equal(&core.Status{
+			State:               2,
+			Reason:              trimmedErr,
+			ReportedBy:          "test",
+			Messages:            nil,
+			SubresourceStatuses: trimmedSubresourceStatuses,
 		}))
 	})
 
