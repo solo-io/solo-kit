@@ -376,6 +376,11 @@ func trimStatusForMaxSize(status *core.Status, bytesPerKey, maxKeys int) *core.S
 	}
 
 	for key, childStatus := range status.SubresourceStatuses {
+		// divide by two so total memory usage is bounded at: (num_keys * bytes_per_key) + (num_keys / 2 * bytes_per_key / 2) + ...
+		// 100 * 1024b + 50 * 512b + 25 * 256b + 12 * 128b + 6 * 64b + 3 * 32b + 1 * 16b ~= 136 kilobytes
+		//
+		// 2147483647 bytes is k8s -> etcd limit in grpc connection. 2147483647 / 136 ~= 15788 resources at limit before we see an issue
+		// https://github.com/solo-io/solo-projects/issues/4120
 		status.SubresourceStatuses[key] = trimStatusForMaxSize(childStatus, bytesPerKey/2, maxKeys/2)
 	}
 	return status

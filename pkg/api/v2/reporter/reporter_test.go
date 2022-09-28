@@ -110,13 +110,12 @@ var _ = Describe("Reporter", func() {
 		// an error larger than our max (1kb) that should be truncated
 		veryLargeError := sb.String()
 
-		trimmedErr := veryLargeError[:rep.MaxStatusBytes] // we expect to trim this to 1kb in parent. 1/2 more for each nested subresource
-
+		trimmedErr := veryLargeError[:rep.MaxStatusBytes]                   // we expect to trim this to 1kb in parent. 1/2 more for each nested subresource
 		recursivelyTrimmedErr := veryLargeError[:rep.MaxStatusBytes/2]      // we expect to trim this to 1kb/2
-		childRecursivelyTrimmedErr := veryLargeError[:rep.MaxStatusBytes/4] // we expect to trim this to 1kb/2
+		childRecursivelyTrimmedErr := veryLargeError[:rep.MaxStatusBytes/4] // we expect to trim this to 1kb/4
 
 		childSubresourceStatuses := map[string]*core.Status{}
-		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and expect to trim to 100/2 keys
+		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and expect to trim to num(parentkeys)/2 (i.e. rep.MaxStatusKeys/2)
 			var sb strings.Builder
 			for j := 0; j <= i; j++ {
 				sb.WriteString("a")
@@ -130,7 +129,7 @@ var _ = Describe("Reporter", func() {
 		}
 
 		subresourceStatuses := map[string]*core.Status{}
-		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and expect to trim to 100 keys
+		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and expect to trim to 100 keys (rep.MaxStatusKeys)
 			var sb strings.Builder
 			for j := 0; j <= i; j++ {
 				sb.WriteString("a")
@@ -144,7 +143,7 @@ var _ = Describe("Reporter", func() {
 		}
 
 		trimmedChildSubresourceStatuses := map[string]*core.Status{}
-		for i := 0; i < rep.MaxStatusKeys/2; i++ { // we have numerous keys, and expect to trim to 100/2 keys
+		for i := 0; i < rep.MaxStatusKeys/2; i++ { // we expect to trim to num(parentkeys)/2 (i.e. rep.MaxStatusKeys/2)
 			var sb strings.Builder
 			for j := 0; j <= i; j++ {
 				sb.WriteString("a")
@@ -158,7 +157,7 @@ var _ = Describe("Reporter", func() {
 		}
 
 		trimmedSubresourceStatuses := map[string]*core.Status{}
-		for i := 0; i < rep.MaxStatusKeys; i++ { // we expect a max of 100 keys
+		for i := 0; i < rep.MaxStatusKeys; i++ { // we expect to trim to 100 keys (rep.MaxStatusKeys)
 			var sb strings.Builder
 			for j := 0; j <= i; j++ {
 				sb.WriteString("a")
@@ -185,7 +184,6 @@ var _ = Describe("Reporter", func() {
 			State:               2,
 			Reason:              trimmedErr,
 			ReportedBy:          "test",
-			Messages:            nil,
 			SubresourceStatuses: trimmedSubresourceStatuses,
 		}))
 	})
