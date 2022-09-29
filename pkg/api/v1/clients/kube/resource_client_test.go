@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/matchers"
@@ -285,9 +287,10 @@ var _ = Describe("Test Kube ResourceClient", func() {
 	Context("unit tests", func() {
 
 		var (
-			clientset *fake.Clientset
-			cache     kube.SharedCache
-			rc        *kube.ResourceClient
+			clientset    *fake.Clientset
+			cache        kube.SharedCache
+			rc           *kube.ResourceClient
+			statusClient resources.StatusClient
 		)
 
 		BeforeEach(func() {
@@ -301,6 +304,7 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				[]string{namespace1},
 				0,
 				inputResourceStatusUnmarshaler)
+			statusClient = statusutils.NewNamespacedStatusesClient(namespace)
 		})
 
 		It("return the expected kind name", func() {
@@ -315,27 +319,32 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 			It("call read", func() {
 				_, err := rc.Read(namespace2, "test", clients.ReadOpts{})
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("this client was not configured to access resources in the")))
 			})
 
 			It("call write", func() {
-				_, err := rc.Write(&v1.MockResource{Metadata: &core.Metadata{Namespace: namespace2}}, clients.WriteOpts{})
-				Expect(err).To(HaveOccurred())
+				_, err := rc.Write(&v1.MockResource{Metadata: &core.Metadata{Name: "test", Namespace: namespace2}}, clients.WriteOpts{})
+				Expect(err).To(MatchError(ContainSubstring("this client was not configured to access resources in the")))
 			})
 
 			It("call list", func() {
 				_, err := rc.List(namespace2, clients.ListOpts{})
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("this client was not configured to access resources in the")))
 			})
 
 			It("call delete", func() {
 				err := rc.Delete(namespace2, "test", clients.DeleteOpts{})
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("this client was not configured to access resources in the")))
 			})
 
 			It("call watch", func() {
 				_, _, err := rc.Watch(namespace2, clients.WatchOpts{})
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("this client was not configured to access resources in the")))
+			})
+
+			It("call apply status", func() {
+				_, err := rc.ApplyStatus(statusClient, &v1.MockResource{Metadata: &core.Metadata{Name: "test", Namespace: namespace2}}, clients.ApplyStatusOpts{})
+				Expect(err).To(MatchError(ContainSubstring("this client was not configured to access resources in the")))
 			})
 		})
 
@@ -571,6 +580,59 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(errors.IsExist(err)).To(BeTrue())
 				})
+			})
+		})
+
+		Describe("applying a status", func() {
+
+			var (
+				clientset *fake.Clientset
+
+				resourceToUpdate = &v1.MockResource{
+					Metadata: &core.Metadata{
+						Name:      "mock-1",
+						Namespace: namespace1,
+					},
+					Data:          data,
+					SomeDumbField: dumbValue,
+				}
+			)
+
+			BeforeEach(func() {
+				clientset = fake.NewSimpleClientset(v1.MockResourceCrd)
+
+				// Create an initial resource with the name of resourceToUpdate
+				err := util.CreateMockResource(ctx, clientset, namespace1, resourceToUpdate.Metadata.Name, "to-be-updated")
+				Expect(err).NotTo(HaveOccurred())
+
+				rc = kube.NewResourceClient(
+					v1.MockResourceCrd,
+					clientset,
+					cache,
+					&v1.MockResource{},
+					[]string{namespace1},
+					0,
+					inputResourceStatusUnmarshaler)
+				Expect(rc.Register()).NotTo(HaveOccurred())
+			})
+
+			It("skips status updates if too large", func() {
+
+				var sb strings.Builder
+				for i := 0; i < shared.MaxStatusBytes+1; i++ {
+					sb.WriteString("a")
+				}
+				tooLargeReason := sb.String()
+
+				statusClient.SetStatus(resourceToUpdate, &core.Status{
+					State:      2,
+					Reason:     tooLargeReason,
+					ReportedBy: "me",
+				})
+
+				res, err := rc.ApplyStatus(statusClient, resourceToUpdate, clients.ApplyStatusOpts{})
+				Expect(err).To(MatchError(ContainSubstring("patch is too large")))
+				Expect(res).To(BeNil())
 			})
 		})
 
