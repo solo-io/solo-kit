@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/go-utils/contextutils"
@@ -19,6 +20,15 @@ const (
 	// 2147483647 bytes max k8s get from etcd / 2kb per status patch ~= 1 million resources
 	MaxStatusBytes = 2048
 )
+
+var (
+	// only public for unit tests!
+	DisableMaxStatusSize = false
+)
+
+func init() {
+	DisableMaxStatusSize = os.Getenv("DISABLE_MAX_STATUS_SIZE") == "true"
+}
 
 // ApplyStatus is used by clients that don't support patch updates to resource statuses (e.g. consul, files, in-memory)
 func ApplyStatus(rc clients.ResourceClient, statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
@@ -78,9 +88,9 @@ func GetJsonPatchData(ctx context.Context, inputResource resources.InputResource
 	patch := fmt.Sprintf(`[{"op": "replace", "path": "/status/statuses/%s", "value": %s}]`, ns, string(bytes)) // only replace our status so other reporters are not affected (e.g. blue-green of gloo)
 	data := []byte(patch)
 
-	if len(data) > MaxStatusBytes {
+	if !DisableMaxStatusSize && len(data) > MaxStatusBytes {
 		if contextutils.GetLogLevel() == zapcore.DebugLevel {
-			contextutils.LoggerFrom(ctx).Warnf("status patch is too large, will not apply: %s", data)
+			contextutils.LoggerFrom(ctx).Debugf("status patch is too large, will not apply: %s", data)
 		} else {
 			contextutils.LoggerFrom(ctx).Warnw("status patch is too large, will not apply", zap.Int("status_bytes", len(data)))
 		}

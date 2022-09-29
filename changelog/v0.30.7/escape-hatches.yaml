@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    resolvesIssue: false
+    description: Add escape hatches via env var for any users depending on large statuses 
+    issueLink: https://github.com/solo-io/solo-kit/issues/523
