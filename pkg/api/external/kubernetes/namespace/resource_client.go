@@ -17,7 +17,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
@@ -63,6 +62,10 @@ func ToKubeNamespace(resource resources.Resource) (*kubev1.Namespace, error) {
 	namespace := kubev1.Namespace(namespaceResource.KubeNamespace)
 
 	return &namespace, nil
+}
+
+func (rc *namespaceResourceClient) RegisterNamespace(namespace string) error {
+	return rc.cache.RegisterNewNamespaceCache(namespace)
 }
 
 func (rc *namespaceResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
@@ -173,7 +176,11 @@ func (rc *namespaceResourceClient) List(namespace string, opts clients.ListOpts)
 		return nil, eris.New("to list namespaces you must watch all namespaces")
 	}
 
-	namespaceObjList, err := rc.cache.NamespaceLister().List(labels.SelectorFromSet(opts.Selector))
+	listOptions, err := clients.GetLabelSelector(opts)
+	if err != nil {
+		return nil, err
+	}
+	namespaceObjList, err := rc.cache.NamespaceLister().List(listOptions)
 	if err != nil {
 		return nil, eris.Wrapf(err, "listing namespaces level")
 	}

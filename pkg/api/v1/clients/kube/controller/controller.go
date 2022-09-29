@@ -16,6 +16,7 @@ import (
 type Controller struct {
 	name string
 
+	// informers are the caching indexes used to retrieve events of add,update, and deletes from.
 	informers []cache.SharedIndexInformer
 
 	// WorkQueue is a rate limited work queue. This is used to queue work to be
@@ -27,6 +28,13 @@ type Controller struct {
 
 	// handler to call
 	handler cache.ResourceEventHandler
+	// suncFunctions of the informers used to ensure that the informers
+	// are set up and ready to transmit information to the controller.
+	syncFunctions []cache.InformerSynced
+	// stopCh is used to stop all the go routines of the controller.
+	stopCh <-chan struct{}
+	// isRunning this flag is used to identify when the controller is running, or not.
+	isRunning bool
 }
 
 // Returns a new kubernetes controller without starting it.
@@ -55,31 +63,25 @@ func NewController(
 func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 	defer runtime.HandleCrash()
 
+	c.stopCh = stopCh
+
 	log.Debugf("Starting %v controller", c.name)
 
 	// For each informer
-	var syncFunctions []cache.InformerSynced
 	for _, informer := range c.informers {
-
-		// 1. Get the function to tell if it has synced
-		syncFunctions = append(syncFunctions, informer.HasSynced)
-
-		// 2. Register the event handler with the informer
-		informer.AddEventHandler(c.eventHandlerFunctions())
-
-		// 3. Run the informer
-		go informer.Run(stopCh)
+		c.setupInformer(informer)
 	}
 
-	// Wait for all the informer caches to be synced before starting workers
-	log.Debugf("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, []cache.InformerSynced(syncFunctions)...); !ok {
-		return fmt.Errorf("error while waiting for caches to sync")
+	if err := c.waitForCacheToSync(); err != nil {
+		return err
 	}
 
 	// Start workers in goroutine so we can defer the queue shutdown
 	go func() {
-		defer c.workQueue.ShutDown()
+		defer func() {
+			c.workQueue.ShutDown()
+			c.isRunning = false
+		}()
 		log.Debugf("Starting workers")
 
 		// Launch parallel workers to process resources
@@ -93,7 +95,42 @@ func (c *Controller) Run(parallelism int, stopCh <-chan struct{}) error {
 		<-stopCh
 		log.Debugf("Stopping workers")
 	}()
+	c.isRunning = true
+	return nil
+}
 
+// Wait for all the informer caches to be synced before starting workers
+func (c *Controller) waitForCacheToSync() error {
+	log.Debugf("Waiting for informer caches to sync")
+	if ok := cache.WaitForCacheSync(c.stopCh, []cache.InformerSynced(c.syncFunctions)...); !ok {
+		return fmt.Errorf("error while waiting for caches to sync")
+	}
+	return nil
+}
+
+// setupInformer
+// 1. Get the function to tell if it has synced
+// 2. Register the event handler with the informer
+// 3. Run the informer
+func (c *Controller) setupInformer(informer cache.SharedIndexInformer) {
+	c.syncFunctions = append(c.syncFunctions, informer.HasSynced)
+	informer.AddEventHandler(c.eventHandlerFunctions())
+	go informer.Run(c.stopCh)
+}
+
+// AddNewOfInformers will add a list of new informers to the already running controller.
+// If the controller is not running, it will just append the informers to the controllers
+// list of informers
+func (c *Controller) AddNewOfInformers(newInformers ...cache.SharedIndexInformer) error {
+	c.informers = append(c.informers, newInformers...)
+	if c.isRunning {
+		for _, in := range newInformers {
+			c.setupInformer(in)
+		}
+		if err := c.waitForCacheToSync(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

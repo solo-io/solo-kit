@@ -4,6 +4,19 @@ import (
 	"text/template"
 )
 
+// Snapshot Emitters are used to take snapshots of the current system, using either
+// cluster scoped or non namespaced scoped selection. Watches are used to notify
+// the snapshot emitter when new resources have been created or updated.
+// Snapshot Emitters will delegate to Resource Clients to list and watch defined
+// resources.
+// Non-ClusterScoped - gets all the resources within the watched set of namespaces. If Watched Namespaces is
+// set to [""] then watches all namespaces.  If the Expression Selector on the WatchOpts is set, then it will watch
+// namespaces that meet the label criteria on the Expression Selector in addition to the watched namespaces.
+// If watched Namespaces is set to [""] with the Expression Selectors, then it only watches the namespaces that meet the
+// label criteria on the Expression Selectors.
+// ClusterScoped -- there is no namespacing. Gets all the resources within the entire cluster. There is one watch per resource.
+// Setting the Expression Selectors will have no impact on namespaces.
+// Not using ClusterScoped - allows for using namespacing, so that each namespace has it's own watch per resource.
 var ResourceGroupEmitterTemplate = template.Must(template.New("resource_group_emitter").Funcs(Funcs).Parse(
 	`package {{ .Project.ProjectConfig.Version }}
 
@@ -17,7 +30,7 @@ var ResourceGroupEmitterTemplate = template.Must(template.New("resource_group_em
 {{- $clients := (join_str_slice $clients ", ") }}
 
 import (
-	"fmt"
+	"bytes"
 	"sync"
 	"time"
 
@@ -30,6 +43,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skstats "github.com/solo-io/solo-kit/pkg/stats"
 	
 	"github.com/solo-io/go-utils/errutils"
@@ -109,15 +123,16 @@ type {{ .GoName }}Emitter interface {
 {{- end}}
 }
 
-func New{{ .GoName }}Emitter({{ $client_declarations }}) {{ .GoName }}Emitter {
-	return New{{ .GoName }}EmitterWithEmit({{ $clients }}, make(chan struct{}))
+func New{{ .GoName }}Emitter({{ $client_declarations }}, resourceNamespaceLister resources.ResourceNamespaceLister) {{ .GoName }}Emitter {
+	return New{{ .GoName }}EmitterWithEmit({{ $clients }}, resourceNamespaceLister, make(chan struct{}))
 }
 
-func New{{ .GoName }}EmitterWithEmit({{ $client_declarations }}, emit <-chan struct{}) {{ .GoName }}Emitter {
+func New{{ .GoName }}EmitterWithEmit({{ $client_declarations }}, resourceNamespaceLister resources.ResourceNamespaceLister, emit <-chan struct{}) {{ .GoName }}Emitter {
 	return &{{ lower_camel .GoName }}Emitter{
 {{- range .Resources}}
 		{{ lower_camel .Name }}:{{ lower_camel .Name }}Client,
 {{- end}}
+		resourceNamespaceLister: resourceNamespaceLister,
 		forceEmit: emit,
 	}
 }
@@ -127,6 +142,14 @@ type {{ lower_camel .GoName }}Emitter struct {
 {{- range .Resources}}
 	{{ lower_camel .Name }} {{ .ImportPrefix }}{{ .Name }}Client
 {{- end}}
+	// resourceNamespaceLister is used to watch for new namespaces when they are created.
+	// It is used when Expression Selector is in the Watch Opts set in Snapshot().
+	resourceNamespaceLister resources.ResourceNamespaceLister
+	// namespacesWatching is the set of namespaces that we are watching. This is helpful
+	// when Expression Selector is set on the Watch Opts in Snapshot().
+	namespacesWatching sync.Map
+	// updateNamespaces is used to perform locks and unlocks when watches on namespaces are being updated/created
+	updateNamespaces sync.Mutex
 }
 
 func (c *{{ lower_camel .GoName }}Emitter) Register() error {
@@ -145,6 +168,14 @@ func (c *{{ lower_camel $.GoName }}Emitter) {{ .Name }}() {{ .ImportPrefix }}{{ 
 }
 {{- end}}
 
+// Snapshots will return a channel that can be used to receive snapshots of the 
+// state of the resources it is watching
+// when watching resources, you can set the watchNamespaces, and you can set the 
+// ExpressionSelector of the WatchOpts.  Setting watchNamespaces will watch for all resources
+// that are in the specified namespaces. In addition if ExpressionSelector of the WatchOpts is
+// set, then all namespaces that meet the label criteria of the ExpressionSelector will
+// also be watched. If Expression Selector is set and watched namespaces is set to [""], then it
+// will only watch namespaces that meet the label expression selector criteria.
 func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *{{ .GoName }}Snapshot, <-chan error, error) {
 
 	if len(watchNamespaces) == 0 {
@@ -159,81 +190,309 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 	}
 
 	errs := make(chan error)
+	hasWatchedNamespaces :=  len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
+	watchingLabeledNamespaces := ! (opts.ExpressionSelector == "")
 	var done sync.WaitGroup
 	ctx := opts.Ctx
 
+	// setting up the options for both listing and watching resources in namespaces
+	watchedNamespacesListOptions := clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector }
+	watchedNamespacesWatchOptions := clients.WatchOpts{Ctx: opts.Ctx, Selector: opts.Selector }
 
 {{- range .Resources}}
 	/* Create channel for {{ .Name }} */
 {{- if (not .ClusterScoped) }}
-	type {{ lower_camel .Name }}ListWithNamespace struct {
-		list {{ .ImportPrefix }}{{ .Name }}List
-		namespace string
-	}
+type {{ lower_camel .Name }}ListWithNamespace struct {
+	list {{ .ImportPrefix }}{{ .Name }}List
+	namespace string
+}
 	{{ lower_camel .Name }}Chan := make(chan {{ lower_camel .Name }}ListWithNamespace)
-
-	var initial{{ upper_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List{{- end }}
-
-{{- end}}
+	var initial{{ upper_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List
+{{- end }}
+{{- end }}
 
 	currentSnapshot := {{ .GoName }}Snapshot{}
 
-	{{- range .Resources}}
-	{{- if not .ClusterScoped }}
-			{{ lower_camel .PluralName }}ByNamespace := make(map[string]{{ .ImportPrefix }}{{ .Name }}List)
-	{{- end }}
-	{{- end }}
-
-	for _, namespace := range watchNamespaces {
 {{- range .Resources}}
-{{- if (not .ClusterScoped) }}
-		/* Setup namespaced watch for {{ .Name }} */
-		{
-			{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "initial {{ .Name }} list")
-			}
-			initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List, {{ lower_camel .PluralName }}...)
-			{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .PluralName }}
-		}
-		{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting {{ .Name }} watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-{{ lower_camel .PluralName }}")
-		}(namespace)
-
+{{- if not .ClusterScoped }}
+	{{ lower_camel .PluralName }}ByNamespace := sync.Map{}
 {{- end }}
-{{- end}}
+{{- end }}
+	if hasWatchedNamespaces || ! watchingLabeledNamespaces {
+		// then watch all resources on watch Namespaces
 
-		/* Watch for changes and update snapshot */
-		go func(namespace string) {
+		// watched namespaces
+		for _, namespace := range watchNamespaces {
+	{{- range .Resources}}
+	{{- if (not .ClusterScoped) }}
+			/* Setup namespaced watch for {{ .Name }} */
+			{
+				{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, watchedNamespacesListOptions)
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial {{ .Name }} list")
+				}
+				initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List, {{ lower_camel .PluralName }}...)
+				{{ lower_camel .PluralName }}ByNamespace.Store(namespace, {{ lower_camel .PluralName }})
+			}
+			{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, watchedNamespacesWatchOptions)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting {{ .Name }} watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-{{ lower_camel .PluralName }}")
+			}(namespace)
+
+	{{- end }}
+	{{- end }}
+			/* Watch for changes and update snapshot */
+			go func(namespace string) {
+				defer func() {
+					c.namespacesWatching.Delete(namespace)
+				}()
+				c.namespacesWatching.Store(namespace, true)
+				for {
+					select {
+					case <-ctx.Done():
+						return
+	{{- range .Resources}}
+	{{- if (not .ClusterScoped) }}
+					case {{ lower_camel .Name }}List, ok := <- {{ lower_camel .Name }}NamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list:{{ lower_camel .Name }}List, namespace:namespace}:
+						}
+	{{- end }}
+	{{- end}}
+					}
+				}
+			}(namespace)
+		}
+	}
+	// watch all other namespaces that are labeled and fit the Expression Selector
+	if opts.ExpressionSelector != "" {
+		// watch resources of non-watched namespaces that fit the expression selectors
+		namespaceListOptions := resources.ResourceNamespaceListOptions{
+			Ctx: opts.Ctx,
+			ExpressionSelector: opts.ExpressionSelector,
+		}
+		namespaceWatchOptions := resources.ResourceNamespaceWatchOptions{
+			Ctx: opts.Ctx,
+			ExpressionSelector: opts.ExpressionSelector,
+		}
+
+		filterNamespaces := resources.ResourceNamespaceList{}
+		for _, ns := range watchNamespaces {
+			// we do not want to filter out "" which equals all namespaces
+			// the reason is because we will never create a watch on ""(all namespaces) because
+			// doing so means we watch all resources regardless of namespace. Our intent is to
+			// watch only certain namespaces.
+			if ns != "" {
+				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
+			}
+		}
+		namespacesResources, err := c.resourceNamespaceLister.GetResourceNamespaceList(namespaceListOptions, filterNamespaces)
+		if err != nil {
+			return nil, nil, err
+		}
+		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
+		// non watched namespaces that are labeled
+		for i, resourceNamespace := range namespacesResources {
+			c.namespacesWatching.Load(resourceNamespace)
+			namespace := resourceNamespace.Name
+			newlyRegisteredNamespaces[i] = namespace
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }}
+			err = c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the {{ lower_camel .Name }}")
+			}			
+			/* Setup namespaced watch for {{ upper_camel .Name }} */
+			{
+				{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial {{ upper_camel .Name }} list with new namespace")
+				}
+				initial{{ upper_camel .Name }}List = append(initial{{ upper_camel .Name }}List,{{ lower_camel .PluralName }}...)
+				{{ lower_camel .PluralName }}ByNamespace.Store(namespace, {{ lower_camel .PluralName }})
+			}
+			{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, clients.WatchOpts{Ctx: opts.Ctx})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting {{ upper_camel .Name }} watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-{{ lower_camel .PluralName }}")
+			}(namespace)
+{{- end }}
+{{- end }}
+			/* Watch for changes and update snapshot */
+			go func(namespace string) {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }}
+					case {{ lower_camel .Name }}List, ok := <-{{ lower_camel .Name }}NamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ lower_camel .Name }}List, namespace: namespace}:
+						}
+{{- end }}
+{{- end }}
+					}
+				}
+			}(namespace)
+		}
+		if len(newlyRegisteredNamespaces) > 0 {
+			contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newlyRegisteredNamespaces)
+		}
+
+		// create watch on all namespaces, so that we can add all resources from new namespaces
+		// we will be watching namespaces that meet the Expression Selector filter
+
+		namespaceWatch, errsReceiver, err := c.resourceNamespaceLister.GetResourceNamespaceWatch(namespaceWatchOptions, filterNamespaces)
+		if err != nil {
+			return nil, nil, err
+		}
+		if errsReceiver != nil {
+			go func() {
+				for {
+					select{
+					case <-ctx.Done():
+						return
+					case err = <- errsReceiver:
+						errs <- errors.Wrapf(err, "received error from watch on resource namespaces")
+					}
+				}
+			}()
+		}
+
+		go func() {
 			for {
 				select {
 				case <-ctx.Done():
 					return
-{{- range .Resources}}
-{{- if (not .ClusterScoped) }}
-				case {{ lower_camel .Name }}List, ok := <- {{ lower_camel .Name }}NamespacesChan:
+				case resourceNamespaces, ok := <-namespaceWatch:
 					if !ok {
 						return
 					}
-					select {
-					case <-ctx.Done():
-						return
-					case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list:{{ lower_camel .Name }}List, namespace:namespace}:
+					// get the list of new namespaces, if there is a new namespace
+					// get the list of resources from that namespace, and add
+					// a watch for new resources created/deleted on that namespace
+					c.updateNamespaces.Lock()
+
+					// get the new namespaces, and get a map of the namespaces
+					mapOfResourceNamespaces := make(map[string]struct{}, len(resourceNamespaces))
+					newNamespaces := []string{}
+					for _, ns := range resourceNamespaces {
+						if _, hit := c.namespacesWatching.Load(ns.Name); !hit {
+							newNamespaces = append(newNamespaces, ns.Name)
+						}
+						mapOfResourceNamespaces[ns.Name] = struct{}{}
 					}
+
+					for _, ns := range watchNamespaces {
+						mapOfResourceNamespaces[ns] = struct{}{}
+					}
+
+					missingNamespaces := []string{}
+					// use the map of namespace resources to find missing/deleted namespaces
+					c.namespacesWatching.Range(func(key interface{}, value interface{}) bool {
+						name := key.(string)
+						if _, hit := mapOfResourceNamespaces[name]; !hit {
+							missingNamespaces = append(missingNamespaces, name)
+						}
+						return true
+					})
+				
+					for _, ns := range missingNamespaces {
+{{- range .Resources}}
+{{- if (not .ClusterScoped) }}
+						{{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ .ImportPrefix }}{{ .Name }}List{}, namespace: ns}
 {{- end }}
-{{- end}}
+{{- end }}
+					}
+
+					for _, namespace := range newNamespaces {
+						var err error
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }}
+						err = c.{{ lower_camel .Name }}.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the {{ lower_camel .Name }}")
+							continue
+						}
+						/* Setup namespaced watch for {{ upper_camel .Name }} for new namespace */
+						{
+							{{ lower_camel .PluralName }}, err := c.{{ lower_camel .Name }}.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+							if err != nil {
+								errs <- errors.Wrapf(err, "initial new namespace {{ upper_camel .Name }} list in namespace watch")
+								continue
+							}
+							{{ lower_camel .PluralName }}ByNamespace.Store(namespace, {{ lower_camel .PluralName }})
+						}
+						{{ lower_camel .Name }}NamespacesChan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(namespace, clients.WatchOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+						if err != nil {
+							errs <- errors.Wrapf(err, "starting new namespace {{ upper_camel .Name }} watch")
+							continue
+						}
+
+						done.Add(1)
+						go func(namespace string) {
+							defer done.Done()
+							errutils.AggregateErrs(ctx, errs, {{ lower_camel .Name }}Errs, namespace+"-new-namespace-{{ lower_camel .PluralName }}")
+						}(namespace)
+{{- end }}
+{{- end }}
+						/* Watch for changes and update snapshot */
+						go func(namespace string) {
+							defer func() {
+								c.namespacesWatching.Delete(namespace)
+							}()
+							c.namespacesWatching.Store(namespace, true)
+							for {
+								select {
+								case <-ctx.Done():
+									return
+{{- range .Resources }}
+{{- if (not .ClusterScoped) }}
+								case {{ lower_camel .Name }}List, ok := <-{{ lower_camel .Name }}NamespacesChan:
+									if !ok {
+										return
+									}
+									select {
+									case <-ctx.Done():
+										return
+									case {{ lower_camel .Name }}Chan <- {{ lower_camel .Name }}ListWithNamespace{list: {{ lower_camel .Name }}List, namespace: namespace}:
+									}
+{{- end }}
+{{- end }}
+								}
+							}
+						}(namespace)
+					}
+					if len(newNamespaces) > 0 {
+						contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newNamespaces)
+					}
+					c.updateNamespaces.Unlock()
 				}
 			}
-		}(namespace)
+		}()
 	}
-
 {{- range .Resources}}
 {{- if .ClusterScoped }}
 	/* Setup cluster-wide watch for {{ .Name }} */
@@ -242,7 +501,11 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "initial {{ .Name }} list")
 	}
-	{{ lower_camel .Name }}Chan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(opts)
+	// for Cluster scoped resources, we do not use Expression Selectors
+	{{ lower_camel .Name }}Chan, {{ lower_camel .Name }}Errs, err := c.{{ lower_camel .Name }}.Watch(clients.WatchOpts{
+		Ctx: opts.Ctx,
+		Selector: opts.Selector,
+	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "starting {{ .Name }} watch")
 	}
@@ -340,17 +603,20 @@ func (c *{{ lower_camel .GoName }}Emitter) Snapshots(watchNamespaces []string, o
 				)
 
 				// merge lists by namespace
-				{{ lower_camel .PluralName }}ByNamespace[namespace] = {{ lower_camel .Name }}NamespacedList.list
+				{{ lower_camel .PluralName }}ByNamespace.Store(namespace, {{ lower_camel .Name }}NamespacedList.list)
 				var {{ lower_camel .Name }}List {{ .ImportPrefix }}{{ .Name }}List
-				for _, {{ lower_camel .PluralName }} := range {{ lower_camel .PluralName }}ByNamespace {
-					{{ lower_camel .Name }}List  = append({{ lower_camel .Name }}List, {{ lower_camel .PluralName }}...)
-				}
+				{{ lower_camel .PluralName }}ByNamespace.Range(func(key interface{}, value interface{}) bool {
+					mocks := value.({{ .ImportPrefix }}{{ .Name }}List)
+					{{ lower_camel .Name }}List = append({{ lower_camel .Name }}List, mocks...)
+					return true
+				})
 				currentSnapshot.{{ upper_camel .PluralName }} = {{ lower_camel .Name }}List.Sort()
 {{- end }}
-{{- end}}
+{{- end }}
 			}
 		}
 	}()
 	return snapshots, errs, nil
 }
+
 `))

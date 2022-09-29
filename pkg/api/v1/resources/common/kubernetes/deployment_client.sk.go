@@ -19,6 +19,7 @@ type DeploymentWatcher interface {
 type DeploymentClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+	RegisterNamespace(namespace string) error
 	Read(namespace, name string, opts clients.ReadOpts) (*Deployment, error)
 	Write(resource *Deployment, opts clients.WriteOpts) (*Deployment, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
@@ -57,6 +58,10 @@ func (client *deploymentClient) BaseClient() clients.ResourceClient {
 
 func (client *deploymentClient) Register() error {
 	return client.rc.Register()
+}
+
+func (client *deploymentClient) RegisterNamespace(namespace string) error {
+	return client.rc.RegisterNamespace(namespace)
 }
 
 func (client *deploymentClient) Read(namespace, name string, opts clients.ReadOpts) (*Deployment, error) {

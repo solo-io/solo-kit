@@ -19,6 +19,7 @@ type MockCustomSpecHashTypeWatcher interface {
 type MockCustomSpecHashTypeClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+	RegisterNamespace(namespace string) error
 	Read(namespace, name string, opts clients.ReadOpts) (*MockCustomSpecHashType, error)
 	Write(resource *MockCustomSpecHashType, opts clients.WriteOpts) (*MockCustomSpecHashType, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
@@ -57,6 +58,10 @@ func (client *mockCustomSpecHashTypeClient) BaseClient() clients.ResourceClient 
 
 func (client *mockCustomSpecHashTypeClient) Register() error {
 	return client.rc.Register()
+}
+
+func (client *mockCustomSpecHashTypeClient) RegisterNamespace(namespace string) error {
+	return client.rc.RegisterNamespace(namespace)
 }
 
 func (client *mockCustomSpecHashTypeClient) Read(namespace, name string, opts clients.ReadOpts) (*MockCustomSpecHashType, error) {

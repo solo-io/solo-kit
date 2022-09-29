@@ -120,6 +120,10 @@ func NewResourceClientWithSecretConverter(kube kubernetes.Interface, resourceTyp
 
 var _ clients.ResourceClient = &ResourceClient{}
 
+func (rc *ResourceClient) RegisterNamespace(namespace string) error {
+	return rc.cache.RegisterNewNamespaceCache(namespace)
+}
+
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")

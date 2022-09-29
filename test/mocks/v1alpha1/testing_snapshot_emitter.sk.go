@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	skstats "github.com/solo-io/solo-kit/pkg/stats"
 
@@ -83,20 +84,29 @@ type TestingEmitter interface {
 	MockResource() MockResourceClient
 }
 
-func NewTestingEmitter(mockResourceClient MockResourceClient) TestingEmitter {
-	return NewTestingEmitterWithEmit(mockResourceClient, make(chan struct{}))
+func NewTestingEmitter(mockResourceClient MockResourceClient, resourceNamespaceLister resources.ResourceNamespaceLister) TestingEmitter {
+	return NewTestingEmitterWithEmit(mockResourceClient, resourceNamespaceLister, make(chan struct{}))
 }
 
-func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, emit <-chan struct{}) TestingEmitter {
+func NewTestingEmitterWithEmit(mockResourceClient MockResourceClient, resourceNamespaceLister resources.ResourceNamespaceLister, emit <-chan struct{}) TestingEmitter {
 	return &testingEmitter{
-		mockResource: mockResourceClient,
-		forceEmit:    emit,
+		mockResource:            mockResourceClient,
+		resourceNamespaceLister: resourceNamespaceLister,
+		forceEmit:               emit,
 	}
 }
 
 type testingEmitter struct {
 	forceEmit    <-chan struct{}
 	mockResource MockResourceClient
+	// resourceNamespaceLister is used to watch for new namespaces when they are created.
+	// It is used when Expression Selector is in the Watch Opts set in Snapshot().
+	resourceNamespaceLister resources.ResourceNamespaceLister
+	// namespacesWatching is the set of namespaces that we are watching. This is helpful
+	// when Expression Selector is set on the Watch Opts in Snapshot().
+	namespacesWatching sync.Map
+	// updateNamespaces is used to perform locks and unlocks when watches on namespaces are being updated/created
+	updateNamespaces sync.Mutex
 }
 
 func (c *testingEmitter) Register() error {
@@ -110,6 +120,14 @@ func (c *testingEmitter) MockResource() MockResourceClient {
 	return c.mockResource
 }
 
+// Snapshots will return a channel that can be used to receive snapshots of the
+// state of the resources it is watching
+// when watching resources, you can set the watchNamespaces, and you can set the
+// ExpressionSelector of the WatchOpts.  Setting watchNamespaces will watch for all resources
+// that are in the specified namespaces. In addition if ExpressionSelector of the WatchOpts is
+// set, then all namespaces that meet the label criteria of the ExpressionSelector will
+// also be watched. If Expression Selector is set and watched namespaces is set to [""], then it
+// will only watch namespaces that meet the label expression selector criteria.
 func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TestingSnapshot, <-chan error, error) {
 
 	if len(watchNamespaces) == 0 {
@@ -124,59 +142,269 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 	}
 
 	errs := make(chan error)
+	hasWatchedNamespaces := len(watchNamespaces) > 1 || (len(watchNamespaces) == 1 && watchNamespaces[0] != "")
+	watchingLabeledNamespaces := !(opts.ExpressionSelector == "")
 	var done sync.WaitGroup
 	ctx := opts.Ctx
+
+	// setting up the options for both listing and watching resources in namespaces
+	watchedNamespacesListOptions := clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector}
+	watchedNamespacesWatchOptions := clients.WatchOpts{Ctx: opts.Ctx, Selector: opts.Selector}
 	/* Create channel for MockResource */
 	type mockResourceListWithNamespace struct {
 		list      MockResourceList
 		namespace string
 	}
 	mockResourceChan := make(chan mockResourceListWithNamespace)
-
 	var initialMockResourceList MockResourceList
 
 	currentSnapshot := TestingSnapshot{}
-	mocksByNamespace := make(map[string]MockResourceList)
+	mocksByNamespace := sync.Map{}
+	if hasWatchedNamespaces || !watchingLabeledNamespaces {
+		// then watch all resources on watch Namespaces
 
-	for _, namespace := range watchNamespaces {
-		/* Setup namespaced watch for MockResource */
-		{
-			mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "initial MockResource list")
+		// watched namespaces
+		for _, namespace := range watchNamespaces {
+			/* Setup namespaced watch for MockResource */
+			{
+				mocks, err := c.mockResource.List(namespace, watchedNamespacesListOptions)
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial MockResource list")
+				}
+				initialMockResourceList = append(initialMockResourceList, mocks...)
+				mocksByNamespace.Store(namespace, mocks)
 			}
-			initialMockResourceList = append(initialMockResourceList, mocks...)
-			mocksByNamespace[namespace] = mocks
+			mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, watchedNamespacesWatchOptions)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
+			}(namespace)
+			/* Watch for changes and update snapshot */
+			go func(namespace string) {
+				defer func() {
+					c.namespacesWatching.Delete(namespace)
+				}()
+				c.namespacesWatching.Store(namespace, true)
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case mockResourceList, ok := <-mockResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
+						}
+					}
+				}
+			}(namespace)
 		}
-		mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, opts)
+	}
+	// watch all other namespaces that are labeled and fit the Expression Selector
+	if opts.ExpressionSelector != "" {
+		// watch resources of non-watched namespaces that fit the expression selectors
+		namespaceListOptions := resources.ResourceNamespaceListOptions{
+			Ctx:                opts.Ctx,
+			ExpressionSelector: opts.ExpressionSelector,
+		}
+		namespaceWatchOptions := resources.ResourceNamespaceWatchOptions{
+			Ctx:                opts.Ctx,
+			ExpressionSelector: opts.ExpressionSelector,
+		}
+
+		filterNamespaces := resources.ResourceNamespaceList{}
+		for _, ns := range watchNamespaces {
+			// we do not want to filter out "" which equals all namespaces
+			// the reason is because we will never create a watch on ""(all namespaces) because
+			// doing so means we watch all resources regardless of namespace. Our intent is to
+			// watch only certain namespaces.
+			if ns != "" {
+				filterNamespaces = append(filterNamespaces, resources.ResourceNamespace{Name: ns})
+			}
+		}
+		namespacesResources, err := c.resourceNamespaceLister.GetResourceNamespaceList(namespaceListOptions, filterNamespaces)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+			return nil, nil, err
+		}
+		newlyRegisteredNamespaces := make([]string, len(namespacesResources))
+		// non watched namespaces that are labeled
+		for i, resourceNamespace := range namespacesResources {
+			c.namespacesWatching.Load(resourceNamespace)
+			namespace := resourceNamespace.Name
+			newlyRegisteredNamespaces[i] = namespace
+			err = c.mockResource.RegisterNamespace(namespace)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
+			}
+			/* Setup namespaced watch for MockResource */
+			{
+				mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx})
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "initial MockResource list with new namespace")
+				}
+				initialMockResourceList = append(initialMockResourceList, mocks...)
+				mocksByNamespace.Store(namespace, mocks)
+			}
+			mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, clients.WatchOpts{Ctx: opts.Ctx})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "starting MockResource watch")
+			}
+
+			done.Add(1)
+			go func(namespace string) {
+				defer done.Done()
+				errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
+			}(namespace)
+			/* Watch for changes and update snapshot */
+			go func(namespace string) {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case mockResourceList, ok := <-mockResourceNamespacesChan:
+						if !ok {
+							return
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
+						}
+					}
+				}
+			}(namespace)
+		}
+		if len(newlyRegisteredNamespaces) > 0 {
+			contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newlyRegisteredNamespaces)
 		}
 
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-mocks")
-		}(namespace)
+		// create watch on all namespaces, so that we can add all resources from new namespaces
+		// we will be watching namespaces that meet the Expression Selector filter
 
-		/* Watch for changes and update snapshot */
-		go func(namespace string) {
+		namespaceWatch, errsReceiver, err := c.resourceNamespaceLister.GetResourceNamespaceWatch(namespaceWatchOptions, filterNamespaces)
+		if err != nil {
+			return nil, nil, err
+		}
+		if errsReceiver != nil {
+			go func() {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case err = <-errsReceiver:
+						errs <- errors.Wrapf(err, "received error from watch on resource namespaces")
+					}
+				}
+			}()
+		}
+
+		go func() {
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case mockResourceList, ok := <-mockResourceNamespacesChan:
+				case resourceNamespaces, ok := <-namespaceWatch:
 					if !ok {
 						return
 					}
-					select {
-					case <-ctx.Done():
-						return
-					case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
+					// get the list of new namespaces, if there is a new namespace
+					// get the list of resources from that namespace, and add
+					// a watch for new resources created/deleted on that namespace
+					c.updateNamespaces.Lock()
+
+					// get the new namespaces, and get a map of the namespaces
+					mapOfResourceNamespaces := make(map[string]struct{}, len(resourceNamespaces))
+					newNamespaces := []string{}
+					for _, ns := range resourceNamespaces {
+						if _, hit := c.namespacesWatching.Load(ns.Name); !hit {
+							newNamespaces = append(newNamespaces, ns.Name)
+						}
+						mapOfResourceNamespaces[ns.Name] = struct{}{}
 					}
+
+					for _, ns := range watchNamespaces {
+						mapOfResourceNamespaces[ns] = struct{}{}
+					}
+
+					missingNamespaces := []string{}
+					// use the map of namespace resources to find missing/deleted namespaces
+					c.namespacesWatching.Range(func(key interface{}, value interface{}) bool {
+						name := key.(string)
+						if _, hit := mapOfResourceNamespaces[name]; !hit {
+							missingNamespaces = append(missingNamespaces, name)
+						}
+						return true
+					})
+
+					for _, ns := range missingNamespaces {
+						mockResourceChan <- mockResourceListWithNamespace{list: MockResourceList{}, namespace: ns}
+					}
+
+					for _, namespace := range newNamespaces {
+						var err error
+						err = c.mockResource.RegisterNamespace(namespace)
+						if err != nil {
+							errs <- errors.Wrapf(err, "there was an error registering the namespace to the mockResource")
+							continue
+						}
+						/* Setup namespaced watch for MockResource for new namespace */
+						{
+							mocks, err := c.mockResource.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+							if err != nil {
+								errs <- errors.Wrapf(err, "initial new namespace MockResource list in namespace watch")
+								continue
+							}
+							mocksByNamespace.Store(namespace, mocks)
+						}
+						mockResourceNamespacesChan, mockResourceErrs, err := c.mockResource.Watch(namespace, clients.WatchOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+						if err != nil {
+							errs <- errors.Wrapf(err, "starting new namespace MockResource watch")
+							continue
+						}
+
+						done.Add(1)
+						go func(namespace string) {
+							defer done.Done()
+							errutils.AggregateErrs(ctx, errs, mockResourceErrs, namespace+"-new-namespace-mocks")
+						}(namespace)
+						/* Watch for changes and update snapshot */
+						go func(namespace string) {
+							defer func() {
+								c.namespacesWatching.Delete(namespace)
+							}()
+							c.namespacesWatching.Store(namespace, true)
+							for {
+								select {
+								case <-ctx.Done():
+									return
+								case mockResourceList, ok := <-mockResourceNamespacesChan:
+									if !ok {
+										return
+									}
+									select {
+									case <-ctx.Done():
+										return
+									case mockResourceChan <- mockResourceListWithNamespace{list: mockResourceList, namespace: namespace}:
+									}
+								}
+							}
+						}(namespace)
+					}
+					if len(newNamespaces) > 0 {
+						contextutils.LoggerFrom(ctx).Infof("registered the new namespace %v", newNamespaces)
+					}
+					c.updateNamespaces.Unlock()
 				}
 			}
-		}(namespace)
+		}()
 	}
 	/* Initialize snapshot for Mocks */
 	currentSnapshot.Mocks = initialMockResourceList.Sort()
@@ -246,11 +474,13 @@ func (c *testingEmitter) Snapshots(watchNamespaces []string, opts clients.WatchO
 				)
 
 				// merge lists by namespace
-				mocksByNamespace[namespace] = mockResourceNamespacedList.list
+				mocksByNamespace.Store(namespace, mockResourceNamespacedList.list)
 				var mockResourceList MockResourceList
-				for _, mocks := range mocksByNamespace {
+				mocksByNamespace.Range(func(key interface{}, value interface{}) bool {
+					mocks := value.(MockResourceList)
 					mockResourceList = append(mockResourceList, mocks...)
-				}
+					return true
+				})
 				currentSnapshot.Mocks = mockResourceList.Sort()
 			}
 		}

@@ -19,6 +19,7 @@ type CustomResourceDefinitionWatcher interface {
 type CustomResourceDefinitionClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+	RegisterNamespace(namespace string) error
 	Read(name string, opts clients.ReadOpts) (*CustomResourceDefinition, error)
 	Write(resource *CustomResourceDefinition, opts clients.WriteOpts) (*CustomResourceDefinition, error)
 	Delete(name string, opts clients.DeleteOpts) error
@@ -57,6 +58,10 @@ func (client *customResourceDefinitionClient) BaseClient() clients.ResourceClien
 
 func (client *customResourceDefinitionClient) Register() error {
 	return client.rc.Register()
+}
+
+func (client *customResourceDefinitionClient) RegisterNamespace(namespace string) error {
+	return client.rc.RegisterNamespace(namespace)
 }
 
 func (client *customResourceDefinitionClient) Read(name string, opts clients.ReadOpts) (*CustomResourceDefinition, error) {

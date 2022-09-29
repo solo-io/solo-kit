@@ -7,6 +7,7 @@ package v2alpha1
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -16,13 +17,20 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
+	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -38,11 +46,21 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
 	}
+
+	type metadataGetter interface {
+		GetMetadata() *core.Metadata
+	}
+
 	var (
 		ctx                                         context.Context
-		namespace1                                  string
-		namespace2                                  string
+		namespace1, namespace2                      string
+		namespace3, namespace4                      string
+		namespace5, namespace6                      string
 		name1, name2                                = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
+		name3, name4                                = "susan" + helpers.RandString(3), "jim" + helpers.RandString(3)
+		name5                                       = "melisa" + helpers.RandString(3)
+		labels1                                     = map[string]string{"env": "test"}
+		labelExpression1                            = "env in (test)"
 		cfg                                         *rest.Config
 		clientset                                   *apiext.Clientset
 		kube                                        kubernetes.Interface
@@ -50,7 +68,500 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		mockResourceClient                          MockResourceClient
 		frequentlyChangingAnnotationsResourceClient FrequentlyChangingAnnotationsResourceClient
 		fakeResourceClient                          testing_solo_io.FakeResourceClient
+		resourceNamespaceLister                     resources.ResourceNamespaceLister
+		kubeCache                                   cache.KubeCoreCache
 	)
+	const (
+		TIME_BETWEEN_MESSAGES = 5
+	)
+	NewMockResourceWithLabels := func(namespace, name string, labels map[string]string) *MockResource {
+		resource := NewMockResource(namespace, name)
+		resource.GetMetadata().Labels = labels
+		return resource
+	}
+	NewFrequentlyChangingAnnotationsResourceWithLabels := func(namespace, name string, labels map[string]string) *FrequentlyChangingAnnotationsResource {
+		resource := NewFrequentlyChangingAnnotationsResource(namespace, name)
+		resource.GetMetadata().Labels = labels
+		return resource
+	}
+	NewFakeResourceWithLabels := func(namespace, name string, labels map[string]string) *testing_solo_io.FakeResource {
+		resource := testing_solo_io.NewFakeResource(namespace, name)
+		resource.GetMetadata().Labels = labels
+		return resource
+	}
+
+	createNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
+		err := kubeutils.CreateNamespacesInParallel(ctx, kube, namespaces...)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	createNamespaceWithLabel := func(ctx context.Context, kube kubernetes.Interface, namespace string, labels map[string]string) {
+		_, err := kube.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   namespace,
+				Labels: labels,
+			},
+		}, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	deleteNamespaces := func(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespaces...)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	// getNewNamespaces is used to generate new namespace names, so that we do not have to wait
+	// when deleting namespaces in runNamespacedSelectorsWithWatchNamespaces. Since
+	// runNamespacedSelectorsWithWatchNamespaces uses watchNamespaces set to namespace1 and
+	// namespace2, this will work. Because the emitter willl only be watching namespaces that are
+	// labeled.
+	getNewNamespaces := func() {
+		namespace3 = helpers.RandString(8)
+		namespace4 = helpers.RandString(8)
+		namespace5 = helpers.RandString(8)
+		namespace6 = helpers.RandString(8)
+	}
+
+	// getNewNamespaces1and2 is used to generate new namespaces for namespace 1 and 2.
+	// used for the same reason as getNewNamespaces() above
+	getNewNamespaces1and2 := func() {
+		namespace1 = helpers.RandString(8)
+		namespace2 = helpers.RandString(8)
+	}
+
+	getMapOfNamespaceResources := func(getList func(string) ([]metadataGetter, error)) map[string][]string {
+		namespaces := []string{namespace1, namespace2, namespace3, namespace4, namespace5, namespace6}
+		namespaceResources := make(map[string][]string, len(namespaces))
+		for _, ns := range namespaces {
+			list, _ := getList(ns)
+			for _, snap := range list {
+				snapMeta := snap.GetMetadata()
+				if _, hit := namespaceResources[snapMeta.Namespace]; hit {
+					namespaceResources[snap.GetMetadata().Namespace] = make([]string, 1)
+				}
+				namespaceResources[snapMeta.Namespace] = append(namespaceResources[snapMeta.Namespace], snapMeta.Name)
+			}
+		}
+		return namespaceResources
+	}
+
+	findNonMatchingResources := func(matchList, findList []metadataGetter) map[string][]string {
+		nonMatching := make(map[string][]string)
+		for _, snap := range matchList {
+			snapMeta := snap.GetMetadata()
+			matched := false
+			for _, pre := range findList {
+				preMeta := pre.GetMetadata()
+				if preMeta.Namespace == snapMeta.Namespace && preMeta.Name == snapMeta.Name {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				if _, hit := nonMatching[snapMeta.Namespace]; hit {
+					nonMatching[snap.GetMetadata().Namespace] = make([]string, 1)
+				}
+				nonMatching[snapMeta.Namespace] = append(nonMatching[snapMeta.Namespace], snapMeta.Name)
+			}
+		}
+		return nonMatching
+	}
+
+	findMatchingResources := func(matchList, findList []metadataGetter) map[string][]string {
+		matching := make(map[string][]string)
+		for _, snap := range matchList {
+			snapMeta := snap.GetMetadata()
+			matched := false
+			for _, pre := range findList {
+				preMeta := pre.GetMetadata()
+				if preMeta.Namespace == snapMeta.Namespace && preMeta.Name == snapMeta.Name {
+					matched = true
+					break
+				}
+			}
+			if matched {
+				if _, hit := matching[snapMeta.Namespace]; hit {
+					matching[snap.GetMetadata().Namespace] = make([]string, 1)
+				}
+				matching[snapMeta.Namespace] = append(matching[snapMeta.Namespace], snapMeta.Name)
+			}
+		}
+		return matching
+	}
+
+	getMapOfResources := func(listOfResources []metadataGetter) map[string][]string {
+		resources := make(map[string][]string)
+		for _, snap := range listOfResources {
+			snapMeta := snap.GetMetadata()
+			if _, hit := resources[snapMeta.Namespace]; hit {
+				resources[snap.GetMetadata().Namespace] = make([]string, 1)
+			}
+			resources[snapMeta.Namespace] = append(resources[snapMeta.Namespace], snapMeta.Name)
+		}
+		return resources
+	}
+	convertMocksToMetadataGetter := func(rl MockResourceList) []metadataGetter {
+		listConv := make([]metadataGetter, len(rl))
+		for i, r := range rl {
+			listConv[i] = r
+		}
+		return listConv
+	}
+	convertFcarsToMetadataGetter := func(rl FrequentlyChangingAnnotationsResourceList) []metadataGetter {
+		listConv := make([]metadataGetter, len(rl))
+		for i, r := range rl {
+			listConv[i] = r
+		}
+		return listConv
+	}
+	convertFakesToMetadataGetter := func(rl testing_solo_io.FakeResourceList) []metadataGetter {
+		listConv := make([]metadataGetter, len(rl))
+		for i, r := range rl {
+			listConv[i] = r
+		}
+		return listConv
+	}
+
+	runNamespacedSelectorsWithWatchNamespaces := func() {
+		ctx := context.Background()
+		err := emitter.Register()
+		Expect(err).NotTo(HaveOccurred())
+
+		// There is an error here in the code.
+		snapshots, errs, err := emitter.Snapshots([]string{namespace1, namespace2}, clients.WatchOpts{
+			Ctx:                ctx,
+			RefreshRate:        time.Second,
+			ExpressionSelector: labelExpression1,
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		var snap *TestingSnapshot
+		var previous *TestingSnapshot
+
+		/*
+			MockResource
+		*/
+		assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					previous = snap
+					for _, expected := range expectMocks {
+						if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectMocks {
+						if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					var expectedResources map[string][]string
+					var unexpectedResource map[string][]string
+
+					if previous != nil {
+						expectedResources = findNonMatchingResources(convertMocksToMetadataGetter(expectMocks), convertMocksToMetadataGetter(previous.Mocks))
+						unexpectedResource = findMatchingResources(convertMocksToMetadataGetter(unexpectMocks), convertMocksToMetadataGetter(previous.Mocks))
+					} else {
+						expectedResources = getMapOfResources(convertMocksToMetadataGetter(expectMocks))
+						unexpectedResource = getMapOfResources(convertMocksToMetadataGetter(unexpectMocks))
+					}
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := mockResourceClient.List(ns, clients.ListOpts{})
+						return convertMocksToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
+					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+				}
+			}
+		}
+
+		mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResourceWatched := MockResourceList{mockResource1a, mockResource1b}
+		assertSnapshotMocks(mockResourceWatched, nil)
+
+		mockResource3a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResource3b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResourceWatched = append(mockResourceWatched, MockResourceList{mockResource3a, mockResource3b}...)
+		assertSnapshotMocks(mockResourceWatched, nil)
+
+		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+		createNamespaces(ctx, kube, namespace4)
+
+		mockResource4a, err := mockResourceClient.Write(NewMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResource4b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResourceWatched = append(mockResourceWatched, mockResource4a)
+		mockResourceNotWatched := MockResourceList{mockResource4b}
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+		mockResource5a, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResource5b, err := mockResourceClient.Write(NewMockResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResourceWatched = append(mockResourceWatched, mockResource5a)
+		mockResourceNotWatched = append(mockResourceNotWatched, mockResource5b)
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+		for _, r := range mockResourceNotWatched {
+			err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource1a, mockResource1b}...)
+		mockResourceWatched = MockResourceList{mockResource3a, mockResource3b, mockResource4a, mockResource5a}
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+		err = mockResourceClient.Delete(mockResource3a.GetMetadata().Namespace, mockResource3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = mockResourceClient.Delete(mockResource3b.GetMetadata().Namespace, mockResource3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource3a, mockResource3b}...)
+		mockResourceWatched = MockResourceList{mockResource4a, mockResource5a}
+		assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+		err = mockResourceClient.Delete(mockResource4a.GetMetadata().Namespace, mockResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = mockResourceClient.Delete(mockResource5a.GetMetadata().Namespace, mockResource5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		mockResourceNotWatched = append(mockResourceNotWatched, MockResourceList{mockResource5a, mockResource5b}...)
+		assertSnapshotMocks(nil, mockResourceNotWatched)
+
+		// clean up environment
+		deleteNamespaces(ctx, kube, namespace3, namespace4)
+		getNewNamespaces()
+
+		/*
+			FrequentlyChangingAnnotationsResource
+		*/
+		assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					previous = snap
+					for _, expected := range expectFcars {
+						if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectFcars {
+						if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					var expectedResources map[string][]string
+					var unexpectedResource map[string][]string
+
+					if previous != nil {
+						expectedResources = findNonMatchingResources(convertFcarsToMetadataGetter(expectFcars), convertFcarsToMetadataGetter(previous.Fcars))
+						unexpectedResource = findMatchingResources(convertFcarsToMetadataGetter(unexpectFcars), convertFcarsToMetadataGetter(previous.Fcars))
+					} else {
+						expectedResources = getMapOfResources(convertFcarsToMetadataGetter(expectFcars))
+						unexpectedResource = getMapOfResources(convertFcarsToMetadataGetter(unexpectFcars))
+					}
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := frequentlyChangingAnnotationsResourceClient.List(ns, clients.ListOpts{})
+						return convertFcarsToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
+					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+				}
+			}
+		}
+
+		frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResourceWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, nil)
+
+		frequentlyChangingAnnotationsResource3a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResource3b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b}...)
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, nil)
+
+		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+		createNamespaces(ctx, kube, namespace4)
+
+		frequentlyChangingAnnotationsResource4a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResource4b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource4a)
+		frequentlyChangingAnnotationsResourceNotWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4b}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+		frequentlyChangingAnnotationsResource5a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResource5b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource5a)
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource5b)
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+		for _, r := range frequentlyChangingAnnotationsResourceNotWatched {
+			err = frequentlyChangingAnnotationsResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}...)
+		frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b, frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource5a}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource3a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource3b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource3a, frequentlyChangingAnnotationsResource3b}...)
+		frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource4a, frequentlyChangingAnnotationsResource5a}
+		assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource4a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource5a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource5a, frequentlyChangingAnnotationsResource5b}...)
+		assertSnapshotFcars(nil, frequentlyChangingAnnotationsResourceNotWatched)
+
+		// clean up environment
+		deleteNamespaces(ctx, kube, namespace3, namespace4)
+		getNewNamespaces()
+
+		/*
+			FakeResource
+		*/
+		assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					previous = snap
+					for _, expected := range expectFakes {
+						if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectFakes {
+						if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					var expectedResources map[string][]string
+					var unexpectedResource map[string][]string
+
+					if previous != nil {
+						expectedResources = findNonMatchingResources(convertFakesToMetadataGetter(expectFakes), convertFakesToMetadataGetter(previous.Fakes))
+						unexpectedResource = findMatchingResources(convertFakesToMetadataGetter(unexpectFakes), convertFakesToMetadataGetter(previous.Fakes))
+					} else {
+						expectedResources = getMapOfResources(convertFakesToMetadataGetter(expectFakes))
+						unexpectedResource = getMapOfResources(convertFakesToMetadataGetter(unexpectFakes))
+					}
+					getList := func(ns string) ([]metadataGetter, error) {
+						l, err := fakeResourceClient.List(ns, clients.ListOpts{})
+						return convertFakesToMetadataGetter(l), err
+					}
+					namespaceResources := getMapOfNamespaceResources(getList)
+					Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+				}
+			}
+		}
+
+		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResourceWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
+		assertSnapshotFakes(fakeResourceWatched, nil)
+
+		fakeResource3a, err := fakeResourceClient.Write(NewFakeResourceWithLabels(namespace1, name3, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResource3b, err := fakeResourceClient.Write(NewFakeResourceWithLabels(namespace2, name3, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResourceWatched = append(fakeResourceWatched, testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b}...)
+		assertSnapshotFakes(fakeResourceWatched, nil)
+
+		createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+		createNamespaces(ctx, kube, namespace4)
+
+		fakeResource4a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResource4b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResourceWatched = append(fakeResourceWatched, fakeResource4a)
+		fakeResourceNotWatched := testing_solo_io.FakeResourceList{fakeResource4b}
+		assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+		fakeResource5a, err := fakeResourceClient.Write(NewFakeResourceWithLabels(namespace3, name2, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResource5b, err := fakeResourceClient.Write(NewFakeResourceWithLabels(namespace4, name2, labels1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResourceWatched = append(fakeResourceWatched, fakeResource5a)
+		fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource5b)
+		assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+		for _, r := range fakeResourceNotWatched {
+			err = fakeResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}...)
+		fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b, fakeResource4a, fakeResource5a}
+		assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+		err = fakeResourceClient.Delete(fakeResource3a.GetMetadata().Namespace, fakeResource3a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = fakeResourceClient.Delete(fakeResource3b.GetMetadata().Namespace, fakeResource3b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource3a, fakeResource3b}...)
+		fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource4a, fakeResource5a}
+		assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+		err = fakeResourceClient.Delete(fakeResource4a.GetMetadata().Namespace, fakeResource4a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = fakeResourceClient.Delete(fakeResource5a.GetMetadata().Namespace, fakeResource5a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		fakeResourceNotWatched = append(fakeResourceNotWatched, testing_solo_io.FakeResourceList{fakeResource5a, fakeResource5b}...)
+		assertSnapshotFakes(nil, fakeResourceNotWatched)
+
+		// clean up environment
+		deleteNamespaces(ctx, kube, namespace3, namespace4)
+		getNewNamespaces()
+	}
 
 	BeforeEach(func() {
 		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
@@ -59,9 +570,18 @@ var _ = Describe("V2Alpha1Emitter", func() {
 		ctx = context.Background()
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
+		namespace3 = helpers.RandString(8)
+		namespace4 = helpers.RandString(8)
+		namespace5 = helpers.RandString(8)
+		namespace6 = helpers.RandString(8)
+
 		kube = helpers.MustKubeClient()
-		err = kubeutils.CreateNamespacesInParallel(ctx, kube, namespace1, namespace2)
+		kubeCache, err = cache.NewKubeCoreCache(context.TODO(), kube)
 		Expect(err).NotTo(HaveOccurred())
+		resourceNamespaceLister = namespace.NewKubeClientCacheResourceNamespaceLister(kube, kubeCache)
+
+		createNamespaces(ctx, kube, namespace1, namespace2)
+
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -93,383 +613,1138 @@ var _ = Describe("V2Alpha1Emitter", func() {
 
 		fakeResourceClient, err = testing_solo_io.NewFakeResourceClient(ctx, fakeResourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewTestingEmitter(mockResourceClient, frequentlyChangingAnnotationsResourceClient, fakeResourceClient)
+		emitter = NewTestingEmitter(mockResourceClient, frequentlyChangingAnnotationsResourceClient, fakeResourceClient, resourceNamespaceLister)
 	})
 	AfterEach(func() {
 		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
-		Expect(err).NotTo(HaveOccurred())
+		kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, namespace2)
 	})
 
-	It("tracks snapshots on changes to any resource", func() {
-		ctx := context.Background()
-		err := emitter.Register()
-		Expect(err).NotTo(HaveOccurred())
+	Context("Tracking watched namespaces", func() {
+		It("tracks snapshots on changes to any resource", func() {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
 
-		snapshots, errs, err := emitter.Snapshots([]string{namespace1, namespace2}, clients.WatchOpts{
-			Ctx:         ctx,
-			RefreshRate: time.Second,
+			snapshots, errs, err := emitter.Snapshots([]string{namespace1, namespace2}, clients.WatchOpts{
+				Ctx:         ctx,
+				RefreshRate: time.Second,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+
+			/*
+				MockResource
+			*/
+
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectMocks {
+							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectMocks {
+							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name5), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name5), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
+			mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
+
+			err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, MockResourceList{mockResource2a, mockResource2b})
+
+			err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
+
+			/*
+				FrequentlyChangingAnnotationsResource
+			*/
+
+			assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFcars {
+							if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFcars {
+							if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+			frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name5), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name5), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, nil)
+			frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}, nil)
+
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
+
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotFcars(nil, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
+
+			/*
+				FakeResource
+			*/
+
+			assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFakes {
+							if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFakes {
+							if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+			fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name5), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name5), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
+			fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
+
+			err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b})
+
+			err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			assertSnapshotFakes(nil, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
 		})
-		Expect(err).NotTo(HaveOccurred())
 
-		var snap *TestingSnapshot
-
-		/*
-			MockResource
-		*/
-
-		assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expectMocks {
-						if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpectMocks {
-						if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-					nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
-					combined := append(nsList1, nsList2...)
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}
-		mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
-		mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
-
-		err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, MockResourceList{mockResource2a, mockResource2b})
-
-		err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
-
-		/*
-			FrequentlyChangingAnnotationsResource
-		*/
-
-		assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expectFcars {
-						if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpectFcars {
-						if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-					nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
-					combined := append(nsList1, nsList2...)
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}
-		frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, nil)
-		frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}, nil)
-
-		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
-
-		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFcars(nil, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
-
-		/*
-			FakeResource
-		*/
-
-		assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expectFakes {
-						if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpectFakes {
-						if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-					nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
-					combined := append(nsList1, nsList2...)
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}
-		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
-		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
-
-		err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b})
-
-		err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(nil, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
-	})
-
-	It("tracks snapshots on changes to any resource using AllNamespace", func() {
-		ctx := context.Background()
-		err := emitter.Register()
-		Expect(err).NotTo(HaveOccurred())
-
-		snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
-			Ctx:         ctx,
-			RefreshRate: time.Second,
+		It("should be able to track all resources that are on labeled namespaces", func() {
+			runNamespacedSelectorsWithWatchNamespaces()
 		})
-		Expect(err).NotTo(HaveOccurred())
-
-		var snap *TestingSnapshot
-
-		/*
-			MockResource
-		*/
-
-		assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expectMocks {
-						if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpectMocks {
-						if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-					nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
-					combined := append(nsList1, nsList2...)
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}
-		mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
-		mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
-
-		err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, MockResourceList{mockResource2a, mockResource2b})
-
-		err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
-
-		/*
-			FrequentlyChangingAnnotationsResource
-		*/
-
-		assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expectFcars {
-						if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpectFcars {
-						if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-					nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
-					combined := append(nsList1, nsList2...)
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}
-		frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, nil)
-		frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}, nil)
-
-		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
-
-		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFcars(nil, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
-
-		/*
-			FakeResource
-		*/
-
-		assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expectFakes {
-						if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpectFakes {
-						if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-					nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
-					combined := append(nsList1, nsList2...)
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}
-		fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
-		fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
-
-		err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b})
-
-		err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotFakes(nil, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
 	})
+
+	Context("Tracking empty watched namespaces", func() {
+		It("tracks snapshots on changes to any resource using AllNamespace", func() {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:         ctx,
+				RefreshRate: time.Second,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+
+			/*
+				MockResource
+			*/
+
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectMocks {
+							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectMocks {
+							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, nil)
+
+			mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b}, nil)
+
+			err = mockResourceClient.Delete(mockResource2a.GetMetadata().Namespace, mockResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockResourceClient.Delete(mockResource2b.GetMetadata().Namespace, mockResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotMocks(MockResourceList{mockResource1a, mockResource1b}, MockResourceList{mockResource2a, mockResource2b})
+
+			err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotMocks(nil, MockResourceList{mockResource1a, mockResource1b, mockResource2a, mockResource2b})
+
+			/*
+				FrequentlyChangingAnnotationsResource
+			*/
+
+			assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFcars {
+							if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFcars {
+							if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, nil)
+
+			frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}, nil)
+
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource2b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotFcars(FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
+
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotFcars(nil, FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b, frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b})
+
+			/*
+				FakeResource
+			*/
+
+			assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFakes {
+							if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFakes {
+							if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, nil)
+
+			fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b}, nil)
+
+			err = fakeResourceClient.Delete(fakeResource2a.GetMetadata().Namespace, fakeResource2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = fakeResourceClient.Delete(fakeResource2b.GetMetadata().Namespace, fakeResource2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotFakes(testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}, testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b})
+
+			err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotFakes(nil, testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b, fakeResource2a, fakeResource2b})
+		})
+
+		It("should be able to track resources only made with the matching labels", func() {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:                ctx,
+				RefreshRate:        time.Second,
+				ExpressionSelector: labelExpression1,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+			var previous *TestingSnapshot
+
+			/*
+				MockResource
+			*/
+
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						previous = snap
+						for _, expected := range expectMocks {
+							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectMocks {
+							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
+
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertMocksToMetadataGetter(expectMocks), convertMocksToMetadataGetter(previous.Mocks))
+							unexpectedResource = findMatchingResources(convertMocksToMetadataGetter(unexpectMocks), convertMocksToMetadataGetter(previous.Mocks))
+						} else {
+							expectedResources = getMapOfResources(convertMocksToMetadataGetter(expectMocks))
+							unexpectedResource = getMapOfResources(convertMocksToMetadataGetter(unexpectMocks))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := mockResourceClient.List(ns, clients.ListOpts{})
+							return convertMocksToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+					}
+				}
+			}
+
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
+
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResourceWatched := MockResourceList{mockResource2a, mockResource2b}
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+			createNamespaces(ctx, kube, namespace5)
+			createNamespaceWithLabel(ctx, kube, namespace6, labels1)
+
+			mockResource5a, err := mockResourceClient.Write(NewMockResource(namespace5, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource5b, err := mockResourceClient.Write(NewMockResource(namespace6, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResourceNotWatched = append(mockResourceNotWatched, mockResource5a)
+			mockResourceWatched = append(mockResourceWatched, mockResource5b)
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+			mockResource7a, err := mockResourceClient.Write(NewMockResource(namespace5, name4), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource7b, err := mockResourceClient.Write(NewMockResource(namespace6, name4), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResourceNotWatched = append(mockResourceNotWatched, mockResource7a)
+			mockResourceWatched = append(mockResourceWatched, mockResource7b)
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+			for _, r := range mockResourceNotWatched {
+				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			for _, r := range mockResourceWatched {
+				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				mockResourceNotWatched = append(mockResourceNotWatched, r)
+			}
+			assertSnapshotMocks(nil, mockResourceNotWatched)
+
+			// clean up environment
+			deleteNamespaces(ctx, kube, namespace3, namespace4, namespace5, namespace6)
+			getNewNamespaces()
+
+			/*
+				FrequentlyChangingAnnotationsResource
+			*/
+
+			assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						previous = snap
+						for _, expected := range expectFcars {
+							if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFcars {
+							if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
+
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertFcarsToMetadataGetter(expectFcars), convertFcarsToMetadataGetter(previous.Fcars))
+							unexpectedResource = findMatchingResources(convertFcarsToMetadataGetter(unexpectFcars), convertFcarsToMetadataGetter(previous.Fcars))
+						} else {
+							expectedResources = getMapOfResources(convertFcarsToMetadataGetter(expectFcars))
+							unexpectedResource = getMapOfResources(convertFcarsToMetadataGetter(unexpectFcars))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := frequentlyChangingAnnotationsResourceClient.List(ns, clients.ListOpts{})
+							return convertFcarsToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+					}
+				}
+			}
+
+			frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResourceNotWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResourceWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}
+			assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+			createNamespaces(ctx, kube, namespace5)
+			createNamespaceWithLabel(ctx, kube, namespace6, labels1)
+
+			frequentlyChangingAnnotationsResource5a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace5, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource5b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace6, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource5a)
+			frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource5b)
+			assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+			frequentlyChangingAnnotationsResource7a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace5, name4), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource7b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace6, name4), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource7a)
+			frequentlyChangingAnnotationsResourceWatched = append(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResource7b)
+			assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+			for _, r := range frequentlyChangingAnnotationsResourceNotWatched {
+				err = frequentlyChangingAnnotationsResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			for _, r := range frequentlyChangingAnnotationsResourceWatched {
+				err = frequentlyChangingAnnotationsResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, r)
+			}
+			assertSnapshotFcars(nil, frequentlyChangingAnnotationsResourceNotWatched)
+
+			// clean up environment
+			deleteNamespaces(ctx, kube, namespace3, namespace4, namespace5, namespace6)
+			getNewNamespaces()
+
+			/*
+				FakeResource
+			*/
+
+			assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						previous = snap
+						for _, expected := range expectFakes {
+							if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFakes {
+							if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
+
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertFakesToMetadataGetter(expectFakes), convertFakesToMetadataGetter(previous.Fakes))
+							unexpectedResource = findMatchingResources(convertFakesToMetadataGetter(unexpectFakes), convertFakesToMetadataGetter(previous.Fakes))
+						} else {
+							expectedResources = getMapOfResources(convertFakesToMetadataGetter(expectFakes))
+							unexpectedResource = getMapOfResources(convertFakesToMetadataGetter(unexpectFakes))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := fakeResourceClient.List(ns, clients.ListOpts{})
+							return convertFakesToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+					}
+				}
+			}
+
+			fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResourceNotWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
+
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResourceWatched := testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}
+			assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+			createNamespaces(ctx, kube, namespace5)
+			createNamespaceWithLabel(ctx, kube, namespace6, labels1)
+
+			fakeResource5a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace5, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource5b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace6, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource5a)
+			fakeResourceWatched = append(fakeResourceWatched, fakeResource5b)
+			assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+			fakeResource7a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace5, name4), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource7b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace6, name4), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource7a)
+			fakeResourceWatched = append(fakeResourceWatched, fakeResource7b)
+			assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+			for _, r := range fakeResourceNotWatched {
+				err = fakeResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			for _, r := range fakeResourceWatched {
+				err = fakeResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				fakeResourceNotWatched = append(fakeResourceNotWatched, r)
+			}
+			assertSnapshotFakes(nil, fakeResourceNotWatched)
+
+			// clean up environment
+			deleteNamespaces(ctx, kube, namespace3, namespace4, namespace5, namespace6)
+			getNewNamespaces()
+		})
+	})
+
+	Context("Tracking resources on namespaces that are deleted", func() {
+		It("Should not contain resources from a deleted namespace", func() {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:         ctx,
+				RefreshRate: time.Second,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+
+			/*
+				MockResource
+			*/
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectMocks {
+							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectMocks {
+							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource1b, err := mockResourceClient.Write(NewMockResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResourceWatched := MockResourceList{mockResource1a, mockResource1b}
+			assertSnapshotMocks(mockResourceWatched, nil)
+			err = mockResourceClient.Delete(mockResource1a.GetMetadata().Namespace, mockResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = mockResourceClient.Delete(mockResource1b.GetMetadata().Namespace, mockResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			mockResourceNotWatched := MockResourceList{mockResource1a, mockResource1b}
+			assertSnapshotMocks(nil, mockResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+
+			getNewNamespaces1and2()
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			/*
+				FrequentlyChangingAnnotationsResource
+			*/
+			assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFcars {
+							if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFcars {
+							if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			frequentlyChangingAnnotationsResource1a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource1b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResourceWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+			assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, nil)
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1a.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = frequentlyChangingAnnotationsResourceClient.Delete(frequentlyChangingAnnotationsResource1b.GetMetadata().Namespace, frequentlyChangingAnnotationsResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			frequentlyChangingAnnotationsResourceNotWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource1a, frequentlyChangingAnnotationsResource1b}
+			assertSnapshotFcars(nil, frequentlyChangingAnnotationsResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+
+			getNewNamespaces1and2()
+			createNamespaces(ctx, kube, namespace1, namespace2)
+
+			/*
+				FakeResource
+			*/
+			assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFakes {
+							if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFakes {
+							if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			fakeResource1a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource1b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResourceWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
+			assertSnapshotFakes(fakeResourceWatched, nil)
+			err = fakeResourceClient.Delete(fakeResource1a.GetMetadata().Namespace, fakeResource1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			err = fakeResourceClient.Delete(fakeResource1b.GetMetadata().Namespace, fakeResource1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeResourceNotWatched := testing_solo_io.FakeResourceList{fakeResource1a, fakeResource1b}
+			assertSnapshotFakes(nil, fakeResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace1, namespace2)
+
+			getNewNamespaces1and2()
+			createNamespaces(ctx, kube, namespace1, namespace2)
+		})
+
+		It("Should not contain resources from a deleted namespace, that is filtered", func() {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:                ctx,
+				RefreshRate:        time.Second,
+				ExpressionSelector: labelExpression1,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+
+			/*
+				MockResource
+			*/
+
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectMocks {
+							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectMocks {
+							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := mockResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := mockResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResource2b, err := mockResourceClient.Write(NewMockResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			mockResourceNotWatched := MockResourceList{}
+			mockResourceWatched := MockResourceList{mockResource2a, mockResource2b}
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace3)
+
+			mockResourceWatched = MockResourceList{mockResource2b}
+			mockResourceNotWatched = append(mockResourceNotWatched, mockResource2a)
+			assertSnapshotMocks(mockResourceWatched, mockResourceNotWatched)
+
+			for _, r := range mockResourceWatched {
+				err = mockResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				mockResourceNotWatched = append(mockResourceNotWatched, r)
+			}
+			assertSnapshotMocks(nil, mockResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			getNewNamespaces()
+
+			/*
+				FrequentlyChangingAnnotationsResource
+			*/
+
+			assertSnapshotFcars := func(expectFcars FrequentlyChangingAnnotationsResourceList, unexpectFcars FrequentlyChangingAnnotationsResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFcars {
+							if _, err := snap.Fcars.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFcars {
+							if _, err := snap.Fcars.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := frequentlyChangingAnnotationsResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := frequentlyChangingAnnotationsResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			frequentlyChangingAnnotationsResource2a, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResource2b, err := frequentlyChangingAnnotationsResourceClient.Write(NewFrequentlyChangingAnnotationsResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			frequentlyChangingAnnotationsResourceNotWatched := FrequentlyChangingAnnotationsResourceList{}
+			frequentlyChangingAnnotationsResourceWatched := FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2a, frequentlyChangingAnnotationsResource2b}
+			assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace3)
+
+			frequentlyChangingAnnotationsResourceWatched = FrequentlyChangingAnnotationsResourceList{frequentlyChangingAnnotationsResource2b}
+			frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, frequentlyChangingAnnotationsResource2a)
+			assertSnapshotFcars(frequentlyChangingAnnotationsResourceWatched, frequentlyChangingAnnotationsResourceNotWatched)
+
+			for _, r := range frequentlyChangingAnnotationsResourceWatched {
+				err = frequentlyChangingAnnotationsResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				frequentlyChangingAnnotationsResourceNotWatched = append(frequentlyChangingAnnotationsResourceNotWatched, r)
+			}
+			assertSnapshotFcars(nil, frequentlyChangingAnnotationsResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			getNewNamespaces()
+
+			/*
+				FakeResource
+			*/
+
+			assertSnapshotFakes := func(expectFakes testing_solo_io.FakeResourceList, unexpectFakes testing_solo_io.FakeResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						for _, expected := range expectFakes {
+							if _, err := snap.Fakes.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectFakes {
+							if _, err := snap.Fakes.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						nsList1, _ := fakeResourceClient.List(namespace1, clients.ListOpts{})
+						nsList2, _ := fakeResourceClient.List(namespace2, clients.ListOpts{})
+						combined := append(nsList1, nsList2...)
+						Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+					}
+				}
+			}
+
+			// create namespaces
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+			createNamespaceWithLabel(ctx, kube, namespace4, labels1)
+
+			fakeResource2a, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResource2b, err := fakeResourceClient.Write(testing_solo_io.NewFakeResource(namespace4, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			fakeResourceNotWatched := testing_solo_io.FakeResourceList{}
+			fakeResourceWatched := testing_solo_io.FakeResourceList{fakeResource2a, fakeResource2b}
+			assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace3)
+
+			fakeResourceWatched = testing_solo_io.FakeResourceList{fakeResource2b}
+			fakeResourceNotWatched = append(fakeResourceNotWatched, fakeResource2a)
+			assertSnapshotFakes(fakeResourceWatched, fakeResourceNotWatched)
+
+			for _, r := range fakeResourceWatched {
+				err = fakeResourceClient.Delete(r.GetMetadata().Namespace, r.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				fakeResourceNotWatched = append(fakeResourceNotWatched, r)
+			}
+			assertSnapshotFakes(nil, fakeResourceNotWatched)
+
+			deleteNamespaces(ctx, kube, namespace4)
+			getNewNamespaces()
+		})
+
+		It("should be able to return a resource from a deleted namespace, after the namespace is re-created", func() {
+			ctx := context.Background()
+			err := emitter.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+				Ctx:                ctx,
+				RefreshRate:        time.Second,
+				ExpressionSelector: labelExpression1,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			var snap *TestingSnapshot
+			var previous *TestingSnapshot
+
+			/*
+				MockResource
+			*/
+			assertSnapshotMocks := func(expectMocks MockResourceList, unexpectMocks MockResourceList) {
+			drain:
+				for {
+					select {
+					case snap = <-snapshots:
+						previous = snap
+						for _, expected := range expectMocks {
+							if _, err := snap.Mocks.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+								continue drain
+							}
+						}
+						for _, unexpected := range unexpectMocks {
+							if _, err := snap.Mocks.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+								continue drain
+							}
+						}
+						break drain
+					case err := <-errs:
+						Expect(err).NotTo(HaveOccurred())
+					case <-time.After(time.Second * 10):
+						var expectedResources map[string][]string
+						var unexpectedResource map[string][]string
+
+						if previous != nil {
+							expectedResources = findNonMatchingResources(convertMocksToMetadataGetter(expectMocks), convertMocksToMetadataGetter(previous.Mocks))
+							unexpectedResource = findMatchingResources(convertMocksToMetadataGetter(unexpectMocks), convertMocksToMetadataGetter(previous.Mocks))
+						} else {
+							expectedResources = getMapOfResources(convertMocksToMetadataGetter(expectMocks))
+							unexpectedResource = getMapOfResources(convertMocksToMetadataGetter(unexpectMocks))
+						}
+						getList := func(ns string) ([]metadataGetter, error) {
+							l, err := mockResourceClient.List(ns, clients.ListOpts{})
+							return convertMocksToMetadataGetter(l), err
+						}
+						namespaceResources := getMapOfNamespaceResources(getList)
+						Fail(fmt.Sprintf("expected final snapshot before 10 seconds. expected \nExpected:\n%#v\n\nUnexpected:\n%#v\n\nnamespaces:\n%#v", expectedResources, unexpectedResource, namespaceResources))
+					}
+				}
+			}
+
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+
+			mockResource1a, err := mockResourceClient.Write(NewMockResource(namespace3, name1), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotMocks(MockResourceList{mockResource1a}, nil)
+
+			deleteNamespaces(ctx, kube, namespace3)
+			Eventually(func() bool {
+				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
+				return apierrors.IsNotFound(err)
+			}, 15*time.Second, 1*time.Second).Should(BeTrue())
+			createNamespaceWithLabel(ctx, kube, namespace3, labels1)
+
+			mockResource2a, err := mockResourceClient.Write(NewMockResource(namespace3, name2), clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			assertSnapshotMocks(MockResourceList{mockResource2a}, MockResourceList{mockResource1a})
+
+			deleteNamespaces(ctx, kube, namespace3)
+			Eventually(func() bool {
+				_, err = kube.CoreV1().Namespaces().Get(ctx, namespace3, metav1.GetOptions{})
+				return apierrors.IsNotFound(err)
+			}, 15*time.Second, 1*time.Second).Should(BeTrue())
+
+		})
+	})
+
+	Context("use different resource namespace listers", func() {
+		BeforeEach(func() {
+			resourceNamespaceLister = namespace.NewKubeClientResourceNamespaceLister(kube)
+			emitter = NewTestingEmitter(mockResourceClient, frequentlyChangingAnnotationsResourceClient, fakeResourceClient, resourceNamespaceLister)
+		})
+
+		It("Should work with the Kube Client Namespace Lister", func() {
+			runNamespacedSelectorsWithWatchNamespaces()
+		})
+	})
+
 })

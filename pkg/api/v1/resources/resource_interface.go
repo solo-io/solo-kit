@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -78,6 +79,62 @@ type CustomInputResource interface {
 	UnmarshalStatus(status v1.Status, defaultUnmarshaler StatusUnmarshaler)
 	MarshalSpec() (v1.Spec, error)
 	MarshalStatus() (v1.Status, error)
+}
+
+// ResourceNamespaceListOptions provides the options for listing Resource Namespaces
+type ResourceNamespaceListOptions struct {
+	// Ctx is the context
+	Ctx context.Context
+
+	// Equality-based label requirements
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	// Equality-based requirements allow filtering by label keys and values.
+	// Matching objects must satisfy all of the specified label constraints,
+	// though they may have additional labels as well.
+	// Example:
+	//	{product: edge} would return all objects with a label key equal to
+	//	product and label value equal to edge
+	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
+	ExpressionSelector string
+}
+
+// ResourceNamespaceWatchOptions provides the options for watching Resource Namespaces
+type ResourceNamespaceWatchOptions struct {
+	// Ctx is the context
+	Ctx context.Context
+	// Equality-based label requirements
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	// Equality-based requirements allow filtering by label keys and values.
+	// Matching objects must satisfy all of the specified label constraints,
+	// though they may have additional labels as well.
+	// Example:
+	//	{product: edge} would return all objects with a label key equal to
+	//	product and label value equal to edge
+	// If both ExpressionSelector and Selector are defined, ExpressionSelector is preferred
+	ExpressionSelector string
+}
+
+// ResoruceNamespace is the namespaces that resources can be found. ResourceNamespaces are
+// anything that contains resources independent of other resoruces. They provide sections
+// independent infrastructure or regions. IE kubernetes namespaces
+type ResourceNamespace struct {
+	// Name the name of the namespace
+	Name string
+}
+
+// ResourceNamespaceList contains a list of ResourceNamespaces
+type ResourceNamespaceList []ResourceNamespace
+
+// ResourceNamespaceLister is anything that can list and watch namespaces that
+// resources can be found.
+type ResourceNamespaceLister interface {
+	// GetResourceNamespaceList returns the list of the namespaces that resources
+	// can be found. The list returned will not contain namespacesToFilter.
+	GetResourceNamespaceList(opts ResourceNamespaceListOptions, namespacesToFilter ResourceNamespaceList) (ResourceNamespaceList, error)
+	// GetResourceNamespaceWatch returns a watch that receives events when namespaces
+	// are updated or created. The channel will not return namespacesToFilter. Use the errs for when
+	// errors are async.
+	GetResourceNamespaceWatch(opts ResourceNamespaceWatchOptions, namespacesToFilter ResourceNamespaceList) (chan ResourceNamespaceList, <-chan error, error)
 }
 
 type ResourceList []Resource

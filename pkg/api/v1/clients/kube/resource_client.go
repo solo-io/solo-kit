@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
@@ -25,7 +26,6 @@ import (
 	"go.opencensus.io/tag"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var (
@@ -110,6 +110,7 @@ type ResourceClient struct {
 	namespaceWhitelist        []string // Will contain at least metaV1.NamespaceAll ("")
 	resyncPeriod              time.Duration
 	resourceStatusUnmarshaler resources.StatusUnmarshaler
+	namespaceLock             sync.Mutex
 }
 
 func NewResourceClient(
@@ -152,6 +153,17 @@ func (rc *ResourceClient) NewResource() resources.Resource {
 // watch resources of kind rc.Kind() in the namespaces given in rc.namespaceWhitelist.
 func (rc *ResourceClient) Register() error {
 	return rc.sharedCache.Register(rc)
+}
+
+func (rc *ResourceClient) RegisterNamespace(namespace string) error {
+	err := rc.sharedCache.RegisterNewNamespace(namespace, rc)
+	if err != nil {
+		return err
+	}
+	rc.namespaceLock.Lock()
+	rc.namespaceWhitelist = append(rc.namespaceWhitelist, namespace)
+	rc.namespaceLock.Unlock()
+	return nil
 }
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
@@ -298,7 +310,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 		return nil, err
 	}
 
-	labelSelector, err := rc.getLabelSelector(opts)
+	labelSelector, err := clients.GetLabelSelector(opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing label selector")
 	}
@@ -381,7 +393,6 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 }
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-
 	if err := rc.validateNamespace(namespace); err != nil {
 		return nil, nil, err
 	}
@@ -458,16 +469,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
-func (rc *ResourceClient) getLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
-	if listOpts.ExpressionSelector != "" {
-		return labels.Parse(listOpts.ExpressionSelector)
-	}
-
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
-	return labels.SelectorFromSet(listOpts.Selector), nil
-}
-
 // Checks whether the group version kind of the given resource matches that of the client's underlying CRD:
 func (rc *ResourceClient) matchesClientGVK(resource v1.Resource) bool {
 	return resource.GroupVersionKind().String() == rc.crd.GroupVersionKind().String()
@@ -519,6 +520,8 @@ func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resour
 
 // Check whether the given namespace is in the whitelist or we allow all namespaces
 func (rc *ResourceClient) validateNamespace(namespace string) error {
+	rc.namespaceLock.Lock()
+	defer rc.namespaceLock.Unlock()
 	if !stringutils.ContainsAny([]string{namespace, metav1.NamespaceAll}, rc.namespaceWhitelist) {
 		return errors.Errorf("this client was not configured to access resources in the [%v] namespace. "+
 			"Allowed namespaces are %v", namespace, rc.namespaceWhitelist)

@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/fake"
 	solov1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -75,12 +76,19 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			Expect(len(kubeCache.Informers())).To(BeEquivalentTo(1))
 		})
 
-		It("panics when attempting of register a client with a running factory", func() {
+		It("should not panic when attempting of register a client with a running factory", func() {
 			// Start without registering clients, just to set the "started" flag
 			kubeCache.Start()
 			Expect(kubeCache.IsRunning()).To(BeTrue())
 
-			Expect(func() { _ = kubeCache.Register(client1) }).To(Panic())
+			Expect(func() { _ = kubeCache.Register(client1) }).ToNot(Panic())
+		})
+		It("can register a new namespace even when the factory is running", func() {
+			kubeCache.Start()
+			Expect(kubeCache.IsRunning()).To(BeTrue())
+
+			err := kubeCache.RegisterNewNamespace("newNamespace", client2)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
@@ -111,13 +119,19 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 		var (
 			clientset          *fake.Clientset
+			clientset2         *fake.Clientset
 			preStartGoroutines int
+			client             *kube.ResourceClient
+			client2            *kube.ResourceClient
 		)
 
 		BeforeEach(func() {
 			clientset = fake.NewSimpleClientset(mocksv1.MockResourceCrd)
-			// We need the resourceClient so that we can register its resourceType/namespaces with the cache
-			client := util.ClientForClientsetAndResource(clientset, kubeCache, mocksv1.MockResourceCrd, &mocksv1.MockResource{}, []string{namespace1})
+			clientset2 = fake.NewSimpleClientset(mocksv1.AnotherMockResourceCrd)
+
+			client = util.ClientForClientsetAndResource(clientset, kubeCache, mocksv1.MockResourceCrd, &mocksv1.MockResource{}, []string{namespace1})
+			client2 = util.ClientForClientsetAndResource(clientset2, kubeCache, mocksv1.AnotherMockResourceCrd, &mocksv1.AnotherMockResource{}, []string{namespace1})
+
 			err := kubeCache.Register(client)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -130,6 +144,9 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			var watch <-chan solov1.Resource
 
 			BeforeEach(func() {
+				// there is a race condition when a go routine uses the watch
+				// before the entire test finishes
+				time.Sleep(50 * time.Millisecond)
 				watch = kubeCache.AddWatch(10)
 			})
 
@@ -190,6 +207,44 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				Expect(len(watchResults)).To(BeEquivalentTo(3))
 				Expect(watchResults).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1"))
+			})
+			It("should be able to register a new namespace", func() {
+				err := kubeCache.RegisterNewNamespace(namespace2, client)
+				Expect(err).NotTo(HaveOccurred())
+
+				var watchResults []string
+
+				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
+
+				go func() {
+					for {
+						select {
+						case <-ctx.Done():
+							return
+						case res := <-watch:
+							watchResults = append(watchResults, res.ObjectMeta.Name)
+						}
+					}
+				}()
+
+				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-2", "test")).To(BeNil())
+
+				<-ctx.Done()
+
+				Expect(len(watchResults)).To(BeEquivalentTo(1))
+				Expect(watchResults).To(ConsistOf("mock-res-2"))
+			})
+
+			It("should be able to register two or more clients in a new namespace", func() {
+				err := client.RegisterNamespace(namespace2)
+				Expect(err).ToNot(HaveOccurred())
+				err = client2.RegisterNamespace(namespace2)
+				Expect(err).ToNot(HaveOccurred())
+
+				// it should fail here, saying that the client has not registered the informer for the namespace and the client
+				resources, err := client2.List(namespace2, clients.ListOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(resources)).To(BeEquivalentTo(0))
 			})
 		})
 

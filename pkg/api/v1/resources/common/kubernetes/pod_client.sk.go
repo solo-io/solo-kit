@@ -19,6 +19,7 @@ type PodWatcher interface {
 type PodClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+	RegisterNamespace(namespace string) error
 	Read(namespace, name string, opts clients.ReadOpts) (*Pod, error)
 	Write(resource *Pod, opts clients.WriteOpts) (*Pod, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
@@ -57,6 +58,10 @@ func (client *podClient) BaseClient() clients.ResourceClient {
 
 func (client *podClient) Register() error {
 	return client.rc.Register()
+}
+
+func (client *podClient) RegisterNamespace(namespace string) error {
+	return client.rc.RegisterNamespace(namespace)
 }
 
 func (client *podClient) Read(namespace, name string, opts clients.ReadOpts) (*Pod, error) {

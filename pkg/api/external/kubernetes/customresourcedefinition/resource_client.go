@@ -67,6 +67,10 @@ func ToKubeCustomResourceDefinition(resource resources.Resource) (*v1.CustomReso
 
 var _ clients.ResourceClient = &customResourceDefinitionResourceClient{}
 
+func (rc *customResourceDefinitionResourceClient) RegisterNamespace(namespace string) error {
+	return nil
+}
+
 func (rc *customResourceDefinitionResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")

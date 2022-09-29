@@ -19,6 +19,7 @@ type ClusterResourceWatcher interface {
 type ClusterResourceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+	RegisterNamespace(namespace string) error
 	Read(name string, opts clients.ReadOpts) (*ClusterResource, error)
 	Write(resource *ClusterResource, opts clients.WriteOpts) (*ClusterResource, error)
 	Delete(name string, opts clients.DeleteOpts) error
@@ -57,6 +58,10 @@ func (client *clusterResourceClient) BaseClient() clients.ResourceClient {
 
 func (client *clusterResourceClient) Register() error {
 	return client.rc.Register()
+}
+
+func (client *clusterResourceClient) RegisterNamespace(namespace string) error {
+	return client.rc.RegisterNamespace(namespace)
 }
 
 func (client *clusterResourceClient) Read(name string, opts clients.ReadOpts) (*ClusterResource, error) {

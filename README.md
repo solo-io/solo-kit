@@ -1,6 +1,10 @@
 # solo-kit
 A collection of code generation and libraries to for API development.
 
+### Testing
+To generate tests set `SkipGeneratedTests` to false in the `generate.go` file. This will use the test templates
+to generate the code for the tests. This will allow generation of templates such as `pkg/code-generator/codegen/templates/snapshot_emitter_test_template.go`
+
 ### Description:
 - Define your declarative API in `.proto` files
 - APIs are defined by top-level protobuf messages in `.proto` files

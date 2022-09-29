@@ -116,6 +116,20 @@ func (mr *MockResourceClientMockRecorder) Register() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockResourceClient)(nil).Register))
 }
 
+// RegisterNamespace mocks base method
+func (m *MockResourceClient) RegisterNamespace(namespace string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterNamespace", namespace)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterNamespace indicates an expected call of RegisterNamespace
+func (mr *MockResourceClientMockRecorder) RegisterNamespace(namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterNamespace", reflect.TypeOf((*MockResourceClient)(nil).RegisterNamespace), namespace)
+}
+
 // Read mocks base method
 func (m *MockResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	m.ctrl.T.Helper()

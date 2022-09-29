@@ -28,6 +28,7 @@ type {{ .Name }}Watcher interface {
 type {{ .Name }}Client interface {
 	BaseClient() clients.ResourceClient
 	Register() error
+	RegisterNamespace(namespace string) error
 {{- if .ClusterScoped }}
 	Read(name string, opts clients.ReadOpts) (*{{ .Name }}, error)
 {{- else }}
@@ -75,6 +76,10 @@ func (client *{{ lower_camel .Name }}Client) BaseClient() clients.ResourceClient
 
 func (client *{{ lower_camel .Name }}Client) Register() error {
 	return client.rc.Register()
+}
+
+func (client *{{ lower_camel .Name }}Client) RegisterNamespace(namespace string) error {
+	return client.rc.RegisterNamespace(namespace)
 }
 
 {{ if .ClusterScoped }}
