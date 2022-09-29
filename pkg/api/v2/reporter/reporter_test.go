@@ -188,6 +188,66 @@ var _ = Describe("Reporter", func() {
 		}))
 	})
 
+	It("honors override for truncate statuses", func() {
+		rep.DisableTruncateStatus = true
+
+		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		var sb strings.Builder
+		for i := 0; i < rep.MaxStatusBytes+1; i++ {
+			sb.WriteString("a")
+		}
+
+		// an error larger than our max (1kb) that should NOT be truncated
+		veryLargeError := sb.String()
+
+		childSubresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and do not expect to trim to num(parentkeys)/2 (i.e. rep.MaxStatusKeys/2)
+			var sb strings.Builder
+			for j := 0; j <= i; j++ {
+				sb.WriteString("a")
+			}
+			childSubresourceStatuses[fmt.Sprintf("child-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              veryLargeError,
+				ReportedBy:          "test",
+				SubresourceStatuses: nil, // intentionally nil; only test recursive call once
+			}
+		}
+
+		subresourceStatuses := map[string]*core.Status{}
+		for i := 0; i < rep.MaxStatusKeys+1; i++ { // we have numerous keys, and do not expect to trim to 100 keys (rep.MaxStatusKeys)
+			var sb strings.Builder
+			for j := 0; j <= i; j++ {
+				sb.WriteString("a")
+			}
+			subresourceStatuses[fmt.Sprintf("parent-subresource-%s", sb.String())] = &core.Status{
+				State:               core.Status_Warning,
+				Reason:              veryLargeError,
+				ReportedBy:          "test",
+				SubresourceStatuses: childSubresourceStatuses,
+			}
+		}
+
+		resourceErrs := rep.ResourceReports{
+			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf(veryLargeError)},
+		}
+		err = reporter.WriteReports(context.TODO(), resourceErrs, subresourceStatuses)
+		Expect(err).NotTo(HaveOccurred())
+
+		r1, err = mockResourceClient.Read(r1.GetMetadata().Namespace, r1.GetMetadata().Name, clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		status := statusClient.GetStatus(r1.(*v1.MockResource))
+		Expect(status).To(Equal(&core.Status{
+			State:               2,
+			Reason:              veryLargeError,
+			ReportedBy:          "test",
+			SubresourceStatuses: subresourceStatuses,
+		}))
+	})
+
 	It("handles conflict", func() {
 		r1, err := mockResourceClient.Write(v1.NewMockResource("", "mocky"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
