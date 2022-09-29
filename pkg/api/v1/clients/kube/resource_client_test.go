@@ -617,7 +617,6 @@ var _ = Describe("Test Kube ResourceClient", func() {
 			})
 
 			It("skips status updates if too large", func() {
-
 				var sb strings.Builder
 				for i := 0; i < shared.MaxStatusBytes+1; i++ {
 					sb.WriteString("a")
@@ -633,6 +632,26 @@ var _ = Describe("Test Kube ResourceClient", func() {
 				res, err := rc.ApplyStatus(statusClient, resourceToUpdate, clients.ApplyStatusOpts{})
 				Expect(err).To(MatchError(ContainSubstring("patch is too large")))
 				Expect(res).To(BeNil())
+			})
+
+			It("honors env var override on status truncation", func() {
+
+				shared.DisableMaxStatusSize = true
+
+				var sb strings.Builder
+				for i := 0; i < shared.MaxStatusBytes+1; i++ {
+					sb.WriteString("a")
+				}
+				tooLargeReason := sb.String()
+
+				statusClient.SetStatus(resourceToUpdate, &core.Status{
+					State:      2,
+					Reason:     tooLargeReason,
+					ReportedBy: "me",
+				})
+
+				_, err := rc.ApplyStatus(statusClient, resourceToUpdate, clients.ApplyStatusOpts{})
+				Expect(err).NotTo(MatchError(ContainSubstring("patch is too large")))
 			})
 		})
 

@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"context"
+	"os"
 	"sort"
 	"strings"
 
@@ -21,6 +22,15 @@ const (
 	MaxStatusBytes = 1024
 	MaxStatusKeys  = 100
 )
+
+var (
+	// only public for unit tests!
+	DisableTruncateStatus = false
+)
+
+func init() {
+	DisableTruncateStatus = os.Getenv("DISABLE_TRUNCATE_STATUS") == "true"
+}
 
 type Report struct {
 	Warnings []string
@@ -268,7 +278,9 @@ func (r *reporter) WriteReports(ctx context.Context, resourceErrs ResourceReport
 			return errors.Errorf("reporter: was passed resource of kind %v but no client to support it", kind)
 		}
 		status := r.StatusFromReport(report, subresourceStatuses)
-		status = trimStatus(status)
+		if !DisableTruncateStatus {
+			status = trimStatus(status)
+		}
 		resourceStatus := r.statusClient.GetStatus(resource)
 
 		if status.Equal(resourceStatus) {
