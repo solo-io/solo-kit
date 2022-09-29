@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    resolvesIssue: false
+    description: Skip the status patch if it's too large to protect etcd and k8s communication. 
+    issueLink: https://github.com/solo-io/solo-kit/issues/523
