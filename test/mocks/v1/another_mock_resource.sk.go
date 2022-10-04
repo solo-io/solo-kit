@@ -17,8 +17,12 @@ import (
 
 var (
 	// Compile-time assertion
-	_ resources.InputResource = new(AnotherMockResource)
+	_ resources.HashableInputResource = new(AnotherMockResource)
 )
+
+func NewAnotherMockResourceHashableInputResource() resources.HashableInputResource {
+	return new(AnotherMockResource)
+}
 
 func NewAnotherMockResource(namespace, name string) *AnotherMockResource {
 	anothermockresource := &AnotherMockResource{}

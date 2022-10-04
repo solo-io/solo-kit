@@ -10,7 +10,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type TestingSnapshot struct {
@@ -51,6 +53,35 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
+func (s TestingSnapshot) GetInputResourceTypeList(resource resources.InputResource) ([]resources.InputResource, error) {
+	switch resource.(type) {
+	case *MockResource:
+		return s.Mocks.AsInputResources(), nil
+	default:
+		return []resources.InputResource{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s TestingSnapshot) AddToResourceList(resource resources.InputResource) error {
+	switch typed := resource.(type) {
+	case *MockResource:
+		s.Mocks = append(s.Mocks, typed)
+		s.Mocks.Sort()
+		return nil
+	default:
+		return eris.New("did not add the input resource type because it does not exist")
+	}
+}
+
+func (s TestingSnapshot) ReplaceInputResource(i int, resource resources.InputResource) error {
+	switch typed := resource.(type) {
+	case *MockResource:
+		s.Mocks[i] = typed
+	default:
+		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
+	}
+	return nil
+}
 
 type TestingSnapshotStringer struct {
 	Version uint64
@@ -77,4 +108,8 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 		Version: snapshotHash,
 		Mocks:   s.Mocks.NamespacesDotNames(),
 	}
+}
+
+var TestingGvkToHashableInputResource = map[schema.GroupVersionKind]func() resources.HashableInputResource{
+	MockResourceGVK: NewMockResourceHashableInputResource,
 }

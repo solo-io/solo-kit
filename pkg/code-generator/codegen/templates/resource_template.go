@@ -38,12 +38,19 @@ var (
 {{- if $.IsCustom }}
 	_ resources.CustomInputResource = new({{ .Name }})
 {{- else }}
-	_ resources.InputResource = new({{ .Name }})
+	_ resources.HashableInputResource = new({{ .Name }})
 {{- end }}
 {{- else }}
 	_ resources.Resource = new({{ .Name }})
 {{- end }}
 )
+{{- if $.HasStatus }}
+{{- if not $.IsCustom }}
+func New{{ .Name }}HashableInputResource() resources.HashableInputResource {
+	return new({{ .Name }})
+}
+{{- end }}
+{{- end }}
 
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {
 	{{ lowercase .Name }} := &{{ .Name }}{}

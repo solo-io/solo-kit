@@ -17,8 +17,12 @@ import (
 
 var (
 	// Compile-time assertion
-	_ resources.InputResource = new(ClusterResource)
+	_ resources.HashableInputResource = new(ClusterResource)
 )
+
+func NewClusterResourceHashableInputResource() resources.HashableInputResource {
+	return new(ClusterResource)
+}
 
 func NewClusterResource(namespace, name string) *ClusterResource {
 	clusterresource := &ClusterResource{}
