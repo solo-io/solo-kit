@@ -53,7 +53,8 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
-func (s TestingSnapshot) GetInputResourceTypeList(resource resources.InputResource) ([]resources.InputResource, error) {
+
+func (s *TestingSnapshot) GetInputResourceTypeList(resource resources.InputResource) ([]resources.InputResource, error) {
 	switch resource.(type) {
 	case *MockResource:
 		return s.Mocks.AsInputResources(), nil
@@ -62,7 +63,7 @@ func (s TestingSnapshot) GetInputResourceTypeList(resource resources.InputResour
 	}
 }
 
-func (s TestingSnapshot) AddToResourceList(resource resources.InputResource) error {
+func (s *TestingSnapshot) AddToResourceList(resource resources.InputResource) error {
 	switch typed := resource.(type) {
 	case *MockResource:
 		s.Mocks = append(s.Mocks, typed)
@@ -73,7 +74,7 @@ func (s TestingSnapshot) AddToResourceList(resource resources.InputResource) err
 	}
 }
 
-func (s TestingSnapshot) ReplaceInputResource(i int, resource resources.InputResource) error {
+func (s *TestingSnapshot) ReplaceInputResource(i int, resource resources.InputResource) error {
 	switch typed := resource.(type) {
 	case *MockResource:
 		s.Mocks[i] = typed

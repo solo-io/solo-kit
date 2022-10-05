@@ -93,7 +93,8 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 
 
 {{- if ge $num_of_custom_resources 1 }}
-func (s {{ .GoName }}Snapshot) GetInputResourceTypeList(resource resources.InputResource) ([]resources.InputResource, error) {
+
+func (s *{{ .GoName }}Snapshot) GetInputResourceTypeList(resource resources.InputResource) ([]resources.InputResource, error) {
 	switch resource.(type) {
 {{- range .Resources }}
 {{- if .HasStatus }}
@@ -108,7 +109,7 @@ func (s {{ .GoName }}Snapshot) GetInputResourceTypeList(resource resources.Input
 	}
 }
 
-func (s {{ .GoName }}Snapshot) AddToResourceList(resource resources.InputResource) error {
+func (s *{{ .GoName }}Snapshot) AddToResourceList(resource resources.InputResource) error {
 	switch typed := resource.(type) {
 {{- range .Resources }}
 {{- if .HasStatus }}
@@ -125,7 +126,7 @@ func (s {{ .GoName }}Snapshot) AddToResourceList(resource resources.InputResourc
 	}
 }
 
-func (s {{.GoName}}Snapshot) ReplaceInputResource(i int, resource resources.InputResource) error {
+func (s *{{.GoName}}Snapshot) ReplaceInputResource(i int, resource resources.InputResource) error {
 	switch typed := resource.(type) {
 {{- range .Resources }}
 {{- if .HasStatus }}
