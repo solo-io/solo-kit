@@ -2,6 +2,7 @@ package v1
 
 import (
 	"encoding/json"
+	"sync/atomic"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -18,6 +19,8 @@ type Resource struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Status            Status `json:"status"`
 	Spec              *Spec  `json:"spec"`
+
+	Cached atomic.Value `json:"-"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -2,6 +2,7 @@ package kube
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -20,6 +21,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/translationcache"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -110,6 +112,8 @@ type ResourceClient struct {
 	namespaceWhitelist        []string // Will contain at least metaV1.NamespaceAll ("")
 	resyncPeriod              time.Duration
 	resourceStatusUnmarshaler resources.StatusUnmarshaler
+
+	translationCacheMap translationcache.WeakTranslationCache[v1.Resource, resources.Resource]
 }
 
 func NewResourceClient(
@@ -126,7 +130,7 @@ func NewResourceClient(
 	resourceName := strings.Replace(typeof.String(), "*", "", -1)
 	resourceName = strings.Replace(resourceName, ".", "", -1)
 
-	return &ResourceClient{
+	rc := &ResourceClient{
 		crd:                       crd,
 		crdClientset:              clientset,
 		resourceName:              resourceName,
@@ -136,6 +140,10 @@ func NewResourceClient(
 		resyncPeriod:              resyncPeriod,
 		resourceStatusUnmarshaler: resourceStatusUnmarshaler,
 	}
+	rc.translationCacheMap.AreSame = func(t *v1.Resource, r resources.Resource) bool {
+		return r.GetMetadata().GetResourceVersion() == t.ResourceVersion
+	}
+	return rc
 }
 
 var _ clients.ResourceClient = &ResourceClient{}
@@ -487,7 +495,30 @@ func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) boo
 
 }
 
+var UseCache = os.Getenv("USE_CACHE") == "1"
+
 func (rc *ResourceClient) convertCrdToResource(resourceCrd *v1.Resource) (resources.Resource, error) {
+	// TODO: consider cloning the returned value.
+	if UseCache {
+		maybeCached := resourceCrd.Cached.Load()
+		if maybeCached != nil {
+			ret := maybeCached.(resources.Resource)
+			if ret.GetMetadata().ResourceVersion == resourceCrd.ResourceVersion {
+				return ret, nil
+			}
+		}
+		ret, err := rc.convertCrdToResourceInternal(resourceCrd)
+
+		if err != nil {
+			return nil, err
+		}
+		resourceCrd.Cached.CompareAndSwap(maybeCached, ret)
+		return ret, nil
+	}
+	return rc.convertCrdToResourceInternal(resourceCrd)
+}
+
+func (rc *ResourceClient) convertCrdToResourceInternal(resourceCrd *v1.Resource) (resources.Resource, error) {
 	resource := rc.NewResource()
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
 
