@@ -20,7 +20,7 @@ var (
 	_ resources.HashableInputResource = new(ClusterResource)
 )
 
-func NewClusterResourceHashableInputResource() resources.HashableInputResource {
+func NewClusterResourceHashableResource() resources.HashableResource {
 	return new(ClusterResource)
 }
 

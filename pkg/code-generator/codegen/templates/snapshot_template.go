@@ -8,11 +8,13 @@ var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_s
 	`package {{ .Project.ProjectConfig.Version }}
 
 {{/* creating a variable that lets us understand how many resources are hashable input resources. */}}
-{{- $num_of_custom_resources := 0 }}
+{{- $num_of_hashable_input_resources := 0 }}
+{{- $num_of_hashable_resources := 0 }}
 {{- range .Resources }}
-{{- if .HasStatus }}
 {{- if not .IsCustom }}
-	{{ $num_of_custom_resources = inc $num_of_custom_resources }}
+	{{ $num_of_hashable_resources = inc $num_of_hashable_resources }}
+{{- if .HasStatus }}
+	{{ $num_of_hashable_input_resources = inc $num_of_hashable_input_resources }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -91,10 +93,55 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash",  snapshotHash))
 }
 
+{{ if ge $num_of_hashable_resources 1}}
 
-{{- if ge $num_of_custom_resources 1 }}
+func (s *{{ .GoName }}Snapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+{{- range .Resources }}
+{{- if not .IsCustom }}
+	case *{{ .ImportPrefix }}{{ .Name }}:
+		return s.{{ upper_camel .PluralName }}.AsResources(), nil
+{{- end }}
+{{- end }}
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
 
-func (s *{{ .GoName }}Snapshot) GetInputResourceTypeList(resource resources.InputResource) ([]resources.InputResource, error) {
+func (s *{{ .GoName }}Snapshot) AddToResourceList(resource resources.Resource) error {
+	switch typed := resource.(type) {
+{{- range .Resources }}
+{{- if not .IsCustom }}
+	case *{{ .ImportPrefix }}{{ .Name }}:
+		s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}, typed)
+		s.{{ upper_camel .PluralName }}.Sort()
+		return nil
+{{- end }}
+{{- end }}
+	default:
+		return eris.New("did not add the input resource type because it does not exist")
+	}
+}
+
+func (s *{{.GoName}}Snapshot) ReplaceResource(i int, resource resources.Resource) error {
+	switch typed := resource.(type) {
+{{- range .Resources }}
+{{- if not .IsCustom }}
+	case *{{ .ImportPrefix }}{{ .Name }}:
+		s.{{ upper_camel .PluralName }}[i] = typed
+{{- end }}
+{{- end }}
+	default:
+		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
+	}
+	return nil
+}
+{{- end }}
+
+
+{{- if ge $num_of_hashable_input_resources 1 }}
+
+func (s *{{ .GoName }}Snapshot) GetInputResourcesList(resource resources.InputResource) (resources.InputResourceList, error) {
 	switch resource.(type) {
 {{- range .Resources }}
 {{- if .HasStatus }}
@@ -105,11 +152,11 @@ func (s *{{ .GoName }}Snapshot) GetInputResourceTypeList(resource resources.Inpu
 {{- end }}
 {{- end }}
 	default:
-		return []resources.InputResource{}, eris.New("did not contain the input resource type returning empty list")
+		return resources.InputResourceList{}, eris.New("did not contain the input resource type returning empty list")
 	}
 }
 
-func (s *{{ .GoName }}Snapshot) AddToResourceList(resource resources.InputResource) error {
+func (s *{{ .GoName }}Snapshot) AddToInputResourceList(resource resources.InputResource) error {
 	switch typed := resource.(type) {
 {{- range .Resources }}
 {{- if .HasStatus }}
@@ -180,14 +227,12 @@ func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
 	}
 }
 
-{{- if ge $num_of_custom_resources 1 }}
-var {{.GoName }}GvkToHashableInputResource = map[schema.GroupVersionKind]func() resources.HashableInputResource {
+{{- if ge $num_of_hashable_resources 1 }}
+var {{.GoName }}GvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource {
 {{- range .Resources}}
-	{{- if .HasStatus}}
-	{{- if not .IsCustom}}
-	{{ .ImportPrefix }}{{ .Name }}GVK: {{ .ImportPrefix }}New{{ .Name }}HashableInputResource,
-	{{- end }}
-	{{- end }}
+{{- if not .IsCustom }}
+	{{ .ImportPrefix }}{{ .Name }}GVK: {{ .ImportPrefix }}New{{ .Name }}HashableResource,
+{{- end }}
 {{- end }}	
 }
 {{- end }}

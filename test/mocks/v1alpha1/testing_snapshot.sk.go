@@ -54,16 +54,46 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
-func (s *TestingSnapshot) GetInputResourceTypeList(resource resources.InputResource) ([]resources.InputResource, error) {
+func (s *TestingSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *MockResource:
+		return s.Mocks.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *TestingSnapshot) AddToResourceList(resource resources.Resource) error {
+	switch typed := resource.(type) {
+	case *MockResource:
+		s.Mocks = append(s.Mocks, typed)
+		s.Mocks.Sort()
+		return nil
+	default:
+		return eris.New("did not add the input resource type because it does not exist")
+	}
+}
+
+func (s *TestingSnapshot) ReplaceResource(i int, resource resources.Resource) error {
+	switch typed := resource.(type) {
+	case *MockResource:
+		s.Mocks[i] = typed
+	default:
+		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
+	}
+	return nil
+}
+
+func (s *TestingSnapshot) GetInputResourcesList(resource resources.InputResource) (resources.InputResourceList, error) {
 	switch resource.(type) {
 	case *MockResource:
 		return s.Mocks.AsInputResources(), nil
 	default:
-		return []resources.InputResource{}, eris.New("did not contain the input resource type returning empty list")
+		return resources.InputResourceList{}, eris.New("did not contain the input resource type returning empty list")
 	}
 }
 
-func (s *TestingSnapshot) AddToResourceList(resource resources.InputResource) error {
+func (s *TestingSnapshot) AddToInputResourceList(resource resources.InputResource) error {
 	switch typed := resource.(type) {
 	case *MockResource:
 		s.Mocks = append(s.Mocks, typed)
@@ -111,6 +141,6 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 	}
 }
 
-var TestingGvkToHashableInputResource = map[schema.GroupVersionKind]func() resources.HashableInputResource{
-	MockResourceGVK: NewMockResourceHashableInputResource,
+var TestingGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	MockResourceGVK: NewMockResourceHashableResource,
 }

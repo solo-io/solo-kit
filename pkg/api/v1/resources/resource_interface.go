@@ -87,7 +87,13 @@ type Hashable interface {
 	MustHash() uint64
 }
 
-// HashableInputResources are InputResources that can be hashed
+// HashableResource are Resources that can be hashed
+type HashableResource interface {
+	Resource
+	Hashable
+}
+
+// HashableInputResource are InputResources that can be hashed
 type HashableInputResource interface {
 	InputResource
 	Hashable

@@ -20,7 +20,7 @@ var (
 	_ resources.HashableInputResource = new(MockResource)
 )
 
-func NewMockResourceHashableInputResource() resources.HashableInputResource {
+func NewMockResourceHashableResource() resources.HashableResource {
 	return new(MockResource)
 }
 

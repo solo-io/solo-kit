@@ -44,12 +44,10 @@ var (
 	_ resources.Resource = new({{ .Name }})
 {{- end }}
 )
-{{- if $.HasStatus }}
 {{- if not $.IsCustom }}
-func New{{ .Name }}HashableInputResource() resources.HashableInputResource {
+func New{{ .Name }}HashableResource() resources.HashableResource {
 	return new({{ .Name }})
 }
-{{- end }}
 {{- end }}
 
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {
