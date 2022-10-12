@@ -166,8 +166,214 @@ func (s *TestingSnapshot) GetResourcesList(resource resources.Resource) (resourc
 		return s.Anothermockresources.AsResources(), nil
 	case *ClusterResource:
 		return s.Clusterresources.AsResources(), nil
+	case *MockCustomType:
+		return s.Mcts.AsResources(), nil
+	case *MockCustomSpecHashType:
+		return s.Mcshts.AsResources(), nil
+	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
+		return s.Pods.AsResources(), nil
 	default:
 		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *SimpleMockResource:
+		newList := SimpleMockResourceList{}
+		for _, res := range s.Simplemocks {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Simplemocks = newList
+		s.Simplemocks.Sort()
+		return nil
+	case *MockResource:
+		newList := MockResourceList{}
+		for _, res := range s.Mocks {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Mocks = newList
+		s.Mocks.Sort()
+		return nil
+	case *FakeResource:
+		newList := FakeResourceList{}
+		for _, res := range s.Fakes {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Fakes = newList
+		s.Fakes.Sort()
+		return nil
+	case *AnotherMockResource:
+		newList := AnotherMockResourceList{}
+		for _, res := range s.Anothermockresources {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Anothermockresources = newList
+		s.Anothermockresources.Sort()
+		return nil
+	case *ClusterResource:
+		newList := ClusterResourceList{}
+		for _, res := range s.Clusterresources {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Clusterresources = newList
+		s.Clusterresources.Sort()
+		return nil
+	case *MockCustomType:
+		newList := MockCustomTypeList{}
+		for _, res := range s.Mcts {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Mcts = newList
+		s.Mcts.Sort()
+		return nil
+	case *MockCustomSpecHashType:
+		newList := MockCustomSpecHashTypeList{}
+		for _, res := range s.Mcshts {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Mcshts = newList
+		s.Mcshts.Sort()
+		return nil
+	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
+		newList := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{}
+		for _, res := range s.Pods {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Pods = newList
+		s.Pods.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *TestingSnapshot) AddOrReplaceToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *SimpleMockResource:
+		updated := false
+		for i, res := range s.Simplemocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Simplemocks[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Simplemocks = append(s.Simplemocks, typed)
+		}
+		s.Simplemocks.Sort()
+		return nil
+	case *MockResource:
+		updated := false
+		for i, res := range s.Mocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mocks[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Mocks = append(s.Mocks, typed)
+		}
+		s.Mocks.Sort()
+		return nil
+	case *FakeResource:
+		updated := false
+		for i, res := range s.Fakes {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fakes[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Fakes = append(s.Fakes, typed)
+		}
+		s.Fakes.Sort()
+		return nil
+	case *AnotherMockResource:
+		updated := false
+		for i, res := range s.Anothermockresources {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Anothermockresources[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Anothermockresources = append(s.Anothermockresources, typed)
+		}
+		s.Anothermockresources.Sort()
+		return nil
+	case *ClusterResource:
+		updated := false
+		for i, res := range s.Clusterresources {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Clusterresources[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Clusterresources = append(s.Clusterresources, typed)
+		}
+		s.Clusterresources.Sort()
+		return nil
+	case *MockCustomType:
+		updated := false
+		for i, res := range s.Mcts {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mcts[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Mcts = append(s.Mcts, typed)
+		}
+		s.Mcts.Sort()
+		return nil
+	case *MockCustomSpecHashType:
+		updated := false
+		for i, res := range s.Mcshts {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mcshts[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Mcshts = append(s.Mcshts, typed)
+		}
+		s.Mcshts.Sort()
+		return nil
+	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
+		updated := false
+		for i, res := range s.Pods {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Pods[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Pods = append(s.Pods, typed)
+		}
+		s.Pods.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
 	}
 }
 
@@ -193,8 +399,20 @@ func (s *TestingSnapshot) AddToResourceList(resource resources.Resource) error {
 		s.Clusterresources = append(s.Clusterresources, typed)
 		s.Clusterresources.Sort()
 		return nil
+	case *MockCustomType:
+		s.Mcts = append(s.Mcts, typed)
+		s.Mcts.Sort()
+		return nil
+	case *MockCustomSpecHashType:
+		s.Mcshts = append(s.Mcshts, typed)
+		s.Mcshts.Sort()
+		return nil
+	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
+		s.Pods = append(s.Pods, typed)
+		s.Pods.Sort()
+		return nil
 	default:
-		return eris.New("did not add the input resource type because it does not exist")
+		return eris.Errorf("did not add the resource type because it does not exist %T", resource)
 	}
 }
 
@@ -210,54 +428,14 @@ func (s *TestingSnapshot) ReplaceResource(i int, resource resources.Resource) er
 		s.Anothermockresources[i] = typed
 	case *ClusterResource:
 		s.Clusterresources[i] = typed
+	case *MockCustomType:
+		s.Mcts[i] = typed
+	case *MockCustomSpecHashType:
+		s.Mcshts[i] = typed
+	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
+		s.Pods[i] = typed
 	default:
-		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
-	}
-	return nil
-}
-
-func (s *TestingSnapshot) GetInputResourcesList(resource resources.InputResource) (resources.InputResourceList, error) {
-	switch resource.(type) {
-	case *MockResource:
-		return s.Mocks.AsInputResources(), nil
-	case *AnotherMockResource:
-		return s.Anothermockresources.AsInputResources(), nil
-	case *ClusterResource:
-		return s.Clusterresources.AsInputResources(), nil
-	default:
-		return resources.InputResourceList{}, eris.New("did not contain the input resource type returning empty list")
-	}
-}
-
-func (s *TestingSnapshot) AddToInputResourceList(resource resources.InputResource) error {
-	switch typed := resource.(type) {
-	case *MockResource:
-		s.Mocks = append(s.Mocks, typed)
-		s.Mocks.Sort()
-		return nil
-	case *AnotherMockResource:
-		s.Anothermockresources = append(s.Anothermockresources, typed)
-		s.Anothermockresources.Sort()
-		return nil
-	case *ClusterResource:
-		s.Clusterresources = append(s.Clusterresources, typed)
-		s.Clusterresources.Sort()
-		return nil
-	default:
-		return eris.New("did not add the input resource type because it does not exist")
-	}
-}
-
-func (s *TestingSnapshot) ReplaceInputResource(i int, resource resources.InputResource) error {
-	switch typed := resource.(type) {
-	case *MockResource:
-		s.Mocks[i] = typed
-	case *AnotherMockResource:
-		s.Anothermockresources[i] = typed
-	case *ClusterResource:
-		s.Clusterresources[i] = typed
-	default:
-		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
+		return eris.Wrapf(eris.Errorf("did not contain the resource type %T", resource), "did not replace the resource at index %d", i)
 	}
 	return nil
 }
@@ -339,9 +517,12 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 }
 
 var TestingGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
-	SimpleMockResourceGVK:  NewSimpleMockResourceHashableResource,
-	MockResourceGVK:        NewMockResourceHashableResource,
-	FakeResourceGVK:        NewFakeResourceHashableResource,
-	AnotherMockResourceGVK: NewAnotherMockResourceHashableResource,
-	ClusterResourceGVK:     NewClusterResourceHashableResource,
+	SimpleMockResourceGVK:     NewSimpleMockResourceHashableResource,
+	MockResourceGVK:           NewMockResourceHashableResource,
+	FakeResourceGVK:           NewFakeResourceHashableResource,
+	AnotherMockResourceGVK:    NewAnotherMockResourceHashableResource,
+	ClusterResourceGVK:        NewClusterResourceHashableResource,
+	MockCustomTypeGVK:         NewMockCustomTypeHashableResource,
+	MockCustomSpecHashTypeGVK: NewMockCustomSpecHashTypeHashableResource,
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodGVK: github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewPodHashableResource,
 }

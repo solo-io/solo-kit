@@ -45,7 +45,7 @@ func ProtoCast(res Resource) (ProtoResource, error) {
 }
 
 type InputResource interface {
-	Resource
+	HashableResource
 	// Deprecated: prefer GetNamespacedStatuses()
 	GetStatus() *core.Status
 	// Deprecated: prefer SetNamespacedStatuses()
@@ -90,12 +90,6 @@ type Hashable interface {
 // HashableResource are Resources that can be hashed
 type HashableResource interface {
 	Resource
-	Hashable
-}
-
-// HashableInputResource are InputResources that can be hashed
-type HashableInputResource interface {
-	InputResource
 	Hashable
 }
 

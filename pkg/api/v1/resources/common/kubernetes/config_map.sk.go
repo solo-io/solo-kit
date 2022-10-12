@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(ConfigMap)
 )
 
+func NewConfigMapHashableResource() resources.HashableResource {
+	return new(ConfigMap)
+}
+
 func NewConfigMap(namespace, name string) *ConfigMap {
 	configmap := &ConfigMap{}
 	configmap.ConfigMap.SetMetadata(&core.Metadata{

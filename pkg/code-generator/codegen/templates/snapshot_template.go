@@ -8,16 +8,6 @@ var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_s
 	`package {{ .Project.ProjectConfig.Version }}
 
 {{/* creating a variable that lets us understand how many resources are hashable input resources. */}}
-{{- $num_of_hashable_input_resources := 0 }}
-{{- $num_of_hashable_resources := 0 }}
-{{- range .Resources }}
-{{- if not .IsCustom }}
-	{{ $num_of_hashable_resources = inc $num_of_hashable_resources }}
-{{- if .HasStatus }}
-	{{ $num_of_hashable_input_resources = inc $num_of_hashable_input_resources }}
-{{- end }}
-{{- end }}
-{{- end }}
 
 import (
 	"encoding/binary"
@@ -93,102 +83,84 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash",  snapshotHash))
 }
 
-{{ if ge $num_of_hashable_resources 1}}
-
 func (s *{{ .GoName }}Snapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
 	switch resource.(type) {
 {{- range .Resources }}
-{{- if not .IsCustom }}
 	case *{{ .ImportPrefix }}{{ .Name }}:
 		return s.{{ upper_camel .PluralName }}.AsResources(), nil
-{{- end }}
 {{- end }}
 	default:
 		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
 	}
 }
 
+func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+{{- range .Resources }}
+	case *{{ .ImportPrefix }}{{ .Name }}:
+		newList := {{ .ImportPrefix }}{{ .Name }}List{}
+		for _, res := range s.{{ upper_camel .PluralName }} {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.{{ upper_camel .PluralName }} = newList
+		s.{{ upper_camel .PluralName }}.Sort()
+		return nil	
+{{- end }}
+	default:
+		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *{{ .GoName }}Snapshot) AddOrReplaceToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key() 
+	switch typed := resource.(type) {
+{{- range .Resources }}
+	case *{{ .ImportPrefix }}{{ .Name }}:
+		updated := false
+		for i, res := range s.{{ upper_camel .PluralName }} {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.{{ upper_camel .PluralName }}[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}, typed)
+		}
+		s.{{ upper_camel .PluralName }}.Sort()
+		return nil	
+{{- end }}
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 func (s *{{ .GoName }}Snapshot) AddToResourceList(resource resources.Resource) error {
 	switch typed := resource.(type) {
 {{- range .Resources }}
-{{- if not .IsCustom }}
 	case *{{ .ImportPrefix }}{{ .Name }}:
 		s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}, typed)
 		s.{{ upper_camel .PluralName }}.Sort()
 		return nil
 {{- end }}
-{{- end }}
 	default:
-		return eris.New("did not add the input resource type because it does not exist")
+		return eris.Errorf("did not add the resource type because it does not exist %T", resource)
 	}
 }
 
 func (s *{{.GoName}}Snapshot) ReplaceResource(i int, resource resources.Resource) error {
 	switch typed := resource.(type) {
 {{- range .Resources }}
-{{- if not .IsCustom }}
 	case *{{ .ImportPrefix }}{{ .Name }}:
 		s.{{ upper_camel .PluralName }}[i] = typed
 {{- end }}
-{{- end }}
 	default:
-		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
+		return eris.Wrapf(eris.Errorf("did not contain the resource type %T", resource), "did not replace the resource at index %d", i)
 	}
 	return nil
 }
-{{- end }}
-
-
-{{- if ge $num_of_hashable_input_resources 1 }}
-
-func (s *{{ .GoName }}Snapshot) GetInputResourcesList(resource resources.InputResource) (resources.InputResourceList, error) {
-	switch resource.(type) {
-{{- range .Resources }}
-{{- if .HasStatus }}
-{{- if not .IsCustom }}
-	case *{{ .ImportPrefix }}{{ .Name }}:
-		return s.{{ upper_camel .PluralName }}.AsInputResources(), nil
-{{- end }}
-{{- end }}
-{{- end }}
-	default:
-		return resources.InputResourceList{}, eris.New("did not contain the input resource type returning empty list")
-	}
-}
-
-func (s *{{ .GoName }}Snapshot) AddToInputResourceList(resource resources.InputResource) error {
-	switch typed := resource.(type) {
-{{- range .Resources }}
-{{- if .HasStatus }}
-{{- if not .IsCustom }}
-	case *{{ .ImportPrefix }}{{ .Name }}:
-		s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}, typed)
-		s.{{ upper_camel .PluralName }}.Sort()
-		return nil
-{{- end }}
-{{- end }}
-{{- end }}
-	default:
-		return eris.New("did not add the input resource type because it does not exist")
-	}
-}
-
-func (s *{{.GoName}}Snapshot) ReplaceInputResource(i int, resource resources.InputResource) error {
-	switch typed := resource.(type) {
-{{- range .Resources }}
-{{- if .HasStatus }}
-{{- if not .IsCustom }}
-	case *{{ .ImportPrefix }}{{ .Name }}:
-		s.{{ upper_camel .PluralName }}[i] = typed
-{{- end }}
-{{- end }}
-{{- end }}
-	default:
-		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
-	}
-	return nil
-}
-{{- end }}
 
 type {{ .GoName }}SnapshotStringer struct {
 	Version              uint64
@@ -227,14 +199,10 @@ func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
 	}
 }
 
-{{- if ge $num_of_hashable_resources 1 }}
 var {{.GoName }}GvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource {
 {{- range .Resources}}
-{{- if not .IsCustom }}
 	{{ .ImportPrefix }}{{ .Name }}GVK: {{ .ImportPrefix }}New{{ .Name }}HashableResource,
-{{- end }}
 {{- end }}	
 }
-{{- end }}
 
 `))

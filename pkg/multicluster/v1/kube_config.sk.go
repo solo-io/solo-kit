@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(KubeConfig)
 )
 
+func NewKubeConfigHashableResource() resources.HashableResource {
+	return new(KubeConfig)
+}
+
 func NewKubeConfig(namespace, name string) *KubeConfig {
 	kubeconfig := &KubeConfig{}
 	kubeconfig.KubeConfig.SetMetadata(&core.Metadata{

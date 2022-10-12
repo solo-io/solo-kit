@@ -101,6 +101,91 @@ func (s *TestingSnapshot) GetResourcesList(resource resources.Resource) (resourc
 	}
 }
 
+func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *MockResource:
+		newList := MockResourceList{}
+		for _, res := range s.Mocks {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Mocks = newList
+		s.Mocks.Sort()
+		return nil
+	case *FrequentlyChangingAnnotationsResource:
+		newList := FrequentlyChangingAnnotationsResourceList{}
+		for _, res := range s.Fcars {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Fcars = newList
+		s.Fcars.Sort()
+		return nil
+	case *testing_solo_io.FakeResource:
+		newList := testing_solo_io.FakeResourceList{}
+		for _, res := range s.Fakes {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Fakes = newList
+		s.Fakes.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *TestingSnapshot) AddOrReplaceToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *MockResource:
+		updated := false
+		for i, res := range s.Mocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mocks[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Mocks = append(s.Mocks, typed)
+		}
+		s.Mocks.Sort()
+		return nil
+	case *FrequentlyChangingAnnotationsResource:
+		updated := false
+		for i, res := range s.Fcars {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fcars[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Fcars = append(s.Fcars, typed)
+		}
+		s.Fcars.Sort()
+		return nil
+	case *testing_solo_io.FakeResource:
+		updated := false
+		for i, res := range s.Fakes {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fakes[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Fakes = append(s.Fakes, typed)
+		}
+		s.Fakes.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 func (s *TestingSnapshot) AddToResourceList(resource resources.Resource) error {
 	switch typed := resource.(type) {
 	case *MockResource:
@@ -116,7 +201,7 @@ func (s *TestingSnapshot) AddToResourceList(resource resources.Resource) error {
 		s.Fakes.Sort()
 		return nil
 	default:
-		return eris.New("did not add the input resource type because it does not exist")
+		return eris.Errorf("did not add the resource type because it does not exist %T", resource)
 	}
 }
 
@@ -129,37 +214,7 @@ func (s *TestingSnapshot) ReplaceResource(i int, resource resources.Resource) er
 	case *testing_solo_io.FakeResource:
 		s.Fakes[i] = typed
 	default:
-		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
-	}
-	return nil
-}
-
-func (s *TestingSnapshot) GetInputResourcesList(resource resources.InputResource) (resources.InputResourceList, error) {
-	switch resource.(type) {
-	case *MockResource:
-		return s.Mocks.AsInputResources(), nil
-	default:
-		return resources.InputResourceList{}, eris.New("did not contain the input resource type returning empty list")
-	}
-}
-
-func (s *TestingSnapshot) AddToInputResourceList(resource resources.InputResource) error {
-	switch typed := resource.(type) {
-	case *MockResource:
-		s.Mocks = append(s.Mocks, typed)
-		s.Mocks.Sort()
-		return nil
-	default:
-		return eris.New("did not add the input resource type because it does not exist")
-	}
-}
-
-func (s *TestingSnapshot) ReplaceInputResource(i int, resource resources.InputResource) error {
-	switch typed := resource.(type) {
-	case *MockResource:
-		s.Mocks[i] = typed
-	default:
-		return eris.Wrapf(eris.New("did not contain the input resource type"), "did not replace the resource at index %d", i)
+		return eris.Wrapf(eris.Errorf("did not contain the resource type %T", resource), "did not replace the resource at index %d", i)
 	}
 	return nil
 }

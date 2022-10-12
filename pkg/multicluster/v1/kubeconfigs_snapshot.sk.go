@@ -10,7 +10,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type KubeconfigsSnapshot struct {
@@ -52,6 +54,75 @@ func (s KubeconfigsSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *KubeconfigsSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *KubeConfig:
+		return s.Kubeconfigs.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *KubeconfigsSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *KubeConfig:
+		newList := KubeConfigList{}
+		for _, res := range s.Kubeconfigs {
+			if refKey != res.GetMetadata().Ref().Key() {
+				newList = append(newList, res)
+			}
+		}
+		s.Kubeconfigs = newList
+		s.Kubeconfigs.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *KubeconfigsSnapshot) AddOrReplaceToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *KubeConfig:
+		updated := false
+		for i, res := range s.Kubeconfigs {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Kubeconfigs[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Kubeconfigs = append(s.Kubeconfigs, typed)
+		}
+		s.Kubeconfigs.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
+func (s *KubeconfigsSnapshot) AddToResourceList(resource resources.Resource) error {
+	switch typed := resource.(type) {
+	case *KubeConfig:
+		s.Kubeconfigs = append(s.Kubeconfigs, typed)
+		s.Kubeconfigs.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add the resource type because it does not exist %T", resource)
+	}
+}
+
+func (s *KubeconfigsSnapshot) ReplaceResource(i int, resource resources.Resource) error {
+	switch typed := resource.(type) {
+	case *KubeConfig:
+		s.Kubeconfigs[i] = typed
+	default:
+		return eris.Wrapf(eris.Errorf("did not contain the resource type %T", resource), "did not replace the resource at index %d", i)
+	}
+	return nil
+}
+
 type KubeconfigsSnapshotStringer struct {
 	Version     uint64
 	Kubeconfigs []string
@@ -77,4 +148,8 @@ func (s KubeconfigsSnapshot) Stringer() KubeconfigsSnapshotStringer {
 		Version:     snapshotHash,
 		Kubeconfigs: s.Kubeconfigs.NamespacesDotNames(),
 	}
+}
+
+var KubeconfigsGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	KubeConfigGVK: NewKubeConfigHashableResource,
 }
