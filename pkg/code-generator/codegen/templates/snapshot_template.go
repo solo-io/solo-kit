@@ -99,14 +99,13 @@ func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resour
 	switch resource.(type) {
 {{- range .Resources }}
 	case *{{ .ImportPrefix }}{{ .Name }}:
-		newList := {{ .ImportPrefix }}{{ .Name }}List{}
-		for _, res := range s.{{ upper_camel .PluralName }} {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+		{{/* no need to sort because it is already sorted */}}
+		for i, res := range s.{{ upper_camel .PluralName }} {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}[:i], s.{{ upper_camel .PluralName }}[i+1:]...)
+				break
 			}
 		}
-		s.{{ upper_camel .PluralName }} = newList
-		s.{{ upper_camel .PluralName }}.Sort()
 		return nil	
 {{- end }}
 	default:
@@ -114,7 +113,7 @@ func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resour
 	}
 }
 
-func (s *{{ .GoName }}Snapshot) AddOrReplaceToResourceList(resource resources.Resource) error {
+func (s *{{ .GoName }}Snapshot) UpsertToResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key() 
 	switch typed := resource.(type) {
 {{- range .Resources }}
@@ -135,31 +134,6 @@ func (s *{{ .GoName }}Snapshot) AddOrReplaceToResourceList(resource resources.Re
 	default:
 		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
 	}
-}
-
-func (s *{{ .GoName }}Snapshot) AddToResourceList(resource resources.Resource) error {
-	switch typed := resource.(type) {
-{{- range .Resources }}
-	case *{{ .ImportPrefix }}{{ .Name }}:
-		s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}, typed)
-		s.{{ upper_camel .PluralName }}.Sort()
-		return nil
-{{- end }}
-	default:
-		return eris.Errorf("did not add the resource type because it does not exist %T", resource)
-	}
-}
-
-func (s *{{.GoName}}Snapshot) ReplaceResource(i int, resource resources.Resource) error {
-	switch typed := resource.(type) {
-{{- range .Resources }}
-	case *{{ .ImportPrefix }}{{ .Name }}:
-		s.{{ upper_camel .PluralName }}[i] = typed
-{{- end }}
-	default:
-		return eris.Wrapf(eris.Errorf("did not contain the resource type %T", resource), "did not replace the resource at index %d", i)
-	}
-	return nil
 }
 
 type {{ .GoName }}SnapshotStringer struct {

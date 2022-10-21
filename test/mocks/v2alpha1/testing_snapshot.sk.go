@@ -105,41 +105,38 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	refKey := resource.GetMetadata().Ref().Key()
 	switch resource.(type) {
 	case *MockResource:
-		newList := MockResourceList{}
-		for _, res := range s.Mocks {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Mocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
+				break
 			}
 		}
-		s.Mocks = newList
-		s.Mocks.Sort()
 		return nil
 	case *FrequentlyChangingAnnotationsResource:
-		newList := FrequentlyChangingAnnotationsResourceList{}
-		for _, res := range s.Fcars {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Fcars {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fcars = append(s.Fcars[:i], s.Fcars[i+1:]...)
+				break
 			}
 		}
-		s.Fcars = newList
-		s.Fcars.Sort()
 		return nil
 	case *testing_solo_io.FakeResource:
-		newList := testing_solo_io.FakeResourceList{}
-		for _, res := range s.Fakes {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Fakes {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fakes = append(s.Fakes[:i], s.Fakes[i+1:]...)
+				break
 			}
 		}
-		s.Fakes = newList
-		s.Fakes.Sort()
 		return nil
 	default:
 		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
 	}
 }
 
-func (s *TestingSnapshot) AddOrReplaceToResourceList(resource resources.Resource) error {
+func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key()
 	switch typed := resource.(type) {
 	case *MockResource:
@@ -184,39 +181,6 @@ func (s *TestingSnapshot) AddOrReplaceToResourceList(resource resources.Resource
 	default:
 		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
 	}
-}
-
-func (s *TestingSnapshot) AddToResourceList(resource resources.Resource) error {
-	switch typed := resource.(type) {
-	case *MockResource:
-		s.Mocks = append(s.Mocks, typed)
-		s.Mocks.Sort()
-		return nil
-	case *FrequentlyChangingAnnotationsResource:
-		s.Fcars = append(s.Fcars, typed)
-		s.Fcars.Sort()
-		return nil
-	case *testing_solo_io.FakeResource:
-		s.Fakes = append(s.Fakes, typed)
-		s.Fakes.Sort()
-		return nil
-	default:
-		return eris.Errorf("did not add the resource type because it does not exist %T", resource)
-	}
-}
-
-func (s *TestingSnapshot) ReplaceResource(i int, resource resources.Resource) error {
-	switch typed := resource.(type) {
-	case *MockResource:
-		s.Mocks[i] = typed
-	case *FrequentlyChangingAnnotationsResource:
-		s.Fcars[i] = typed
-	case *testing_solo_io.FakeResource:
-		s.Fakes[i] = typed
-	default:
-		return eris.Wrapf(eris.Errorf("did not contain the resource type %T", resource), "did not replace the resource at index %d", i)
-	}
-	return nil
 }
 
 type TestingSnapshotStringer struct {

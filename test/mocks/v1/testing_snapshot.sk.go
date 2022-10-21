@@ -181,91 +181,83 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	refKey := resource.GetMetadata().Ref().Key()
 	switch resource.(type) {
 	case *SimpleMockResource:
-		newList := SimpleMockResourceList{}
-		for _, res := range s.Simplemocks {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Simplemocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Simplemocks = append(s.Simplemocks[:i], s.Simplemocks[i+1:]...)
+				break
 			}
 		}
-		s.Simplemocks = newList
-		s.Simplemocks.Sort()
 		return nil
 	case *MockResource:
-		newList := MockResourceList{}
-		for _, res := range s.Mocks {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Mocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
+				break
 			}
 		}
-		s.Mocks = newList
-		s.Mocks.Sort()
 		return nil
 	case *FakeResource:
-		newList := FakeResourceList{}
-		for _, res := range s.Fakes {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Fakes {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fakes = append(s.Fakes[:i], s.Fakes[i+1:]...)
+				break
 			}
 		}
-		s.Fakes = newList
-		s.Fakes.Sort()
 		return nil
 	case *AnotherMockResource:
-		newList := AnotherMockResourceList{}
-		for _, res := range s.Anothermockresources {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Anothermockresources {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Anothermockresources = append(s.Anothermockresources[:i], s.Anothermockresources[i+1:]...)
+				break
 			}
 		}
-		s.Anothermockresources = newList
-		s.Anothermockresources.Sort()
 		return nil
 	case *ClusterResource:
-		newList := ClusterResourceList{}
-		for _, res := range s.Clusterresources {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Clusterresources {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Clusterresources = append(s.Clusterresources[:i], s.Clusterresources[i+1:]...)
+				break
 			}
 		}
-		s.Clusterresources = newList
-		s.Clusterresources.Sort()
 		return nil
 	case *MockCustomType:
-		newList := MockCustomTypeList{}
-		for _, res := range s.Mcts {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Mcts {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mcts = append(s.Mcts[:i], s.Mcts[i+1:]...)
+				break
 			}
 		}
-		s.Mcts = newList
-		s.Mcts.Sort()
 		return nil
 	case *MockCustomSpecHashType:
-		newList := MockCustomSpecHashTypeList{}
-		for _, res := range s.Mcshts {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Mcshts {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mcshts = append(s.Mcshts[:i], s.Mcshts[i+1:]...)
+				break
 			}
 		}
-		s.Mcshts = newList
-		s.Mcshts.Sort()
 		return nil
 	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
-		newList := github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList{}
-		for _, res := range s.Pods {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Pods {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Pods = append(s.Pods[:i], s.Pods[i+1:]...)
+				break
 			}
 		}
-		s.Pods = newList
-		s.Pods.Sort()
 		return nil
 	default:
 		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
 	}
 }
 
-func (s *TestingSnapshot) AddOrReplaceToResourceList(resource resources.Resource) error {
+func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key()
 	switch typed := resource.(type) {
 	case *SimpleMockResource:
@@ -375,69 +367,6 @@ func (s *TestingSnapshot) AddOrReplaceToResourceList(resource resources.Resource
 	default:
 		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
 	}
-}
-
-func (s *TestingSnapshot) AddToResourceList(resource resources.Resource) error {
-	switch typed := resource.(type) {
-	case *SimpleMockResource:
-		s.Simplemocks = append(s.Simplemocks, typed)
-		s.Simplemocks.Sort()
-		return nil
-	case *MockResource:
-		s.Mocks = append(s.Mocks, typed)
-		s.Mocks.Sort()
-		return nil
-	case *FakeResource:
-		s.Fakes = append(s.Fakes, typed)
-		s.Fakes.Sort()
-		return nil
-	case *AnotherMockResource:
-		s.Anothermockresources = append(s.Anothermockresources, typed)
-		s.Anothermockresources.Sort()
-		return nil
-	case *ClusterResource:
-		s.Clusterresources = append(s.Clusterresources, typed)
-		s.Clusterresources.Sort()
-		return nil
-	case *MockCustomType:
-		s.Mcts = append(s.Mcts, typed)
-		s.Mcts.Sort()
-		return nil
-	case *MockCustomSpecHashType:
-		s.Mcshts = append(s.Mcshts, typed)
-		s.Mcshts.Sort()
-		return nil
-	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
-		s.Pods = append(s.Pods, typed)
-		s.Pods.Sort()
-		return nil
-	default:
-		return eris.Errorf("did not add the resource type because it does not exist %T", resource)
-	}
-}
-
-func (s *TestingSnapshot) ReplaceResource(i int, resource resources.Resource) error {
-	switch typed := resource.(type) {
-	case *SimpleMockResource:
-		s.Simplemocks[i] = typed
-	case *MockResource:
-		s.Mocks[i] = typed
-	case *FakeResource:
-		s.Fakes[i] = typed
-	case *AnotherMockResource:
-		s.Anothermockresources[i] = typed
-	case *ClusterResource:
-		s.Clusterresources[i] = typed
-	case *MockCustomType:
-		s.Mcts[i] = typed
-	case *MockCustomSpecHashType:
-		s.Mcshts[i] = typed
-	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.Pod:
-		s.Pods[i] = typed
-	default:
-		return eris.Wrapf(eris.Errorf("did not contain the resource type %T", resource), "did not replace the resource at index %d", i)
-	}
-	return nil
 }
 
 type TestingSnapshotStringer struct {

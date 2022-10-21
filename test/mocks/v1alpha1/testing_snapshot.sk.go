@@ -67,21 +67,20 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	refKey := resource.GetMetadata().Ref().Key()
 	switch resource.(type) {
 	case *MockResource:
-		newList := MockResourceList{}
-		for _, res := range s.Mocks {
-			if refKey != res.GetMetadata().Ref().Key() {
-				newList = append(newList, res)
+
+		for i, res := range s.Mocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
+				break
 			}
 		}
-		s.Mocks = newList
-		s.Mocks.Sort()
 		return nil
 	default:
 		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
 	}
 }
 
-func (s *TestingSnapshot) AddOrReplaceToResourceList(resource resources.Resource) error {
+func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key()
 	switch typed := resource.(type) {
 	case *MockResource:
@@ -100,27 +99,6 @@ func (s *TestingSnapshot) AddOrReplaceToResourceList(resource resources.Resource
 	default:
 		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
 	}
-}
-
-func (s *TestingSnapshot) AddToResourceList(resource resources.Resource) error {
-	switch typed := resource.(type) {
-	case *MockResource:
-		s.Mocks = append(s.Mocks, typed)
-		s.Mocks.Sort()
-		return nil
-	default:
-		return eris.Errorf("did not add the resource type because it does not exist %T", resource)
-	}
-}
-
-func (s *TestingSnapshot) ReplaceResource(i int, resource resources.Resource) error {
-	switch typed := resource.(type) {
-	case *MockResource:
-		s.Mocks[i] = typed
-	default:
-		return eris.Wrapf(eris.Errorf("did not contain the resource type %T", resource), "did not replace the resource at index %d", i)
-	}
-	return nil
 }
 
 type TestingSnapshotStringer struct {
