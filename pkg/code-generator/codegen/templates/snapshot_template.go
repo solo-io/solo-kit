@@ -110,7 +110,7 @@ func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resour
 		return nil	
 {{- end }}
 	default:
-		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
 	}
 }
 
