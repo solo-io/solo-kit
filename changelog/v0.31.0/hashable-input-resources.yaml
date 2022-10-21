@@ -1,7 +1,7 @@
 changelog:
-  - type: BREAKING_CHANGE
+  - type: NON_USER_FACING
     description: >
-      input resource types are now interfaced more with Hashable input resources. Adding more
-      methods to the snapshot interface to allow for adding and replacing resources.
+      created the Hashabled Resource types which interface with Resource and Hashable. Adding more
+      methods to the snapshot template to allow for upserting and removing resources.
     issueLink: https://github.com/solo-io/gloo/issues/7273
     resolvesIssue: false
