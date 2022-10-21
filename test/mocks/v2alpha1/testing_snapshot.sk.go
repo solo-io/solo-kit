@@ -132,7 +132,7 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 		}
 		return nil
 	default:
-		return eris.Errorf("did not remove the reousource because its type does not exist [%T]", resource)
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
 	}
 }
 
