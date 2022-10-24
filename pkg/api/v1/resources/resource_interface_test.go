@@ -1,6 +1,7 @@
 package resources_test
 
 import (
+	"hash"
 	"sort"
 
 	. "github.com/onsi/ginkgo"
@@ -43,6 +44,17 @@ func (m *mockResources) GetMetadata() *core.Metadata {
 		Namespace: m.Ns,
 	}
 }
+
+func (m *mockResources) Hash(hasher hash.Hash64) (uint64, error) {
+	// not implement
+	return 0, nil
+}
+
+func (m *mockResources) MustHash() uint64 {
+	// not implemented
+	return 0
+}
+
 func (m *mockResources) SetMetadata(meta *core.Metadata) {
 	// Not need in this test
 }

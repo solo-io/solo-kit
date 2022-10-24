@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(Service)
 )
 
+func NewServiceHashableResource() resources.HashableResource {
+	return new(Service)
+}
+
 func NewService(namespace, name string) *Service {
 	service := &Service{}
 	service.Service.SetMetadata(&core.Metadata{

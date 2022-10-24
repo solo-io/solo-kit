@@ -2,6 +2,7 @@ package resources
 
 import (
 	"fmt"
+	"hash"
 	"reflect"
 	"sort"
 
@@ -78,6 +79,18 @@ type CustomInputResource interface {
 	UnmarshalStatus(status v1.Status, defaultUnmarshaler StatusUnmarshaler)
 	MarshalSpec() (v1.Spec, error)
 	MarshalStatus() (v1.Status, error)
+}
+
+// Hashable is an interface used for hashing the struture.
+type Hashable interface {
+	Hash(hasher hash.Hash64) (uint64, error)
+	MustHash() uint64
+}
+
+// HashableResource are Resources that can be hashed
+type HashableResource interface {
+	Resource
+	Hashable
 }
 
 type ResourceList []Resource

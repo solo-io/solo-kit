@@ -45,6 +45,10 @@ var (
 {{- end }}
 )
 
+func New{{ .Name }}HashableResource() resources.HashableResource {
+	return new({{ .Name }})
+}
+
 func New{{ .Name }}(namespace, name string) *{{ .Name }} {
 	{{ lowercase .Name }} := &{{ .Name }}{}
 {{- if $.IsCustom }}

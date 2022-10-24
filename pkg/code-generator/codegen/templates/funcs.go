@@ -88,6 +88,12 @@ var Funcs = template.FuncMap{
 	"backtick": func() string {
 		return "`"
 	},
+	"inc": func(a int) int {
+		return a + 1
+	},
+	"ge": func(a, b int) bool {
+		return a >= b
+	},
 }
 
 func printPointer(format string, p *string) string {

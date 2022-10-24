@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(Deployment)
 )
 
+func NewDeploymentHashableResource() resources.HashableResource {
+	return new(Deployment)
+}
+
 func NewDeployment(namespace, name string) *Deployment {
 	deployment := &Deployment{}
 	deployment.Deployment.SetMetadata(&core.Metadata{
