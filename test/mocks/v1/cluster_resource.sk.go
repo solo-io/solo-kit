@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(ClusterResource)
 )
 
+func NewClusterResourceHashableResource() resources.HashableResource {
+	return new(ClusterResource)
+}
+
 func NewClusterResource(namespace, name string) *ClusterResource {
 	clusterresource := &ClusterResource{}
 	clusterresource.SetMetadata(&core.Metadata{

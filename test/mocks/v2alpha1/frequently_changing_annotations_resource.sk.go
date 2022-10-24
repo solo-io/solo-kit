@@ -19,6 +19,10 @@ var (
 	_ resources.Resource = new(FrequentlyChangingAnnotationsResource)
 )
 
+func NewFrequentlyChangingAnnotationsResourceHashableResource() resources.HashableResource {
+	return new(FrequentlyChangingAnnotationsResource)
+}
+
 func NewFrequentlyChangingAnnotationsResource(namespace, name string) *FrequentlyChangingAnnotationsResource {
 	frequentlychangingannotationsresource := &FrequentlyChangingAnnotationsResource{}
 	frequentlychangingannotationsresource.SetMetadata(&core.Metadata{

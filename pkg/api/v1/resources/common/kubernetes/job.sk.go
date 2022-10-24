@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(Job)
 )
 
+func NewJobHashableResource() resources.HashableResource {
+	return new(Job)
+}
+
 func NewJob(namespace, name string) *Job {
 	job := &Job{}
 	job.Job.SetMetadata(&core.Metadata{

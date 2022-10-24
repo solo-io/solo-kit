@@ -7,6 +7,8 @@ import (
 var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_snapshot").Funcs(Funcs).Parse(
 	`package {{ .Project.ProjectConfig.Version }}
 
+{{/* creating a variable that lets us understand how many resources are hashable input resources. */}}
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -15,6 +17,7 @@ import (
 	"log"
 
 	{{ .Imports }}
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
@@ -80,6 +83,59 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash",  snapshotHash))
 }
 
+func (s *{{ .GoName }}Snapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+{{- range .Resources }}
+	case *{{ .ImportPrefix }}{{ .Name }}:
+		return s.{{ upper_camel .PluralName }}.AsResources(), nil
+{{- end }}
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+{{- range .Resources }}
+	case *{{ .ImportPrefix }}{{ .Name }}:
+		{{/* no need to sort because it is already sorted */}}
+		for i, res := range s.{{ upper_camel .PluralName }} {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}[:i], s.{{ upper_camel .PluralName }}[i+1:]...)
+				break
+			}
+		}
+		return nil	
+{{- end }}
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *{{ .GoName }}Snapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key() 
+	switch typed := resource.(type) {
+{{- range .Resources }}
+	case *{{ .ImportPrefix }}{{ .Name }}:
+		updated := false
+		for i, res := range s.{{ upper_camel .PluralName }} {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.{{ upper_camel .PluralName }}[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}, typed)
+		}
+		s.{{ upper_camel .PluralName }}.Sort()
+		return nil	
+{{- end }}
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type {{ .GoName }}SnapshotStringer struct {
 	Version              uint64
 {{- range .Resources}}
@@ -116,4 +172,11 @@ func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
 {{- end}}
 	}
 }
+
+var {{.GoName }}GvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource {
+{{- range .Resources}}
+	{{ .ImportPrefix }}{{ .Name }}GVK: {{ .ImportPrefix }}New{{ .Name }}HashableResource,
+{{- end }}	
+}
+
 `))

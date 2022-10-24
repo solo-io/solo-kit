@@ -19,6 +19,10 @@ var (
 	_ resources.Resource = new(FakeResource)
 )
 
+func NewFakeResourceHashableResource() resources.HashableResource {
+	return new(FakeResource)
+}
+
 func NewFakeResource(namespace, name string) *FakeResource {
 	fakeresource := &FakeResource{}
 	fakeresource.SetMetadata(&core.Metadata{

@@ -12,7 +12,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type TestingSnapshot struct {
@@ -86,6 +88,101 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *TestingSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *MockResource:
+		return s.Mocks.AsResources(), nil
+	case *FrequentlyChangingAnnotationsResource:
+		return s.Fcars.AsResources(), nil
+	case *testing_solo_io.FakeResource:
+		return s.Fakes.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *MockResource:
+
+		for i, res := range s.Mocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *FrequentlyChangingAnnotationsResource:
+
+		for i, res := range s.Fcars {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fcars = append(s.Fcars[:i], s.Fcars[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *testing_solo_io.FakeResource:
+
+		for i, res := range s.Fakes {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fakes = append(s.Fakes[:i], s.Fakes[i+1:]...)
+				break
+			}
+		}
+		return nil
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *MockResource:
+		updated := false
+		for i, res := range s.Mocks {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Mocks[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Mocks = append(s.Mocks, typed)
+		}
+		s.Mocks.Sort()
+		return nil
+	case *FrequentlyChangingAnnotationsResource:
+		updated := false
+		for i, res := range s.Fcars {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fcars[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Fcars = append(s.Fcars, typed)
+		}
+		s.Fcars.Sort()
+		return nil
+	case *testing_solo_io.FakeResource:
+		updated := false
+		for i, res := range s.Fakes {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Fakes[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Fakes = append(s.Fakes, typed)
+		}
+		s.Fakes.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type TestingSnapshotStringer struct {
 	Version uint64
 	Mocks   []string
@@ -125,4 +222,10 @@ func (s TestingSnapshot) Stringer() TestingSnapshotStringer {
 		Fcars:   s.Fcars.NamespacesDotNames(),
 		Fakes:   s.Fakes.NamespacesDotNames(),
 	}
+}
+
+var TestingGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	MockResourceGVK:                          NewMockResourceHashableResource,
+	FrequentlyChangingAnnotationsResourceGVK: NewFrequentlyChangingAnnotationsResourceHashableResource,
+	testing_solo_io.FakeResourceGVK:          testing_solo_io.NewFakeResourceHashableResource,
 }

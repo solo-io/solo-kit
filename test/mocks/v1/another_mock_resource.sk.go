@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(AnotherMockResource)
 )
 
+func NewAnotherMockResourceHashableResource() resources.HashableResource {
+	return new(AnotherMockResource)
+}
+
 func NewAnotherMockResource(namespace, name string) *AnotherMockResource {
 	anothermockresource := &AnotherMockResource{}
 	anothermockresource.SetMetadata(&core.Metadata{
