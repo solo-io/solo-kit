@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
+	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
 )
 
 // ensure the imports are used
@@ -79,9 +79,9 @@ func (m *Status) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetDetails()).(clone.Cloner); ok {
-		target.Details = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
+		target.Details = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)	
 	} else {
-		target.Details = proto.Clone(m.GetDetails()).(*google_golang_org_protobuf_types_known_structpb.Struct)
+		target.Details = proto.Clone(m.GetDetails()).(*github_com_golang_protobuf_ptypes_struct.Struct)
 	}
 
 	if m.GetMessages() != nil {
