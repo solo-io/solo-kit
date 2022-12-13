@@ -13,8 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-)
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers")
 
 // ensure the imports are used
 var (
@@ -90,15 +89,15 @@ func (m *Metadata_OwnerReference) Clone() proto.Message {
 	target.ApiVersion = m.GetApiVersion()
 
 	if h, ok := interface{}(m.GetBlockOwnerDeletion()).(clone.Cloner); ok {
-		target.BlockOwnerDeletion = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
+		target.BlockOwnerDeletion = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
-		target.BlockOwnerDeletion = proto.Clone(m.GetBlockOwnerDeletion()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
+		target.BlockOwnerDeletion = proto.Clone(m.GetBlockOwnerDeletion()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetController()).(clone.Cloner); ok {
-		target.Controller = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
+		target.Controller = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
-		target.Controller = proto.Clone(m.GetController()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
+		target.Controller = proto.Clone(m.GetController()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	target.Kind = m.GetKind()
