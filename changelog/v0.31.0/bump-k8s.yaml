@@ -20,5 +20,5 @@ changelog:
     dependencyRepo: code-generator
     dependencyTag: kubernetes-1.25.4
   - type: DEPENDENCY_BUMP
-    dependencyRepo: go
+    dependencyOwner: golang
     dependencyTag: 1.19
