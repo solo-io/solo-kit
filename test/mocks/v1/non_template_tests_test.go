@@ -34,6 +34,7 @@ var _ = Describe("V1Emitter", func() {
 	}
 	var (
 		ctx                          context.Context
+		cancel                       context.CancelFunc
 		namespace1                   string
 		slowWatchNamespace           string
 		name1                        = "angela" + helpers.RandString(3)
@@ -52,10 +53,11 @@ var _ = Describe("V1Emitter", func() {
 	)
 
 	BeforeEach(func() {
+
 		err := os.Setenv(statusutils.PodNamespaceEnvName, "default")
 		Expect(err).NotTo(HaveOccurred())
 
-		ctx = context.Background()
+		ctx, cancel = context.WithCancel(context.Background())
 		namespace1 = helpers.RandString(8)
 		slowWatchNamespace = "slow-watch-namespace"
 
@@ -150,7 +152,9 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, slowWatchNamespace)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(ctx, kube, namespace1, slowWatchNamespace)
+		Expect(err).NotTo(HaveOccurred())
+		cancel()
 	})
 
 	It("Should not overwrite initial listed resources for non-returned namespace watchers", func() {
