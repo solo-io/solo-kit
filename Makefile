@@ -4,7 +4,6 @@
 #----------------------------------------------------------------------------------
 # Help
 #----------------------------------------------------------------------------------
-# Our Makefile is quite large, and hard to reason through
 # `make help` can be used to self-document targets
 # To update a target to be self-documenting (and appear with the `help` command),
 # place a comment after the target that is prefixed by `##`. For example:

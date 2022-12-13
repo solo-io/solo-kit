@@ -30,7 +30,7 @@ require (
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.1.0
 	github.com/solo-io/go-utils v0.22.4
-	github.com/solo-io/k8s-utils v0.1.4-0.20221210204313-86dffae3a896
+	github.com/solo-io/k8s-utils v0.1.4-0.20221213004441-fdb6d458fc13
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	go.opencensus.io v0.23.0
