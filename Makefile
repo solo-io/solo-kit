@@ -149,7 +149,7 @@ run-tests: test
 .PHONY: test
 test: ## test all unless passing -skip=multicluster or -regexScansFilePath
 ifneq ($(RELEASE), "true")
-	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites $(TEST_PKG)
+	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v  -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites $(TEST_PKG)
 endif
 
 #----------------------------------------------------------------------------------
