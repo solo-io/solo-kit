@@ -21,11 +21,12 @@ type PriorityValue interface {
 // If a priority does not exist for an added element, it is added to the lowest priority.
 //
 // The below 1, 2, 4 go first, 10 second, and 17 third. Anything else is processed last
-// {
-//	0: {item1, item2, item4}
-//	1: {item10}
-//	2: {item17}
-// }
+//
+//	{
+//		0: {item1, item2, item4}
+//		1: {item10}
+//		2: {item17}
+//	}
 type PrioritySortedStruct struct {
 	// priorityMap maps the value to the priority.
 	priorityMap map[string]int

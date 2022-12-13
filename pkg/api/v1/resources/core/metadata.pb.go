@@ -10,10 +10,10 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//*
+// *
 // Metadata contains general properties of resources for purposes of versioning, annotating, and namespacing.
 type Metadata struct {
 	state         protoimpl.MessageState
@@ -156,12 +156,12 @@ type Metadata_OwnerReference struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ApiVersion         string              `protobuf:"bytes,1,opt,name=api_version,json=apiVersion,proto3" json:"api_version,omitempty"`
-	BlockOwnerDeletion *wrappers.BoolValue `protobuf:"bytes,2,opt,name=block_owner_deletion,json=blockOwnerDeletion,proto3" json:"block_owner_deletion,omitempty"`
-	Controller         *wrappers.BoolValue `protobuf:"bytes,3,opt,name=controller,proto3" json:"controller,omitempty"`
-	Kind               string              `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
-	Name               string              `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
-	Uid                string              `protobuf:"bytes,6,opt,name=uid,proto3" json:"uid,omitempty"`
+	ApiVersion         string                `protobuf:"bytes,1,opt,name=api_version,json=apiVersion,proto3" json:"api_version,omitempty"`
+	BlockOwnerDeletion *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=block_owner_deletion,json=blockOwnerDeletion,proto3" json:"block_owner_deletion,omitempty"`
+	Controller         *wrapperspb.BoolValue `protobuf:"bytes,3,opt,name=controller,proto3" json:"controller,omitempty"`
+	Kind               string                `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
+	Name               string                `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	Uid                string                `protobuf:"bytes,6,opt,name=uid,proto3" json:"uid,omitempty"`
 }
 
 func (x *Metadata_OwnerReference) Reset() {
@@ -203,14 +203,14 @@ func (x *Metadata_OwnerReference) GetApiVersion() string {
 	return ""
 }
 
-func (x *Metadata_OwnerReference) GetBlockOwnerDeletion() *wrappers.BoolValue {
+func (x *Metadata_OwnerReference) GetBlockOwnerDeletion() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.BlockOwnerDeletion
 	}
 	return nil
 }
 
-func (x *Metadata_OwnerReference) GetController() *wrappers.BoolValue {
+func (x *Metadata_OwnerReference) GetController() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Controller
 	}
@@ -319,7 +319,7 @@ var file_metadata_proto_goTypes = []interface{}{
 	nil,                             // 1: core.solo.io.Metadata.LabelsEntry
 	nil,                             // 2: core.solo.io.Metadata.AnnotationsEntry
 	(*Metadata_OwnerReference)(nil), // 3: core.solo.io.Metadata.OwnerReference
-	(*wrappers.BoolValue)(nil),      // 4: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),    // 4: google.protobuf.BoolValue
 }
 var file_metadata_proto_depIdxs = []int32{
 	1, // 0: core.solo.io.Metadata.labels:type_name -> core.solo.io.Metadata.LabelsEntry
