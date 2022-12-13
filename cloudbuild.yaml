@@ -10,7 +10,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.5.0'
   args:
   - "--repo-name"
-  - "solo-kit"
+  - "solo-io/solo-kit"
   - "--repo-sha"
   - "$COMMIT_SHA"
   - "--repo-output-dir"
