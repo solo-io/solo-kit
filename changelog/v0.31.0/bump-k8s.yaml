@@ -22,3 +22,4 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: golang
     dependencyTag: 1.19
+    dependencyRepo: go
