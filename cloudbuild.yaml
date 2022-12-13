@@ -48,7 +48,7 @@ steps:
 # e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/tree/master/e2e-go-mod-ginkgo
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.5.0'
   entrypoint: 'bash'
   env:
   - 'ACK_GINKGO_RC=true'
