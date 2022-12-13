@@ -19,3 +19,6 @@ changelog:
     dependencyOwner: k8s.io
     dependencyRepo: code-generator
     dependencyTag: kubernetes-1.25.4
+  - type: DEPENDENCY_BUMP
+    dependencyRepo: go
+    dependencyTag: 1.19
