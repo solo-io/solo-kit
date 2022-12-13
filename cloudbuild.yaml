@@ -9,10 +9,8 @@ steps:
 # prepare-workspace to set up the project so it can be built and tested
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.5.0'
   args:
-  - "--repo-owner"
-  - "solo-io"
   - "--repo-name"
-  - solo-kit
+  - "solo-kit"
   - "--repo-sha"
   - "$COMMIT_SHA"
   - "--repo-output-dir"
