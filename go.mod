@@ -6,7 +6,7 @@ require (
 	cuelang.org/go v0.3.2
 	github.com/Masterminds/sprig v2.20.0+incompatible
 	github.com/bugsnag/bugsnag-go v1.5.0
-	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1
+	github.com/envoyproxy/go-control-plane v0.9.9
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/getkin/kin-openapi v0.80.0
@@ -30,19 +30,19 @@ require (
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.1.0
 	github.com/solo-io/go-utils v0.22.4
-	github.com/solo-io/k8s-utils v0.1.4-0.20221213125258-34918d5b7bb6
+	github.com/solo-io/k8s-utils v0.1.3
 	github.com/solo-io/protoc-gen-ext v0.0.16
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	go.opencensus.io v0.23.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.19.0
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
-	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21
-	google.golang.org/grpc v1.47.0
+	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368
+	google.golang.org/grpc v1.41.0-dev
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.25.4
-	k8s.io/apiextensions-apiserver v0.25.4
+	k8s.io/apiextensions-apiserver v0.25.0-alpha.0
 	k8s.io/apimachinery v0.25.4
 	k8s.io/client-go v0.25.4
 	k8s.io/code-generator v0.25.4
