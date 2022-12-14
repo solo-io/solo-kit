@@ -13,30 +13,30 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-// MockClusterClientFactory is a mock of ClusterClientFactory interface
+// MockClusterClientFactory is a mock of ClusterClientFactory interface.
 type MockClusterClientFactory struct {
 	ctrl     *gomock.Controller
 	recorder *MockClusterClientFactoryMockRecorder
 }
 
-// MockClusterClientFactoryMockRecorder is the mock recorder for MockClusterClientFactory
+// MockClusterClientFactoryMockRecorder is the mock recorder for MockClusterClientFactory.
 type MockClusterClientFactoryMockRecorder struct {
 	mock *MockClusterClientFactory
 }
 
-// NewMockClusterClientFactory creates a new mock instance
+// NewMockClusterClientFactory creates a new mock instance.
 func NewMockClusterClientFactory(ctrl *gomock.Controller) *MockClusterClientFactory {
 	mock := &MockClusterClientFactory{ctrl: ctrl}
 	mock.recorder = &MockClusterClientFactoryMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClusterClientFactory) EXPECT() *MockClusterClientFactoryMockRecorder {
 	return m.recorder
 }
 
-// GetClient mocks base method
+// GetClient mocks base method.
 func (m *MockClusterClientFactory) GetClient(ctx context.Context, cluster string, restConfig *rest.Config) (clients.ResourceClient, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClient", ctx, cluster, restConfig)
@@ -45,7 +45,7 @@ func (m *MockClusterClientFactory) GetClient(ctx context.Context, cluster string
 	return ret0, ret1
 }
 
-// GetClient indicates an expected call of GetClient
+// GetClient indicates an expected call of GetClient.
 func (mr *MockClusterClientFactoryMockRecorder) GetClient(ctx, cluster, restConfig interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockClusterClientFactory)(nil).GetClient), ctx, cluster, restConfig)

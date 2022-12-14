@@ -31,7 +31,6 @@ func ToKubeMeta(meta *core.Metadata) metav1.ObjectMeta {
 	skMeta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 	return skMeta
 }
-
 func ToKubeMetaMaintainNamespace(meta *core.Metadata) metav1.ObjectMeta {
 	if meta == nil {
 		return metav1.ObjectMeta{}
@@ -39,7 +38,6 @@ func ToKubeMetaMaintainNamespace(meta *core.Metadata) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:            meta.Name,
 		Namespace:       meta.Namespace,
-		ClusterName:     meta.Cluster,
 		ResourceVersion: meta.ResourceVersion,
 		Labels:          copyMap(meta.Labels),
 		Annotations:     copyMap(meta.Annotations),
