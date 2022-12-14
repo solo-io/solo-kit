@@ -21,9 +21,9 @@ var (
 )
 
 /*
-Returns the current go mod package name from the go.mod file.
-Use the function below to get the filename
-Ex: github.com/solo-io/solo-kit
+	Returns the current go mod package name from the go.mod file.
+	Use the function below to get the filename
+	Ex: github.com/solo-io/solo-kit
 */
 func GetCurrentModPackageName(module string) (string, error) {
 	f, err := os.Open(module)
@@ -44,10 +44,10 @@ func GetCurrentModPackageName(module string) (string, error) {
 }
 
 /*
-Returns the current go mod package
-Ex: /path/to/solo-kit/go.mod
+	Returns the current go mod package
+	Ex: /path/to/solo-kit/go.mod
 
-Will return /dev/null on unix if not in a go.mod package
+	Will return /dev/null on unix if not in a go.mod package
 */
 func GetCurrentModPackageFile() (string, error) {
 	cmd := exec.Command("go", "env", "GOMOD")
