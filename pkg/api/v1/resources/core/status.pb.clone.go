@@ -79,7 +79,7 @@ func (m *Status) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetDetails()).(clone.Cloner); ok {
-		target.Details = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Details = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)	
 	} else {
 		target.Details = proto.Clone(m.GetDetails()).(*github_com_golang_protobuf_ptypes_struct.Struct)
 	}
