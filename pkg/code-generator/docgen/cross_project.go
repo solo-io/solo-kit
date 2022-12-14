@@ -104,7 +104,8 @@ func WriteCrossProjectDocsHugo(
 }
 
 // util for populating the Hugo ProtoMap to enable allows lookup by
-//   somepkg.solo.io or somepkg.solo.io.SomeMessage
+//
+//	somepkg.solo.io or somepkg.solo.io.SomeMessage
 func getApiSummaryKV(apiDir, filename, packageName, fieldName string) (string, datafile.ApiSummary) {
 	key := packageName
 	hashPath := ""

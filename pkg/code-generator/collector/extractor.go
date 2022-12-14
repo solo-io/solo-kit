@@ -16,11 +16,11 @@ type ImportsExtractor interface {
 // thread-safe
 // The synchronizedImportsExtractor provides synchronized access to imports for a given proto file.
 // It provides 2 useful features for tree traversal:
-//	1. Imports for each file are cached, ensuring that if we attempt to access that file
-//		during traversal again, we do not need to duplicate work.
-//	2. If imports for a file are unknown, and simultaneous go routines attempt to load
-//		the imports, only 1 will execute and the other will block, waiting for the result.
-//		This reduces the number of times we open and parse files.
+//  1. Imports for each file are cached, ensuring that if we attempt to access that file
+//     during traversal again, we do not need to duplicate work.
+//  2. If imports for a file are unknown, and simultaneous go routines attempt to load
+//     the imports, only 1 will execute and the other will block, waiting for the result.
+//     This reduces the number of times we open and parse files.
 type synchronizedImportsExtractor struct {
 	// cachedImports contains a map of fileImports, each indexed by their file name
 	cachedImports sync.Map
