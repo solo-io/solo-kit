@@ -12,9 +12,9 @@ import (
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
-	gendoc "github.com/ilackarms/protoc-gen-doc"
 	"github.com/pseudomuto/protokit"
 	"github.com/solo-io/go-utils/stringutils"
+	gendoc "github.com/solo-io/protoc-gen-doc"
 )
 
 var primitiveTypes = map[descriptor.FieldDescriptorProto_Type]string{

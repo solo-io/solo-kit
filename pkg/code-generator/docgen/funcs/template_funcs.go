@@ -19,8 +19,8 @@ import (
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/iancoleman/strcase"
-	gendoc "github.com/ilackarms/protoc-gen-doc"
 	"github.com/pseudomuto/protokit"
+	gendoc "github.com/solo-io/protoc-gen-doc"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"
 	"github.com/solo-io/solo-kit/pkg/errors"

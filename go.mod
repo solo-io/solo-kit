@@ -19,7 +19,6 @@ require (
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
-	github.com/ilackarms/protoc-gen-doc v1.0.0
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.20.1
@@ -31,6 +30,7 @@ require (
 	github.com/solo-io/go-list-licenses v0.1.0
 	github.com/solo-io/go-utils v0.22.4
 	github.com/solo-io/k8s-utils v0.1.4-0.20221213125258-34918d5b7bb6
+	github.com/solo-io/protoc-gen-doc v0.0.0-20221215032818-fefa547fba01
 	github.com/solo-io/protoc-gen-ext v0.0.17
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	go.opencensus.io v0.23.0
@@ -119,7 +119,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
-	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cobra v1.4.0 // indirect
