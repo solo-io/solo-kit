@@ -176,22 +176,19 @@ func makeResponsesV3() map[string][]cache.Response {
 			},
 		}},
 		types.ClusterTypeV3: {{
-			Version: "2",
-			Resources: []cache.Resource{
-				resource.NewEnvoyResource(resource_v3.MakeCluster(resource_v3.Ads, clusterName)),
-			},
+			Version: "2", Resources: []cache.Resource{resource.NewEnvoyResource(resource_v3.MakeCluster(resource_v3.Ads, clusterName))},
 		}},
 		types.RouteTypeV3: {{
 			Version: "3",
 			Resources: []cache.Resource{
-				resource.NewEnvoyResource(resource_v3.MakeRoute(routeName, clusterName)),
+				resource.NewEnvoyResource(resource_v3.MakeRouteConfig(routeName, clusterName)),
 			},
 		}},
 		types.ListenerTypeV3: {{
 			Version: "4",
 			Resources: []cache.Resource{
 				resource.NewEnvoyResource(
-					resource_v3.MakeHTTPListener(resource_v3.Ads, listenerName, 80, routeName),
+					resource_v3.MakeRouteHTTPListener(resource_v3.Ads, listenerName, 80, routeName),
 				),
 			},
 		}},
