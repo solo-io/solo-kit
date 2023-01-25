@@ -10,7 +10,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 )
 
 type EnvoyResource struct {
@@ -26,13 +25,37 @@ func NewEnvoyResource(r cache.ResourceProto) *EnvoyResource {
 // DefaultAPIVersion is the api version
 const DefaultAPIVersion = envoy_config_core_v3.ApiVersion_V3
 
+// AnyType is used only by ADS
+const (
+	AnyType    = ""
+	TypePrefix = "type.googleapis.com"
+)
+
+// Resource types in xDS v3.
+const (
+	EndpointTypeV3 = TypePrefix + "/envoy.config.endpoint.v3.ClusterLoadAssignment"
+	ClusterTypeV3  = TypePrefix + "/envoy.config.cluster.v3.Cluster"
+	RouteTypeV3    = TypePrefix + "/envoy.config.route.v3.RouteConfiguration"
+	ListenerTypeV3 = TypePrefix + "/envoy.config.listener.v3.Listener"
+	SecretTypeV3   = TypePrefix + "/envoy.extensions.transport_sockets.tls.v3.Secret"
+)
+
+// Fetch urls in xDS v3.
+const (
+	FetchEndpointsV3 = "/v3/discovery:endpoints"
+	FetchClustersV3  = "/v3/discovery:clusters"
+	FetchListenersV3 = "/v3/discovery:listeners"
+	FetchRoutesV3    = "/v3/discovery:routes"
+	FetchSecretsV3   = "/v3/discovery:secrets"
+)
+
 var (
 	// ResponseTypes are supported response types.
 	ResponseTypes = []string{
-		types.EndpointTypeV3,
-		types.ClusterTypeV3,
-		types.RouteTypeV3,
-		types.ListenerTypeV3,
+		EndpointTypeV3,
+		ClusterTypeV3,
+		RouteTypeV3,
+		ListenerTypeV3,
 	}
 )
 
@@ -66,13 +89,13 @@ func (e *EnvoyResource) ResourceProto() cache.ResourceProto {
 func (e *EnvoyResource) Type() string {
 	switch e.ProtoMessage.(type) {
 	case *envoy_config_endpoint_v3.ClusterLoadAssignment:
-		return types.EndpointTypeV3
+		return EndpointTypeV3
 	case *envoy_config_cluster_v3.Cluster:
-		return types.ClusterTypeV3
+		return ClusterTypeV3
 	case *envoy_config_route_v3.RouteConfiguration:
-		return types.RouteTypeV3
+		return RouteTypeV3
 	case *envoy_config_listener_v3.Listener:
-		return types.ListenerTypeV3
+		return ListenerTypeV3
 	default:
 		return ""
 	}
@@ -91,7 +114,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 		// for EDS type, use cluster name or ServiceName override
 		if v.GetType() == envoy_config_cluster_v3.Cluster_EDS {
 			rr := cache.XdsResourceReference{
-				Type: types.EndpointTypeV3,
+				Type: EndpointTypeV3,
 			}
 			if v.GetEdsClusterConfig().GetServiceName() != "" {
 				rr.Name = v.GetEdsClusterConfig().GetServiceName()
@@ -114,7 +137,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 					if config != nil {
 						if rDS := config.GetRds(); rDS != nil {
 							rr := cache.XdsResourceReference{
-								Type: types.RouteTypeV3,
+								Type: RouteTypeV3,
 								Name: rDS.GetRouteConfigName(),
 							}
 							out[rr] = true

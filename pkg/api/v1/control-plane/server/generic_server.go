@@ -26,7 +26,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	sk_discovery "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	solo_discovery "github.com/solo-io/solo-kit/pkg/api/xds"
 	"google.golang.org/grpc"
@@ -332,7 +332,7 @@ func (s *server) process(
 			nonce := req.GetResponseNonce()
 
 			// type URL is required for ADS but is implicit for xDS
-			if defaultTypeURL == types.AnyType {
+			if defaultTypeURL == resource.AnyType {
 				if req.TypeUrl == "" {
 					return status.Errorf(codes.InvalidArgument, "type URL is required for ADS")
 				}

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
@@ -115,8 +116,8 @@ type snapshotCache struct {
 	// hash is the hashing function for Envoy nodes
 	hash NodeHash
 
-	// prioritySet is the priority of the watches denoted by the TypeURL
-	prioritySet map[int][]string
+	// watchCount is an atomic counter incremented for each watch
+	watchCount int64
 
 	mu sync.RWMutex
 }
@@ -134,12 +135,11 @@ type snapshotCache struct {
 // Logger is optional.
 func NewSnapshotCache(settings CacheSettings) SnapshotCache {
 	return &snapshotCache{
-		log:         settings.Logger,
-		ads:         settings.Ads,
-		snapshots:   make(map[string]Snapshot),
-		status:      make(map[string]*statusInfo),
-		hash:        settings.Hash,
-		prioritySet: settings.PrioritySet,
+		log:       settings.Logger,
+		ads:       settings.Ads,
+		snapshots: make(map[string]Snapshot),
+		status:    make(map[string]*statusInfo),
+		hash:      settings.Hash,
 	}
 }
 
@@ -154,12 +154,11 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 	// trigger existing watches for which version changed
 	if info, ok := cache.status[node]; ok {
 		info.mu.Lock()
-		watches := info.watches
-		doWatch := func(watch ResponseWatch, pi PriorityIndex) {
+		for id, watch := range info.watches {
 			version := snapshot.GetResources(watch.Request.TypeUrl).Version
 			if version != watch.Request.VersionInfo {
 				if cache.log != nil {
-					cache.log.Infof("respond open watch priority %d and index %d :%v with new version %q", pi.Index, pi.Priority, watch.Request.ResourceNames, version)
+					cache.log.Infof("respond open watch %d%v with new version %q", id, watch.Request.ResourceNames, version)
 				}
 
 				resources := snapshot.GetResources(watch.Request.TypeUrl).Items
@@ -171,11 +170,10 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 					cache.respond(watch.Request, watch.Response, resources, version)
 
 					// discard the watch
-					watches.Delete(pi)
+					delete(info.watches, id)
 				}
 			}
 		}
-		info.watches.Process(doWatch)
 		info.mu.Unlock()
 	}
 }
@@ -199,14 +197,6 @@ func (cache *snapshotCache) ClearSnapshot(node string) {
 	defer cache.mu.Unlock()
 
 	delete(cache.snapshots, node)
-	// clear all the active watches as well
-	info := cache.status[node]
-	info.mu.Lock()
-	defer info.mu.Unlock()
-	info.watches.Process(func(el ResponseWatch, pi PriorityIndex) {
-		close(el.Response)
-		info.watches.Delete(pi)
-	})
 	delete(cache.status, node)
 }
 
@@ -248,7 +238,7 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 
 	info, ok := cache.status[nodeID]
 	if !ok {
-		info = NewStatusInfo(request.Node, cache.prioritySet)
+		info = NewStatusInfo(request.Node, map[int][]string{})
 		cache.status[nodeID] = info
 	}
 
@@ -268,15 +258,15 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 
 	// if the requested version is up-to-date or missing a response, leave an open watch
 	if !exists || request.VersionInfo == version {
-		info.mu.Lock()
-		// check SetSnapshot() for responses on the watches map
-		priority := info.watches.Add(ResponseWatch{Request: request, Response: value})
-		info.mu.Unlock()
+		watchID := cache.nextWatchID()
 		if cache.log != nil {
-			cache.log.Infof("open watch Priority Index %d and Element Index %d for %s%v from nodeID %q, version %q",
-				priority.Priority, priority.Index, request.TypeUrl, request.ResourceNames, nodeID, request.VersionInfo)
+			cache.log.Infof("open watch %d for %s%v from nodeID %q, version %q", watchID,
+				request.TypeUrl, request.ResourceNames, nodeID, request.VersionInfo)
 		}
-		return value, cache.cancelWatch(nodeID, priority)
+		info.mu.Lock()
+		info.watches[watchID] = ResponseWatch{Request: request, Response: value}
+		info.mu.Unlock()
+		return value, cache.cancelWatch(nodeID, watchID)
 	}
 
 	// otherwise, the watch may be responded immediately
@@ -287,18 +277,22 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 	}
 }
 
+func (cache *snapshotCache) nextWatchID() int64 {
+	return atomic.AddInt64(&cache.watchCount, 1)
+}
+
 // cancellation function for cleaning stale watches
-func (cache *snapshotCache) cancelWatch(nodeID string, watchIndex PriorityIndex) func() {
+func (cache *snapshotCache) cancelWatch(nodeID string, watchID int64) func() {
 	return func() {
 		// uses the cache mutex
 		cache.mu.Lock()
 		defer cache.mu.Unlock()
 		if info, ok := cache.status[nodeID]; ok {
 			info.mu.Lock()
-			if watch, ok := info.watches.Get(watchIndex); ok {
+			if watch, ok := info.watches[watchID]; ok {
 				close(watch.Response)
 			}
-			info.watches.Delete(watchIndex)
+			delete(info.watches, watchID)
 			info.mu.Unlock()
 		}
 	}
