@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -65,15 +66,23 @@ func ApplyStatus(rc clients.ResourceClient, statusClient resources.StatusClient,
 // to the k8s apiserver (e.g. https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350)
 func GetJsonPatchData(ctx context.Context, inputResource resources.InputResource) ([]byte, error) {
 	namespacedStatuses := inputResource.GetNamespacedStatuses().GetStatuses()
-	if len(namespacedStatuses) != 1 {
-		// we only expect our namespace to report here; we don't want to blow away statuses from other reporters
-		return nil, errors.Errorf("unexpected number of namespaces in input resource: %v", len(inputResource.GetNamespacedStatuses().GetStatuses()))
+	if len(namespacedStatuses) == 0 {
+		return nil, errors.Errorf("no namespaced statuses found in input resource %s.%s",
+			inputResource.GetMetadata().GetNamespace(),
+			inputResource.GetMetadata().GetName())
 	}
-	ns := ""
-	for loopNs := range inputResource.GetNamespacedStatuses().GetStatuses() {
-		ns = loopNs
+	ns, err := statusutils.GetStatusReporterNamespaceFromEnv()
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting status reporter namespace")
 	}
-	status := inputResource.GetNamespacedStatuses().GetStatuses()[ns]
+
+	status, ok := namespacedStatuses[ns]
+	if !ok {
+		return nil, errors.Errorf("input resource %s.%s does not contain status for namespace %s",
+			inputResource.GetMetadata().GetNamespace(),
+			inputResource.GetMetadata().GetName(),
+			ns)
+	}
 
 	buf := &bytes.Buffer{}
 	var marshaller jsonpb.Marshaler
