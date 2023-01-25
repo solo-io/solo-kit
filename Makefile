@@ -93,6 +93,9 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 # Generated Code
 #----------------------------------------------------------------------------------
 
+.PHONY: generate-all
+generate-all: generated-code
+
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code update-licenses
 

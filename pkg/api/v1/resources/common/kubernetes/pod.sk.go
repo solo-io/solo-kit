@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(Pod)
 )
 
+func NewPodHashableResource() resources.HashableResource {
+	return new(Pod)
+}
+
 func NewPod(namespace, name string) *Pod {
 	pod := &Pod{}
 	pod.Pod.SetMetadata(&core.Metadata{

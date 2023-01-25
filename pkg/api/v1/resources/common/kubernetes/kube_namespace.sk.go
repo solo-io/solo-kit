@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(KubeNamespace)
 )
 
+func NewKubeNamespaceHashableResource() resources.HashableResource {
+	return new(KubeNamespace)
+}
+
 func NewKubeNamespace(namespace, name string) *KubeNamespace {
 	kubenamespace := &KubeNamespace{}
 	kubenamespace.KubeNamespace.SetMetadata(&core.Metadata{

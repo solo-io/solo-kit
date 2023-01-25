@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(CustomResourceDefinition)
 )
 
+func NewCustomResourceDefinitionHashableResource() resources.HashableResource {
+	return new(CustomResourceDefinition)
+}
+
 func NewCustomResourceDefinition(namespace, name string) *CustomResourceDefinition {
 	customresourcedefinition := &CustomResourceDefinition{}
 	customresourcedefinition.CustomResourceDefinition.SetMetadata(&core.Metadata{

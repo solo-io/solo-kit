@@ -23,6 +23,10 @@ var (
 	_ resources.Resource = new(MockCustomType)
 )
 
+func NewMockCustomTypeHashableResource() resources.HashableResource {
+	return new(MockCustomType)
+}
+
 func NewMockCustomType(namespace, name string) *MockCustomType {
 	mockcustomtype := &MockCustomType{}
 	mockcustomtype.MockCustomType.SetMetadata(&core.Metadata{
