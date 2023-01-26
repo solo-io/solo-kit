@@ -11,7 +11,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -64,25 +63,8 @@ func ApplyStatus(rc clients.ResourceClient, statusClient resources.StatusClient,
 // GetJsonPatchData returns the json patch data for the input resource.
 // Prefer using json patch for single api call status updates when supported (e.g. k8s) to avoid ratelimiting
 // to the k8s apiserver (e.g. https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350)
-func GetJsonPatchData(ctx context.Context, inputResource resources.InputResource) ([]byte, error) {
-	namespacedStatuses := inputResource.GetNamespacedStatuses().GetStatuses()
-	if len(namespacedStatuses) == 0 {
-		return nil, errors.Errorf("no namespaced statuses found in input resource %s.%s",
-			inputResource.GetMetadata().GetNamespace(),
-			inputResource.GetMetadata().GetName())
-	}
-	ns, err := statusutils.GetStatusReporterNamespaceFromEnv()
-	if err != nil {
-		return nil, errors.Wrapf(err, "getting status reporter namespace")
-	}
-
-	status, ok := namespacedStatuses[ns]
-	if !ok {
-		return nil, errors.Errorf("input resource %s.%s does not contain status for namespace %s",
-			inputResource.GetMetadata().GetNamespace(),
-			inputResource.GetMetadata().GetName(),
-			ns)
-	}
+func GetJsonPatchData(ctx context.Context, statusClient resources.StatusClient, inputResource resources.InputResource) ([]byte, error) {
+	status := statusClient.GetStatus(inputResource)
 
 	buf := &bytes.Buffer{}
 	var marshaller jsonpb.Marshaler

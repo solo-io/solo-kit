@@ -133,7 +133,7 @@ func (rc *podResourceClient) ApplyStatus(statusClient resources.StatusClient, in
 	}
 	opts = opts.WithDefaults()
 
-	data, err := shared.GetJsonPatchData(opts.Ctx, inputResource)
+	data, err := shared.GetJsonPatchData(opts.Ctx, statusClient, inputResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting status json patch data")
 	}
