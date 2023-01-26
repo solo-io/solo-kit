@@ -134,7 +134,7 @@ func (rc *customResourceDefinitionResourceClient) ApplyStatus(statusClient resou
 	}
 	opts = opts.WithDefaults()
 
-	data, err := shared.GetJsonPatchData(opts.Ctx, statusClient, inputResource)
+	data, err := shared.GetJsonPatchData(opts.Ctx, inputResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting status json patch data")
 	}

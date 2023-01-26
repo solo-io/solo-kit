@@ -356,7 +356,7 @@ func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, input
 		ctx = ctxWithTags
 	}
 
-	data, err := shared.GetJsonPatchData(ctx, statusClient, inputResource)
+	data, err := shared.GetJsonPatchData(ctx, inputResource)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting status json patch data")
 	}

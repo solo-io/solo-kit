@@ -132,7 +132,7 @@ func (rc *namespaceResourceClient) ApplyStatus(statusClient resources.StatusClie
 	}
 	opts = opts.WithDefaults()
 
-	data, err := shared.GetJsonPatchData(opts.Ctx, statusClient, inputResource)
+	data, err := shared.GetJsonPatchData(opts.Ctx, inputResource)
 	if err != nil {
 		return nil, eris.Wrapf(err, "error getting status json patch data")
 	}
