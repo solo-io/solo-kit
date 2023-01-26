@@ -1,0 +1,7 @@
+changelog:
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/solo-kit/issues/529
+    resolvesIssue: false
+    description: >
+      The `GetJsonPatchData` function now takes in an additional statusClient argument, to support
+      controllers in different namespaces trying to update the status on a shared resource.
