@@ -96,11 +96,11 @@ func GetJsonPatchData(ctx context.Context, inputResource resources.InputResource
 		return nil, NoNamespacedStatusesError(inputResource)
 	}
 
+	// try to get the status corresponding to the pod namespace
 	ns, err := statusutils.GetStatusReporterNamespaceFromEnv()
 	if err != nil {
 		return nil, StatusReporterNamespaceError(err)
 	}
-
 	status, ok := namespacedStatuses[ns]
 	if !ok {
 		return nil, NamespacedStatusNotFoundError(inputResource, ns)
