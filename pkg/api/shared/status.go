@@ -88,7 +88,7 @@ func GetJsonPatchData(ctx context.Context, inputResource resources.InputResource
 	var marshaller jsonpb.Marshaler
 	marshaller.EnumsAsInts = false  // prefer jsonpb over encoding/json marshaller since it renders enum as string not int (i.e., state is human-readable)
 	marshaller.EmitDefaults = false // keep status as small as possible
-	err := marshaller.Marshal(buf, status)
+	err = marshaller.Marshal(buf, status)
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling input resource")
 	}
