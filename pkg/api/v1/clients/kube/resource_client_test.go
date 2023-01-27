@@ -617,6 +617,8 @@ var _ = Describe("Test Kube ResourceClient", func() {
 
 				err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 				Expect(err).NotTo(HaveOccurred())
+
+				shared.DisableMaxStatusSize = false
 			})
 
 			AfterEach(func() {
