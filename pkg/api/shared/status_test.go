@@ -46,10 +46,20 @@ var _ = Describe("Status", func() {
 				},
 				NamespacedStatuses: &core.NamespacedStatuses{
 					Statuses: map[string]*core.Status{
-						statusWriterNs: {
+						"first-ns": {
+							State:      3,
+							Reason:     "why",
+							ReportedBy: "not",
+						},
+						"second-ns": {
 							State:      2,
 							Reason:     "test",
 							ReportedBy: "me",
+						},
+						statusWriterNs: {
+							State:      1,
+							Reason:     "hello",
+							ReportedBy: "there",
 						},
 					},
 				},
@@ -60,6 +70,9 @@ var _ = Describe("Status", func() {
 			data, err := shared.GetJsonPatchData(ctx, inputResource)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data).NotTo((BeNil()))
+
+			patch := string(data)
+			Expect(patch).To(ContainSubstring("/status/statuses/my-namespace"))
 		})
 
 		It("returns error if resource has no statuses", func() {
