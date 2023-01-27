@@ -614,6 +614,15 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					0,
 					inputResourceStatusUnmarshaler)
 				Expect(rc.Register()).NotTo(HaveOccurred())
+
+				err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+				Expect(err).NotTo(HaveOccurred())
+
+				shared.DisableMaxStatusSize = false
+			})
+
+			AfterEach(func() {
+				os.Unsetenv(statusutils.PodNamespaceEnvName)
 			})
 
 			It("skips status updates if too large", func() {
