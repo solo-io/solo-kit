@@ -28,6 +28,8 @@ var _ = Describe("Status", func() {
 		statusWriterNs = "my-namespace"
 		err := os.Setenv(statusutils.PodNamespaceEnvName, statusWriterNs)
 		Expect(err).NotTo(HaveOccurred())
+
+		shared.DisableMaxStatusSize = false
 	})
 
 	AfterEach(func() {
