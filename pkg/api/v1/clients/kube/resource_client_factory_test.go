@@ -166,7 +166,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 			It("correctly handles multiple events", func() {
 
-				var watchResults []string
+				watchResults := NewWatchResults()
 
 				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
 
@@ -176,7 +176,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 						case <-ctx.Done():
 							return
 						case res := <-watch:
-							watchResults = append(watchResults, res.ObjectMeta.Name)
+							watchResults.AddResult(0, res.ObjectMeta.Name)
 						}
 					}
 				}()
@@ -188,8 +188,9 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				<-ctx.Done()
 
-				Expect(len(watchResults)).To(BeEquivalentTo(3))
-				Expect(watchResults).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1"))
+				results := watchResults.GetResultsAt(0)
+				Expect(len(results)).To(BeEquivalentTo(3))
+				Expect(results).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1"))
 			})
 		})
 
@@ -207,7 +208,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 			It("all watches receive the same events", func() {
 
-				watchResults := [][]string{{}, {}, {}}
+				watchResults := NewWatchResults()
+
 				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
 				for i, watch := range watches {
 					go func(index int, watchChan <-chan solov1.Resource) {
@@ -216,7 +218,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 							case <-ctx.Done():
 								return
 							case res := <-watchChan:
-								watchResults[index] = append(watchResults[index], res.ObjectMeta.Name)
+								watchResults.AddResult(index, res.ObjectMeta.Name)
 							}
 						}
 					}(i, watch)
@@ -234,9 +236,10 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				<-ctx.Done()
 
-				for _, watchResult := range watchResults {
-					Expect(len(watchResult)).To(BeEquivalentTo(4))
-					Expect(watchResult).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
+				for i := range watches {
+					results := watchResults.GetResultsAt(i)
+					Expect(len(results)).To(BeEquivalentTo(4))
+					Expect(results).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
 				}
 			})
 		})
@@ -255,17 +258,15 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 			It("watches stop receiving events after the factory's context is cancelled", func() {
 
-				watchResults := [][]string{{}, {}, {}}
-				l := sync.Mutex{}
+				watchResults := NewWatchResults()
+
 				for i, watch := range watches {
 					preStartGoroutines++
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
 							case res := <-watchChan:
-								l.Lock()
-								watchResults[index] = append(watchResults[index], res.ObjectMeta.Name)
-								l.Unlock()
+								watchResults.AddResult(index, res.ObjectMeta.Name)
 							}
 						}
 					}(i, watch)
@@ -278,17 +279,14 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-4", "test")).To(BeNil())
 				go Expect(util.DeleteMockResource(ctx, clientset, namespace2, "mock-res-2")).To(BeNil())
 
-				for i := range watchResults {
-					Eventually(func() int {
-						l.Lock()
-						defer l.Unlock()
-						watchResult := watchResults[i]
-						return len(watchResult)
-					}).Should(BeEquivalentTo(4))
-					l.Lock()
-					Expect(watchResults[i]).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
-					l.Unlock()
-				}
+				// Eventually all the watchResults should contain 4 watched resources
+				Eventually(func(g Gomega) {
+					for i := range watches {
+						results := watchResults.GetResultsAt(i)
+						g.Expect(len(results)).Should(BeEquivalentTo(4))
+						g.Expect(results).To(ConsistOf("mock-res-1", "mock-res-3", "mock-res-1", "mock-res-4"))
+					}
+				}).Should(Succeed())
 
 				// cancel the context! zbam
 				cancel()
@@ -303,21 +301,47 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "another-mock-res-4", "test")).To(BeNil())
 				go Expect(util.DeleteMockResource(ctx, clientset, namespace2, "another-mock-res-2")).To(BeNil())
 
-				for i := range watchResults {
-					Eventually(func() int {
-						l.Lock()
-						defer l.Unlock()
-						watchResult := watchResults[i]
-						return len(watchResult)
-					}).Should(BeEquivalentTo(4))
-					l.Lock()
-					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-1"))
-					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-2"))
-					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-3"))
-					Expect(watchResults[i]).NotTo(ConsistOf("another-mock-res-4"))
-					l.Unlock()
-				}
+				Eventually(func(g Gomega) {
+					for i := range watches {
+						results := watchResults.GetResultsAt(i)
+						g.Expect(len(results)).Should(BeEquivalentTo(4))
+						g.Expect(results).NotTo(ConsistOf("another-mock-res-1"))
+						g.Expect(results).NotTo(ConsistOf("another-mock-res-2"))
+						g.Expect(results).NotTo(ConsistOf("another-mock-res-3"))
+						g.Expect(results).NotTo(ConsistOf("another-mock-res-4"))
+					}
+				}).Should(Succeed())
+
 			})
 		})
 	})
 })
+
+type watchResults struct {
+	// map of int to []string
+	results *sync.Map
+}
+
+func NewWatchResults() *watchResults {
+	return &watchResults{
+		results: &sync.Map{},
+	}
+}
+
+func (r *watchResults) AddResult(index int, result string) {
+	val, ok := r.results.Load(index)
+	if ok {
+		val = append(val.([]string), result)
+		r.results.Store(index, val)
+	} else {
+		r.results.Store(index, []string{result})
+	}
+}
+
+func (r *watchResults) GetResultsAt(index int) []string {
+	val, ok := r.results.Load(index)
+	if !ok {
+		return nil
+	}
+	return val.([]string)
+}

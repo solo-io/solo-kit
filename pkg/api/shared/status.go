@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -24,6 +25,32 @@ const (
 var (
 	// only public for unit tests!
 	DisableMaxStatusSize = false
+
+	NoNamespacedStatusesError = func(inputResource resources.InputResource) error {
+		return errors.Errorf("no namespaced statuses found on input resource %s.%s (%T)",
+			inputResource.GetMetadata().GetNamespace(),
+			inputResource.GetMetadata().GetName(),
+			inputResource)
+	}
+	StatusReporterNamespaceError = func(err error) error {
+		return errors.Wrapf(err, "getting status reporter namespace")
+	}
+	NamespacedStatusNotFoundError = func(inputResource resources.InputResource, namespace string) error {
+		return errors.Errorf("input resource %s.%s (%T) does not contain status for namespace %s",
+			inputResource.GetMetadata().GetNamespace(),
+			inputResource.GetMetadata().GetName(),
+			inputResource,
+			namespace)
+	}
+	ResourceMarshalError = func(err error, inputResource resources.InputResource) error {
+		return errors.Wrapf(err, "marshalling input resource %s.%s (%T)",
+			inputResource.GetMetadata().GetNamespace(),
+			inputResource.GetMetadata().GetName(),
+			inputResource)
+	}
+	PatchTooLargeError = func(data []byte) error {
+		return errors.Errorf("patch is too large (%v bytes), max is %v bytes", len(data), MaxStatusBytes)
+	}
 )
 
 func init() {
@@ -60,28 +87,32 @@ func ApplyStatus(rc clients.ResourceClient, statusClient resources.StatusClient,
 	return updatedRes, nil
 }
 
-// GetJsonPatchData returns the json patch data for the input resource.
+// GetJsonPatchData returns the status json patch data for the input resource.
 // Prefer using json patch for single api call status updates when supported (e.g. k8s) to avoid ratelimiting
 // to the k8s apiserver (e.g. https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350)
 func GetJsonPatchData(ctx context.Context, inputResource resources.InputResource) ([]byte, error) {
 	namespacedStatuses := inputResource.GetNamespacedStatuses().GetStatuses()
-	if len(namespacedStatuses) != 1 {
-		// we only expect our namespace to report here; we don't want to blow away statuses from other reporters
-		return nil, errors.Errorf("unexpected number of namespaces in input resource: %v", len(inputResource.GetNamespacedStatuses().GetStatuses()))
+	if len(namespacedStatuses) == 0 {
+		return nil, NoNamespacedStatusesError(inputResource)
 	}
-	ns := ""
-	for loopNs := range inputResource.GetNamespacedStatuses().GetStatuses() {
-		ns = loopNs
+
+	// try to get the status corresponding to the pod namespace
+	ns, err := statusutils.GetStatusReporterNamespaceFromEnv()
+	if err != nil {
+		return nil, StatusReporterNamespaceError(err)
 	}
-	status := inputResource.GetNamespacedStatuses().GetStatuses()[ns]
+	status, ok := namespacedStatuses[ns]
+	if !ok {
+		return nil, NamespacedStatusNotFoundError(inputResource, ns)
+	}
 
 	buf := &bytes.Buffer{}
 	var marshaller jsonpb.Marshaler
 	marshaller.EnumsAsInts = false  // prefer jsonpb over encoding/json marshaller since it renders enum as string not int (i.e., state is human-readable)
 	marshaller.EmitDefaults = false // keep status as small as possible
-	err := marshaller.Marshal(buf, status)
+	err = marshaller.Marshal(buf, status)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marshalling input resource")
+		return nil, ResourceMarshalError(err, inputResource)
 	}
 
 	bytes := buf.Bytes()
@@ -94,7 +125,7 @@ func GetJsonPatchData(ctx context.Context, inputResource resources.InputResource
 		} else {
 			contextutils.LoggerFrom(ctx).Warnw("status patch is too large, will not apply", zap.Int("status_bytes", len(data)))
 		}
-		return nil, errors.Errorf("patch is too large (%v bytes), max is %v bytes", len(data), MaxStatusBytes)
+		return nil, PatchTooLargeError(data)
 	}
 
 	return data, nil
