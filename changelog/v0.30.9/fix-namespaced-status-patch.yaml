@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/529
+    resolvesIssue: false
+    description: >
+      Fix error that would occur if a resource contained statuses for multiple namespaces. `GetJsonPatchData` now
+      checks the POD_NAMESPACE environment variable to determine which namespace to modify, instead of erroring.
