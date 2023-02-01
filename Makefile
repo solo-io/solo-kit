@@ -57,6 +57,10 @@ update-deps:
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
+.PHONY: install-test-tools
+install-test-tools:
+	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo@
+
 .PHONY: update-code-generator
 update-code-generator:
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
