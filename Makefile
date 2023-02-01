@@ -43,7 +43,7 @@ update-all: mod-download update-deps update-code-generator
 
 .PHONY: mod-download
 mod-download:
-	go mod download
+	go mod download all
 
 .PHONY: update-deps
 update-deps:
