@@ -22,7 +22,7 @@ require (
 	github.com/ilackarms/protoc-gen-doc v1.0.0
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.16.0
+	github.com/onsi/gomega v1.25.0
 	github.com/pkg/errors v0.9.1
 	github.com/pseudomuto/protokit v0.2.0
 	github.com/radovskyb/watcher v1.0.2
@@ -36,10 +36,10 @@ require (
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/sync v0.1.0
 	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987
 	google.golang.org/grpc v1.36.0
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver v0.18.6
@@ -63,6 +63,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.1.14-0.20191112033314-390e96e22eb2 // indirect
 	github.com/mattn/go-zglob v0.0.3 // indirect
 	github.com/miekg/dns v1.1.15 // indirect
+	github.com/onsi/ginkgo/v2 v2.8.0 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/spf13/afero v1.3.4 // indirect
