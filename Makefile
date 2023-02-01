@@ -10,10 +10,11 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
 
 # Configuration for Ginkgo
-# We run tests with '-skip=multicluster', '-regexScansFilePath' in order to skip any filepath which includes multicluster
+# We run tests with '-skip=multicluster'  in order to skip any filepath which includes multicluster
 # which is useful as this code is no longer used
-GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=1.16.5
-GINKGO_FLAGS := -fail-fast -trace -compilers=4 -fail-on-pending -no-color -randomize-suites -randomize-all -skip multicluster
+GINKGO_VERSION ?= 2.8.0 # match our go.mod
+GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+GINKGO_FLAGS := -fail-fast -trace -compilers=4 -fail-on-pending -no-color -randomize-suites -skip multicluster
 USER_GINKGO_FLAGS ?=
 
 #----------------------------------------------------------------------------------
@@ -66,7 +67,7 @@ update-deps: install-test-tools
 .PHONY: install-test-tools
 install-test-tools:
 	mkdir -p $(DEPSGOBIN)
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/v2/ginkgo@v2.8.0 # match our go.mod
+	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
 
 .PHONY: update-code-generator
 update-code-generator:
