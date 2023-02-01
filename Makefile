@@ -9,6 +9,13 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
 
+# Configuration for Ginkgo
+# We run tests with '-skip=multicluster', '-regexScansFilePath' in order to skip any filepath which includes multicluster
+# which is useful as this code is no longer used
+GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=1.16.5
+GINKGO_FLAGS := -fail-fast -trace -compilers=4 -fail-on-pending -no-color -randomize-suites -randomize-all -skip multicluster
+USER_GINKGO_FLAGS ?=
+
 #----------------------------------------------------------------------------------
 # Version, Release
 #----------------------------------------------------------------------------------
@@ -46,7 +53,7 @@ mod-download:
 	go mod download all
 
 .PHONY: update-deps
-update-deps:
+update-deps: install-test-tools
 	mkdir -p $(DEPSGOBIN)
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
@@ -55,11 +62,11 @@ update-deps:
 	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
 .PHONY: install-test-tools
 install-test-tools:
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo@
+	mkdir -p $(DEPSGOBIN)
+	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/v2/ginkgo@v2.8.0 # match our go.mod
 
 .PHONY: update-code-generator
 update-code-generator:
@@ -123,12 +130,10 @@ verify-envoy-protos:
 # Unit Tests
 #----------------------------------------------------------------------------------
 
-# '-skip=multicluster', '-regexScansFilePath' skips any filepath which includes multicluster, which is useful
-# as this code is no longer used
 .PHONY: test
-test:
+test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
-	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites $(TEST_PKG)
+	$(GINKGO_ENV) VERSION=$(VERSION) $(DEPSGOBIN)/ginkgo $(GINKGO_FLAGS) $(USER_GINKGO_FLAGS) $(TEST_PKG)
 endif
 
 #----------------------------------------------------------------------------------
