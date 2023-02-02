@@ -2,32 +2,29 @@ package plain_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
-	"github.com/solo-io/k8s-utils/kubeutils"
 	kubehelpers "github.com/solo-io/k8s-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/test/kubeutils"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/log"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"k8s.io/client-go/kubernetes"
-
-	// Needed to run tests in GKE
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var _ = Describe("PlainConfigmap", func() {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
-		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+		fmt.Print("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
 	}
 	var (

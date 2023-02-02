@@ -117,7 +117,7 @@ func (c *FakeMockResources) UpdateStatus(ctx context.Context, mockResource *v2al
 // Delete takes name of the mockResource and deletes it. Returns an error if one occurs.
 func (c *FakeMockResources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(mockresourcesResource, c.ns, name), &v2alpha1.MockResource{})
+		Invokes(testing.NewDeleteActionWithOptions(mockresourcesResource, c.ns, name, opts), &v2alpha1.MockResource{})
 
 	return err
 }

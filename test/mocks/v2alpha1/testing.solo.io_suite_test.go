@@ -7,12 +7,12 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"github.com/solo-io/solo-kit/test/kubeutils"
 	"github.com/solo-io/solo-kit/test/testutils"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

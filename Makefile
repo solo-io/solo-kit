@@ -65,7 +65,7 @@ mod-download:
 	go mod download all
 
 .PHONY: update-deps
-update-deps: install-test-tools
+update-deps:
 	mkdir -p $(DEPSGOBIN)
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
@@ -137,19 +137,15 @@ verify-envoy-protos:
 # Tests
 #----------------------------------------------------------------------------------
 
-# Configuration for Ginkgo
-# We run tests with '-skip=multicluster'  in order to skip any filepath which includes multicluster
-# which is useful as this code is no longer used
-
-GINKGO_VERSION ?= 2.8.0 # match our go.mod
-GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS := -v -tags=purego -compilers=4 -skip multicluster # TODO add production recommendedflags once all uistes use v2
+GINKGO_VERSION ?= 2.5.0 # match our go.mod
+GINKGO_ENV := GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+GINKGO_FLAGS := -v -tags=purego -compilers=4 --randomize-all --trace -progress
 GINKGO_REPORT_FLAGS := --json-report=test-report.json --junit-report=junit.xml
-GINKGO_COVERAGE_FLAGS := --cover --covermode=count --coverprofile=coverage.cov
+GINKGO_COVERAGE_FLAGS := --cover --covermode=count --coverprofile=coverage.cov -output-dir=$(OUTPUT_DIR)
 
 # This is a way for a user executing `make test` to be able to provide flags which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
-USER_GINKGO_FLAGS ?=
+GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
 install-test-tools:
@@ -159,14 +155,14 @@ install-test-tools:
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
 	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo \
-		$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(USER_GINKGO_FLAGS) \
-		$(TEST_PKG)
+	$(GINKGO_TEST_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
+	$(TEST_PKG)
 endif
 
 .PHONY: test-with-coverage
 test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
 test-with-coverage: test
-	go tool cover -html coverage.cov
+	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
 #----------------------------------------------------------------------------------
 # Update third party licenses and check for GPL Licenses

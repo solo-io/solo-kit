@@ -48,7 +48,6 @@ type Cache interface {
 
 type KubeCoreCache interface {
 	Cache
-	//clustercache.ClusterCache
 
 	// Deprecated: Use NamespacedPodLister instead
 	PodLister() kubelisters.PodLister

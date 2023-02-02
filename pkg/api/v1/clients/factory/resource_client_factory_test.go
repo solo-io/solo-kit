@@ -5,22 +5,18 @@ import (
 	"os"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
-	"github.com/solo-io/go-utils/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
 	"context"
 
-	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/solo-kit/test/kubeutils"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-
-	// import k8s client pugins
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 type BeErrTypeMatcher struct {
@@ -50,7 +46,7 @@ var _ = Describe("ResourceClientFactory", func() {
 	Describe("CrdClient when the CRD has not been registered", func() {
 
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
-			log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+			fmt.Print("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 			return
 		}
 		var (
