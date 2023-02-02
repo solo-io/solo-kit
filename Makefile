@@ -1,3 +1,22 @@
+# https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
+.DEFAULT_GOAL := help
+
+#----------------------------------------------------------------------------------
+# Help
+#----------------------------------------------------------------------------------
+# Our Makefile is quite large, and hard to reason through
+# `make help` can be used to self-document targets
+# To update a target to be self-documenting (and appear with the `help` command),
+# place a comment after the target that is prefixed by `##`. For example:
+#	custom-target: ## comment that will appear in the documentation when running `make help`
+#
+# **NOTE TO DEVELOPERS**
+# As you encounter make targets that are frequently used, please make them self-documenting
+.PHONY: help
+help: FIRST_COLUMN_WIDTH=35
+help: ## Output the self-documenting make targets
+	@grep -hE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-$(FIRST_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2}'
+
 #----------------------------------------------------------------------------------
 # Base
 #----------------------------------------------------------------------------------
@@ -8,14 +27,6 @@ OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
-
-# Configuration for Ginkgo
-# We run tests with '-skip=multicluster'  in order to skip any filepath which includes multicluster
-# which is useful as this code is no longer used
-GINKGO_VERSION ?= 2.8.0 # match our go.mod
-GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS := -fail-fast -trace -compilers=4 -fail-on-pending -no-color -randomize-suites -skip multicluster
-USER_GINKGO_FLAGS ?=
 
 #----------------------------------------------------------------------------------
 # Version, Release
@@ -63,11 +74,6 @@ update-deps: install-test-tools
 	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
-
-.PHONY: install-test-tools
-install-test-tools:
-	mkdir -p $(DEPSGOBIN)
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
 
 .PHONY: update-code-generator
 update-code-generator:
@@ -128,14 +134,39 @@ verify-envoy-protos:
 
 
 #----------------------------------------------------------------------------------
-# Unit Tests
+# Tests
 #----------------------------------------------------------------------------------
+
+# Configuration for Ginkgo
+# We run tests with '-skip=multicluster'  in order to skip any filepath which includes multicluster
+# which is useful as this code is no longer used
+
+GINKGO_VERSION ?= 2.8.0 # match our go.mod
+GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+GINKGO_FLAGS := -v -tags=purego -compilers=4 -skip multicluster # TODO add production recommendedflags once all uistes use v2
+GINKGO_REPORT_FLAGS := --json-report=test-report.json --junit-report=junit.xml
+GINKGO_COVERAGE_FLAGS := --cover --covermode=count --coverprofile=coverage.cov
+
+# This is a way for a user executing `make test` to be able to provide flags which we do not include by default
+# For example, you may want to run tests multiple times, or with various timeouts
+USER_GINKGO_FLAGS ?=
+
+.PHONY: install-test-tools
+install-test-tools:
+	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
 
 .PHONY: test
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
-	$(GINKGO_ENV) VERSION=$(VERSION) $(DEPSGOBIN)/ginkgo $(GINKGO_FLAGS) $(USER_GINKGO_FLAGS) $(TEST_PKG)
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo \
+		$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(USER_GINKGO_FLAGS) \
+		$(TEST_PKG)
 endif
+
+.PHONY: test-with-coverage
+test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
+test-with-coverage: test
+	go tool cover -html coverage.cov
 
 #----------------------------------------------------------------------------------
 # Update third party licenses and check for GPL Licenses

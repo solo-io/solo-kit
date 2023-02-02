@@ -18,6 +18,19 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 vendor*/
-_output/
 /solo-kit-gen
 **/doc-gen-test-*
+
+
+# Output directory where we place most test assets
+_output/
+
+# Ginkgo test report output
+test-report.json
+
+# Ginkgo test coverage output
+*.cov
+
+# junit
+junit.xml
+junit-*.xml

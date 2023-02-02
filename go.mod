@@ -22,6 +22,7 @@ require (
 	github.com/ilackarms/protoc-gen-doc v1.0.0
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/ginkgo/v2 v2.8.0
 	github.com/onsi/gomega v1.25.0
 	github.com/pkg/errors v0.9.1
 	github.com/pseudomuto/protokit v0.2.0
@@ -117,7 +118,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mpvl/unique v0.0.0-20150818121801-cbe035fff7de // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
-	github.com/onsi/ginkgo/v2 v2.8.0 // indirect
 	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
@@ -159,6 +159,9 @@ replace (
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
+
+	// pulled from mesh
+	k8s.io/klog/v2 => k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f
 // github.com/Azure/go-autorest/autorest has different versions for the Go
 // modules than it does for releases on the repository. Note the correct
 // version when updating.
