@@ -5,6 +5,8 @@ package kubeutils
 import (
 	"context"
 
+	"github.com/onsi/ginkgo/v2"
+
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,11 +16,13 @@ import (
 func CreateNamespacesInParallel(ctx context.Context, kube kubernetes.Interface, namespaces ...string) error {
 	eg := errgroup.Group{}
 	for _, namespace := range namespaces {
-		namespace := namespace
+		ns := namespace
 		eg.Go(func() error {
+			defer ginkgo.GinkgoRecover()
+
 			_, err := kube.CoreV1().Namespaces().Create(ctx, &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: namespace,
+					Name: ns,
 				},
 			}, metav1.CreateOptions{})
 			return err
@@ -30,9 +34,11 @@ func CreateNamespacesInParallel(ctx context.Context, kube kubernetes.Interface, 
 func DeleteNamespacesInParallelBlocking(ctx context.Context, kube kubernetes.Interface, namespaces ...string) error {
 	eg := errgroup.Group{}
 	for _, namespace := range namespaces {
-		namespace := namespace
+		ns := namespace
 		eg.Go(func() error {
-			return kube.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+			defer ginkgo.GinkgoRecover()
+
+			return kube.CoreV1().Namespaces().Delete(ctx, ns, metav1.DeleteOptions{})
 		})
 	}
 	return eg.Wait()
@@ -40,9 +46,11 @@ func DeleteNamespacesInParallelBlocking(ctx context.Context, kube kubernetes.Int
 
 func DeleteNamespacesInParallel(ctx context.Context, kube kubernetes.Interface, namespaces ...string) {
 	for _, namespace := range namespaces {
-		namespace := namespace
+		ns := namespace
 		go func() {
-			kube.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+			defer ginkgo.GinkgoRecover()
+
+			kube.CoreV1().Namespaces().Delete(ctx, ns, metav1.DeleteOptions{})
 		}()
 	}
 }

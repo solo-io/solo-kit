@@ -27,7 +27,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 		kubeCache                   *kube.ResourceClientSharedInformerFactory
 		client1, client2, client123 *kube.ResourceClient
 		ctx                         context.Context
-		cancel                      func()
+		cancel                      context.CancelFunc
 	)
 
 	BeforeEach(func() {
