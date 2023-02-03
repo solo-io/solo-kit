@@ -52,7 +52,7 @@ steps:
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
-  - 'TEST_PKG=./pkg/utils/...' # TODO: Run all tests
+  - 'TEST_PKG=./...'
   args: ['-c', 'make test']
   waitFor: ['update-deps']
   dir: *dir

@@ -113,6 +113,11 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 # Generated Code
 #----------------------------------------------------------------------------------
 
+.PHONY: clean
+clean:
+	rm -rf vendor_any
+	find . -type d -name "doc-gen-test*" -exec rm -rf {} \; # These are created when running tests
+
 .PHONY: generate-all
 generate-all: generated-code
 
@@ -122,7 +127,6 @@ generated-code: $(OUTPUT_DIR)/.generated-code update-licenses
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
 	mkdir -p ${OUTPUT_DIR}
-	rm -rf vendor_any
 	go mod tidy
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
