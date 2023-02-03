@@ -265,6 +265,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
+							case <-ctx.Done():
+								return
 							case res := <-watchChan:
 								watchResults.AddResult(index, res.ObjectMeta.Name)
 							}
@@ -290,9 +292,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				// cancel the context! zbam
 				cancel()
-				Eventually(func() int {
-					return runtime.NumGoroutine()
-				}, time.Second*3).Should(Equal(preStartGoroutines))
+				Eventually(runtime.NumGoroutine, time.Second*3).Should(Equal(preStartGoroutines))
 
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "another-mock-res-1", "test")).To(BeNil())
 				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "another-mock-res-2", "test")).To(BeNil())
