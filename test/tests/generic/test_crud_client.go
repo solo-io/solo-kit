@@ -16,6 +16,7 @@ import (
 )
 
 // Call within "It"
+// TestCrudClient
 func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
 	testOffset := 1
 
@@ -139,18 +140,18 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	err = client.Delete(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
-	Eventually(func() resources.ResourceList {
+	Eventually(func(g Gomega) resources.ResourceList {
 		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
 		})
-		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+		g.ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(matchers.ContainProto(r1.(resources.ProtoResource)))
-	Eventually(func() resources.ResourceList {
+	Eventually(func(g Gomega) resources.ResourceList {
 		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
 		})
-		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+		g.ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
 

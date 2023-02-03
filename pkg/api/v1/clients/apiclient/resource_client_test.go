@@ -59,7 +59,11 @@ var _ = Describe("Apiclient", func() {
 
 		port = lis.Addr().(*net.TCPAddr).Port
 		fmt.Fprintf(GinkgoWriter, "grpc listening on %v\n", port)
-		go server.Serve(lis)
+		go func() {
+			defer GinkgoRecover()
+
+			_ = server.Serve(lis)
+		}()
 
 		// now start the client:
 
