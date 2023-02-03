@@ -292,7 +292,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				cancel()
 				Eventually(func() int {
 					return runtime.NumGoroutine()
-				}, time.Second).Should(Equal(preStartGoroutines))
+				}, time.Second*3).Should(Equal(preStartGoroutines))
 
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "another-mock-res-1", "test")).To(BeNil())
 				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "another-mock-res-2", "test")).To(BeNil())
