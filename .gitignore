@@ -34,3 +34,5 @@ test-report.json
 # junit
 junit.xml
 junit-*.xml
+
+.bin

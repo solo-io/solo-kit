@@ -193,6 +193,8 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 Loop:
 	for {
 		select {
+		case <-opts.Ctx.Done():
+			return
 		case err := <-errs:
 			ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		case list = <-w:
@@ -208,6 +210,8 @@ Loop:
 		defer GinkgoRecover()
 		for {
 			select {
+			case <-opts.Ctx.Done():
+				return
 			case err := <-errs:
 				ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 			case <-time.After(time.Second / 4):

@@ -20,13 +20,16 @@ help: ## Output the self-documenting make targets
 #----------------------------------------------------------------------------------
 # Base
 #----------------------------------------------------------------------------------
-
 ROOTDIR := $(shell pwd)
 PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
+
+DEPSGOBIN:=$(ROOTDIR)/.bin
+export PATH:=$(DEPSGOBIN):$(PATH)
+export GOBIN:=$(DEPSGOBIN)
 
 #----------------------------------------------------------------------------------
 # Version, Release
@@ -55,7 +58,6 @@ init:
 
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
-DEPSGOBIN=$(shell pwd)/_output/.bin
 
 .PHONY: update-all
 update-all: mod-download update-deps update-code-generator
@@ -67,13 +69,13 @@ mod-download:
 .PHONY: update-deps
 update-deps:
 	mkdir -p $(DEPSGOBIN)
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
-	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
-	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
+	go install github.com/solo-io/protoc-gen-ext
+	go install github.com/solo-io/protoc-gen-openapi@v0.1.0
+	go install golang.org/x/tools/cmd/goimports
+	go install github.com/golang/protobuf/protoc-gen-go
+	go install github.com/envoyproxy/protoc-gen-validate
+	go install github.com/golang/mock/gomock
+	go install github.com/golang/mock/mockgen
 
 .PHONY: update-code-generator
 update-code-generator:
@@ -122,15 +124,15 @@ $(OUTPUT_DIR)/.generated-code:
 	mkdir -p ${OUTPUT_DIR}
 	rm -rf vendor_any
 	go mod tidy
-	PATH=$(DEPSGOBIN):$$PATH $(GO_BUILD_FLAGS) go generate ./...
-	PATH=$(DEPSGOBIN):$$PATH gofmt -w $(SUBDIRS)
-	PATH=$(DEPSGOBIN):$$PATH goimports -w $(SUBDIRS)
+	$(GO_BUILD_FLAGS) go generate ./...
+	gofmt -w $(SUBDIRS)
+	goimports -w $(SUBDIRS)
 	touch $@
 
 .PHONY: verify-envoy-protos
 verify-envoy-protos:
 	@echo Verifying validity of generated envoy files...
-	PATH=$(DEPSGOBIN):$$PATH $(GO_BUILD_FLAGS) CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
+	$(GO_BUILD_FLAGS) CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
 
 
 #----------------------------------------------------------------------------------
@@ -149,12 +151,12 @@ GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
 install-test-tools:
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
+	go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
 
 .PHONY: test
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
-	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo \
+	$(GINKGO_ENV) ginkgo \
 	$(GINKGO_TEST_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 endif

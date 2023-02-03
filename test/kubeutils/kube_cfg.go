@@ -1,5 +1,7 @@
 package kubeutils
 
+// Duplicate of k8s-utils/kubeutils/kube_cfg.go
+
 import (
 	"os"
 
