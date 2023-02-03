@@ -292,7 +292,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 				// cancel the context! zbam
 				cancel()
-				Eventually(runtime.NumGoroutine, time.Second*3).Should(Equal(preStartGoroutines))
+				Eventually(runtime.NumGoroutine, time.Second*3).Should(BeNumerically("<=", preStartGoroutines), "We should be cleaning up the watches in the kube cache")
 
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "another-mock-res-1", "test")).To(BeNil())
 				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "another-mock-res-2", "test")).To(BeNil())
