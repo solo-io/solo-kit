@@ -5,7 +5,7 @@ import (
 )
 
 var ResourceGroupEventLoopTestTemplate = template.Must(template.New("resource_group_event_loop_test").Funcs(Funcs).Parse(`
-// go:build solokit
+//go:build solokit
 
 package {{ .Project.ProjectConfig.Version }}
 
