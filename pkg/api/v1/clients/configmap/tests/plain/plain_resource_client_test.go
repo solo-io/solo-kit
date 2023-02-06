@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/k8s-utils/kubeutils"
 	kubehelpers "github.com/solo-io/k8s-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/test/kubeutils"
 	"github.com/solo-io/solo-kit/test/tests/generic"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

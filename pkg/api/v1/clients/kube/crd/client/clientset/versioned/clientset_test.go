@@ -10,9 +10,9 @@ import (
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/solo-io/k8s-utils/kubeutils"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/kubeutils"
 	mocksv1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

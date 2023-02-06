@@ -9,11 +9,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-	"github.com/solo-io/solo-kit/test/kubeutils"
 	skv1alpha2 "github.com/solo-io/solo-kit/test/mocks/v2alpha1"
 	"github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
 	v2alpha1client "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client/clientset/versioned/typed/testing.solo.io/v2alpha1"
