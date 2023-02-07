@@ -47,7 +47,8 @@ var _ = Describe("DocsGen", func() {
 		// Create temp directory and path variables
 		workingDir, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
-		tempDir, err = ioutil.TempDir(workingDir, "doc-gen-test-")
+		outputDir := filepath.Join(workingDir, "_output")
+		tempDir, err = ioutil.TempDir(outputDir, "doc-gen-test-")
 		Expect(err).NotTo(HaveOccurred())
 		relativePathToTempDir = filepath.Join(packageName, filepath.Base(tempDir))
 

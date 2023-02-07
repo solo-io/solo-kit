@@ -19,8 +19,6 @@
 *.out
 vendor*/
 /solo-kit-gen
-**/doc-gen-test-*
-
 
 # Output directory where we place most test assets
 _output/
@@ -34,5 +32,3 @@ test-report.json
 # junit
 junit.xml
 junit-*.xml
-
-.bin

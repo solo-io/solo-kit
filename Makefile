@@ -27,7 +27,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
 
-DEPSGOBIN:=$(ROOTDIR)/.bin
+DEPSGOBIN:=$(OUTPUT_DIR)/.bin
 export PATH:=$(DEPSGOBIN):$(PATH)
 export GOBIN:=$(DEPSGOBIN)
 
@@ -116,7 +116,7 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 .PHONY: clean
 clean:
 	rm -rf vendor_any
-	find . -type d -name "doc-gen-test*" -exec rm -rf {} \; # These are created when running tests
+	rm -rf $(OUTPUT_DIR)
 
 .PHONY: generate-all
 generate-all: generated-code
@@ -126,7 +126,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code update-licenses
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
-	mkdir -p ${OUTPUT_DIR}
+	mkdir -p $(OUTPUT_DIR)
 	go mod tidy
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
@@ -138,7 +138,6 @@ verify-envoy-protos:
 	@echo Verifying validity of generated envoy files...
 	$(GO_BUILD_FLAGS) CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
 
-
 #----------------------------------------------------------------------------------
 # Tests
 #----------------------------------------------------------------------------------
@@ -147,7 +146,7 @@ GINKGO_VERSION ?= 2.5.0 # match our go.mod
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --randomize-all --trace -progress -race
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
-GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
+GINKGO_COVERAGE_FLAGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
 
 # This is a way for a user executing `make test` to be able to provide flags which we do not include by default
@@ -162,7 +161,7 @@ install-test-tools:
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
 	$(GINKGO_ENV) ginkgo \
-	$(GINKGO_TEST_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
+	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 endif
 
