@@ -5,7 +5,7 @@ import (
 )
 
 var ResourceClientTestTemplate = template.Must(template.New("resource_client_test").Funcs(Funcs).Parse(`
-// go:build solokit
+//go:build solokit
 
 package {{ .Project.ProjectConfig.Version }}
 
