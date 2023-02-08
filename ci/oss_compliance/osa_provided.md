@@ -1,7 +1,7 @@
 Name|Version|License
 ---|---|---
 [cuelang.org/go](https://cuelang.org/go)|v0.3.2|Apache License 2.0
-[Masterminds/sprig](https://github.com/Masterminds/sprig)|v2.20.0+incompatible|MIT License
+[Masterminds/sprig](https://github.com/Masterminds/sprig)|v2.22.0+incompatible|MIT License
 [bugsnag/bugsnag-go](https://github.com/bugsnag/bugsnag-go)|v1.5.0|MIT License
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.10.2-0.20220325020618-49ff273808a1|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.4.0|Apache License 2.0
