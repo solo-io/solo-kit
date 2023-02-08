@@ -259,13 +259,14 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			It("watches stop receiving events after the factory's context is cancelled", func() {
 
 				watchResults := NewWatchResults()
+				watchCtx, _ := context.WithDeadline(ctx, time.Now().Add(time.Second*5))
 
 				for i, watch := range watches {
 					preStartGoroutines++
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
-							case <-ctx.Done():
+							case <-watchCtx.Done():
 								return
 							case res := <-watchChan:
 								watchResults.AddResult(index, res.ObjectMeta.Name)
