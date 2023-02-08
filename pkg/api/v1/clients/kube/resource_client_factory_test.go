@@ -165,15 +165,13 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			})
 
 			It("correctly handles multiple events", func() {
-
 				watchResults := NewWatchResults()
-
-				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
+				watchCtx, _ := context.WithDeadline(ctx, time.Now().Add(time.Millisecond*100))
 
 				go func() {
 					for {
 						select {
-						case <-ctx.Done():
+						case <-watchCtx.Done():
 							return
 						case res := <-watch:
 							watchResults.AddResult(0, res.ObjectMeta.Name)
@@ -186,7 +184,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-3", "test")).To(BeNil())
 				go Expect(util.DeleteMockResource(ctx, clientset, namespace1, "mock-res-1")).To(BeNil())
 
-				<-ctx.Done()
+				<-watchCtx.Done()
 
 				results := watchResults.GetResultsAt(0)
 				Expect(len(results)).To(BeEquivalentTo(3))

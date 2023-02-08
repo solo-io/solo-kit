@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
@@ -36,6 +37,7 @@ var _ = Describe("Reporter", func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", statusClient, mockResourceClient, fakeResourceClient)
+		rep.DisableTruncateStatus = false
 	})
 
 	It("reports errors for resources", func() {
@@ -180,7 +182,7 @@ var _ = Describe("Reporter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		status := statusClient.GetStatus(r1.(*v1.MockResource))
-		Expect(status).To(Equal(&core.Status{
+		Expect(status).To(matchers.MatchProto(&core.Status{
 			State:               2,
 			Reason:              trimmedErr,
 			ReportedBy:          "test",
