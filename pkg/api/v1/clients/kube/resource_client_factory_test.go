@@ -40,6 +40,10 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 		client123 = util.MockClientForNamespace(kubeCache, []string{namespace1, namespace2, namespace3})
 	})
 
+	AfterEach(func() {
+		cancel()
+	})
+
 	Describe("registering resource clients with the factory", func() {
 
 		It("correctly registers a single client", func() {
@@ -133,12 +137,18 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				watch = kubeCache.AddWatch(10)
 			})
 
+			AfterEach(func() {
+				kubeCache.RemoveWatch(watch)
+			})
+
 			It("receives an event in that namespace", func() {
 
 				// Add a resource in a separate goroutine
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
 
 				select {
+				case <-ctx.Done():
+					return
 				case res := <-watch:
 					Expect(res.Namespace).To(BeEquivalentTo(namespace1))
 					Expect(res.Name).To(BeEquivalentTo("mock-res-1"))
@@ -156,6 +166,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-1", "test")).To(BeNil())
 
 				select {
+				case <-ctx.Done():
+					return
 				case <-watch:
 					Fail("received event for non-watched namespace")
 				case <-time.After(1 * time.Second):
@@ -166,18 +178,18 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 
 			It("correctly handles multiple events", func() {
 				watchResults := NewWatchResults()
-				watchCtx, _ := context.WithDeadline(ctx, time.Now().Add(time.Millisecond*100))
+				watchCtx, _ := context.WithDeadline(ctx, time.Now().Add(time.Second*3))
 
-				go func() {
+				go func(watchChan <-chan solov1.Resource) {
 					for {
 						select {
 						case <-watchCtx.Done():
 							return
-						case res := <-watch:
+						case res := <-watchChan:
 							watchResults.AddResult(0, res.ObjectMeta.Name)
 						}
 					}
-				}()
+				}(watch)
 
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
 				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-2", "test")).To(BeNil())
@@ -204,16 +216,21 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				}
 			})
 
+			AfterEach(func() {
+				for _, w := range watches {
+					kubeCache.RemoveWatch(w)
+				}
+			})
+
 			It("all watches receive the same events", func() {
-
 				watchResults := NewWatchResults()
+				watchCtx, watchCancel := context.WithDeadline(ctx, time.Now().Add(time.Millisecond*100))
 
-				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
 				for i, watch := range watches {
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
-							case <-ctx.Done():
+							case <-watchCtx.Done():
 								return
 							case res := <-watchChan:
 								watchResults.AddResult(index, res.ObjectMeta.Name)
@@ -232,7 +249,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				// Wait for results to be collected
 				time.Sleep(100 * time.Millisecond)
 
-				<-ctx.Done()
+				watchCancel()
 
 				for i := range watches {
 					results := watchResults.GetResultsAt(i)
@@ -254,10 +271,15 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				}
 			})
 
-			It("watches stop receiving events after the factory's context is cancelled", func() {
+			AfterEach(func() {
+				for _, w := range watches {
+					kubeCache.RemoveWatch(w)
+				}
+			})
 
+			It("watches stop receiving events after the factory's context is cancelled", func() {
 				watchResults := NewWatchResults()
-				watchCtx, _ := context.WithDeadline(ctx, time.Now().Add(time.Second*5))
+				watchCtx, watchCancel := context.WithDeadline(ctx, time.Now().Add(time.Second*5))
 
 				for i, watch := range watches {
 					preStartGoroutines++
@@ -290,6 +312,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				}).Should(Succeed())
 
 				// cancel the context! zbam
+				watchCancel()
 				cancel()
 				Eventually(runtime.NumGoroutine, time.Second*3).Should(BeNumerically("<=", preStartGoroutines), "We should be cleaning up the watches in the kube cache")
 
