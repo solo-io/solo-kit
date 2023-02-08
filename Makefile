@@ -144,7 +144,7 @@ verify-envoy-protos:
 # Tests
 #----------------------------------------------------------------------------------
 
-GINKGO_VERSION := 2.5.0Ø
+GINKGO_VERSION := 2.5.0
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --randomize-all --trace -progress -race
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
