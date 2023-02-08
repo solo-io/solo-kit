@@ -28,6 +28,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
 
+// Important to use binaries built from module.
 export PATH:=$(DEPSGOBIN):$(PATH)
 export GOBIN:=$(DEPSGOBIN)
 
