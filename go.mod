@@ -146,7 +146,4 @@ replace (
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
-
-	// pulled from mesh
-	k8s.io/klog/v2 => k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f
 )
