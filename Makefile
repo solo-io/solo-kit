@@ -117,6 +117,7 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 .PHONY: clean
 clean:
 	rm -rf vendor_any
+	find . -type d -name "doc-gen-test*" -exec rm -rf {} + # remove all doc-gen-test* directories
 	find . -type d -name "_output" -exec rm -rf {} + # remove all _output directories
 
 .PHONY: generate-all
@@ -143,7 +144,7 @@ verify-envoy-protos:
 # Tests
 #----------------------------------------------------------------------------------
 
-GINKGO_VERSION := 2.5.0
+GINKGO_VERSION := 2.5.0Ø
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --randomize-all --trace -progress -race
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
