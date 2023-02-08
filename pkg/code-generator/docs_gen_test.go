@@ -92,7 +92,7 @@ var _ = Describe("DocsGen", func() {
 
 		// Run code gen
 		opts := cmd.GenerateOptions{
-			RelativeRoot:  filepath.Join(outputDir, filepath.Base(tempDir)),
+			RelativeRoot:  filepath.Join(".", outputDir, filepath.Base(tempDir)),
 			SkipGenMocks:  true,
 			CompileProtos: true,
 			GenDocs:       genDocs,
