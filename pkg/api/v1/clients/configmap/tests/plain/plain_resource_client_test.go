@@ -2,9 +2,10 @@ package plain_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"time"
+
+	"github.com/solo-io/go-utils/log"
 
 	"github.com/solo-io/k8s-utils/kubeutils"
 	kubehelpers "github.com/solo-io/k8s-utils/testutils/kube"
@@ -24,7 +25,7 @@ import (
 
 var _ = Describe("PlainConfigmap", func() {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
-		fmt.Print("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
 	}
 	var (

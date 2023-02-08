@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/go-utils/log"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
@@ -46,7 +48,7 @@ var _ = Describe("ResourceClientFactory", func() {
 	Describe("CrdClient when the CRD has not been registered", func() {
 
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
-			fmt.Print("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+			log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 			return
 		}
 		var (

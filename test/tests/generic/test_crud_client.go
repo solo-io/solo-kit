@@ -15,8 +15,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
-// Call within "It"
-// TestCrudClient
+// TestCrudClient is called within "It" and performs a series of tests against a provided ResourceClient
 func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
 	testOffset := 1
 

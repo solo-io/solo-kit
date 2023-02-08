@@ -16,11 +16,11 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: go-utils
-    dependencyTag: v0.23.0
+    dependencyTag: v0.24.0
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: k8s-utils
-    dependencyTag: v0.1.9
+    dependencyTag: v0.3.0
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: protoc-gen-ext
@@ -28,28 +28,28 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: onsi
     dependencyRepo: ginkgo/v2
-    dependencyTag: v2.8.0
+    dependencyTag: v2.5.0
   - type: DEPENDENCY_BUMP
     dependencyOwner: onsi
     dependencyRepo: gomega
-    dependencyTag: v1.25.0
+    dependencyTag: v1.24.1
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: apiextensions-apiserver
-    dependencyTag: v0.23.11
+    dependencyTag: v0.25.4
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: apimachinery
-    dependencyTag: v0.23.11
+    dependencyTag: v0.25.4
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: client-go
-    dependencyTag: v0.23.11
+    dependencyTag: v0.25.4
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: api
-    dependencyTag: v0.23.11
+    dependencyTag: v0.25.4
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: code-generator
-    dependencyTag: v0.23.11
+    dependencyTag: v0.25.4

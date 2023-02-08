@@ -23,11 +23,11 @@ help: ## Output the self-documenting make targets
 ROOTDIR := $(shell pwd)
 PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
+DEPSGOBIN:=$(OUTPUT_DIR)/.bin
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
 
-DEPSGOBIN:=$(OUTPUT_DIR)/.bin
 export PATH:=$(DEPSGOBIN):$(PATH)
 export GOBIN:=$(DEPSGOBIN)
 

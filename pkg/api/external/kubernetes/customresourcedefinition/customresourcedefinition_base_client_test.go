@@ -2,8 +2,9 @@ package customresourcedefinition
 
 import (
 	"context"
-	"fmt"
 	"os"
+
+	"github.com/solo-io/go-utils/log"
 
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -19,7 +20,7 @@ import (
 
 var _ = Describe("DeploymentBaseClient", func() {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
-		fmt.Print("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
 	}
 	var (
