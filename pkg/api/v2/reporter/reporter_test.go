@@ -37,6 +37,8 @@ var _ = Describe("Reporter", func() {
 		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
 		fakeResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.FakeResource{})
 		reporter = rep.NewReporter("test", statusClient, mockResourceClient, fakeResourceClient)
+		// By default, DisableTruncateStatus is false, unless users opt into it
+		// To mirror that in our tests, we explicitly set it to false unless a test requires it
 		rep.DisableTruncateStatus = false
 	})
 
