@@ -48,6 +48,9 @@ var _ = Describe("DocsGen", func() {
 		workingDir, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
 		outputDir := filepath.Join(workingDir, "_output")
+		err = os.MkdirAll(outputDir, os.ModePerm)
+		Expect(err).NotTo(HaveOccurred())
+
 		tempDir, err = ioutil.TempDir(outputDir, "doc-gen-test-")
 		Expect(err).NotTo(HaveOccurred())
 		relativePathToTempDir = filepath.Join(packageName, filepath.Base(tempDir))
