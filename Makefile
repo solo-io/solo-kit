@@ -116,7 +116,7 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 .PHONY: clean
 clean:
 	rm -rf vendor_any
-	rm -rf $(OUTPUT_DIR)
+	find . -type d -name "_output" -exec rm -rf {} + # remove all _output directories
 
 .PHONY: generate-all
 generate-all: generated-code
