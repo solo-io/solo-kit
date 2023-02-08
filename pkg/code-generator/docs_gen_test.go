@@ -32,6 +32,7 @@ var _ = Describe("DocsGen", func() {
 		hugoDataDir           = "docs/data"
 		projectConfigDocsDir  = "docs/content"
 		packageName           = "github.com/solo-io/solo-kit"
+		outputDir             = "_output"
 	)
 
 	var (
@@ -47,12 +48,12 @@ var _ = Describe("DocsGen", func() {
 		// Create temp directory and path variables
 		workingDir, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
-		outputDir := filepath.Join(workingDir, "_output")
+		outputDir := filepath.Join(workingDir, outputDir)
 		err = os.MkdirAll(outputDir, os.ModePerm)
 		Expect(err).NotTo(HaveOccurred())
 		tempDir, err = ioutil.TempDir(outputDir, "doc-gen-test-")
 		Expect(err).NotTo(HaveOccurred())
-		relativePathToTempDir = filepath.Join(packageName, filepath.Base(tempDir))
+		relativePathToTempDir = filepath.Join(packageName, outputDir, filepath.Base(tempDir))
 
 		// Generate test proto file for which doc has to be generated
 		buf := &bytes.Buffer{}
