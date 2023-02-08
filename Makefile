@@ -28,7 +28,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
 
-// Important to use binaries built from module.
+# Important to use binaries built from module.
 export PATH:=$(DEPSGOBIN):$(PATH)
 export GOBIN:=$(DEPSGOBIN)
 
@@ -143,7 +143,7 @@ verify-envoy-protos:
 # Tests
 #----------------------------------------------------------------------------------
 
-GINKGO_VERSION ?= 2.5.0 # match our go.mod
+GINKGO_VERSION := 2.5.0
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --randomize-all --trace -progress -race
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
