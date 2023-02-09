@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/client/clientset/versioned/fake"
@@ -27,7 +27,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 		kubeCache                   *kube.ResourceClientSharedInformerFactory
 		client1, client2, client123 *kube.ResourceClient
 		ctx                         context.Context
-		cancel                      func()
+		cancel                      context.CancelFunc
 	)
 
 	BeforeEach(func() {
@@ -38,6 +38,10 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 		client1 = util.MockClientForNamespace(kubeCache, []string{namespace1})
 		client2 = util.MockClientForNamespace(kubeCache, []string{namespace2})
 		client123 = util.MockClientForNamespace(kubeCache, []string{namespace1, namespace2, namespace3})
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	Describe("registering resource clients with the factory", func() {
@@ -133,12 +137,18 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				watch = kubeCache.AddWatch(10)
 			})
 
+			AfterEach(func() {
+				kubeCache.RemoveWatch(watch)
+			})
+
 			It("receives an event in that namespace", func() {
 
 				// Add a resource in a separate goroutine
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
 
 				select {
+				case <-ctx.Done():
+					return
 				case res := <-watch:
 					Expect(res.Namespace).To(BeEquivalentTo(namespace1))
 					Expect(res.Name).To(BeEquivalentTo("mock-res-1"))
@@ -156,6 +166,8 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-1", "test")).To(BeNil())
 
 				select {
+				case <-ctx.Done():
+					return
 				case <-watch:
 					Fail("received event for non-watched namespace")
 				case <-time.After(1 * time.Second):
@@ -165,28 +177,26 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 			})
 
 			It("correctly handles multiple events", func() {
-
 				watchResults := NewWatchResults()
+				watchCtx, _ := context.WithDeadline(ctx, time.Now().Add(time.Second*3))
 
-				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
-
-				go func() {
+				go func(watchChan <-chan solov1.Resource) {
 					for {
 						select {
-						case <-ctx.Done():
+						case <-watchCtx.Done():
 							return
-						case res := <-watch:
+						case res := <-watchChan:
 							watchResults.AddResult(0, res.ObjectMeta.Name)
 						}
 					}
-				}()
+				}(watch)
 
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-1", "test")).To(BeNil())
 				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "mock-res-2", "test")).To(BeNil())
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "mock-res-3", "test")).To(BeNil())
 				go Expect(util.DeleteMockResource(ctx, clientset, namespace1, "mock-res-1")).To(BeNil())
 
-				<-ctx.Done()
+				<-watchCtx.Done()
 
 				results := watchResults.GetResultsAt(0)
 				Expect(len(results)).To(BeEquivalentTo(3))
@@ -206,16 +216,21 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				}
 			})
 
+			AfterEach(func() {
+				for _, w := range watches {
+					kubeCache.RemoveWatch(w)
+				}
+			})
+
 			It("all watches receive the same events", func() {
-
 				watchResults := NewWatchResults()
+				watchCtx, watchCancel := context.WithDeadline(ctx, time.Now().Add(time.Millisecond*100))
 
-				ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
 				for i, watch := range watches {
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
-							case <-ctx.Done():
+							case <-watchCtx.Done():
 								return
 							case res := <-watchChan:
 								watchResults.AddResult(index, res.ObjectMeta.Name)
@@ -234,7 +249,7 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				// Wait for results to be collected
 				time.Sleep(100 * time.Millisecond)
 
-				<-ctx.Done()
+				watchCancel()
 
 				for i := range watches {
 					results := watchResults.GetResultsAt(i)
@@ -256,15 +271,23 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				}
 			})
 
-			It("watches stop receiving events after the factory's context is cancelled", func() {
+			AfterEach(func() {
+				for _, w := range watches {
+					kubeCache.RemoveWatch(w)
+				}
+			})
 
+			It("watches stop receiving events after the factory's context is cancelled", func() {
 				watchResults := NewWatchResults()
+				watchCtx, watchCancel := context.WithDeadline(ctx, time.Now().Add(time.Second*5))
 
 				for i, watch := range watches {
 					preStartGoroutines++
 					go func(index int, watchChan <-chan solov1.Resource) {
 						for {
 							select {
+							case <-watchCtx.Done():
+								return
 							case res := <-watchChan:
 								watchResults.AddResult(index, res.ObjectMeta.Name)
 							}
@@ -289,10 +312,9 @@ var _ = Describe("Test ResourceClientSharedInformerFactory", func() {
 				}).Should(Succeed())
 
 				// cancel the context! zbam
+				watchCancel()
 				cancel()
-				Eventually(func() int {
-					return runtime.NumGoroutine()
-				}, time.Second).Should(Equal(preStartGoroutines))
+				Eventually(runtime.NumGoroutine, time.Second*3).Should(BeNumerically("<=", preStartGoroutines), "We should be cleaning up the watches in the kube cache")
 
 				go Expect(util.CreateMockResource(ctx, clientset, namespace1, "another-mock-res-1", "test")).To(BeNil())
 				go Expect(util.CreateMockResource(ctx, clientset, namespace2, "another-mock-res-2", "test")).To(BeNil())

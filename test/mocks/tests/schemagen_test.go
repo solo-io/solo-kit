@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/solo-kit/pkg/utils/modutils"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/code-generator/collector"
 	"github.com/solo-io/solo-kit/pkg/code-generator/model"

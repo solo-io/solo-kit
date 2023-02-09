@@ -52,39 +52,6 @@ func WritePerProjectsDocs(project *model.Project, docsOptions *options.DocsOptio
 	return nil
 }
 
-// DEPRECATED
-// prefer GenerateAndWriteFiles
-func GenerateFiles(project *model.Project, docsOptions *options.DocsOptions) (code_generator.Files, error) {
-	if docsOptions == nil {
-		docsOptions = &options.DocsOptions{}
-	}
-
-	if docsOptions.Output == "" {
-		docsOptions.Output = options.Markdown
-	}
-
-	docGenerator := DocsGen{
-		DocsOptions: *docsOptions,
-		Project:     project,
-	}
-
-	files, err := docGenerator.GenerateFilesForProject()
-	if err != nil {
-		return nil, err
-	}
-
-	messageFiles, err := docGenerator.GenerateFilesForProtoFiles(project.Descriptors)
-	if err != nil {
-		return nil, err
-	}
-	files = append(files, messageFiles...)
-
-	for i := range files {
-		files[i].Content = docGenerator.FileHeader(files[i].Filename) + files[i].Content
-	}
-	return files, nil
-}
-
 func GenerateAndWriteFiles(docGenerator *DocsGen) error {
 	if docGenerator == nil {
 		return eris.New("doc generator is nil")

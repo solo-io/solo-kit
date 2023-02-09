@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/solo-io/solo-kit/test/matchers"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -55,10 +57,10 @@ var _ = Describe("ResourceWatch", func() {
 
 		list.Each(util.ZeroResourceVersion)
 
-		Expect(list).To(Equal(resources.ResourceList{
+		Expect(list).To(matchers.ConsistOfProtos(
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "b", Name: "b"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "d", Name: "d"}},
-		}))
+		))
 	})
 })

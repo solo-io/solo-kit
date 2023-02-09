@@ -4,7 +4,8 @@ import (
 	"text/template"
 )
 
-var ResourceGroupEventLoopTestTemplate = template.Must(template.New("resource_group_event_loop_test").Funcs(Funcs).Parse(`// +build solokit
+var ResourceGroupEventLoopTestTemplate = template.Must(template.New("resource_group_event_loop_test").Funcs(Funcs).Parse(`
+//go:build solokit
 
 package {{ .Project.ProjectConfig.Version }}
 
@@ -20,7 +21,7 @@ import (
 	"sync"
 
 	{{ .Imports }}
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
