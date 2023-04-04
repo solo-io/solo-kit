@@ -40,6 +40,7 @@ func Flush(writer io.Writer) error {
 
 // This is a primitive implementation for compiling performance measurements of code-gen
 // If we need it, we could substitute this with something more heavy handed like:
+//
 //	https://github.com/armon/go-metrics
 type metricAggregator struct {
 	metricsMu sync.Mutex

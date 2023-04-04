@@ -23,8 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
-//The best mock resource you ever done seen
+// The best mock resource you ever done seen
 type MockResource struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
