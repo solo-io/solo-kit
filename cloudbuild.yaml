@@ -7,12 +7,10 @@ steps:
   dir: &dir '/workspace/solo-kit'
 
 # prepare-workspace to set up the project so it can be built and tested
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.4.28'
   args:
-  - "--repo-owner"
-  - "solo-io"
   - "--repo-name"
-  - solo-kit
+  - "$REPO_NAME"
   - "--repo-sha"
   - "$COMMIT_SHA"
   - "--repo-output-dir"
@@ -22,14 +20,14 @@ steps:
   id: 'prepare-workspace'
 
 # download massive container in parallel
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.28'
   entrypoint: 'bash'
   dir: *dir
   args: ['-c', 'ls']
   waitFor: ['-']
 
 # Installs go executables required by codegen tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.28'
   args: ['update-all']
   waitFor: ['prepare-workspace']
   id: 'update-deps'
@@ -48,16 +46,12 @@ steps:
 # e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/tree/master/e2e-go-mod-ginkgo
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.28'
   entrypoint: 'bash'
   env:
-  - 'ACK_GINKGO_RC=true'
-  - 'ACK_GINKGO_DEPRECATIONS=1.16.5'
-  - 'GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn'
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
-  - 'TAGGED_VERSION=$TAG_NAME'
   args: ['-c', 'make test']
   waitFor: ['update-deps']
   dir: *dir
@@ -65,11 +59,9 @@ steps:
 
 # check code gen for kubernetes custom resources
 # this step passes if there is no generated diff, fails otherwise
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.28'
   entrypoint: 'bash'
   args: ['ci/check-code-gen.sh']
-  env:
-    - 'TAGGED_VERSION=$TAG_NAME'
   waitFor: ['update-deps']
   dir: *dir
   id: 'check-code-and-docs-gen'
@@ -78,6 +70,8 @@ timeout: 1500s
 tags: ['solo-kit']
 options:
   machineType: 'N1_HIGHCPU_32'
+  env:
+    - 'TAGGED_VERSION=$TAG_NAME'
   volumes:
   - name: 'gopath'
     path: '/go'

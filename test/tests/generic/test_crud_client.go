@@ -3,7 +3,7 @@ package generic
 import (
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -15,7 +15,7 @@ import (
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
-// Call within "It"
+// TestCrudClient is called within "It" and performs a series of tests against a provided ResourceClient
 func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts clients.WatchOpts, callbacks ...Callback) {
 	testOffset := 1
 
@@ -139,18 +139,18 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	err = client.Delete(r2.GetMetadata().Namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
-	Eventually(func() resources.ResourceList {
+	Eventually(func(g Gomega) resources.ResourceList {
 		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
 		})
-		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+		g.ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(matchers.ContainProto(r1.(resources.ProtoResource)))
-	Eventually(func() resources.ResourceList {
+	Eventually(func(g Gomega) resources.ResourceList {
 		list, err = client.List(namespace1, clients.ListOpts{
 			Selector: selectors,
 		})
-		ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
+		g.ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
 
@@ -193,6 +193,8 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 Loop:
 	for {
 		select {
+		case <-opts.Ctx.Done():
+			return
 		case err := <-errs:
 			ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 		case list = <-w:
@@ -208,6 +210,8 @@ Loop:
 		defer GinkgoRecover()
 		for {
 			select {
+			case <-opts.Ctx.Done():
+				return
 			case err := <-errs:
 				ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 			case <-time.After(time.Second / 4):

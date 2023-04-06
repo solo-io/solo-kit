@@ -3,13 +3,11 @@ package apiclient_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-// TODO: fix tests
-func TestApiclient(t *testing.T) {
-
+func TestApiClient(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Apiclient Suite")
 }

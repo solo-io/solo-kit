@@ -1,11 +1,11 @@
 package specutils_test
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
+	"github.com/solo-io/solo-kit/test/matchers"
 	mocksv1 "github.com/solo-io/solo-kit/test/mocks/v1"
 )
 
@@ -25,7 +25,7 @@ var _ = Describe("Marshal", func() {
 			var newResource mocksv1.MockResource
 			err = specutils.UnmarshalSpecMapToProto(originalResourceMap, &newResource)
 			Expect(err).NotTo(HaveOccurred())
-			testutils.ExpectEqualProtoMessages(originalResource, &newResource)
+			Expect(originalResource).To(matchers.MatchProto(&newResource))
 		})
 
 		It("can unmarshal map of raw fields", func() {

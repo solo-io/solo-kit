@@ -39,7 +39,6 @@ func ToKubeMetaMaintainNamespace(meta *core.Metadata) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:            meta.Name,
 		Namespace:       meta.Namespace,
-		ClusterName:     meta.Cluster,
 		ResourceVersion: meta.ResourceVersion,
 		Labels:          copyMap(meta.Labels),
 		Annotations:     copyMap(meta.Annotations),
