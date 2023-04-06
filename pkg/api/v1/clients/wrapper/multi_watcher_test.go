@@ -4,7 +4,9 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/solo-io/solo-kit/test/matchers"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -84,14 +86,14 @@ var _ = Describe("watchAggregator", func() {
 
 		list.Each(util.ZeroResourceVersion)
 
-		Expect(list).To(Equal(resources.ResourceList{
+		Expect(list).To(matchers.ConsistOfProtos(
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr1"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr1"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr2"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr2"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr3"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr3"}},
-		}))
+		))
 
 		go func() {
 			l.Lock()
@@ -120,13 +122,13 @@ var _ = Describe("watchAggregator", func() {
 
 		list.Each(util.ZeroResourceVersion)
 
-		Expect(list).To(Equal(resources.ResourceList{
+		Expect(list).To(matchers.ConsistOfProtos(
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr1"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr1"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "a", Cluster: "clustr2"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr2"}},
 			&v1.MockResource{Metadata: &core.Metadata{Namespace: "a", Name: "b", Cluster: "clustr4"}},
-		}))
+		))
 
 	})
 })

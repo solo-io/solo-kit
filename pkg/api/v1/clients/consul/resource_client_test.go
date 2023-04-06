@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/api"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/consul"
@@ -18,12 +18,16 @@ import (
 var _ = Describe("Base", func() {
 
 	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+
 		consul  *api.Client
 		client  *ResourceClient
 		rootKey string
 	)
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.TODO())
 		rootKey = "my-root-key"
 
 		cfg := api.DefaultConfig()
@@ -35,7 +39,10 @@ var _ = Describe("Base", func() {
 	})
 
 	AfterEach(func() {
-		consul.KV().DeleteTree(rootKey, nil)
+		cancel()
+
+		_, err := consul.KV().DeleteTree(rootKey, nil)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	When("QueryOptions are defined", func() {
@@ -51,7 +58,7 @@ var _ = Describe("Base", func() {
 			}
 			generic.TestCrudClient("ns1", "ns2", client, clients.WatchOpts{
 				Selector:    selector,
-				Ctx:         context.TODO(),
+				Ctx:         ctx,
 				RefreshRate: time.Minute,
 			})
 		})
@@ -70,7 +77,7 @@ var _ = Describe("Base", func() {
 			}
 			generic.TestCrudClient("ns1", "ns2", client, clients.WatchOpts{
 				Selector:    selector,
-				Ctx:         context.TODO(),
+				Ctx:         ctx,
 				RefreshRate: time.Minute,
 			})
 		})

@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/go-utils/log"
+
 	"github.com/solo-io/k8s-utils/kubeutils"
 	kubehelpers "github.com/solo-io/k8s-utils/testutils/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -14,15 +16,11 @@ import (
 
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/log"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"k8s.io/client-go/kubernetes"
-
-	// Needed to run tests in GKE
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var _ = Describe("PlainConfigmap", func() {

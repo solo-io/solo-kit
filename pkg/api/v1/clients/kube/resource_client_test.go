@@ -18,7 +18,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 
@@ -614,6 +614,15 @@ var _ = Describe("Test Kube ResourceClient", func() {
 					0,
 					inputResourceStatusUnmarshaler)
 				Expect(rc.Register()).NotTo(HaveOccurred())
+
+				err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+				Expect(err).NotTo(HaveOccurred())
+
+				shared.DisableMaxStatusSize = false
+			})
+
+			AfterEach(func() {
+				os.Unsetenv(statusutils.PodNamespaceEnvName)
 			})
 
 			It("skips status updates if too large", func() {

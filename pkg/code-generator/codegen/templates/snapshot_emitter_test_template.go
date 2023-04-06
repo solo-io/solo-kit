@@ -4,7 +4,8 @@ import (
 	"text/template"
 )
 
-var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`// +build solokit
+var ResourceGroupEmitterTestTemplate = template.Must(template.New("resource_group_emitter_test").Funcs(Funcs).Parse(`
+// go:build solokit
 
 package {{ .Project.ProjectConfig.Version }}
 
@@ -21,14 +22,14 @@ package {{ .Project.ProjectConfig.Version }}
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
 	{{ .Imports }}
 	"k8s.io/client-go/kubernetes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -49,7 +50,7 @@ import (
 
 var _ = Describe("{{ upper_camel .Project.ProjectConfig.Version }}Emitter", func() {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
-		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+		fmt.Print("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
 	}
 	var (
