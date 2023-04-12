@@ -49,13 +49,9 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.28'
   entrypoint: 'bash'
   env:
-  - 'ACK_GINKGO_RC=true'
-  - 'ACK_GINKGO_DEPRECATIONS=1.16.5'
-  - 'GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn'
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
-  - 'TAGGED_VERSION=$TAG_NAME'
   args: ['-c', 'make test']
   waitFor: ['update-deps']
   dir: *dir
@@ -66,8 +62,6 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.28'
   entrypoint: 'bash'
   args: ['ci/check-code-gen.sh']
-  env:
-    - 'TAGGED_VERSION=$TAG_NAME'
   waitFor: ['update-deps']
   dir: *dir
   id: 'check-code-and-docs-gen'
@@ -76,6 +70,8 @@ timeout: 1500s
 tags: ['solo-kit']
 options:
   machineType: 'N1_HIGHCPU_32'
+  env:
+    - 'TAGGED_VERSION=$TAG_NAME'
   volumes:
   - name: 'gopath'
     path: '/go'

@@ -1,13 +1,36 @@
+# https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
+.DEFAULT_GOAL := help
+
+#----------------------------------------------------------------------------------
+# Help
+#----------------------------------------------------------------------------------
+# Our Makefile is quite large, and hard to reason through
+# `make help` can be used to self-document targets
+# To update a target to be self-documenting (and appear with the `help` command),
+# place a comment after the target that is prefixed by `##`. For example:
+#	custom-target: ## comment that will appear in the documentation when running `make help`
+#
+# **NOTE TO DEVELOPERS**
+# As you encounter make targets that are frequently used, please make them self-documenting
+.PHONY: help
+help: FIRST_COLUMN_WIDTH=35
+help: ## Output the self-documenting make targets
+	@grep -hE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-$(FIRST_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2}'
+
 #----------------------------------------------------------------------------------
 # Base
 #----------------------------------------------------------------------------------
-
 ROOTDIR := $(shell pwd)
 PACKAGE_PATH:=github.com/solo-io/solo-kit
 OUTPUT_DIR ?= $(ROOTDIR)/_output
+DEPSGOBIN:=$(OUTPUT_DIR)/.bin
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0
+
+# Important to use binaries built from module.
+export PATH:=$(DEPSGOBIN):$(PATH)
+export GOBIN:=$(DEPSGOBIN)
 
 #----------------------------------------------------------------------------------
 # Version, Release
@@ -36,7 +59,6 @@ init:
 
 PROTOS := $(shell find api/v1 -name "*.proto")
 GENERATED_PROTO_FILES := $(shell find pkg/api/v1/resources/core -name "*.pb.go")
-DEPSGOBIN=$(shell pwd)/_output/.bin
 
 .PHONY: update-all
 update-all: mod-download update-deps update-code-generator
@@ -48,14 +70,13 @@ mod-download:
 .PHONY: update-deps
 update-deps:
 	mkdir -p $(DEPSGOBIN)
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
-	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
-	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
+	go install github.com/solo-io/protoc-gen-ext
+	go install github.com/solo-io/protoc-gen-openapi@v0.1.0
+	go install golang.org/x/tools/cmd/goimports
+	go install github.com/golang/protobuf/protoc-gen-go
+	go install github.com/envoyproxy/protoc-gen-validate
+	go install github.com/golang/mock/gomock
+	go install github.com/golang/mock/mockgen
 
 .PHONY: update-code-generator
 update-code-generator:
@@ -93,6 +114,12 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 # Generated Code
 #----------------------------------------------------------------------------------
 
+.PHONY: clean
+clean:
+	rm -rf vendor_any
+	find . -type d -name "doc-gen-test*" -exec rm -rf {} + # remove all doc-gen-test* directories
+	find . -type d -name "_output" -exec rm -rf {} + # remove all _output directories
+
 .PHONY: generate-all
 generate-all: generated-code
 
@@ -101,31 +128,49 @@ generated-code: $(OUTPUT_DIR)/.generated-code update-licenses
 
 SUBDIRS:=pkg test
 $(OUTPUT_DIR)/.generated-code:
-	mkdir -p ${OUTPUT_DIR}
-	rm -rf vendor_any
+	mkdir -p $(OUTPUT_DIR)
 	go mod tidy
-	PATH=$(DEPSGOBIN):$$PATH $(GO_BUILD_FLAGS) go generate ./...
-	PATH=$(DEPSGOBIN):$$PATH gofmt -w $(SUBDIRS)
-	PATH=$(DEPSGOBIN):$$PATH goimports -w $(SUBDIRS)
+	$(GO_BUILD_FLAGS) go generate ./...
+	gofmt -w $(SUBDIRS)
+	goimports -w $(SUBDIRS)
 	touch $@
 
 .PHONY: verify-envoy-protos
 verify-envoy-protos:
 	@echo Verifying validity of generated envoy files...
-	PATH=$(DEPSGOBIN):$$PATH $(GO_BUILD_FLAGS) CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
-
+	$(GO_BUILD_FLAGS) CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build pkg/api/external/verify.go
 
 #----------------------------------------------------------------------------------
-# Unit Tests
+# Tests
 #----------------------------------------------------------------------------------
 
-# '-skip=multicluster', '-regexScansFilePath' skips any filepath which includes multicluster, which is useful
-# as this code is no longer used
+GINKGO_VERSION := 2.5.0
+GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --randomize-all --trace -progress -race
+GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
+GINKGO_COVERAGE_FLAGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
+TEST_PKG ?= ./... # Default to run all tests
+
+# This is a way for a user executing `make test` to be able to provide flags which we do not include by default
+# For example, you may want to run tests multiple times, or with various timeouts
+GINKGO_USER_FLAGS ?=
+
+.PHONY: install-test-tools
+install-test-tools:
+	go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
+
 .PHONY: test
-test:
+test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
-	PATH=$(DEPSGOBIN):$$PATH ginkgo -r  -v -race -p -tags solokit -compilers=2 -skip multicluster -regexScansFilePath -randomizeAllSpecs -randomizeSuites $(TEST_PKG)
+	$(GINKGO_ENV) ginkgo \
+	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
+	$(TEST_PKG)
 endif
+
+.PHONY: test-with-coverage
+test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
+test-with-coverage: test
+	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
 #----------------------------------------------------------------------------------
 # Update third party licenses and check for GPL Licenses

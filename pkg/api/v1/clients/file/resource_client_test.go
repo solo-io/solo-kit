@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -22,6 +22,8 @@ var _ = Describe("Base", func() {
 
 	var (
 		client     *ResourceClient
+		ctx        context.Context
+		cancel     context.CancelFunc
 		tmpDir     string
 		namespace1 = "ns1"
 		namespace2 = "ns2"
@@ -32,6 +34,8 @@ var _ = Describe("Base", func() {
 
 		tmpDir, err = ioutil.TempDir("", "base_test")
 		Expect(err).NotTo(HaveOccurred())
+
+		ctx, cancel = context.WithCancel(context.TODO())
 
 		// Create a directory per namespace inside the tmpDir.
 		// These will be cleaned up when the tmpDir is cleaned up
@@ -45,6 +49,8 @@ var _ = Describe("Base", func() {
 	})
 
 	JustAfterEach(func() {
+		cancel()
+
 		_ = os.RemoveAll(tmpDir)
 	})
 
@@ -54,7 +60,7 @@ var _ = Describe("Base", func() {
 		}
 		generic.TestCrudClient(namespace1, namespace2, client, clients.WatchOpts{
 			Selector:    selector,
-			Ctx:         context.TODO(),
+			Ctx:         ctx,
 			RefreshRate: time.Millisecond,
 		})
 	})
