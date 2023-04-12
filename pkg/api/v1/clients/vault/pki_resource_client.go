@@ -100,7 +100,7 @@ func (p PkiResourceClient) convertSecrets(ctx context.Context, vaultSecretList S
 	for _, vaultSecret := range vaultSecretList {
 		resource, conversionErr := p.secretConverter.FromSecret(ctx, vaultSecret)
 		if conversionErr != nil {
-			switch _ := conversionErr.(type) {
+			switch conversionErr.(type) {
 			case *UnrecoverableConversionError:
 				// This should rarely (if ever) be used
 				// Ideally invalid secrets do not half execution, and instead are processed
