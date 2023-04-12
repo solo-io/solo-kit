@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
-	"github.com/solo-io/solo-kit/pkg/multicluster/clustercache"
-	"k8s.io/client-go/rest"
 
 	kubeinformers "k8s.io/client-go/informers"
 	kubelisters "k8s.io/client-go/listers/batch/v1"
@@ -16,7 +14,6 @@ import (
 )
 
 type KubeJobCache interface {
-	clustercache.ClusterCache
 	JobLister() kubelisters.JobLister
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
@@ -54,20 +51,6 @@ func NewKubeJobCache(ctx context.Context, client kubernetes.Interface) (*kubeJob
 
 	return k, nil
 }
-
-func NewJobCacheFromConfig(ctx context.Context, cluster string, restConfig *rest.Config) clustercache.ClusterCache {
-	kubeClient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return nil
-	}
-	c, err := NewKubeJobCache(ctx, kubeClient)
-	if err != nil {
-		return nil
-	}
-	return c
-}
-
-var _ clustercache.NewClusterCacheForConfig = NewJobCacheFromConfig
 
 func (k *kubeJobCache) JobLister() kubelisters.JobLister {
 	return k.jobLister

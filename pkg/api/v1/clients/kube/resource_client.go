@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	types "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/shared"

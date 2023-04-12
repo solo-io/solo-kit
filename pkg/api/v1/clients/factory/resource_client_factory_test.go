@@ -5,10 +5,11 @@ import (
 	"os"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/solo-io/go-utils/log"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
-	"github.com/solo-io/go-utils/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -18,9 +19,6 @@ import (
 	"github.com/solo-io/k8s-utils/kubeutils"
 	v1 "github.com/solo-io/solo-kit/test/mocks/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-
-	// import k8s client pugins
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 type BeErrTypeMatcher struct {

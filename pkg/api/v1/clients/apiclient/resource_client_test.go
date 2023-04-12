@@ -9,7 +9,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/apiserver"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -26,13 +26,19 @@ import (
 var _ = Describe("Apiclient", func() {
 
 	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+
 		port   = 0
 		server *grpc.Server
 		lis    net.Listener
 		client *ResourceClient
 		cc     *grpc.ClientConn
 	)
+
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+
 		var err error
 		lis, err = net.Listen("tcp", fmt.Sprintf(":0"))
 		Expect(err).NotTo(HaveOccurred())
@@ -58,8 +64,14 @@ var _ = Describe("Apiclient", func() {
 		}, time.Second, &v1.MockResource{})
 
 		port = lis.Addr().(*net.TCPAddr).Port
-		fmt.Fprintf(GinkgoWriter, "grpc listening on %v\n", port)
-		go server.Serve(lis)
+		_, err = fmt.Fprintf(GinkgoWriter, "grpc listening on %v\n", port)
+		Expect(err).NotTo(HaveOccurred())
+
+		go func() {
+			defer GinkgoRecover()
+
+			_ = server.Serve(lis)
+		}()
 
 		// now start the client:
 
@@ -69,6 +81,7 @@ var _ = Describe("Apiclient", func() {
 	})
 
 	AfterEach(func() {
+		cancel()
 		server.Stop()
 		lis.Close()
 	})
@@ -82,7 +95,7 @@ var _ = Describe("Apiclient", func() {
 		}
 		generic.TestCrudClient("test1", "test2", client, clients.WatchOpts{
 			Selector:    selector,
-			Ctx:         context.TODO(),
+			Ctx:         ctx,
 			RefreshRate: time.Minute,
 		})
 	})
