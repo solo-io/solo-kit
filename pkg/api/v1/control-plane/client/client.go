@@ -16,6 +16,7 @@ package client
 
 import (
 	"context"
+	"math"
 
 	status "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
@@ -89,7 +90,7 @@ func NewClient(nodeinfo *envoy_api_v2_core.Node, rtype TypeRecord, apply func(ca
 
 func (c *client) Start(ctx context.Context, cc *grpc.ClientConn) error {
 	client := solo_discovery.NewSoloDiscoveryServiceClient(cc)
-	resourceclient, err := client.StreamAggregatedResources(ctx)
+	resourceclient, err := client.StreamAggregatedResources(ctx, grpc.MaxCallRecvMsgSize(int(math.MaxInt)))
 	if err != nil {
 		return err
 	}
