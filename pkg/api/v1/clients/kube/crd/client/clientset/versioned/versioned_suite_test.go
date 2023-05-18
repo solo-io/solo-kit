@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// TODO: fix tests
+//TODO: fix tests
 func TestVersioned(t *testing.T) {
 
 	log.Printf("Skipping Versioned Suite. Tests are currently failing and need to be fixed.")

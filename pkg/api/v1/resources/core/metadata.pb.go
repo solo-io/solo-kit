@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// *
+//*
 // Metadata contains general properties of resources for purposes of versioning, annotating, and namespacing.
 type Metadata struct {
 	state         protoimpl.MessageState

@@ -82,9 +82,10 @@ func (SimpleMockResource_EnumOptions) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_solo_kit_test_mocks_api_v1_simple_mock_resources_proto_rawDescGZIP(), []int{0, 0}
 }
 
-// A SimpleMockResource defines a variety of baseline types to ensure
-// that we can generate open api schemas properly. It intentionally avoids
-// messages that include oneof and recursive schemas (like core.solo.io.Status)
+//
+//A SimpleMockResource defines a variety of baseline types to ensure
+//that we can generate open api schemas properly. It intentionally avoids
+//messages that include oneof and recursive schemas (like core.solo.io.Status)
 type SimpleMockResource struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -21,11 +21,10 @@ import (
 // packages to translate protobuf definitions into OpenAPI schemas with structural constraints
 // It is modeled after the istio tool: https://github.com/istio/tools/tree/master/cmd/cue-gen
 // TODO (sam-heilbron) This tool has a known flaw that makes it unusable with Gloo Edge protos
-//
-//	There are open issues to track this and a GitHub discussion with more context:
-//	https://github.com/cuelang/cue/discussions/944. We would like to move towards this
-//	implementation and have added it now to compare schemas generated with this implementation
-//	to schemas generated with other implementations to ensure consistency.
+// 	 There are open issues to track this and a GitHub discussion with more context:
+//	 https://github.com/cuelang/cue/discussions/944. We would like to move towards this
+//	 implementation and have added it now to compare schemas generated with this implementation
+//	 to schemas generated with other implementations to ensure consistency.
 type cueGenerator struct {
 	// The Collector used to extract imports for proto files
 	importsCollector collector.Collector

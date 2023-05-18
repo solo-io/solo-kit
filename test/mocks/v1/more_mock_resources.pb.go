@@ -23,7 +23,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Description of the AnotherMockResource
+//
+//Description of the AnotherMockResource
 type AnotherMockResource struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -81,7 +81,7 @@ func (Status_State) EnumDescriptor() ([]byte, []int) {
 	return file_status_proto_rawDescGZIP(), []int{1, 0}
 }
 
-// *
+//*
 // NamespacedStatuses indicates the Status of a resource according to each controller.
 // NamespacedStatuses are meant to be read-only by users
 type NamespacedStatuses struct {
@@ -132,7 +132,7 @@ func (x *NamespacedStatuses) GetStatuses() map[string]*Status {
 	return nil
 }
 
-// *
+//*
 // Status indicates whether a resource has been (in)validated by a reporter in the system.
 // Statuses are meant to be read-only by users
 type Status struct {
