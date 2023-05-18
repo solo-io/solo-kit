@@ -20,10 +20,10 @@ require (
 	github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/mitchellh/hashstructure v1.0.0
-	github.com/onsi/ginkgo/v2 v2.5.0
+	github.com/onsi/ginkgo/v2 v2.6.0
 	github.com/onsi/gomega v1.24.1
 	github.com/pkg/errors v0.9.1
-	github.com/pseudomuto/protoc-gen-doc v1.5.1
+	github.com/pseudomuto/protoc-gen-doc v1.5.0
 	github.com/pseudomuto/protokit v0.2.0
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
@@ -31,11 +31,11 @@ require (
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.24.2
 	// todo (fabian) upgrade when released
-	github.com/solo-io/k8s-utils v0.3.0
+	github.com/solo-io/k8s-utils v0.3.1-0.20230518135654-ebacc1f25c03
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	go.opencensus.io v0.24.0
-	go.uber.org/zap v1.19.0
+	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.1.0
 	google.golang.org/genproto v0.0.0-20221201164419-0e50fba7f41c
 	google.golang.org/grpc v1.51.0
@@ -118,7 +118,7 @@ require (
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
-	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
