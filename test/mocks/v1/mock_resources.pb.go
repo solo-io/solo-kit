@@ -39,10 +39,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
-//Mock resources for goofin off
-//This includes oneof, nested resources, and any other special cases that
-//may cause issues during schemagen
+// Mock resources for goofin off
+// This includes oneof, nested resources, and any other special cases that
+// may cause issues during schemagen
 type MockResource struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -487,9 +486,8 @@ func (x *FakeResource) GetMetadata() *core.Metadata {
 	return nil
 }
 
-//
-//@solo-kit:xds-service=MockXdsResourceDiscoveryService
-//@solo-kit:resource.no_references
+// @solo-kit:xds-service=MockXdsResourceDiscoveryService
+// @solo-kit:resource.no_references
 type MockXdsResourceConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

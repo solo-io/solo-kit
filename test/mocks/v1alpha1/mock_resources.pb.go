@@ -33,8 +33,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
-//Mock resources for goofin off
+// Mock resources for goofin off
 type MockResource struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
