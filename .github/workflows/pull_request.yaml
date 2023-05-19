@@ -20,6 +20,8 @@ jobs:
       - uses: actions/checkout@v2
       - run: |
           git fetch --prune --unshallow
+      - name: Set environment variables
+        uses: ./.github/actions/set-environment-variables
       - name: Set up Go (derived from go.mod)
         uses: actions/setup-go@v3
         with:
