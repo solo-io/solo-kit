@@ -47,7 +47,7 @@ jobs:
             ${{ runner.os }}-go-
       - name: Set up test cluster
         run: |
-          kind create cluster --wait=1m --image "kindest/node:v1.26.3@sha256:61b92f38dff6ccc29969e7aa154d34e38b89443af1a2c14e6cfbd2df6419c66f"
+          kind create cluster --image "kindest/node:v1.26.3@sha256:61b92f38dff6ccc29969e7aa154d34e38b89443af1a2c14e6cfbd2df6419c66f"
       - name: Run Tests
         run: |
           make update-all tests
