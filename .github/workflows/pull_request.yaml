@@ -50,7 +50,7 @@ jobs:
           kind create cluster --image "kindest/node:v1.26.3@sha256:61b92f38dff6ccc29969e7aa154d34e38b89443af1a2c14e6cfbd2df6419c66f"
       - name: Run Tests
         run: |
-          make update-all tests -c
+          make update-all tests
         env:
           RUN_KUBE_TESTS: 1
           RUN_CONSUL_TESTS: 1
