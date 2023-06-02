@@ -50,7 +50,7 @@ Package: {{ backtick }}{{ .Package }}{{ backtick }}
 
 {{ end}}
 
-**Source File:** {{ githubLinkForFile "master" .Name }}
+**Source File:** {{ githubLinkForFile "main" .Name }}
 
 {{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}

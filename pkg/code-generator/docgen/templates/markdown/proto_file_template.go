@@ -44,7 +44,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 
 {{ end}}
 
-##### Source File: {{ githubLinkForFile "master" .Name }}
+##### Source File: {{ githubLinkForFile "main" .Name }}
 
 {{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}
