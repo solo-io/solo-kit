@@ -138,7 +138,7 @@ func (c *Controller) processNextWorkItem() bool {
 		}
 		switch e.eventType {
 		case added:
-			c.handler.OnAdd(e.new)
+			c.handler.OnAdd(e.new, false) // TODO - is this the right value?
 		case updated:
 			c.handler.OnUpdate(e.old, e.new)
 		case deleted:
