@@ -10,17 +10,17 @@ steps:
     path: /root/.ssh
   id: 'untar-mod-cache'
 
-- name: 'golang:1.19.10'
+- name: 'golang:1.20.5'
   args: ['go', 'mod', 'download', 'all']
   volumes: *vol
   id: 'download'
 
-- name: 'golang:1.19.10'
+- name: 'golang:1.20.5'
   args: ['go', 'mod', 'tidy']
   volumes: *vol
   id: 'tidy'
 
-- name: 'golang:1.19.10'
+- name: 'golang:1.20.5'
   entrypoint: 'bash'
   volumes: *vol
   args: ['-c', ' cd /go/pkg && tar -zvcf solo-kit-mod.tar.gz mod']
