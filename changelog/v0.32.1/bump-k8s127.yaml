@@ -5,6 +5,7 @@ changelog:
     description: Upgrade Kubernetes dependencies to 1.26.X - TODO Fix descriptions
     dependencyRepo: go-utils
     dependencyOwner: k8s.io
+    dependencyTag: v0.26.4
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: go-utils
