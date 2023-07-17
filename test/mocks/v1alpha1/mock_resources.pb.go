@@ -33,8 +33,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
-//Mock resources for goofin off
+// Mock resources for goofin off
 type MockResource struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -45,6 +44,7 @@ type MockResource struct {
 	Data               string                   `protobuf:"bytes,1,opt,name=data,json=data.json,proto3" json:"data,omitempty"`
 	SomeDumbField      string                   `protobuf:"bytes,100,opt,name=some_dumb_field,json=someDumbField,proto3" json:"some_dumb_field,omitempty"`
 	// Types that are assignable to TestOneofFields:
+	//
 	//	*MockResource_OneofOne
 	//	*MockResource_OneofTwo
 	TestOneofFields isMockResource_TestOneofFields `protobuf_oneof:"test_oneof_fields"`

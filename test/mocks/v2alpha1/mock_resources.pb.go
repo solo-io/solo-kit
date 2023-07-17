@@ -23,8 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
-//The best mock resource you ever done seen
+// The best mock resource you ever done seen
 type MockResource struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -33,10 +32,12 @@ type MockResource struct {
 	NamespacedStatuses *core.NamespacedStatuses `protobuf:"bytes,16,opt,name=namespaced_statuses,json=namespacedStatuses,proto3" json:"namespaced_statuses,omitempty"`
 	Metadata           *core.Metadata           `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// Types that are assignable to WeStuckItInAOneof:
+	//
 	//	*MockResource_SomeDumbField
 	//	*MockResource_Data
 	WeStuckItInAOneof isMockResource_WeStuckItInAOneof `protobuf_oneof:"we_stuck_it_in_a_oneof"`
 	// Types that are assignable to TestOneofFields:
+	//
 	//	*MockResource_OneofOne
 	//	*MockResource_OneofTwo
 	TestOneofFields isMockResource_TestOneofFields `protobuf_oneof:"test_oneof_fields"`

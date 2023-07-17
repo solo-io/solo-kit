@@ -23,19 +23,18 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//*
+// *
 // Metadata contains general properties of resources for purposes of versioning, annotating, and namespacing.
 type Metadata struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Name of the resource.
 	//
-	//Name of the resource.
+	// Names must be unique and follow the following syntax rules:
 	//
-	//Names must be unique and follow the following syntax rules:
-	//
-	//One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
+	// One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Namespace is used for the namespacing of resources.
 	Namespace string `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
@@ -56,7 +55,7 @@ type Metadata struct {
 	// A sequence number representing a specific generation of the desired state.
 	// Currently only populated for resources backed by Kubernetes
 	Generation int64 `protobuf:"varint,8,opt,name=generation,proto3" json:"generation,omitempty"`
-	//List of objects depended by this object.
+	// List of objects depended by this object.
 	// Currently only populated for resources backed by Kubernetes
 	OwnerReferences []*Metadata_OwnerReference `protobuf:"bytes,9,rep,name=owner_references,json=ownerReferences,proto3" json:"owner_references,omitempty"`
 }

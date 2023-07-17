@@ -481,6 +481,7 @@ type Node struct {
 	// E.g. "envoy" or "grpc"
 	UserAgentName string `protobuf:"bytes,6,opt,name=user_agent_name,json=userAgentName,proto3" json:"user_agent_name,omitempty"`
 	// Types that are assignable to UserAgentVersionType:
+	//
 	//	*Node_UserAgentVersion
 	//	*Node_UserAgentBuildVersion
 	UserAgentVersionType isNode_UserAgentVersionType `protobuf_oneof:"user_agent_version_type"`
@@ -653,9 +654,9 @@ func (*Node_UserAgentBuildVersion) isNode_UserAgentVersionType() {}
 // object to match against. There are some well defined metadata used today for
 // this purpose:
 //
-// * ``{"envoy.lb": {"canary": <bool> }}`` This indicates the canary status of an
-//   endpoint and is also used during header processing
-//   (x-envoy-upstream-canary) and for stats purposes.
+//   - “{"envoy.lb": {"canary": <bool> }}“ This indicates the canary status of an
+//     endpoint and is also used during header processing
+//     (x-envoy-upstream-canary) and for stats purposes.
 type Metadata struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -894,6 +895,7 @@ type HeaderValueOption struct {
 	// Header name/value pair that this option applies to.
 	//
 	// Types that are assignable to HeaderOption:
+	//
 	//	*HeaderValueOption_Header
 	//	*HeaderValueOption_HeaderSecretRef
 	HeaderOption isHeaderValueOption_HeaderOption `protobuf_oneof:"header_option"`
@@ -1035,6 +1037,7 @@ type DataSource struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Specifier:
+	//
 	//	*DataSource_Filename
 	//	*DataSource_InlineBytes
 	//	*DataSource_InlineString
@@ -1191,6 +1194,7 @@ type AsyncDataSource struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Specifier:
+	//
 	//	*AsyncDataSource_Local
 	//	*AsyncDataSource_Remote
 	Specifier isAsyncDataSource_Specifier `protobuf_oneof:"specifier"`
@@ -1283,6 +1287,7 @@ type TransportSocket struct {
 	// See the supported transport socket implementations for further documentation.
 	//
 	// Types that are assignable to ConfigType:
+	//
 	//	*TransportSocket_Config
 	//	*TransportSocket_TypedConfig
 	ConfigType isTransportSocket_ConfigType `protobuf_oneof:"config_type"`

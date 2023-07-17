@@ -26,8 +26,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
-//GRPC stuff
+// GRPC stuff
 type ReadRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
