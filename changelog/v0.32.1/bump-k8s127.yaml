@@ -3,6 +3,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/8164
     resolvesIssue: false
     description: Upgrade Kubernetes dependencies to 1.26.X - TODO Fix descriptions
+    dependencyRepo: go-utils
     dependencyOwner: k8s.io
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
