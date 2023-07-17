@@ -33,6 +33,7 @@ Name|Version|License
 [k8s.io/client-go](https://k8s.io/client-go)|v0.27.3|Apache License 2.0
 [k8s.io/code-generator](https://k8s.io/code-generator)|v0.27.3|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20230209194617-a36077c30491|Apache License 2.0
+[structured-merge-diff/v4](https://sigs.k8s.io/structured-merge-diff/v4)|v4.2.3|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.3.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License
