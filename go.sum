@@ -424,8 +424,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-proto-validators v0.0.0-20180403085117-0950a7990007/go.mod h1:m2XC9Qq0AlmmVksL6FktJCdTYyLk7V3fKyp0sl1yWQo=
-github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
+github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
@@ -495,7 +495,7 @@ github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6So
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.8.0/go.mod h1:WmiCO8CzOY8rg0OYDC4/i/2WRWAB6poM+XZ2dLUbcbE=
-github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
+github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rotisserie/eris v0.1.1 h1:C0wEdnJ6+3jYx2r8RS4xBM+ZW+mVrXGocIaFbTdRYCA=
 github.com/rotisserie/eris v0.1.1/go.mod h1:2ik3CyJrzlOjGyDGrKfqZivSfmkhCS3ktE+T1mNzzLk=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
@@ -524,10 +524,10 @@ github.com/solo-io/anyvendor v0.0.1/go.mod h1:SLucIeU8qBOYI82BveNVn2LzZFcMWJSCf8
 github.com/solo-io/go-list-licenses v0.1.4 h1:u4xh1OUORT4iSWuAp3Q4NsfHcDaeUV8QRDH8ACQqbxw=
 github.com/solo-io/go-list-licenses v0.1.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6B3F6TrWYfcdHVroA=
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
-github.com/solo-io/go-utils v0.24.2 h1:nA3tlPwVwh3eK0gnnatSEDmKBYITK3IOnfyec/3XH/Y=
-github.com/solo-io/go-utils v0.24.2/go.mod h1:2ds5++iv1FGox0/aWz/DAiRYTIb6r4yiM+VSF7sAyL4=
-github.com/solo-io/k8s-utils v0.4.1-0.20230710180921-b0921eff8cb1 h1:3n460CXo5TbiKjSoAooNeVVGXHvB6cflhA46a0fI6mE=
-github.com/solo-io/k8s-utils v0.4.1-0.20230710180921-b0921eff8cb1/go.mod h1:Pr8XHqqOKRRNwKsivoYNKh32QE2BpPC7rZ69TP0t2LE=
+github.com/solo-io/go-utils v0.24.6-0.20230717191956-6ce770d735b2 h1:IZJ5GkYe/WFSUQNBuId0ItcaReb2nIqKmnB5GCrsWIQ=
+github.com/solo-io/go-utils v0.24.6-0.20230717191956-6ce770d735b2/go.mod h1:SQBQDM/DM4u5435gcAfVr+GF53hW5OR60LaCGCDPkVo=
+github.com/solo-io/k8s-utils v0.4.1-0.20230720144625-71c4828c86a2 h1:CVlhDIZkg3LtuKyzu2VsVolBds96xgEEFjpqZjculCI=
+github.com/solo-io/k8s-utils v0.4.1-0.20230720144625-71c4828c86a2/go.mod h1:Vnhej8cao1qfvoLFl/+KElRcpxb06fy+gN565Dr/COE=
 github.com/solo-io/protoc-gen-ext v0.0.18 h1:zSAL8NzWpJUGYoA5IyjHiKASNyHjR0uxBQ7eQS94i3A=
 github.com/solo-io/protoc-gen-ext v0.0.18/go.mod h1:iGyCvmKmhJNXs5MgBcYFBF0om7LDnCVD2WwhOZGnqeA=
 github.com/solo-io/protoc-gen-openapi v0.1.0 h1:XBx0yAdjxoWxGQ+CiGcb29r+KAgyIkhdaB63uBvKzKY=
