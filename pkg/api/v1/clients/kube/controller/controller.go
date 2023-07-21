@@ -138,6 +138,9 @@ func (c *Controller) processNextWorkItem() bool {
 		}
 		switch e.eventType {
 		case added:
+			// 'false' value for 2nd argument here is "isInInitialList", which was added to support ResourceEventHandlerDetailedFuncs
+			// since we aren't using that handler we won't have an initial list and can pass in false. The value actually doesn't
+			// matter at this point because the vanilla ResourceEventHandler OnAdd function doesn't use it.
 			c.handler.OnAdd(e.new, false)
 		case updated:
 			c.handler.OnUpdate(e.old, e.new)

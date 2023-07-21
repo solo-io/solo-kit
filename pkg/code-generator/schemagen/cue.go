@@ -23,7 +23,7 @@ import (
 // TODO (sam-heilbron) This tool has a known flaw that makes it unusable with Gloo Edge protos
 //
 //	There are open issues to track this and a GitHub discussion with more context:
-//	https://github.com/cuelang/cue/discussions/944. We would like to move towards this
+//	https://github.com/cue-lang/cue/discussions/944. We would like to move towards this
 //	implementation and have added it now to compare schemas generated with this implementation
 //	to schemas generated with other implementations to ensure consistency.
 type cueGenerator struct {
