@@ -20,9 +20,12 @@ package v2alpha1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
+	testingsoloiov2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client/applyconfiguration/testing.solo.io/v2alpha1"
 	scheme "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -46,6 +49,7 @@ type FrequentlyChangingAnnotationsResourceInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v2alpha1.FrequentlyChangingAnnotationsResourceList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error)
+	Apply(ctx context.Context, frequentlyChangingAnnotationsResource *testingsoloiov2alpha1.FrequentlyChangingAnnotationsResourceApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error)
 	FrequentlyChangingAnnotationsResourceExpansion
 }
 
@@ -171,6 +175,32 @@ func (c *frequentlyChangingAnnotationsResources) Patch(ctx context.Context, name
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied frequentlyChangingAnnotationsResource.
+func (c *frequentlyChangingAnnotationsResources) Apply(ctx context.Context, frequentlyChangingAnnotationsResource *testingsoloiov2alpha1.FrequentlyChangingAnnotationsResourceApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+	if frequentlyChangingAnnotationsResource == nil {
+		return nil, fmt.Errorf("frequentlyChangingAnnotationsResource provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(frequentlyChangingAnnotationsResource)
+	if err != nil {
+		return nil, err
+	}
+	name := frequentlyChangingAnnotationsResource.Name
+	if name == nil {
+		return nil, fmt.Errorf("frequentlyChangingAnnotationsResource.Name must be provided to Apply")
+	}
+	result = &v2alpha1.FrequentlyChangingAnnotationsResource{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("fcars").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

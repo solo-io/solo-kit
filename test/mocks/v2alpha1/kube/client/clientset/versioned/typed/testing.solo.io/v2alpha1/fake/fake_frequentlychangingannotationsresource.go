@@ -20,11 +20,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
+	testingsoloiov2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client/applyconfiguration/testing.solo.io/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +38,9 @@ type FakeFrequentlyChangingAnnotationsResources struct {
 	ns   string
 }
 
-var frequentlychangingannotationsresourcesResource = schema.GroupVersionResource{Group: "testing.solo.io", Version: "v2alpha1", Resource: "fcars"}
+var frequentlychangingannotationsresourcesResource = v2alpha1.SchemeGroupVersion.WithResource("fcars")
 
-var frequentlychangingannotationsresourcesKind = schema.GroupVersionKind{Group: "testing.solo.io", Version: "v2alpha1", Kind: "FrequentlyChangingAnnotationsResource"}
+var frequentlychangingannotationsresourcesKind = v2alpha1.SchemeGroupVersion.WithKind("FrequentlyChangingAnnotationsResource")
 
 // Get takes name of the frequentlyChangingAnnotationsResource, and returns the corresponding frequentlyChangingAnnotationsResource object, and an error if there is any.
 func (c *FakeFrequentlyChangingAnnotationsResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
@@ -122,6 +124,28 @@ func (c *FakeFrequentlyChangingAnnotationsResources) DeleteCollection(ctx contex
 func (c *FakeFrequentlyChangingAnnotationsResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(frequentlychangingannotationsresourcesResource, c.ns, name, pt, data, subresources...), &v2alpha1.FrequentlyChangingAnnotationsResource{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v2alpha1.FrequentlyChangingAnnotationsResource), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied frequentlyChangingAnnotationsResource.
+func (c *FakeFrequentlyChangingAnnotationsResources) Apply(ctx context.Context, frequentlyChangingAnnotationsResource *testingsoloiov2alpha1.FrequentlyChangingAnnotationsResourceApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+	if frequentlyChangingAnnotationsResource == nil {
+		return nil, fmt.Errorf("frequentlyChangingAnnotationsResource provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(frequentlyChangingAnnotationsResource)
+	if err != nil {
+		return nil, err
+	}
+	name := frequentlyChangingAnnotationsResource.Name
+	if name == nil {
+		return nil, fmt.Errorf("frequentlyChangingAnnotationsResource.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(frequentlychangingannotationsresourcesResource, c.ns, *name, types.ApplyPatchType, data), &v2alpha1.FrequentlyChangingAnnotationsResource{})
 
 	if obj == nil {
 		return nil, err

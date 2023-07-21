@@ -1,0 +1,37 @@
+changelog:
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/gloo/issues/8164
+    resolvesIssue: false
+    description: Upgrade Kubernetes dependencies to 1.26.X - TODO Fix descriptions
+    dependencyRepo: go-utils
+    dependencyOwner: solo-io
+    dependencyTag: v0.27.3
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.5.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: api
+    dependencyTag: v0.27.3
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apiextensions-apiserver
+    dependencyTag: v0.27.3
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apimachinery
+    dependencyTag: v0.27.3
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: client-go
+    dependencyTag: v0.27.3
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: code-generator
+    dependencyTag: v0.27.3
+  - type: DEPENDENCY_BUMP
+    description: Updated go to 1.20
+    dependencyOwner: golang
+    dependencyRepo: go
+    dependencyTag: v1.20.1
