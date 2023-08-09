@@ -106,6 +106,8 @@ var _ = Describe("schemagen", func() {
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "boolValue")
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "int32Value")
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "uint32Value")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "int64Value")
+			ExpectSchemaPropertiesAreEqual(cue, protoc, "uint64Value")
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "floatValue")
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "duration")
 			ExpectSchemaPropertiesAreEqual(cue, protoc, "empty")

@@ -71,7 +71,7 @@ mod-download:
 update-deps:
 	mkdir -p $(DEPSGOBIN)
 	go install github.com/solo-io/protoc-gen-ext
-	go install github.com/solo-io/protoc-gen-openapi@v0.1.0
+	go install github.com/solo-io/protoc-gen-openapi@v0.1.1
 	go install golang.org/x/tools/cmd/goimports
 	go install github.com/golang/protobuf/protoc-gen-go
 	go install github.com/envoyproxy/protoc-gen-validate
@@ -132,7 +132,7 @@ $(OUTPUT_DIR)/.generated-code:
 	go mod tidy
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
-	goimports -w $(SUBDIRS)
+	$(DEPSGOBIN)/goimports -w $(SUBDIRS)
 	touch $@
 
 .PHONY: verify-envoy-protos

@@ -32,7 +32,7 @@ require (
 	github.com/solo-io/go-utils v0.24.6
 	github.com/solo-io/k8s-utils v0.5.0
 	github.com/solo-io/protoc-gen-ext v0.0.18
-	github.com/solo-io/protoc-gen-openapi v0.1.0
+	github.com/solo-io/protoc-gen-openapi v0.1.1
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.2.0

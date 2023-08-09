@@ -95,6 +95,12 @@ message SimpleMockResource {
   // enum_options comment
   EnumOptions enum_options = 30;
 
+  // int64_value comment
+  google.protobuf.Int64Value int64_value = 31;
+
+  // uint64_value comment
+  google.protobuf.UInt64Value uint64_value = 32;
+
   // NestedMessage type comment
   message NestedMessage {
     bool option_bool = 1;

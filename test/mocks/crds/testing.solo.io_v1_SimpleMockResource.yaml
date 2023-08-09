@@ -75,6 +75,12 @@ spec:
                 format: int64
                 type: integer
                 x-kubernetes-int-or-string: true
+              int64Value:
+                description: int64_value comment
+                maximum: 9223372036854776000
+                minimum: -9.223372036854776e+18
+                nullable: true
+                type: integer
               list:
                 description: list comment
                 items:
@@ -125,6 +131,12 @@ spec:
               uint32Value:
                 description: uint32_value comment
                 maximum: 4294967295
+                minimum: 0
+                nullable: true
+                type: integer
+              uint64Value:
+                description: uint64_value comment
+                maximum: 1.8446744073709552e+19
                 minimum: 0
                 nullable: true
                 type: integer
