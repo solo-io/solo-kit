@@ -71,7 +71,7 @@ mod-download:
 update-deps:
 	mkdir -p $(DEPSGOBIN)
 	go install github.com/solo-io/protoc-gen-ext
-	go install github.com/solo-io/protoc-gen-openapi@add-UInt64Value
+	go install github.com/solo-io/protoc-gen-openapi@v0.1.1
 	go install golang.org/x/tools/cmd/goimports
 	go install github.com/golang/protobuf/protoc-gen-go
 	go install github.com/envoyproxy/protoc-gen-validate
