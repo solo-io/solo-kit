@@ -248,6 +248,26 @@ func (m *SimpleMockResource) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetInt64Value()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInt64Value()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInt64Value(), target.GetInt64Value()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetUint64Value()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUint64Value()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUint64Value(), target.GetUint64Value()) {
+			return false
+		}
+	}
+
 	return true
 }
 

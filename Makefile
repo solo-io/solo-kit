@@ -132,7 +132,7 @@ $(OUTPUT_DIR)/.generated-code:
 	go mod tidy
 	$(GO_BUILD_FLAGS) go generate ./...
 	gofmt -w $(SUBDIRS)
-	goimports -w $(SUBDIRS)
+	$(DEPSGOBIN)/goimports -w $(SUBDIRS)
 	touch $@
 
 .PHONY: verify-envoy-protos
