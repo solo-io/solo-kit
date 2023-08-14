@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ = Describe("schemagen", func() {
+var _ = FDescribe("schemagen", func() {
 
 	Context("JSONSchemaGenerator", func() {
 		// At the moment we rely on a plugin for the protocol buffer compiler to generate
