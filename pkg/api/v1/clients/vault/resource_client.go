@@ -9,8 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"go.uber.org/zap"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -257,6 +259,7 @@ func (rc *ResourceClient) listSingleNamespace(namespace string, opts clients.Lis
 func (rc *ResourceClient) listKeys(directory string) ([]string, error) {
 	keyList, err := rc.vault.Logical().List(directory)
 	if err != nil {
+		contextutils.LoggerFrom(context.Background()).Errorw("error listing directory", zap.Error(err))
 		renewToken(rc.vault)
 		return nil, errors.Wrapf(err, "listing directory %v", directory)
 	}
