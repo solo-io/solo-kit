@@ -260,7 +260,7 @@ func (rc *ResourceClient) listKeys(directory string) ([]string, error) {
 	keyList, err := rc.vault.Logical().List(directory)
 	if err != nil {
 		contextutils.LoggerFrom(context.Background()).Errorw("error listing directory", zap.Error(err))
-		renewToken(rc.vault)
+		//go renewToken(rc.vault)
 		return nil, errors.Wrapf(err, "listing directory %v", directory)
 	}
 	if keyList == nil {
