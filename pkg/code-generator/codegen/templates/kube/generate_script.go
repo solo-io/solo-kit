@@ -13,6 +13,7 @@ var GenerateScriptTemplate = template.Must(template.New("kube_generate").Funcs(t
 set -o errexit
 set -o nounset
 set -o pipefail
+set +x
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 ROOT_PKG={{ .ProjectConfig.GoPackage }}
@@ -40,13 +41,13 @@ echo ">> Temporary output directory ${TEMP_DIR}"
 
 # Ensure we can execute.
 chmod +x ${CODEGEN_PKG}/generate-groups.sh
-
+chmod +x ${CODEGEN_PKG}/generate-internal-groups.sh
 
 ${CODEGEN_PKG}/generate-groups.sh all \
     ${CLIENT_PKG} \
     ${APIS_PKG} \
     {{ .ProjectConfig.Name }}:{{ .ProjectConfig.Version }} \
-    --output-base "${TEMP_DIR}" --go-header-file "${CODEGEN_PKG}/hack/boilerplate.go.txt"
+    --output-base "${TEMP_DIR}" --go-header-file "${SCRIPT_ROOT}/hack/boilerplate.go.txt"
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/.."
 
