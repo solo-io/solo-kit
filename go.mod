@@ -29,8 +29,8 @@ require (
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.8-0.20231124011055-866a4215bf59
-	github.com/solo-io/k8s-utils v0.5.2-0.20231124010850-632aff954de6
+	github.com/solo-io/go-utils v0.24.8-0.20231127194310-55f8760f995a
+	github.com/solo-io/k8s-utils v0.5.2-0.20231127201718-de3b0a40ee6c
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.1
 	go.opencensus.io v0.24.0
@@ -143,8 +143,8 @@ replace (
 	// to avoid error about it being used for two different module paths
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v24.0.7+incompatible
-	github.com/iancoleman/strcase => github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 
 	// consul
 	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.1.0
+	github.com/iancoleman/strcase => github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 )
