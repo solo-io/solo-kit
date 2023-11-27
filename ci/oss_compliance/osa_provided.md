@@ -11,7 +11,7 @@ Name|Version|License
 [go-test/deep](https://github.com/go-test/deep)|v1.0.2|MIT License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.3|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.3.0|Apache License 2.0
-[iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.2.0|MIT License
+[iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.0.0-20191112232945-16388991a334|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.11.0|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.27.10|MIT License
