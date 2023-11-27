@@ -29,8 +29,8 @@ require (
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.8-0.20231123182445-79375d0dfb34
-	github.com/solo-io/k8s-utils v0.5.2-0.20231123190454-aa4ee7e3e9cf
+	github.com/solo-io/go-utils v0.24.8-0.20231124011055-866a4215bf59
+	github.com/solo-io/k8s-utils v0.5.2-0.20231124010850-632aff954de6
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.1
 	go.opencensus.io v0.24.0
