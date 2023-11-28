@@ -519,8 +519,8 @@ github.com/solo-io/anyvendor v0.0.1/go.mod h1:SLucIeU8qBOYI82BveNVn2LzZFcMWJSCf8
 github.com/solo-io/go-list-licenses v0.1.4 h1:u4xh1OUORT4iSWuAp3Q4NsfHcDaeUV8QRDH8ACQqbxw=
 github.com/solo-io/go-list-licenses v0.1.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6B3F6TrWYfcdHVroA=
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
-github.com/solo-io/go-utils v0.24.8-0.20231127214630-9498b49f7590 h1:MYBix66ugkV3FTWUfk0Mj2+ZrdoTIdeKZVf9jyuc2Uo=
-github.com/solo-io/go-utils v0.24.8-0.20231127214630-9498b49f7590/go.mod h1:RDMe8hfcfv9FLN7KCqW9VhqT5f3vAED3eQKFC5TKQ+U=
+github.com/solo-io/go-utils v0.24.8-0.20231128194722-8ca1ac5fcb92 h1:jYPhl9JQ31V690FvmKZ0s/z8P+Xa5IovuK6SpTtE88A=
+github.com/solo-io/go-utils v0.24.8-0.20231128194722-8ca1ac5fcb92/go.mod h1:RDMe8hfcfv9FLN7KCqW9VhqT5f3vAED3eQKFC5TKQ+U=
 github.com/solo-io/k8s-utils v0.5.2-0.20231127201718-de3b0a40ee6c h1:hEj8rFF32qlf2EZUdwq7oD2bt8xFwntKN7xn4XiXigo=
 github.com/solo-io/k8s-utils v0.5.2-0.20231127201718-de3b0a40ee6c/go.mod h1:NmGWM0x+J+5X8nSWMBS0otjhOboU8LeMkSPuGQ0FWOs=
 github.com/solo-io/protoc-gen-ext v0.0.18 h1:zSAL8NzWpJUGYoA5IyjHiKASNyHjR0uxBQ7eQS94i3A=

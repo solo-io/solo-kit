@@ -29,7 +29,7 @@ require (
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.0.1
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.8-0.20231127214630-9498b49f7590
+	github.com/solo-io/go-utils v0.24.8-0.20231128194722-8ca1ac5fcb92
 	github.com/solo-io/k8s-utils v0.5.2-0.20231127201718-de3b0a40ee6c
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.1
