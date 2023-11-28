@@ -43,6 +43,15 @@ steps:
   args: ['container', 'clusters', 'get-credentials', 'solo-kit-test']
   id: 'gcloud-solo-kit-test'
 
+# check code gen for kubernetes custom resources
+# this step passes if there is no generated diff, fails otherwise
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.2'
+  entrypoint: 'bash'
+  args: ['ci/check-code-gen.sh']
+  waitFor: ['update-deps']
+  dir: *dir
+  id: 'check-code-and-docs-gen'
+
 # e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/tree/master/e2e-go-mod-ginkgo
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
@@ -53,7 +62,7 @@ steps:
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
   args: ['-c', 'make test']
-  waitFor: ['update-deps']
+  waitFor: ['check-code-and-docs-gen']
   dir: *dir
   id: 'test'
 
