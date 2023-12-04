@@ -13,7 +13,6 @@ var GenerateScriptTemplate = template.Must(template.New("kube_generate").Funcs(t
 set -o errexit
 set -o nounset
 set -o pipefail
-set +x
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 ROOT_PKG={{ .ProjectConfig.GoPackage }}
