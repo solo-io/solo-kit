@@ -25,6 +25,10 @@ changelog:
   dependencyRepo: code-generator
   dependencyTag: v0.28.3
 - type: DEPENDENCY_BUMP
+  dependencyOwner: envoyproxy
+  dependencyRepo: go-control-plane
+  dependencyTag: v0.11.1-0.20230524094728-9239064ad72f
+- type: DEPENDENCY_BUMP
   dependencyOwner: onsi
   dependencyRepo: ginkgo/v2
   dependencyTag: v2.11.0
@@ -40,4 +44,7 @@ changelog:
   dependencyOwner: solo-io
   dependencyRepo: k8s-utils
   dependencyTag: v0.6.0
-
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: cloud-builders
+  dependencyTag: v0.8.0
