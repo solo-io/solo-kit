@@ -1,6 +1,7 @@
 package vault
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -23,7 +24,8 @@ const (
 	checkAndSetKey = "cas"
 )
 
-func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resource, bool, error) {
+func (rc *ResourceClient) fromVaultSecret(secret *vault.Secret) (resources.Resource, bool, error) {
+	fmt.Printf("Secret: %+v\n", secret)
 	if secret.Data == nil {
 		return nil, false, errors.Errorf("secret data cannot be nil")
 	}
@@ -45,6 +47,7 @@ func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resourc
 }
 
 func (rc *ResourceClient) toVaultSecret(resource resources.Resource) (map[string]interface{}, error) {
+	fmt.Printf("resource: %+v\n", resource)
 	var version int
 	if rv := resource.GetMetadata().ResourceVersion; rv != "" {
 		var err error
@@ -106,6 +109,7 @@ func (rc *ResourceClient) Register() error {
 }
 
 func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
+	fmt.Printf("Read: %s, %s\n", namespace, name)
 	if err := resources.ValidateName(name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
 	}
@@ -131,6 +135,7 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 }
 
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+	fmt.Printf("Write: %+v\n", resource)
 	opts = opts.WithDefaults()
 	if err := resources.ValidateName(resource.GetMetadata().Name); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
@@ -158,6 +163,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, err
 	}
 
+	fmt.Printf("Writing secret to KV: %+v, %s\n", secret, key)
 	if _, err := rc.vault.Logical().Write(key, secret); err != nil {
 		return nil, errors.Wrapf(err, "writing to KV")
 	}
