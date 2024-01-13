@@ -24,7 +24,7 @@ const (
 	checkAndSetKey = "cas"
 )
 
-func (rc *ResourceClient) fromVaultSecret(secret *vault.Secret) (resources.Resource, bool, error) {
+func (rc *ResourceClient) fromVaultSecret(secret *api.Secret) (resources.Resource, bool, error) {
 	fmt.Printf("Secret: %+v\n", secret)
 	if secret.Data == nil {
 		return nil, false, errors.Errorf("secret data cannot be nil")
