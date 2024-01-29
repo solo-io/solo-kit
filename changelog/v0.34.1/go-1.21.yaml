@@ -1,5 +1,5 @@
   changelog:
   - type: NON_USER_FACING
     issueLink:   https://github.com/solo-io/gloo-mesh-enterprise/issues/11090
-    description: Bump time before declaring a deadlock when processing proto imports to 302 instead of 5s. 
+    description: Bump time before declaring a deadlock when processing proto imports to 15s instead of 5s. 
     resolvesIssue: false
