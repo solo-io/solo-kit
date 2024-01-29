@@ -3,6 +3,7 @@ package reporter
 import (
 	"context"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 
@@ -192,36 +193,178 @@ func (e ResourceReports) FilterByKind(kind string) ResourceReports {
 	return reports
 }
 
-// ignores warnings
+// refMapAndSortedKeys returns a map of resource refs to resources and a sorted list of resource refs
+// This is used to iterate over the resources in a consistent order.
+// The reports are keyed by references to the resources, so are not sortable.
+// There is no unique key for a resource, so we use the string representation of the name/namespace as the key,
+// and collect all the resources with the same key together.
+// The previous implementation did not guarantee a consistent order when iterating over the resources,
+// so any order used here will be acceptable for backwards compatibility.
+func (e ResourceReports) refMapAndSortedKeys() (map[string][]resources.InputResource, []string) {
+	// refKeys contains all the unique keys for the resources
+	var refKeys []string
+	// refMaps is a map of resource keys to a slice of resources with that key
+	var refMap = make(map[string][]resources.InputResource)
+
+	// Loop over the resources
+	for res := range e {
+
+		// Get a string representation of the resource ref. This is not guaranteed to be unique.
+		resKey := res.GetMetadata().Ref().String()
+
+		// Add the key to the list of keys if it is not already there
+		if !slices.Contains(refKeys, resKey) {
+			refKeys = append(refKeys, resKey)
+		}
+		// Add the resource to the map of resources with the same key
+		refMap[resKey] = append(refMap[resKey], res)
+	}
+
+	// Sort the name-namespace keys. This will allow the reports to be accssed in a consistent order,
+	// except in cases where the name/namespace is not unique. In those cases, the individual validaiton
+	// functions will have to handle consistent ordering.
+	slices.Sort(refKeys)
+	return refMap, refKeys
+}
+
+// sortErrors sorts errors based on string representation
+// Note: because we are using multierror the string representation starts with "x errors occurred".
+// This will be consistent, but possibly counter-intuitive for tests.
+func sortErrors(errs []error) {
+	sort.Slice(errs, func(i, j int) bool {
+		return errs[i].Error() < errs[j].Error()
+	})
+}
+
+// Validate ignores warnings
 func (e ResourceReports) Validate() error {
 	var errs error
-	for res, rpt := range e {
-		if rpt.Errors != nil {
-			if errs == nil {
-				errs = errors.Errorf("invalid resource %v.%v", res.GetMetadata().Namespace, res.GetMetadata().Name)
+	refMap, refKeys := e.refMapAndSortedKeys()
+
+	// the refKeys are sorted/sortable and point to the unsortable resources refs that are the keys to the report map
+	for _, refKey := range refKeys {
+		// name/namespace is not unique, so we collect those references together
+		reses := refMap[refKey]
+
+		errsForKey := []error{}
+		for _, res := range reses {
+			rpt := e[res]
+
+			if rpt.Errors != nil {
+				errsForKey = append(errsForKey, rpt.Errors)
 			}
-			errs = multierror.Append(errs, rpt.Errors)
+		}
+
+		if len(errsForKey) > 0 {
+			if errs == nil {
+				// All of the resources in the group have the same metadata, so use the first one
+				errs = errors.Errorf("invalid resource %v.%v", reses[0].GetMetadata().Namespace, reses[0].GetMetadata().Name)
+			}
+			sortErrors(errsForKey)
+
+			for _, err := range errsForKey {
+				errs = multierror.Append(errs, err)
+			}
 		}
 	}
 	return errs
 }
 
-// does not ignore warnings
+// ValidateStrict does not ignore warnings. If warnings are present, they will be included in the error.
+// If an error is not present but warnings are, an "invalid resource" error will be returned along with each warning.
 func (e ResourceReports) ValidateStrict() error {
 	errs := e.Validate()
-	for res, rpt := range e {
-		if len(rpt.Warnings) > 0 {
+	refMap, refKeys := e.refMapAndSortedKeys()
+
+	for _, refKey := range refKeys {
+		errsForKey := []error{}
+		reses := refMap[refKey]
+
+		// name/namespace is not unique, so we collect those references together
+		for _, res := range reses {
+			rpt := e[res]
+			if len(rpt.Warnings) > 0 {
+				errsForKey = append(errsForKey, errors.Errorf("WARN: \n  %v", rpt.Warnings))
+
+			}
+		}
+
+		if len(errsForKey) > 0 {
 			if errs == nil {
+				// All of the resources in the group have the same metadata, so use the first one
 				errs = errors.Errorf(
 					"invalid resource %v.%v",
-					res.GetMetadata().GetNamespace(),
-					res.GetMetadata().GetName(),
+					reses[0].GetMetadata().GetNamespace(),
+					reses[0].GetMetadata().GetName(),
 				)
 			}
-			errs = multierror.Append(errs, errors.Errorf("WARN: \n  %v", rpt.Warnings))
+			sortErrors(errsForKey)
+
+			for _, err := range errsForKey {
+				errs = multierror.Append(errs, err)
+			}
 		}
+
 	}
 	return errs
+}
+
+func (e ResourceReports) ValidateSeparateWarnings() (error, error) {
+	var warnings error
+
+	errs := e.Validate()
+	refMap, refKeys := e.refMapAndSortedKeys()
+
+	for _, refKey := range refKeys {
+		// name/namespace is not unique, so we collect those references together
+		warnForKey := []error{}
+		reses := refMap[refKey]
+
+		for _, res := range reses {
+			rpt := e[res]
+			if len(rpt.Warnings) > 0 {
+				warnForKey = append(warnForKey, errors.Errorf("WARN: \n  %v", rpt.Warnings))
+
+			}
+		}
+
+		if len(warnForKey) > 0 {
+			sortErrors(warnForKey)
+
+			for _, err := range warnForKey {
+				warnings = multierror.Append(warnings, err)
+			}
+		}
+
+	}
+
+	return errs, warnings
+}
+
+// WarningHandling is an enum for how to handle warnings when validating reports with `ValidateWithWarnings`
+type WarningHandling int
+
+const (
+	// With Strict WarningHandling, warnings are treated as errors
+	Strict WarningHandling = iota
+	// With IgnoreWarnings WarningHandling, warnings are ignored
+	IgnoreWarnings
+	// With SeparateWarnings WarningHandling, warnings are returned separately from errors
+	SeparateWarnings
+)
+
+// ValidateReport validates the reports according to the given validation type.
+func (e ResourceReports) ValidateWithWarnings(t WarningHandling) (error, error) {
+	switch t {
+	case Strict:
+		return e.ValidateStrict(), nil
+	case IgnoreWarnings:
+		return e.Validate(), nil
+	case SeparateWarnings:
+		return e.ValidateSeparateWarnings()
+	default:
+		return errors.Errorf("unknown validation type %v", t), nil
+	}
 }
 
 // Minimal set of client operations required for reporters.
