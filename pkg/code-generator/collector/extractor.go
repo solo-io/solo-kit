@@ -87,7 +87,7 @@ func (i *synchronizedImportsExtractor) FetchImportsForFile(protoFile string, imp
 	i.activeRequestsMu.Unlock()
 
 	select {
-	case <-time.After(5 * time.Second):
+	case <-time.After(30 * time.Second):
 		// We should never reach this. This can only occur if we deadlock on file imports
 		// which only happens with cyclic dependencies
 		// Perhaps a safer alternative to erroring is just to execute the importsFetcher:
