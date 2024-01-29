@@ -1,0 +1,5 @@
+  - type: NON_USER_FACING
+    issueLink:   https://github.com/solo-io/gloo-mesh-enterprise/issues/11090
+    description: >
+      Bump time before declaring a deadlock when processing proto imports to 302 instead of 5s. 
+    resolvesIssue: false
