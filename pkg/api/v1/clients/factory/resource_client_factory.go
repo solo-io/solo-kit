@@ -110,6 +110,8 @@ func newResourceClient(ctx context.Context, factory ResourceClientFactory, param
 		return file.NewResourceClient(opts.RootDir, resourceType), nil
 	case *MemoryResourceClientFactory:
 		return memory.NewResourceClient(opts.Cache, resourceType), nil
+	case *SharedRefMemoryResourceClientFactory:
+		return memory.NewSharedRefResourceClient(opts.Cache, resourceType), nil
 	case *KubeConfigMapClientFactory:
 		if opts.Cache == nil {
 			return nil, errors.Errorf("invalid opts, configmap client requires a kube core cache")
@@ -190,6 +192,14 @@ type MemoryResourceClientFactory struct {
 }
 
 func (f *MemoryResourceClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
+	return newResourceClient(ctx, f, params)
+}
+
+type SharedRefMemoryResourceClientFactory struct {
+	Cache memory.InMemoryResourceCache
+}
+
+func (f *SharedRefMemoryResourceClientFactory) NewResourceClient(ctx context.Context, params NewResourceClientParams) (clients.ResourceClient, error) {
 	return newResourceClient(ctx, f, params)
 }
 

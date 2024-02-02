@@ -105,11 +105,23 @@ type ResourceClient struct {
 	resourceType resources.Resource
 	cache        InMemoryResourceCache
 }
+type SharedRefResourceClient struct {
+	ResourceClient
+}
 
 func NewResourceClient(cache InMemoryResourceCache, resourceType resources.Resource) *ResourceClient {
 	return &ResourceClient{
 		cache:        cache,
 		resourceType: resourceType,
+	}
+}
+
+func NewSharedRefResourceClient(cache InMemoryResourceCache, resourceType resources.Resource) *SharedRefResourceClient {
+	return &SharedRefResourceClient{
+		ResourceClient{
+			cache:        cache,
+			resourceType: resourceType,
+		},
 	}
 }
 
@@ -141,7 +153,6 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 	clone := resources.Clone(resource)
 	return clone, nil
 }
-
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	opts = opts.WithDefaults()
 	if err := resources.Validate(resource); err != nil {
@@ -266,4 +277,67 @@ func newOrIncrementResourceVer(resourceVersion string) string {
 		curr = 1
 	}
 	return fmt.Sprintf("%v", curr+1)
+}
+
+func (rc *SharedRefResourceClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+	resource, ok := rc.cache.Get(rc.key(namespace, name))
+	if !ok {
+		return nil, errors.NewNotExistErr(namespace, name)
+	}
+
+	return resource, nil
+}
+
+func (rc *SharedRefResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+	opts = opts.WithDefaults()
+	cachedResources := rc.cache.List(rc.Prefix(namespace))
+	var resourceList resources.ResourceList
+	for _, resource := range cachedResources {
+		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
+			resourceList = append(resourceList, resource)
+		}
+	}
+
+	sort.Stable(resourceList)
+
+	return resourceList, nil
+}
+
+func (rc *SharedRefResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+	opts = opts.WithDefaults()
+	if err := resources.Validate(resource); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+
+	key := rc.key(resource.GetMetadata().GetNamespace(), resource.GetMetadata().GetName())
+
+	original, err := rc.Read(
+		resource.GetMetadata().GetNamespace(),
+		resource.GetMetadata().GetName(),
+		clients.ReadOpts{},
+	)
+	if original != nil && err == nil {
+		if !opts.OverwriteExisting {
+			return nil, errors.NewExistErr(resource.GetMetadata())
+		}
+		if resource.GetMetadata().GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
+			return nil, errors.NewResourceVersionErr(
+				resource.GetMetadata().GetNamespace(),
+				resource.GetMetadata().GetName(),
+				resource.GetMetadata().GetResourceVersion(),
+				original.GetMetadata().GetResourceVersion(),
+			)
+		}
+	}
+
+	// initialize or increment resource version
+	resource.GetMetadata().ResourceVersion = newOrIncrementResourceVer(resource.GetMetadata().GetResourceVersion())
+
+	rc.cache.Set(key, resource)
+
+	return resource, nil
 }
