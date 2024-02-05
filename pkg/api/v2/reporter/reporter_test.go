@@ -541,15 +541,15 @@ var _ = Describe("Reporter", func() {
 				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1"), fmt.Errorf("r1err2"), fmt.Errorf("r1err0")}}, Warnings: []string{"r1warn1", "r1warn2"}},
 				r2.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r2err1")}}},
 				r3.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r3err1")}}, Warnings: []string{"r3warn1", "r3warn0"}},
-				r4.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r4err1")}}},
-				r5.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}},
+				r4.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r4err1")}}, Warnings: []string{"r4warn1", "r4warn0"}},
+				r5.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}, Warnings: []string{"r0warn1"}},
 			}
 		}
 
 		validateReportsReordered := func() rep.ResourceReports {
 			return rep.ResourceReports{
-				r5.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}},
-				r4.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r4err1")}}},
+				r5.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}, Warnings: []string{"r0warn1"}},
+				r4.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r4err1")}}, Warnings: []string{"r4warn1", "r4warn0"}},
 				r3.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r3err1")}}, Warnings: []string{"r3warn1", "r3warn0"}},
 				r2.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r2err1")}}},
 				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1"), fmt.Errorf("r1err2"), fmt.Errorf("r1err0")}}, Warnings: []string{"r1warn1", "r1warn2"}},
@@ -580,7 +580,9 @@ var _ = Describe("Reporter", func() {
 			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r1err0"))
 			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r2err1"))
 			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r3err1"))
+			expectedErr = multierror.Append(expectedErr, errors.Errorf("WARN: \n  %v", []string{"r0warn1"}))
 			expectedErr = multierror.Append(expectedErr, errors.Errorf("WARN: \n  %v", []string{"r1warn1", "r1warn2"}))
+			expectedErr = multierror.Append(expectedErr, errors.Errorf("WARN: \n  %v", []string{"r4warn1", "r4warn0"}))
 			expectedErr = multierror.Append(expectedErr, errors.Errorf("WARN: \n  %v", []string{"r3warn1", "r3warn0"}))
 
 			return expectedErr
@@ -588,7 +590,9 @@ var _ = Describe("Reporter", func() {
 
 		expectedValidateSeparateWarn := func() error {
 			var expectedWarn error
+			expectedWarn = multierror.Append(expectedWarn, errors.Errorf("WARN: \n  %v", []string{"r0warn1"}))
 			expectedWarn = multierror.Append(expectedWarn, errors.Errorf("WARN: \n  %v", []string{"r1warn1", "r1warn2"}))
+			expectedWarn = multierror.Append(expectedWarn, errors.Errorf("WARN: \n  %v", []string{"r4warn1", "r4warn0"}))
 			expectedWarn = multierror.Append(expectedWarn, errors.Errorf("WARN: \n  %v", []string{"r3warn1", "r3warn0"}))
 
 			return expectedWarn
