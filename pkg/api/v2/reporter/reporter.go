@@ -217,7 +217,7 @@ func (e ResourceReports) refMapAndSortedKeys() (map[string][]resources.InputReso
 			refKeys = append(refKeys, resKey)
 		}
 		// Add the resource to the map of resources with the same key
-		refMap[resKey] = append(refMap[resKey], res)
+		refMap[resKey] = []resources.InputResource{res}
 	}
 
 	// Sort the name-namespace keys. This will allow the reports to be accssed in a consistent order,
