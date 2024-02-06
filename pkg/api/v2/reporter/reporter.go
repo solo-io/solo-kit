@@ -231,9 +231,9 @@ func (e ResourceReports) refMapAndSortedKeys() (map[string][]resources.InputReso
 // Note: because we are using multierror the string representation starts with "x errors occurred".
 // This will be consistent, but possibly counter-intuitive for tests.
 func sortErrors(errs []error) {
-	sort.Slice(errs, func(i, j int) bool {
-		return errs[i].Error() < errs[j].Error()
-	})
+	// sort.Slice(errs, func(i, j int) bool {
+	// 	return errs[i].Error() < errs[j].Error()
+	// })
 }
 
 // Validate ignores warnings
