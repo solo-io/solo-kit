@@ -246,7 +246,7 @@ func (e ResourceReports) Validate() error {
 		// name/namespace is not unique, so we collect those references together
 		reses := refMap[refKey]
 
-		errsForKey := []error{}
+		var errsForKey []error
 		for _, res := range reses {
 			rpt := e[res]
 
@@ -277,7 +277,7 @@ func (e ResourceReports) ValidateStrict() error {
 	refMap, refKeys := e.refMapAndSortedKeys()
 
 	for _, refKey := range refKeys {
-		errsForKey := []error{}
+		var errsForKey []error
 		reses := refMap[refKey]
 
 		// name/namespace is not unique, so we collect those references together
@@ -317,7 +317,7 @@ func (e ResourceReports) ValidateSeparateWarnings() (error, error) {
 
 	for _, refKey := range refKeys {
 		// name/namespace is not unique, so we collect those references together
-		warnForKey := []error{}
+		var warnForKey []error
 		reses := refMap[refKey]
 
 		for _, res := range reses {
