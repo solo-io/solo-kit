@@ -588,18 +588,6 @@ var _ = Describe("Reporter", func() {
 			return expectedErr
 		}
 
-		expectedValidateSeparateWarn := func() error {
-			var expectedWarn error
-			expectedWarn = multierror.Append(expectedWarn, errors.Errorf("WARN: \n  %v", []string{"r0warn1"}))
-			expectedWarn = multierror.Append(expectedWarn, errors.Errorf("WARN: \n  %v", []string{"r1warn1", "r1warn2"}))
-			expectedWarn = multierror.Append(expectedWarn, errors.Errorf("WARN: \n  %v", []string{"r4warn1", "r4warn0"}))
-			expectedWarn = multierror.Append(expectedWarn, errors.Errorf("WARN: \n  %v", []string{"r3warn1", "r3warn0"}))
-
-			return expectedWarn
-		}
-
-		nilError := func() error { return nil }
-
 		BeforeEach(func() {
 			initResources()
 		})
@@ -615,41 +603,15 @@ var _ = Describe("Reporter", func() {
 			err = reports.ValidateStrict()
 			Expect(err.Error()).To(Equal(expectedResults.StrictValidation().Error()))
 
-			// ValidateSeparateWarnings - Separate validation
-			var warnings error
-			err, warnings = reports.ValidateSeparateWarnings()
-			Expect(err.Error()).To(Equal(expectedResults.SeparateValidationErr().Error()))
-			Expect(warnings.Error()).To(Equal(expectedResults.SeparateValidationWarn().Error()))
-
 		},
 			Entry("validate reports", validateReports, expectedReports{
-				Validation:             expectedValidateErrors,
-				StrictValidation:       expectedValidateStrictErrors,
-				SeparateValidationErr:  expectedValidateErrors,
-				SeparateValidationWarn: expectedValidateSeparateWarn,
+				Validation:       expectedValidateErrors,
+				StrictValidation: expectedValidateStrictErrors,
 			}),
 			Entry("validate reordered reports", validateReportsReordered, expectedReports{
-				Validation:             expectedValidateErrors,
-				StrictValidation:       expectedValidateStrictErrors,
-				SeparateValidationErr:  expectedValidateErrors,
-				SeparateValidationWarn: expectedValidateSeparateWarn,
+				Validation:       expectedValidateErrors,
+				StrictValidation: expectedValidateStrictErrors,
 			}),
-		)
-
-		// No need to test against the reordered reports - that has already been tessted. This test is to ensure ValdiateWithWarnings calls the
-		// expected underlying Validation function
-		DescribeTable("ValidateWithWarnings should return the expected reports", func(warningHandling rep.WarningHandling, expectedErr func() error, expectedWarn func() error) {
-			err, warnings := validateReports().ValidateWithWarnings(warningHandling)
-			Expect(err.Error()).To(Equal(expectedErr().Error()))
-			if expectedWarn() == nil {
-				Expect(warnings).To(BeNil())
-			} else {
-				Expect(warnings.Error()).To(Equal(expectedWarn().Error()))
-			}
-		},
-			Entry("Strict warning handling", rep.Strict, expectedValidateStrictErrors, nilError),
-			Entry("IgnoreWarnings warning handling", rep.IgnoreWarnings, expectedValidateErrors, nilError),
-			Entry("SeparateWarnings warning handling", rep.SeparateWarnings, expectedValidateErrors, expectedValidateSeparateWarn),
 		)
 
 	})

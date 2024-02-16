@@ -309,64 +309,6 @@ func (e ResourceReports) ValidateStrict() error {
 	return errs
 }
 
-func (e ResourceReports) ValidateSeparateWarnings() (error, error) {
-	var warnings error
-
-	errs := e.Validate()
-	refMap, refKeys := e.refMapAndSortedKeys()
-
-	for _, refKey := range refKeys {
-		// name/namespace is not unique, so we collect those references together
-		var warnForKey []error
-		reses := refMap[refKey]
-
-		for _, res := range reses {
-			rpt := e[res]
-			if len(rpt.Warnings) > 0 {
-				warnForKey = append(warnForKey, errors.Errorf("WARN: \n  %v", rpt.Warnings))
-
-			}
-		}
-
-		if len(warnForKey) > 0 {
-			sortErrors(warnForKey)
-
-			for _, err := range warnForKey {
-				warnings = multierror.Append(warnings, err)
-			}
-		}
-
-	}
-
-	return errs, warnings
-}
-
-// WarningHandling is an enum for how to handle warnings when validating reports with `ValidateWithWarnings`
-type WarningHandling int
-
-const (
-	// With Strict WarningHandling, warnings are treated as errors
-	Strict WarningHandling = iota
-	// With IgnoreWarnings WarningHandling, warnings are ignored
-	IgnoreWarnings
-	// With SeparateWarnings WarningHandling, warnings are returned separately from errors
-	SeparateWarnings
-)
-
-// ValidateReport validates the reports according to the given validation type.
-func (e ResourceReports) ValidateWithWarnings(t WarningHandling) (error, error) {
-	switch t {
-	case Strict:
-		return e.ValidateStrict(), nil
-	case IgnoreWarnings:
-		return e.Validate(), nil
-	case SeparateWarnings:
-		return e.ValidateSeparateWarnings()
-	default:
-		return errors.Errorf("unknown validation type %v", t), nil
-	}
-}
-
 // Minimal set of client operations required for reporters.
 type ReporterResourceClient interface {
 	Kind() string
