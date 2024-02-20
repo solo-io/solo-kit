@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -483,5 +483,136 @@ var _ = Describe("Reporter", func() {
 			err := reporter.WriteReports(ctx, resourceErrs, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
+	})
+
+})
+
+var _ = Describe("Reporter", func() {
+	type expectedReports struct {
+		Validation             func() error
+		StrictValidation       func() error
+		SeparateValidationErr  func() error
+		SeparateValidationWarn func() error
+	}
+
+	var (
+		mockResourceClient, mockResourceClient2, mockResourceClient3 clients.ResourceClient
+	)
+
+	BeforeEach(func() {
+		mockResourceClient = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
+		mockResourceClient2 = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
+		mockResourceClient3 = memory.NewResourceClient(memory.NewInMemoryResourceCache(), &v1.MockResource{})
+		// By default, DisableTruncateStatus is false, unless users opt into it
+		// To mirror that in our tests, we explicitly set it to false unless a test requires it
+		rep.DisableTruncateStatus = false
+	})
+
+	Context("Validation", func() {
+		var (
+			r1, r2, r3, r4, r5 resources.Resource
+		)
+		initResources := func() {
+			var err error
+			r1, err = mockResourceClient.Write(v1.NewMockResource("test-ns", "testres1"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			r2, err = mockResourceClient.Write(v1.NewMockResource("test-ns", "testres2"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			r3, err = mockResourceClient.Write(v1.NewMockResource("test-ns", "testres3"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			r4, err = mockResourceClient2.Write(v1.NewMockResource("test-ns", "testres1"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			r5, err = mockResourceClient3.Write(v1.NewMockResource("test-ns", "testres1"), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(r1).NotTo(BeNil())
+			Expect(r2).NotTo(BeNil())
+			Expect(r3).NotTo(BeNil())
+			Expect(r4).NotTo(BeNil())
+			Expect(r5).NotTo(BeNil())
+			Expect(r3).NotTo(BeNil())
+		}
+
+		// r0, r4, and r1 are all for the same resource key
+		// though the errors are sorted, the `r1` errors come after the `r4` errors because the errors
+		// are multierrors and when compared, are sorted by the number of errors contaiend.
+		// `r1` has 3 errors, so comes after `r0` and `r4`, which have one each.
+		validateReports := func() rep.ResourceReports {
+			return rep.ResourceReports{
+				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1"), fmt.Errorf("r1err2"), fmt.Errorf("r1err0")}}, Warnings: []string{"r1warn1", "r1warn2"}},
+				r2.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r2err1")}}},
+				r3.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r3err1")}}, Warnings: []string{"r3warn1", "r3warn0"}},
+				r4.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r4err1")}}, Warnings: []string{"r4warn1", "r4warn0"}},
+				r5.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}, Warnings: []string{"r0warn1"}},
+			}
+		}
+
+		validateReportsReordered := func() rep.ResourceReports {
+			return rep.ResourceReports{
+				r5.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r0err1")}}, Warnings: []string{"r0warn1"}},
+				r4.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r4err1")}}, Warnings: []string{"r4warn1", "r4warn0"}},
+				r3.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r3err1")}}, Warnings: []string{"r3warn1", "r3warn0"}},
+				r2.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r2err1")}}},
+				r1.(*v1.MockResource): rep.Report{Errors: &multierror.Error{Errors: []error{fmt.Errorf("r1err1"), fmt.Errorf("r1err2"), fmt.Errorf("r1err0")}}, Warnings: []string{"r1warn1", "r1warn2"}},
+			}
+		}
+
+		expectedValidateErrors := func() error {
+			var expectedErr error
+			expectedErr = multierror.Append(expectedErr, errors.Errorf("invalid resource test-ns.testres1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r0err1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r4err1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r1err1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r1err2"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r1err0"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r2err1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r3err1"))
+
+			return expectedErr
+		}
+
+		expectedValidateStrictErrors := func() error {
+			var expectedErr error
+			expectedErr = multierror.Append(expectedErr, errors.Errorf("invalid resource test-ns.testres1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r0err1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r4err1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r1err1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r1err2"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r1err0"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r2err1"))
+			expectedErr = multierror.Append(expectedErr, fmt.Errorf("r3err1"))
+			expectedErr = multierror.Append(expectedErr, errors.Errorf("WARN: \n  %v", []string{"r0warn1"}))
+			expectedErr = multierror.Append(expectedErr, errors.Errorf("WARN: \n  %v", []string{"r1warn1", "r1warn2"}))
+			expectedErr = multierror.Append(expectedErr, errors.Errorf("WARN: \n  %v", []string{"r4warn1", "r4warn0"}))
+			expectedErr = multierror.Append(expectedErr, errors.Errorf("WARN: \n  %v", []string{"r3warn1", "r3warn0"}))
+
+			return expectedErr
+		}
+
+		BeforeEach(func() {
+			initResources()
+		})
+
+		// Run these tests multiple times to ensure that the validation errors are ordered consistently
+		DescribeTable("Validation functions should return the expected reports for a set of reports", MustPassRepeatedly(5), func(getReports func() rep.ResourceReports, expectedResults expectedReports) {
+			reports := getReports()
+			// Validate - Regular validation
+			err := reports.Validate()
+			Expect(err.Error()).To(Equal(expectedResults.Validation().Error()))
+
+			// ValidateStrict - Strict validation
+			err = reports.ValidateStrict()
+			Expect(err.Error()).To(Equal(expectedResults.StrictValidation().Error()))
+
+		},
+			Entry("validate reports", validateReports, expectedReports{
+				Validation:       expectedValidateErrors,
+				StrictValidation: expectedValidateStrictErrors,
+			}),
+			Entry("validate reordered reports", validateReportsReordered, expectedReports{
+				Validation:       expectedValidateErrors,
+				StrictValidation: expectedValidateStrictErrors,
+			}),
+		)
+
 	})
 })

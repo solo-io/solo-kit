@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Updated reporter validation:
+      * Added ValidateSeparateWarnings to return warnings separately from errors
+      * Added ValidateSeparateWarningsAndErrors to provide a single method to validate and return warnings and errors separately to keep a consistent interface even if warnings will always be `nil`
+      * Updated all Valdiation to return errors and warnings in a consistent order
+    issueLink: https://github.com/solo-io/gloo/issues/8931
+    resolvesIssue: false
