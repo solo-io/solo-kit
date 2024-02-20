@@ -212,12 +212,16 @@ func (e ResourceReports) refMapAndSortedKeys() (map[string][]resources.InputReso
 		// Get a string representation of the resource ref. This is not guaranteed to be unique.
 		resKey := res.GetMetadata().Ref().String()
 
-		// Add the key to the list of keys if it is not already there
-		if !slices.Contains(refKeys, resKey) {
-			refKeys = append(refKeys, resKey)
-		}
 		// Add the resource to the map of resources with the same key
 		refMap[resKey] = append(refMap[resKey], res)
+	}
+
+	// Get the list of name-namespace keys
+	refKeys = make([]string, len(refMap))
+	i := 0
+	for k := range refMap {
+		refKeys[i] = k
+		i++
 	}
 
 	// Sort the name-namespace keys. This will allow the reports to be accssed in a consistent order,
