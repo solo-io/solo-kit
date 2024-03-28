@@ -44,12 +44,12 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	ExpectWithOffset(testOffset, list).To(BeEmpty())
 
-	r1, err := client.Write(input, clients.WriteOpts{})
+	r1, err := client.Write(resources.Clone(input), clients.WriteOpts{})
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 	postWrite(callbacks, r1)
 
 	_, err = client.Write(input, clients.WriteOpts{})
-	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred(), "Allowed overwriting resource without OverwriteExisting")
 	ExpectWithOffset(testOffset, errors.IsExist(err)).To(BeTrue())
 
 	ExpectWithOffset(testOffset, r1).To(BeAssignableToTypeOf(&v1.MockResource{}))
@@ -62,7 +62,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
-	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred(), "Wrote resource without changed version")
 
 	resources.UpdateMetadata(input, func(meta *core.Metadata) {
 		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
@@ -99,6 +99,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 		},
 	}
 	r2, err := client.Write(input, clients.WriteOpts{})
+	r2 = resources.Clone(r2)
 	ExpectWithOffset(testOffset, err).NotTo(HaveOccurred())
 
 	// with labels
@@ -125,7 +126,7 @@ func TestCrudClient(namespace1, namespace2 string, client ResourceClient, opts c
 		meta.ResourceVersion = ""
 	})
 	_, err = client.Write(r2, clients.WriteOpts{OverwriteExisting: true})
-	ExpectWithOffset(testOffset, err).To(HaveOccurred())
+	ExpectWithOffset(testOffset, err).To(HaveOccurred(), "Did not get version error")
 
 	err = client.Delete(namespace1, "adsfw", clients.DeleteOpts{})
 	ExpectWithOffset(testOffset, err).To(HaveOccurred())
