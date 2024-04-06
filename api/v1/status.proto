@@ -50,3 +50,36 @@ message Status {
     // Additional information about the current state of the resource.
     repeated string Messages = 6;
 }
+
+message ParentReference {
+    string group = 1;
+    string kind = 2;
+    string namespace = 3;
+    string name = 4;
+    string section_name = 5;
+}
+
+message KubeCondition {
+    string type = 1;
+
+    string status = 2;
+
+    int64 observedGeneration = 3;
+
+    // punt for later
+    // Time lastTransitionTime = 4;
+
+    string reason = 5;
+
+    string message = 6;
+} 
+
+message PolicyAncestorStatus {
+    ParentReference ancestor_ref = 1; 
+    string controller_name = 2;
+    repeated KubeCondition conditions = 3;
+}
+
+message PolicyStatus {
+    repeated PolicyAncestorStatus ancestors = 1;
+}
