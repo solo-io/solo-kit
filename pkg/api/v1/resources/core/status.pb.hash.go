@@ -175,3 +175,180 @@ func (m *Status) Hash(hasher hash.Hash64) (uint64, error) {
 
 	return hasher.Sum64(), nil
 }
+
+// Hash function
+func (m *ParentReference) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.ParentReference")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetGroup())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetKind())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetNamespace())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetSectionName())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *KubeCondition) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.KubeCondition")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetType())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetStatus())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetObservedGeneration())
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetReason())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetMessage())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *PolicyAncestorStatus) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.PolicyAncestorStatus")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetAncestorRef()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("AncestorRef")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAncestorRef(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("AncestorRef")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if _, err = hasher.Write([]byte(m.GetControllerName())); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetConditions() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *PolicyStatus) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("core.solo.io.github.com/solo-io/solo-kit/pkg/api/v1/resources/core.PolicyStatus")); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetAncestors() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}

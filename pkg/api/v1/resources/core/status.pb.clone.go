@@ -95,3 +95,101 @@ func (m *Status) Clone() proto.Message {
 
 	return target
 }
+
+// Clone function
+func (m *ParentReference) Clone() proto.Message {
+	var target *ParentReference
+	if m == nil {
+		return target
+	}
+	target = &ParentReference{}
+
+	target.Group = m.GetGroup()
+
+	target.Kind = m.GetKind()
+
+	target.Namespace = m.GetNamespace()
+
+	target.Name = m.GetName()
+
+	target.SectionName = m.GetSectionName()
+
+	return target
+}
+
+// Clone function
+func (m *KubeCondition) Clone() proto.Message {
+	var target *KubeCondition
+	if m == nil {
+		return target
+	}
+	target = &KubeCondition{}
+
+	target.Type = m.GetType()
+
+	target.Status = m.GetStatus()
+
+	target.ObservedGeneration = m.GetObservedGeneration()
+
+	target.Reason = m.GetReason()
+
+	target.Message = m.GetMessage()
+
+	return target
+}
+
+// Clone function
+func (m *PolicyAncestorStatus) Clone() proto.Message {
+	var target *PolicyAncestorStatus
+	if m == nil {
+		return target
+	}
+	target = &PolicyAncestorStatus{}
+
+	if h, ok := interface{}(m.GetAncestorRef()).(clone.Cloner); ok {
+		target.AncestorRef = h.Clone().(*ParentReference)
+	} else {
+		target.AncestorRef = proto.Clone(m.GetAncestorRef()).(*ParentReference)
+	}
+
+	target.ControllerName = m.GetControllerName()
+
+	if m.GetConditions() != nil {
+		target.Conditions = make([]*KubeCondition, len(m.GetConditions()))
+		for idx, v := range m.GetConditions() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Conditions[idx] = h.Clone().(*KubeCondition)
+			} else {
+				target.Conditions[idx] = proto.Clone(v).(*KubeCondition)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *PolicyStatus) Clone() proto.Message {
+	var target *PolicyStatus
+	if m == nil {
+		return target
+	}
+	target = &PolicyStatus{}
+
+	if m.GetAncestors() != nil {
+		target.Ancestors = make([]*PolicyAncestorStatus, len(m.GetAncestors()))
+		for idx, v := range m.GetAncestors() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Ancestors[idx] = h.Clone().(*PolicyAncestorStatus)
+			} else {
+				target.Ancestors[idx] = proto.Clone(v).(*PolicyAncestorStatus)
+			}
+
+		}
+	}
+
+	return target
+}

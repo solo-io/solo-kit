@@ -139,3 +139,187 @@ func (m *Status) Equal(that interface{}) bool {
 
 	return true
 }
+
+// Equal function
+func (m *ParentReference) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ParentReference)
+	if !ok {
+		that2, ok := that.(ParentReference)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetGroup(), target.GetGroup()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetKind(), target.GetKind()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetNamespace(), target.GetNamespace()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetSectionName(), target.GetSectionName()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *KubeCondition) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*KubeCondition)
+	if !ok {
+		that2, ok := that.(KubeCondition)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetType(), target.GetType()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetStatus(), target.GetStatus()) != 0 {
+		return false
+	}
+
+	if m.GetObservedGeneration() != target.GetObservedGeneration() {
+		return false
+	}
+
+	if strings.Compare(m.GetReason(), target.GetReason()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMessage(), target.GetMessage()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *PolicyAncestorStatus) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PolicyAncestorStatus)
+	if !ok {
+		that2, ok := that.(PolicyAncestorStatus)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetAncestorRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAncestorRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAncestorRef(), target.GetAncestorRef()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetControllerName(), target.GetControllerName()) != 0 {
+		return false
+	}
+
+	if len(m.GetConditions()) != len(target.GetConditions()) {
+		return false
+	}
+	for idx, v := range m.GetConditions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetConditions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetConditions()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *PolicyStatus) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PolicyStatus)
+	if !ok {
+		that2, ok := that.(PolicyStatus)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetAncestors()) != len(target.GetAncestors()) {
+		return false
+	}
+	for idx, v := range m.GetAncestors() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAncestors()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetAncestors()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
