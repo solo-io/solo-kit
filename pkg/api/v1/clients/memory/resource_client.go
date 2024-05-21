@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -198,7 +199,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	opts = opts.WithDefaults()
 	cachedResources := rc.cache.List(rc.Prefix(namespace))
 
-	labelSelector, err := rc.getLabelSelector(opts)
+	labelSelector, err := kubeutils.ToLabelSelector(opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing label selector")
 	}
@@ -264,16 +265,6 @@ func (rc *ResourceClient) Prefix(namespace string) string {
 
 func (rc *ResourceClient) key(namespace, name string) string {
 	return rc.Prefix(namespace) + separator + name
-}
-
-func (rc *ResourceClient) getLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
-	if listOpts.ExpressionSelector != "" {
-		return labels.Parse(listOpts.ExpressionSelector)
-	}
-
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
-	return labels.SelectorFromSet(listOpts.Selector), nil
 }
 
 // util methods

@@ -5,8 +5,21 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	kubetypes "k8s.io/apimachinery/pkg/types"
 )
+
+// ToLabelSelector converts the selector specified by the ListOpts into an apimachinery label selector.
+// If both ExpressionSelector and Selector are specified in the opts, only ExpressionSelector is used.
+func ToLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
+	if listOpts.ExpressionSelector != "" {
+		return labels.Parse(listOpts.ExpressionSelector)
+	}
+
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	return labels.SelectorFromSet(listOpts.Selector), nil
+}
 
 func FromKubeMeta(meta metav1.ObjectMeta, copyOwnerReferences bool) *core.Metadata {
 
