@@ -62,6 +62,178 @@ var _ = Describe("Base", func() {
 		Expect(listret[0]).NotTo(BeIdenticalTo(listret2[0]))
 	})
 
+	Context("listing resources", func() {
+		var (
+			obj1 *v1.MockResource
+			obj2 *v1.MockResource
+			obj3 *v1.MockResource
+			obj4 *v1.MockResource
+			obj5 *v1.MockResource
+		)
+
+		BeforeEach(func() {
+			obj1 = &v1.MockResource{
+				Metadata: &core.Metadata{
+					Name:      "name1",
+					Namespace: "ns1",
+					Labels: map[string]string{
+						"key": "val1",
+					},
+				},
+			}
+			obj2 = &v1.MockResource{
+				Metadata: &core.Metadata{
+					Name:      "name2",
+					Namespace: "ns2",
+					Labels: map[string]string{
+						"key": "val2",
+					},
+				},
+			}
+			obj3 = &v1.MockResource{
+				Metadata: &core.Metadata{
+					Name:      "name3",
+					Namespace: "ns1",
+					Labels: map[string]string{
+						"key": "val2",
+					},
+				},
+			}
+			obj4 = &v1.MockResource{
+				Metadata: &core.Metadata{
+					Name:      "name4",
+					Namespace: "ns2",
+					Labels: map[string]string{
+						"key": "val3",
+					},
+				},
+			}
+			obj5 = &v1.MockResource{
+				Metadata: &core.Metadata{
+					Name:      "name5",
+					Namespace: "ns1",
+					Labels: map[string]string{
+						"key": "val3",
+					},
+				},
+			}
+
+			_, err := client.Write(obj1, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Write(obj2, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Write(obj3, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Write(obj4, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Write(obj5, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("lists all resources when empty namespace is provided", func() {
+			resources, err := client.List("", clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// resources are sorted by namespace, then name
+			expectedResourceNames := []string{
+				"name1", "name3", "name5", // ns1
+				"name2", "name4", // ns2
+			}
+			Expect(resources).To(HaveLen(len(expectedResourceNames)))
+			for i, r := range resources {
+				Expect(r.GetMetadata().GetName()).To(Equal(expectedResourceNames[i]))
+			}
+		})
+
+		It("lists resources in a given namespace", func() {
+			resources, err := client.List("ns2", clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			expectedResourceNames := []string{
+				"name2", "name4",
+			}
+			Expect(resources).To(HaveLen(len(expectedResourceNames)))
+			for i, r := range resources {
+				Expect(r.GetMetadata().GetName()).To(Equal(expectedResourceNames[i]))
+			}
+		})
+
+		It("returns empty list if namespace is invalid", func() {
+			resources, err := client.List("invalid-namespace", clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resources).To(HaveLen(0))
+		})
+
+		It("returns resources matching the given selector, across all namespaces", func() {
+			resources, err := client.List("", clients.ListOpts{
+				Selector: map[string]string{
+					"key": "val2",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// resources are sorted by namespace, then name
+			expectedResourceNames := []string{
+				"name3", "name2",
+			}
+			Expect(resources).To(HaveLen(len(expectedResourceNames)))
+			for i, r := range resources {
+				Expect(r.GetMetadata().GetName()).To(Equal(expectedResourceNames[i]))
+			}
+		})
+
+		It("returns resources matching the given selector, in given namespace", func() {
+			resources, err := client.List("ns2", clients.ListOpts{
+				Selector: map[string]string{
+					"key": "val2",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(resources).To(HaveLen(1))
+			Expect(resources[0].GetMetadata().GetName()).To(Equal("name2"))
+		})
+
+		It("returns resources matching the given expression selector, across all namespaces", func() {
+			resources, err := client.List("", clients.ListOpts{
+				ExpressionSelector: "key in (val1,val3)",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// resources are sorted by namespace, then name
+			expectedResourceNames := []string{
+				"name1", "name5", "name4",
+			}
+			Expect(resources).To(HaveLen(len(expectedResourceNames)))
+			for i, r := range resources {
+				Expect(r.GetMetadata().GetName()).To(Equal(expectedResourceNames[i]))
+			}
+		})
+
+		It("returns resources matching the given expression selector, in given namespace", func() {
+			resources, err := client.List("ns2", clients.ListOpts{
+				ExpressionSelector: "key in (val1,val3)",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(resources).To(HaveLen(1))
+			Expect(resources[0].GetMetadata().GetName()).To(Equal("name4"))
+		})
+
+		It("when both selector and expression selector are provided, uses expression selector", func() {
+			resources, err := client.List("ns2", clients.ListOpts{
+				Selector: map[string]string{
+					"ignored": "selector",
+				},
+				ExpressionSelector: "key in (val1,val3)",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(resources).To(HaveLen(1))
+			Expect(resources[0].GetMetadata().GetName()).To(Equal("name4"))
+		})
+	})
+
 	Context("Benchmarks", func() {
 		Measure("it should perform list efficiently", func(b Benchmarker) {
 			const numobjs = 10000
