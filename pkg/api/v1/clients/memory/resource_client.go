@@ -197,9 +197,15 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 	cachedResources := rc.cache.List(rc.Prefix(namespace))
+
+	labelSelector, err := rc.getLabelSelector(opts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing label selector")
+	}
+
 	var resourceList resources.ResourceList
 	for _, resource := range cachedResources {
-		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
+		if labelSelector.Matches(labels.Set(resource.GetMetadata().Labels)) {
 			clone := resources.Clone(resource)
 			resourceList = append(resourceList, clone)
 		}
@@ -220,8 +226,9 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	errs := make(chan error)
 	updateResourceList := func() {
 		list, err := rc.List(namespace, clients.ListOpts{
-			Ctx:      opts.Ctx,
-			Selector: opts.Selector,
+			Ctx:                opts.Ctx,
+			Selector:           opts.Selector,
+			ExpressionSelector: opts.ExpressionSelector,
 		})
 		if err != nil {
 			errs <- err
@@ -257,6 +264,16 @@ func (rc *ResourceClient) Prefix(namespace string) string {
 
 func (rc *ResourceClient) key(namespace, name string) string {
 	return rc.Prefix(namespace) + separator + name
+}
+
+func (rc *ResourceClient) getLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
+	if listOpts.ExpressionSelector != "" {
+		return labels.Parse(listOpts.ExpressionSelector)
+	}
+
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+	return labels.SelectorFromSet(listOpts.Selector), nil
 }
 
 // util methods
