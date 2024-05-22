@@ -199,14 +199,18 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	opts = opts.WithDefaults()
 	cachedResources := rc.cache.List(rc.Prefix(namespace))
 
-	labelSelector, err := kubeutils.ToLabelSelector(opts)
-	if err != nil {
-		return nil, errors.Wrapf(err, "parsing label selector")
+	var labelSelector labels.Selector
+	var err error
+	if kubeutils.HasSelector(opts) {
+		labelSelector, err = kubeutils.ToLabelSelector(opts)
+		if err != nil {
+			return nil, errors.Wrapf(err, "parsing label selector")
+		}
 	}
 
 	var resourceList resources.ResourceList
 	for _, resource := range cachedResources {
-		if labelSelector.Matches(labels.Set(resource.GetMetadata().Labels)) {
+		if labelSelector == nil || labelSelector.Matches(labels.Set(resource.GetMetadata().Labels)) {
 			clone := resources.Clone(resource)
 			resourceList = append(resourceList, clone)
 		}

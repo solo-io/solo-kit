@@ -9,6 +9,12 @@ import (
 	kubetypes "k8s.io/apimachinery/pkg/types"
 )
 
+// HasSelector returns true if the ListOpts contains a selector (which may be either an equality-based selector
+// or set-based expression selector).
+func HasSelector(listOpts clients.ListOpts) bool {
+	return listOpts.ExpressionSelector != "" || len(listOpts.Selector) > 0
+}
+
 // ToLabelSelector converts the selector specified by the ListOpts into an apimachinery label selector.
 // If both ExpressionSelector and Selector are specified in the opts, only ExpressionSelector is used.
 func ToLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
