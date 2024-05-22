@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -197,9 +198,19 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 	cachedResources := rc.cache.List(rc.Prefix(namespace))
+
+	var labelSelector labels.Selector
+	var err error
+	if kubeutils.HasSelector(opts) {
+		labelSelector, err = kubeutils.ToLabelSelector(opts)
+		if err != nil {
+			return nil, errors.Wrapf(err, "parsing label selector")
+		}
+	}
+
 	var resourceList resources.ResourceList
 	for _, resource := range cachedResources {
-		if labels.SelectorFromSet(opts.Selector).Matches(labels.Set(resource.GetMetadata().Labels)) {
+		if labelSelector == nil || labelSelector.Matches(labels.Set(resource.GetMetadata().Labels)) {
 			clone := resources.Clone(resource)
 			resourceList = append(resourceList, clone)
 		}
@@ -220,8 +231,9 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	errs := make(chan error)
 	updateResourceList := func() {
 		list, err := rc.List(namespace, clients.ListOpts{
-			Ctx:      opts.Ctx,
-			Selector: opts.Selector,
+			Ctx:                opts.Ctx,
+			Selector:           opts.Selector,
+			ExpressionSelector: opts.ExpressionSelector,
 		})
 		if err != nil {
 			errs <- err

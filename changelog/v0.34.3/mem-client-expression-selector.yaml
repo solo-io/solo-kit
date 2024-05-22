@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/553
+    description: >-
+      Add support for ExpressionSelector in memory ResourceClient.
