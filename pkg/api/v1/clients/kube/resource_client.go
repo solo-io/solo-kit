@@ -7,11 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/specutils"
-
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -20,12 +15,14 @@ import (
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/utils/specutils"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var (
@@ -298,7 +295,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 		return nil, err
 	}
 
-	labelSelector, err := rc.getLabelSelector(opts)
+	labelSelector, err := kubeutils.ToLabelSelector(opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing label selector")
 	}
@@ -456,16 +453,6 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	}(namespace)
 
 	return resourcesChan, errs, nil
-}
-
-func (rc *ResourceClient) getLabelSelector(listOpts clients.ListOpts) (labels.Selector, error) {
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#set-based-requirement
-	if listOpts.ExpressionSelector != "" {
-		return labels.Parse(listOpts.ExpressionSelector)
-	}
-
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
-	return labels.SelectorFromSet(listOpts.Selector), nil
 }
 
 // Checks whether the group version kind of the given resource matches that of the client's underlying CRD:
