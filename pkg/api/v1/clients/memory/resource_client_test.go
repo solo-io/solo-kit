@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gmeasure"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	. "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -235,32 +236,100 @@ var _ = Describe("Base", func() {
 	})
 
 	Context("Benchmarks", func() {
-		Measure("it should perform list efficiently", func(b Benchmarker) {
-			const numobjs = 10000
+		const numobjs = 10000
 
+		BeforeEach(func() {
 			for i := 0; i < numobjs; i++ {
+				isEven := i%2 == 0
 				obj := &v1.MockResource{
 					Metadata: &core.Metadata{
 						Namespace: "ns",
 						Name:      fmt.Sprintf("n-%v", numobjs-i),
+						Labels: map[string]string{
+							"even": fmt.Sprintf("%v", isEven),
+						},
 					},
 					Data: strings.Repeat("123", 1000) + fmt.Sprintf("test-%v", i),
 				}
 				client.Write(obj, clients.WriteOpts{})
 			}
+		})
+
+		It("should perform list efficiently", Serial, func() {
+			experiment := gmeasure.NewExperiment("list resources with no selector")
+			AddReportEntry(experiment.Name, experiment)
+
 			l := clients.ListOpts{}
 			var output resources.ResourceList
 			var err error
-			runtime := b.Time("runtime", func() {
-				output, err = client.List("ns", l)
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(output).To(HaveLen(numobjs))
-			Expect(output[0].GetMetadata().Name).To(Equal("n-1"))
 
-			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.5), "List() shouldn't take too long.")
-		}, 10)
+			experiment.Sample(func(idx int) {
+				experiment.MeasureDuration("list-resources", func() {
+					output, err = client.List("ns", l)
+				})
 
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(HaveLen(numobjs))
+				Expect(output[0].GetMetadata().Name).To(Equal("n-1"))
+			}, gmeasure.SamplingConfig{N: 10, Duration: 10 * time.Second})
+
+			stats := experiment.GetStats("list-resources")
+			medianDuration := stats.DurationFor(gmeasure.StatMedian)
+
+			Expect(medianDuration).To(BeNumerically("<", 500*time.Millisecond))
+		})
+
+		It("should perform list efficiently, with equality-based selector", Serial, func() {
+			experiment := gmeasure.NewExperiment("list resources with equality selector")
+			AddReportEntry(experiment.Name, experiment)
+
+			l := clients.ListOpts{
+				Selector: map[string]string{
+					"even": "true",
+				},
+			}
+			var output resources.ResourceList
+			var err error
+
+			experiment.Sample(func(idx int) {
+				experiment.MeasureDuration("list-resources-with-selector", func() {
+					output, err = client.List("ns", l)
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(HaveLen(numobjs / 2))
+			}, gmeasure.SamplingConfig{N: 10, Duration: 10 * time.Second})
+
+			stats := experiment.GetStats("list-resources-with-selector")
+			medianDuration := stats.DurationFor(gmeasure.StatMedian)
+
+			Expect(medianDuration).To(BeNumerically("<", 500*time.Millisecond))
+		})
+
+		It("should perform list efficiently, with set-based selector", Serial, func() {
+			experiment := gmeasure.NewExperiment("list resources with set selector")
+			AddReportEntry(experiment.Name, experiment)
+
+			l := clients.ListOpts{
+				ExpressionSelector: "even in (true,false)",
+			}
+			var output resources.ResourceList
+			var err error
+
+			experiment.Sample(func(idx int) {
+				experiment.MeasureDuration("list-resources-with-set-selector", func() {
+					output, err = client.List("ns", l)
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(HaveLen(numobjs))
+			}, gmeasure.SamplingConfig{N: 10, Duration: 10 * time.Second})
+
+			stats := experiment.GetStats("list-resources-with-set-selector")
+			medianDuration := stats.DurationFor(gmeasure.StatMedian)
+
+			Expect(medianDuration).To(BeNumerically("<", 500*time.Millisecond))
+		})
 	})
 
 })
