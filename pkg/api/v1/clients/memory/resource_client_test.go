@@ -223,7 +223,7 @@ var _ = Describe("Base", func() {
 		It("when both selector and expression selector are provided, uses expression selector", func() {
 			resources, err := client.List("ns2", clients.ListOpts{
 				Selector: map[string]string{
-					"ignored": "selector",
+					"key": "val2",
 				},
 				ExpressionSelector: "key in (val1,val3)",
 			})
