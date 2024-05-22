@@ -2,8 +2,6 @@ module github.com/solo-io/solo-kit
 
 go 1.22.2
 
-toolchain go1.22.3
-
 require (
 	cuelang.org/go v0.3.2
 	github.com/Masterminds/sprig v2.22.0+incompatible
