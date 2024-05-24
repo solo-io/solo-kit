@@ -67,6 +67,24 @@ type StatusClient interface {
 	StatusSetter
 }
 
+type PolicyResource interface {
+	GetPolicyStatus() *core.PolicyStatus
+	SetPolicyStatus(status *core.PolicyStatus)
+}
+
+type PolicyStatusGetter interface {
+	GetPolicyStatus(resource PolicyResource) *core.PolicyStatus
+}
+
+type PolicyStatusSetter interface {
+	SetPolicyStatus(resource PolicyResource, status *core.PolicyStatus)
+}
+
+type PolicyStatusClient interface {
+	PolicyStatusGetter
+	PolicyStatusSetter
+}
+
 type StatusUnmarshaler interface {
 	UnmarshalStatus(status v1.Status, into InputResource)
 }
