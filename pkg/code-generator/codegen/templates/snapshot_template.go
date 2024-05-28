@@ -31,7 +31,7 @@ var _ json.Marshaler = new({{ .GoName }}Snapshot)
 
 type {{ .GoName }}Snapshot struct {
 {{- range .Resources}}
-	{{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List ` + backtick + `json:"{{ lower_camel .PluralName }}"
+	{{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List ` + backtick + `json:"{{ lower_camel .PluralName }}"` + backtick + `
 {{- end}}
 }
 
