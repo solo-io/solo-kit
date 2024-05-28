@@ -90,7 +90,6 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 
 func (s {{ .GoName }}Snapshot) MarshalJSON() ([]byte, error) {
     return json.Marshal(&s)
-
 }
 
 func (s *{{ .GoName }}Snapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

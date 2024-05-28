@@ -11,12 +11,12 @@ import (
 	reflect "reflect"
 	sync "sync"
 
+	any1 "github.com/golang/protobuf/ptypes/any"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -95,7 +95,7 @@ type ReadResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Resource *anypb.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	Resource *any1.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
 }
 
 func (x *ReadResponse) Reset() {
@@ -130,7 +130,7 @@ func (*ReadResponse) Descriptor() ([]byte, []int) {
 	return file_api_server_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ReadResponse) GetResource() *anypb.Any {
+func (x *ReadResponse) GetResource() *any1.Any {
 	if x != nil {
 		return x.Resource
 	}
@@ -142,8 +142,8 @@ type WriteRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Resource          *anypb.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
-	OverwriteExisting bool       `protobuf:"varint,2,opt,name=overwrite_existing,json=overwriteExisting,proto3" json:"overwrite_existing,omitempty"`
+	Resource          *any1.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	OverwriteExisting bool      `protobuf:"varint,2,opt,name=overwrite_existing,json=overwriteExisting,proto3" json:"overwrite_existing,omitempty"`
 }
 
 func (x *WriteRequest) Reset() {
@@ -178,7 +178,7 @@ func (*WriteRequest) Descriptor() ([]byte, []int) {
 	return file_api_server_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *WriteRequest) GetResource() *anypb.Any {
+func (x *WriteRequest) GetResource() *any1.Any {
 	if x != nil {
 		return x.Resource
 	}
@@ -197,7 +197,7 @@ type WriteResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Resource *anypb.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	Resource *any1.Any `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
 }
 
 func (x *WriteResponse) Reset() {
@@ -232,7 +232,7 @@ func (*WriteResponse) Descriptor() ([]byte, []int) {
 	return file_api_server_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *WriteResponse) GetResource() *anypb.Any {
+func (x *WriteResponse) GetResource() *any1.Any {
 	if x != nil {
 		return x.Resource
 	}
@@ -408,7 +408,7 @@ type ListResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ResourceList []*anypb.Any `protobuf:"bytes,1,rep,name=resource_list,json=resourceList,proto3" json:"resource_list,omitempty"`
+	ResourceList []*any1.Any `protobuf:"bytes,1,rep,name=resource_list,json=resourceList,proto3" json:"resource_list,omitempty"`
 }
 
 func (x *ListResponse) Reset() {
@@ -443,7 +443,7 @@ func (*ListResponse) Descriptor() ([]byte, []int) {
 	return file_api_server_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *ListResponse) GetResourceList() []*anypb.Any {
+func (x *ListResponse) GetResourceList() []*any1.Any {
 	if x != nil {
 		return x.ResourceList
 	}
@@ -510,7 +510,7 @@ type WatchResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ResourceList []*anypb.Any `protobuf:"bytes,1,rep,name=resource_list,json=resourceList,proto3" json:"resource_list,omitempty"`
+	ResourceList []*any1.Any `protobuf:"bytes,1,rep,name=resource_list,json=resourceList,proto3" json:"resource_list,omitempty"`
 }
 
 func (x *WatchResponse) Reset() {
@@ -545,7 +545,7 @@ func (*WatchResponse) Descriptor() ([]byte, []int) {
 	return file_api_server_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *WatchResponse) GetResourceList() []*anypb.Any {
+func (x *WatchResponse) GetResourceList() []*any1.Any {
 	if x != nil {
 		return x.ResourceList
 	}
@@ -749,7 +749,7 @@ var file_api_server_proto_goTypes = []interface{}{
 	(*WatchResponse)(nil),    // 9: apiserver.api.v1.WatchResponse
 	(*RegisterRequest)(nil),  // 10: apiserver.api.v1.RegisterRequest
 	(*RegisterResponse)(nil), // 11: apiserver.api.v1.RegisterResponse
-	(*anypb.Any)(nil),        // 12: google.protobuf.Any
+	(*any1.Any)(nil),         // 12: google.protobuf.Any
 }
 var file_api_server_proto_depIdxs = []int32{
 	12, // 0: apiserver.api.v1.ReadResponse.resource:type_name -> google.protobuf.Any

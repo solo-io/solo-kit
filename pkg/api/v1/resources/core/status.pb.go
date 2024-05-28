@@ -10,10 +10,10 @@ import (
 	reflect "reflect"
 	sync "sync"
 
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -149,7 +149,7 @@ type Status struct {
 	// Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource
 	SubresourceStatuses map[string]*Status `protobuf:"bytes,4,rep,name=subresource_statuses,json=subresourceStatuses,proto3" json:"subresource_statuses,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Opaque details about status results
-	Details *structpb.Struct `protobuf:"bytes,5,opt,name=details,proto3" json:"details,omitempty"`
+	Details *_struct.Struct `protobuf:"bytes,5,opt,name=details,proto3" json:"details,omitempty"`
 	// Additional information about the current state of the resource.
 	Messages []string `protobuf:"bytes,6,rep,name=Messages,proto3" json:"Messages,omitempty"`
 }
@@ -214,7 +214,7 @@ func (x *Status) GetSubresourceStatuses() map[string]*Status {
 	return nil
 }
 
-func (x *Status) GetDetails() *structpb.Struct {
+func (x *Status) GetDetails() *_struct.Struct {
 	if x != nil {
 		return x.Details
 	}
@@ -303,7 +303,7 @@ var file_status_proto_goTypes = []interface{}{
 	(*Status)(nil),             // 2: core.solo.io.Status
 	nil,                        // 3: core.solo.io.NamespacedStatuses.StatusesEntry
 	nil,                        // 4: core.solo.io.Status.SubresourceStatusesEntry
-	(*structpb.Struct)(nil),    // 5: google.protobuf.Struct
+	(*_struct.Struct)(nil),     // 5: google.protobuf.Struct
 }
 var file_status_proto_depIdxs = []int32{
 	3, // 0: core.solo.io.NamespacedStatuses.statuses:type_name -> core.solo.io.NamespacedStatuses.StatusesEntry
