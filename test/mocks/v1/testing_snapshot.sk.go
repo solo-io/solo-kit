@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -17,15 +18,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var _ json.Marshaler = new(TestingSnapshot)
+
 type TestingSnapshot struct {
-	Simplemocks          SimpleMockResourceList
-	Mocks                MockResourceList
-	Fakes                FakeResourceList
-	Anothermockresources AnotherMockResourceList
-	Clusterresources     ClusterResourceList
-	Mcts                 MockCustomTypeList
-	Mcshts               MockCustomSpecHashTypeList
-	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
+	Simplemocks          SimpleMockResourceList                                                     `json:"simplemocks"`
+	Mocks                MockResourceList                                                           `json:"mocks"`
+	Fakes                FakeResourceList                                                           `json:"fakes"`
+	Anothermockresources AnotherMockResourceList                                                    `json:"anothermockresources"`
+	Clusterresources     ClusterResourceList                                                        `json:"clusterresources"`
+	Mcts                 MockCustomTypeList                                                         `json:"mcts"`
+	Mcshts               MockCustomSpecHashTypeList                                                 `json:"mcshts"`
+	Pods                 github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList `json:"pods"`
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
@@ -152,6 +155,10 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
+}
+
+func (s TestingSnapshot) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&s)
 }
 
 func (s *TestingSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
