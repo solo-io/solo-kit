@@ -1,0 +1,11 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/17005
+    resolvesIssue: false
+    description: |
+      Adds support for disabling kubebuilder markers and validations to omit them from the generated OpenAPI schema.
+  - type: DEPENDENCY_BUMP
+    description: Updates protoc-gen-openapi to v0.2.4
+    dependencyOwner: solo-io
+    dependencyRepo: protoc-gen-openapi
+    dependencyTag: v0.2.4
