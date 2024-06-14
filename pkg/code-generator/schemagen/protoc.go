@@ -56,6 +56,7 @@ func (p *protocGenerator) GetJsonSchemaForProject(project *model.Project) (map[s
 		IncludeDescriptionsInSchema: !p.validationSchemaOptions.RemoveDescriptionsFromSchema,
 		EnumAsIntOrString:           p.validationSchemaOptions.EnumAsIntOrString,
 		MessagesWithEmptySchema:     p.validationSchemaOptions.MessagesWithEmptySchema,
+		DisableKubeMarkers:          p.validationSchemaOptions.DisableKubeMarkers,
 	}
 
 	// 1. Generate the openApiSchemas for the project, writing them to a temp directory (schemaOutputDir)

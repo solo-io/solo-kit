@@ -32,7 +32,7 @@ require (
 	github.com/solo-io/go-utils v0.24.8
 	github.com/solo-io/k8s-utils v0.7.2
 	github.com/solo-io/protoc-gen-ext v0.0.18
-	github.com/solo-io/protoc-gen-openapi v0.1.1
+	github.com/solo-io/protoc-gen-openapi v0.2.4
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.5.0
@@ -97,7 +97,7 @@ require (
 	github.com/lyft/protoc-gen-star/v2 v2.0.3 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-zglob v0.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -110,7 +110,7 @@ require (
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
-	github.com/spf13/cobra v1.7.0 // indirect
+	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
@@ -132,6 +132,7 @@ require (
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
+	sigs.k8s.io/controller-tools v0.14.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 )
 

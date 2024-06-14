@@ -79,6 +79,10 @@ type OpenApiProtocExecutor struct {
 	// A list of messages (core.solo.io.Status) whose validation schema should
 	// not be generated
 	MessagesWithEmptySchema []string
+
+	// Whether to exclude kubebuilder markers and validations (such as PreserveUnknownFields, MinItems, default, and all CEL rules)
+	// Type and Required markers will be included regardless
+	DisableKubeMarkers bool
 }
 
 func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports []string) error {
@@ -105,10 +109,11 @@ func (o *OpenApiProtocExecutor) Execute(protoFile string, toFile string, imports
 	_ = os.Mkdir(directoryPath, os.ModePerm)
 
 	cmd.Args = append(cmd.Args,
-		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,include_description=%v,enum_as_int_or_string=%v,additional_empty_schema=%v:%s",
+		fmt.Sprintf("--openapi_out=yaml=true,single_file=false,include_description=%v,enum_as_int_or_string=%v,additional_empty_schema=%v,disable_kube_markers=%v:%s",
 			o.IncludeDescriptionsInSchema,
 			o.EnumAsIntOrString,
 			strings.Join(o.MessagesWithEmptySchema, "+"),
+			o.DisableKubeMarkers,
 			directoryPath),
 	)
 
