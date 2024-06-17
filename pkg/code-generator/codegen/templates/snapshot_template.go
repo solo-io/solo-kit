@@ -4,8 +4,6 @@ import (
 	"text/template"
 )
 
-const backtick = "`"
-
 var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_snapshot").Funcs(Funcs).Parse(
 	`package {{ .Project.ProjectConfig.Version }}
 
@@ -13,7 +11,6 @@ var ResourceGroupSnapshotTemplate = template.Must(template.New("resource_group_s
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -27,11 +24,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ json.Marshaler = new({{ .GoName }}Snapshot)
-
 type {{ .GoName }}Snapshot struct {
 {{- range .Resources}}
-	{{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List ` + backtick + `json:"{{ lower_camel .PluralName }}"` + backtick + `
+	{{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List
 {{- end}}
 }
 
@@ -86,10 +81,6 @@ func (s {{ .GoName }}Snapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash",  snapshotHash))
-}
-
-func (s {{ .GoName }}Snapshot) MarshalJSON() ([]byte, error) {
-    return json.Marshal(&s)
 }
 
 func (s *{{ .GoName }}Snapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {

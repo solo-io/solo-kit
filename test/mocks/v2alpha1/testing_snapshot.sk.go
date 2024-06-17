@@ -3,7 +3,6 @@
 package v2alpha1
 
 import (
-	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -18,12 +17,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ json.Marshaler = new(TestingSnapshot)
-
 type TestingSnapshot struct {
-	Mocks MockResourceList                          `json:"mocks"`
-	Fcars FrequentlyChangingAnnotationsResourceList `json:"fcars"`
-	Fakes testing_solo_io.FakeResourceList          `json:"fakes"`
+	Mocks MockResourceList
+	Fcars FrequentlyChangingAnnotationsResourceList
+	Fakes testing_solo_io.FakeResourceList
 }
 
 func (s TestingSnapshot) Clone() TestingSnapshot {
@@ -89,10 +86,6 @@ func (s TestingSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
-}
-
-func (s TestingSnapshot) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&s)
 }
 
 func (s *TestingSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
