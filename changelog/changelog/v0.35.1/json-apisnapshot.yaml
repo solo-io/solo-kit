@@ -1,6 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  issueLink: https://github.com/solo-io/gloo/issues/6494
-  resolvesIssue: false
-  description: >-
-    Added code to template for ApiSnapshot that implements JsonMarshaler
