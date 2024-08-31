@@ -136,6 +136,31 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
+func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) error {
+
+	for i, res := range s.Mocks {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Fcars {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Fcars = append(s.Fcars[:i], s.Fcars[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Fakes {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Fakes = append(s.Fakes[:i], s.Fakes[i+1:]...)
+			break
+		}
+	}
+	return nil
+}
+
 func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key()
 	switch typed := resource.(type) {

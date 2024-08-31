@@ -257,6 +257,66 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
+func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) error {
+
+	for i, res := range s.Simplemocks {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Simplemocks = append(s.Simplemocks[:i], s.Simplemocks[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Mocks {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Fakes {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Fakes = append(s.Fakes[:i], s.Fakes[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Anothermockresources {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Anothermockresources = append(s.Anothermockresources[:i], s.Anothermockresources[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Clusterresources {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Clusterresources = append(s.Clusterresources[:i], s.Clusterresources[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Mcts {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Mcts = append(s.Mcts[:i], s.Mcts[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Mcshts {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Mcshts = append(s.Mcshts[:i], s.Mcshts[i+1:]...)
+			break
+		}
+	}
+
+	for i, res := range s.Pods {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.Pods = append(s.Pods[:i], s.Pods[i+1:]...)
+			break
+		}
+	}
+	return nil
+}
+
 func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key()
 	switch typed := resource.(type) {

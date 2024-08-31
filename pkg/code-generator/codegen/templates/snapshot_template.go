@@ -106,15 +106,28 @@ func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resour
 				break
 			}
 		}
-		return nil	
+		return nil
 {{- end }}
 	default:
 		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
 	}
 }
 
+func (s *{{ .GoName }}Snapshot) RemoveAllResourcesInNamespace(namespace string) error {
+{{- range .Resources }}
+	{{/* no need to sort because it is already sorted */}}
+	for i, res := range s.{{ upper_camel .PluralName }} {
+		if namespace == res.GetMetadata().GetNamespace() {
+			s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}[:i], s.{{ upper_camel .PluralName }}[i+1:]...)
+			break
+		}
+	}
+{{- end }}
+	return nil
+}
+
 func (s *{{ .GoName }}Snapshot) UpsertToResourceList(resource resources.Resource) error {
-	refKey := resource.GetMetadata().Ref().Key() 
+	refKey := resource.GetMetadata().Ref().Key()
 	switch typed := resource.(type) {
 {{- range .Resources }}
 	case *{{ .ImportPrefix }}{{ .Name }}:
@@ -129,7 +142,7 @@ func (s *{{ .GoName }}Snapshot) UpsertToResourceList(resource resources.Resource
 			s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}, typed)
 		}
 		s.{{ upper_camel .PluralName }}.Sort()
-		return nil	
+		return nil
 {{- end }}
 	default:
 		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
@@ -176,7 +189,7 @@ func (s {{ .GoName }}Snapshot) Stringer() {{ .GoName }}SnapshotStringer {
 var {{.GoName }}GvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource {
 {{- range .Resources}}
 	{{ .ImportPrefix }}{{ .Name }}GVK: {{ .ImportPrefix }}New{{ .Name }}HashableResource,
-{{- end }}	
+{{- end }}
 }
 
 `))
