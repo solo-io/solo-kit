@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/9274
+  resolvesIssue: false
+  description: Adds the `RemoveAllResourcesInNamespace` method in `snapshot_template.go` that removes all resources in the given namespace
+
