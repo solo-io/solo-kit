@@ -146,6 +146,9 @@ func (el *{{ lower_camel .GoName }}EventLoop) Run(namespaces []string, opts clie
 					channelClosed = true
 					close(el.ready)
 				}
+
+				previousSnapshot = snapshot
+
 			case <-opts.Ctx.Done():
 				return
 			}
