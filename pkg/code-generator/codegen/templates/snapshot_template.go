@@ -113,17 +113,16 @@ func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resour
 	}
 }
 
-func (s *{{ .GoName }}Snapshot) RemoveAllResourcesInNamespace(namespace string) error {
+func (s *{{ .GoName }}Snapshot) RemoveAllResourcesInNamespace(namespace string) {
 {{- range .Resources }}
-	{{/* no need to sort because it is already sorted */}}
-	for i, res := range s.{{ upper_camel .PluralName }} {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.{{ upper_camel .PluralName }} = append(s.{{ upper_camel .PluralName }}[:i], s.{{ upper_camel .PluralName }}[i+1:]...)
-			break
+	var {{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List
+	for _, res := range s.{{ upper_camel .PluralName }} {
+		if namespace != res.GetMetadata().GetNamespace() {
+			{{ upper_camel .PluralName }} = append({{ upper_camel .PluralName }}, res)
 		}
 	}
+	s.{{ upper_camel .PluralName }} = {{ upper_camel .PluralName }}
 {{- end }}
-	return nil
 }
 
 func (s *{{ .GoName }}Snapshot) UpsertToResourceList(resource resources.Resource) error {

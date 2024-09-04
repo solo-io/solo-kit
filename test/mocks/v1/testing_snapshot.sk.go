@@ -257,64 +257,63 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
-func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) error {
-
-	for i, res := range s.Simplemocks {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Simplemocks = append(s.Simplemocks[:i], s.Simplemocks[i+1:]...)
-			break
+func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
+	var Simplemocks SimpleMockResourceList
+	for _, res := range s.Simplemocks {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Simplemocks = append(Simplemocks, res)
 		}
 	}
-
-	for i, res := range s.Mocks {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
-			break
+	s.Simplemocks = Simplemocks
+	var Mocks MockResourceList
+	for _, res := range s.Mocks {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Mocks = append(Mocks, res)
 		}
 	}
-
-	for i, res := range s.Fakes {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Fakes = append(s.Fakes[:i], s.Fakes[i+1:]...)
-			break
+	s.Mocks = Mocks
+	var Fakes FakeResourceList
+	for _, res := range s.Fakes {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Fakes = append(Fakes, res)
 		}
 	}
-
-	for i, res := range s.Anothermockresources {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Anothermockresources = append(s.Anothermockresources[:i], s.Anothermockresources[i+1:]...)
-			break
+	s.Fakes = Fakes
+	var Anothermockresources AnotherMockResourceList
+	for _, res := range s.Anothermockresources {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Anothermockresources = append(Anothermockresources, res)
 		}
 	}
-
-	for i, res := range s.Clusterresources {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Clusterresources = append(s.Clusterresources[:i], s.Clusterresources[i+1:]...)
-			break
+	s.Anothermockresources = Anothermockresources
+	var Clusterresources ClusterResourceList
+	for _, res := range s.Clusterresources {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Clusterresources = append(Clusterresources, res)
 		}
 	}
-
-	for i, res := range s.Mcts {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Mcts = append(s.Mcts[:i], s.Mcts[i+1:]...)
-			break
+	s.Clusterresources = Clusterresources
+	var Mcts MockCustomTypeList
+	for _, res := range s.Mcts {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Mcts = append(Mcts, res)
 		}
 	}
-
-	for i, res := range s.Mcshts {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Mcshts = append(s.Mcshts[:i], s.Mcshts[i+1:]...)
-			break
+	s.Mcts = Mcts
+	var Mcshts MockCustomSpecHashTypeList
+	for _, res := range s.Mcshts {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Mcshts = append(Mcshts, res)
 		}
 	}
-
-	for i, res := range s.Pods {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Pods = append(s.Pods[:i], s.Pods[i+1:]...)
-			break
+	s.Mcshts = Mcshts
+	var Pods github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
+	for _, res := range s.Pods {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Pods = append(Pods, res)
 		}
 	}
-	return nil
+	s.Pods = Pods
 }
 
 func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {

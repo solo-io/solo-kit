@@ -136,29 +136,28 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
-func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) error {
-
-	for i, res := range s.Mocks {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
-			break
+func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
+	var Mocks MockResourceList
+	for _, res := range s.Mocks {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Mocks = append(Mocks, res)
 		}
 	}
-
-	for i, res := range s.Fcars {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Fcars = append(s.Fcars[:i], s.Fcars[i+1:]...)
-			break
+	s.Mocks = Mocks
+	var Fcars FrequentlyChangingAnnotationsResourceList
+	for _, res := range s.Fcars {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Fcars = append(Fcars, res)
 		}
 	}
-
-	for i, res := range s.Fakes {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Fakes = append(s.Fakes[:i], s.Fakes[i+1:]...)
-			break
+	s.Fcars = Fcars
+	var Fakes testing_solo_io.FakeResourceList
+	for _, res := range s.Fakes {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Fakes = append(Fakes, res)
 		}
 	}
-	return nil
+	s.Fakes = Fakes
 }
 
 func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {

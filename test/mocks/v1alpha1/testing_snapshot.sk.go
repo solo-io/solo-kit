@@ -80,15 +80,14 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
-func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) error {
-
-	for i, res := range s.Mocks {
-		if namespace == res.GetMetadata().GetNamespace() {
-			s.Mocks = append(s.Mocks[:i], s.Mocks[i+1:]...)
-			break
+func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
+	var Mocks MockResourceList
+	for _, res := range s.Mocks {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Mocks = append(Mocks, res)
 		}
 	}
-	return nil
+	s.Mocks = Mocks
 }
 
 func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
