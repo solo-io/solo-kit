@@ -67,6 +67,9 @@ update-all: mod-download update-deps update-code-generator
 mod-download:
 	go mod download all
 
+.PHONY: install-tools
+install-tools: update-deps install-protoc
+
 .PHONY: update-deps
 update-deps:
 	mkdir -p $(DEPSGOBIN)
@@ -77,6 +80,32 @@ update-deps:
 	go install github.com/envoyproxy/protoc-gen-validate
 	go install github.com/golang/mock/gomock
 	go install github.com/golang/mock/mockgen
+
+# proto compiler installation
+# no explicit arm build, but x86_64 build works on arm macs
+PROTOC_VERSION:=3.15.8
+PROTOC_URL:=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}
+.PHONY: install-protoc
+install-protoc:
+	mkdir -p $(DEPSGOBIN)
+	if [ $(shell ${DEPSGOBIN}/protoc --version | grep -c ${PROTOC_VERSION}) -ne 0 ]; then \
+		echo expected protoc version ${PROTOC_VERSION} already installed ;\
+	else \
+		if [ "$(shell uname)" == "Darwin" ]; then \
+			echo "downloading protoc for osx" ;\
+			wget $(PROTOC_URL)-osx-x86_64.zip -O $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
+		elif [ "$(shell uname -m)" == "aarch64" ]; then \
+			echo "downloading protoc for linux aarch64" ;\
+			wget $(PROTOC_URL)-linux-aarch_64.zip -O $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
+		else \
+			echo "downloading protoc for linux x86-64" ;\
+			wget $(PROTOC_URL)-linux-x86_64.zip -O $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
+		fi ;\
+		unzip $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip -d $(DEPSGOBIN)/protoc-${PROTOC_VERSION} ;\
+		mv $(DEPSGOBIN)/protoc-${PROTOC_VERSION}/bin/protoc $(DEPSGOBIN)/protoc ;\
+		chmod +x $(DEPSGOBIN)/protoc ;\
+		rm -rf $(DEPSGOBIN)/protoc-${PROTOC_VERSION} $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
+	fi
 
 .PHONY: update-code-generator
 update-code-generator:

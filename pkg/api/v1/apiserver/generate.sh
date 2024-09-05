@@ -23,6 +23,7 @@ cleanup() {
 }
 trap "cleanup" EXIT SIGINT
 
+echo ">> TEST TEST TEST"
 echo ">> Temporary output directory ${TEMP_DIR}"
 
 IMPORTS="\

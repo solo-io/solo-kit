@@ -40,6 +40,7 @@ protoc ${IMPORTS} \
     ${HASH_FLAG} \
     ${INPUT_PROTOS}
 
+echo ">> made it to here"
 cp -r  ${TEMP_DIR}/github.com/solo-io/solo-kit ${ROOT}
 
 goimports -w pkg
