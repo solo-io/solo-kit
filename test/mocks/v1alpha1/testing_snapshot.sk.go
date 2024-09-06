@@ -80,6 +80,16 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
+func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
+	var Mocks MockResourceList
+	for _, res := range s.Mocks {
+		if namespace != res.GetMetadata().GetNamespace() {
+			Mocks = append(Mocks, res)
+		}
+	}
+	s.Mocks = Mocks
+}
+
 func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key()
 	switch typed := resource.(type) {
