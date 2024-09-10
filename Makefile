@@ -72,7 +72,7 @@ install-tools: install-protoc update-deps
 
 # proto compiler installation
 # no explicit arm build, but x86_64 build works on arm macs
-PROTOC_VERSION:=3.15.8
+PROTOC_VERSION:=3.6.1
 PROTOC_URL:=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}
 .PHONY: install-protoc
 install-protoc:
