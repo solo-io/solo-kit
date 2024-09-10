@@ -28,7 +28,8 @@ echo ">> Temporary output directory ${TEMP_DIR}"
 IMPORTS="\
     -I=${IN} \
     -I=${ROOT} \
-    -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext"
+    -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext \
+    -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext/external"
 
 GO_FLAG="--go_out=${TEMP_DIR}"
 HASH_FLAG="--ext_out=${TEMP_DIR}"
