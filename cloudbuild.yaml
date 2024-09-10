@@ -56,14 +56,16 @@ steps:
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.10.0'
-  entrypoint: 'bash'
+  dir: *dir
+  entrypoint: 'make'
+  args:
+  - 'test'
+  waitFor:
+  - 'check-code-and-docs-gen'
   env:
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
-  args: ['-c', 'make test']
-  waitFor: ['check-code-and-docs-gen']
-  dir: *dir
   id: 'test'
 
 timeout: 1500s
