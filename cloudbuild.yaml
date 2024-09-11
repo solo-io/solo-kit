@@ -27,7 +27,7 @@ steps:
   waitFor: ['-']
 
 # Installs go executables required by codegen tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.10.0'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.10.1'
   args: ['update-all']
   waitFor: ['prepare-workspace']
   id: 'update-deps'
