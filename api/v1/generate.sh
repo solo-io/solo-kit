@@ -16,19 +16,26 @@ SOLO_KIT=${ROOT}/solo-kit
 IN=${SOLO_KIT}/api/v1/
 VENDOR_ROOT=vendor_any/github.com
 
+# Scripts are a legacy component of our CI, and ideally would be converted to go code,
+# since the functionality is available in code-generator/collector/compiler.go
+# However, since this library is rarely modified, we do not want to make sweeping changes to the code generation step.
+# To improve the debuggability of these scripts, we include some identifier so that we can more easily triage issues.
+SCRIPT_ID="api/v1/generate.sh"
+
 TEMP_DIR=$(mktemp -d)
 cleanup() {
     echo ">> Removing ${TEMP_DIR}"
     rm -rf ${TEMP_DIR}
 }
-trap "cleanup" EXIT SIGINT
+trap "cleanup ${SCRIPT_ID}" EXIT SIGINT
 
-echo ">> Temporary output directory ${TEMP_DIR}"
+echo ">> Invoking ${SCRIPT_ID}: temporary output directory ${TEMP_DIR}"
 
 IMPORTS="\
     -I=${IN} \
     -I=${ROOT} \
-    -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext"
+    -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext \
+    -I=${VENDOR_ROOT}/solo-io/protoc-gen-ext/external"
 
 GO_FLAG="--go_out=${TEMP_DIR}"
 HASH_FLAG="--ext_out=${TEMP_DIR}"
