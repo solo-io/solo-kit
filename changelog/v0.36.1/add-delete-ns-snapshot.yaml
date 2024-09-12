@@ -3,6 +3,6 @@ changelog:
   issueLink: https://github.com/solo-io/gloo/issues/9274
   resolvesIssue: false
   description: >-
-    Adds the `RemoveAllResourcesInNamespace` method in `snapshot_template.go` that removes all resources in the given namespace.
+    Adds the `RemoveMatches` method in `snapshot_template.go` that removes all resources that match the given predicate.
     Adds the ability for event loops to determine if the Syncer passed is a `SyncDecider` to determine if a sync is necessary.
 
