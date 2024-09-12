@@ -22,6 +22,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 type {{ .GoName }}Snapshot struct {
@@ -124,6 +125,21 @@ func (s *{{ .GoName }}Snapshot) RemoveAllResourcesInNamespace(namespace string) 
 	s.{{ upper_camel .PluralName }} = {{ upper_camel .PluralName }}
 {{- end }}
 }
+
+type Predicate func(*core.Metadata) bool
+
+func (s *{{ .GoName }}Snapshot) RemoveMatches(predicate Predicate) {
+{{- range .Resources }}
+	var {{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List
+	for _, res := range s.{{ upper_camel .PluralName }} {
+		if matches := predicate(res.GetMetadata()); !matches {
+			{{ upper_camel .PluralName }} = append({{ upper_camel .PluralName }}, res)
+		}
+	}
+	s.{{ upper_camel .PluralName }} = {{ upper_camel .PluralName }}
+{{- end }}
+}
+
 
 func (s *{{ .GoName }}Snapshot) UpsertToResourceList(resource resources.Resource) error {
 	refKey := resource.GetMetadata().Ref().Key()

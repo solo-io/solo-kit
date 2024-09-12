@@ -13,6 +13,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -154,6 +155,32 @@ func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
 	var Fakes testing_solo_io.FakeResourceList
 	for _, res := range s.Fakes {
 		if namespace != res.GetMetadata().GetNamespace() {
+			Fakes = append(Fakes, res)
+		}
+	}
+	s.Fakes = Fakes
+}
+
+type Predicate func(*core.Metadata) bool
+
+func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {
+	var Mocks MockResourceList
+	for _, res := range s.Mocks {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Mocks = append(Mocks, res)
+		}
+	}
+	s.Mocks = Mocks
+	var Fcars FrequentlyChangingAnnotationsResourceList
+	for _, res := range s.Fcars {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Fcars = append(Fcars, res)
+		}
+	}
+	s.Fcars = Fcars
+	var Fakes testing_solo_io.FakeResourceList
+	for _, res := range s.Fakes {
+		if matches := predicate(res.GetMetadata()); !matches {
 			Fakes = append(Fakes, res)
 		}
 	}

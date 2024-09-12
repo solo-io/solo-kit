@@ -13,6 +13,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -310,6 +311,67 @@ func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
 	var Pods github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
 	for _, res := range s.Pods {
 		if namespace != res.GetMetadata().GetNamespace() {
+			Pods = append(Pods, res)
+		}
+	}
+	s.Pods = Pods
+}
+
+type Predicate func(*core.Metadata) bool
+
+func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {
+	var Simplemocks SimpleMockResourceList
+	for _, res := range s.Simplemocks {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Simplemocks = append(Simplemocks, res)
+		}
+	}
+	s.Simplemocks = Simplemocks
+	var Mocks MockResourceList
+	for _, res := range s.Mocks {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Mocks = append(Mocks, res)
+		}
+	}
+	s.Mocks = Mocks
+	var Fakes FakeResourceList
+	for _, res := range s.Fakes {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Fakes = append(Fakes, res)
+		}
+	}
+	s.Fakes = Fakes
+	var Anothermockresources AnotherMockResourceList
+	for _, res := range s.Anothermockresources {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Anothermockresources = append(Anothermockresources, res)
+		}
+	}
+	s.Anothermockresources = Anothermockresources
+	var Clusterresources ClusterResourceList
+	for _, res := range s.Clusterresources {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Clusterresources = append(Clusterresources, res)
+		}
+	}
+	s.Clusterresources = Clusterresources
+	var Mcts MockCustomTypeList
+	for _, res := range s.Mcts {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Mcts = append(Mcts, res)
+		}
+	}
+	s.Mcts = Mcts
+	var Mcshts MockCustomSpecHashTypeList
+	for _, res := range s.Mcshts {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Mcshts = append(Mcshts, res)
+		}
+	}
+	s.Mcshts = Mcshts
+	var Pods github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
+	for _, res := range s.Pods {
+		if matches := predicate(res.GetMetadata()); !matches {
 			Pods = append(Pods, res)
 		}
 	}

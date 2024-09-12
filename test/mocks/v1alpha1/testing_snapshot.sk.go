@@ -11,6 +11,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -84,6 +85,18 @@ func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
 	var Mocks MockResourceList
 	for _, res := range s.Mocks {
 		if namespace != res.GetMetadata().GetNamespace() {
+			Mocks = append(Mocks, res)
+		}
+	}
+	s.Mocks = Mocks
+}
+
+type Predicate func(*core.Metadata) bool
+
+func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {
+	var Mocks MockResourceList
+	for _, res := range s.Mocks {
+		if matches := predicate(res.GetMetadata()); !matches {
 			Mocks = append(Mocks, res)
 		}
 	}
