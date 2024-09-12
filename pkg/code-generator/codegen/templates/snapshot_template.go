@@ -114,19 +114,7 @@ func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resour
 	}
 }
 
-func (s *{{ .GoName }}Snapshot) RemoveAllResourcesInNamespace(namespace string) {
-{{- range .Resources }}
-	var {{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List
-	for _, res := range s.{{ upper_camel .PluralName }} {
-		if namespace != res.GetMetadata().GetNamespace() {
-			{{ upper_camel .PluralName }} = append({{ upper_camel .PluralName }}, res)
-		}
-	}
-	s.{{ upper_camel .PluralName }} = {{ upper_camel .PluralName }}
-{{- end }}
-}
-
-type Predicate func(*core.Metadata) bool
+type Predicate func(metadata *core.Metadata) bool
 
 func (s *{{ .GoName }}Snapshot) RemoveMatches(predicate Predicate) {
 {{- range .Resources }}

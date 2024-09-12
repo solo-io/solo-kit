@@ -161,7 +161,7 @@ func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
 	s.Fakes = Fakes
 }
 
-type Predicate func(*core.Metadata) bool
+type Predicate func(metadata *core.Metadata) bool
 
 func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {
 	var Mocks MockResourceList
