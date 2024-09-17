@@ -258,65 +258,6 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
-func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
-	var Simplemocks SimpleMockResourceList
-	for _, res := range s.Simplemocks {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Simplemocks = append(Simplemocks, res)
-		}
-	}
-	s.Simplemocks = Simplemocks
-	var Mocks MockResourceList
-	for _, res := range s.Mocks {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Mocks = append(Mocks, res)
-		}
-	}
-	s.Mocks = Mocks
-	var Fakes FakeResourceList
-	for _, res := range s.Fakes {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Fakes = append(Fakes, res)
-		}
-	}
-	s.Fakes = Fakes
-	var Anothermockresources AnotherMockResourceList
-	for _, res := range s.Anothermockresources {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Anothermockresources = append(Anothermockresources, res)
-		}
-	}
-	s.Anothermockresources = Anothermockresources
-	var Clusterresources ClusterResourceList
-	for _, res := range s.Clusterresources {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Clusterresources = append(Clusterresources, res)
-		}
-	}
-	s.Clusterresources = Clusterresources
-	var Mcts MockCustomTypeList
-	for _, res := range s.Mcts {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Mcts = append(Mcts, res)
-		}
-	}
-	s.Mcts = Mcts
-	var Mcshts MockCustomSpecHashTypeList
-	for _, res := range s.Mcshts {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Mcshts = append(Mcshts, res)
-		}
-	}
-	s.Mcshts = Mcshts
-	var Pods github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.PodList
-	for _, res := range s.Pods {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Pods = append(Pods, res)
-		}
-	}
-	s.Pods = Pods
-}
-
 type Predicate func(metadata *core.Metadata) bool
 
 func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {

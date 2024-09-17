@@ -81,16 +81,6 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
-func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
-	var Mocks MockResourceList
-	for _, res := range s.Mocks {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Mocks = append(Mocks, res)
-		}
-	}
-	s.Mocks = Mocks
-}
-
 type Predicate func(metadata *core.Metadata) bool
 
 func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {

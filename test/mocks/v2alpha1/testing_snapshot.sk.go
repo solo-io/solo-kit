@@ -137,30 +137,6 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
-func (s *TestingSnapshot) RemoveAllResourcesInNamespace(namespace string) {
-	var Mocks MockResourceList
-	for _, res := range s.Mocks {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Mocks = append(Mocks, res)
-		}
-	}
-	s.Mocks = Mocks
-	var Fcars FrequentlyChangingAnnotationsResourceList
-	for _, res := range s.Fcars {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Fcars = append(Fcars, res)
-		}
-	}
-	s.Fcars = Fcars
-	var Fakes testing_solo_io.FakeResourceList
-	for _, res := range s.Fakes {
-		if namespace != res.GetMetadata().GetNamespace() {
-			Fakes = append(Fakes, res)
-		}
-	}
-	s.Fakes = Fakes
-}
-
 type Predicate func(metadata *core.Metadata) bool
 
 func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {
