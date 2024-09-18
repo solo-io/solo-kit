@@ -258,9 +258,7 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	}
 }
 
-type Predicate func(metadata *core.Metadata) bool
-
-func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {
+func (s *TestingSnapshot) RemoveMatches(predicate core.Predicate) {
 	var Simplemocks SimpleMockResourceList
 	for _, res := range s.Simplemocks {
 		if matches := predicate(res.GetMetadata()); !matches {
