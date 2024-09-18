@@ -13,6 +13,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -134,6 +135,32 @@ func (s *TestingSnapshot) RemoveFromResourceList(resource resources.Resource) er
 	default:
 		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
 	}
+}
+
+type Predicate func(metadata *core.Metadata) bool
+
+func (s *TestingSnapshot) RemoveMatches(predicate Predicate) {
+	var Mocks MockResourceList
+	for _, res := range s.Mocks {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Mocks = append(Mocks, res)
+		}
+	}
+	s.Mocks = Mocks
+	var Fcars FrequentlyChangingAnnotationsResourceList
+	for _, res := range s.Fcars {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Fcars = append(Fcars, res)
+		}
+	}
+	s.Fcars = Fcars
+	var Fakes testing_solo_io.FakeResourceList
+	for _, res := range s.Fakes {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Fakes = append(Fakes, res)
+		}
+	}
+	s.Fakes = Fakes
 }
 
 func (s *TestingSnapshot) UpsertToResourceList(resource resources.Resource) error {
