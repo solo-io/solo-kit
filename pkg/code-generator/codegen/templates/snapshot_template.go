@@ -114,9 +114,7 @@ func (s *{{ .GoName }}Snapshot) RemoveFromResourceList(resource resources.Resour
 	}
 }
 
-type Predicate func(metadata *core.Metadata) bool
-
-func (s *{{ .GoName }}Snapshot) RemoveMatches(predicate Predicate) {
+func (s *{{ .GoName }}Snapshot) RemoveMatches(predicate core.Predicate) {
 {{- range .Resources }}
 	var {{ upper_camel .PluralName }} {{ .ImportPrefix }}{{ .Name }}List
 	for _, res := range s.{{ upper_camel .PluralName }} {
