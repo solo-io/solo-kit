@@ -17,3 +17,5 @@ func (m *Metadata) Ref() *ResourceRef {
 func (m *Metadata) Match(ref *ResourceRef) bool {
 	return m.GetNamespace() == ref.GetNamespace() && m.GetName() == ref.GetName()
 }
+
+type Predicate func(metadata *Metadata) bool
