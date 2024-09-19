@@ -20,8 +20,8 @@ package v2alpha1
 
 import (
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type FrequentlyChangingAnnotationsResourceLister interface {
 
 // frequentlyChangingAnnotationsResourceLister implements the FrequentlyChangingAnnotationsResourceLister interface.
 type frequentlyChangingAnnotationsResourceLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v2alpha1.FrequentlyChangingAnnotationsResource]
 }
 
 // NewFrequentlyChangingAnnotationsResourceLister returns a new FrequentlyChangingAnnotationsResourceLister.
 func NewFrequentlyChangingAnnotationsResourceLister(indexer cache.Indexer) FrequentlyChangingAnnotationsResourceLister {
-	return &frequentlyChangingAnnotationsResourceLister{indexer: indexer}
-}
-
-// List lists all FrequentlyChangingAnnotationsResources in the indexer.
-func (s *frequentlyChangingAnnotationsResourceLister) List(selector labels.Selector) (ret []*v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2alpha1.FrequentlyChangingAnnotationsResource))
-	})
-	return ret, err
+	return &frequentlyChangingAnnotationsResourceLister{listers.New[*v2alpha1.FrequentlyChangingAnnotationsResource](indexer, v2alpha1.Resource("frequentlychangingannotationsresource"))}
 }
 
 // FrequentlyChangingAnnotationsResources returns an object that can list and get FrequentlyChangingAnnotationsResources.
 func (s *frequentlyChangingAnnotationsResourceLister) FrequentlyChangingAnnotationsResources(namespace string) FrequentlyChangingAnnotationsResourceNamespaceLister {
-	return frequentlyChangingAnnotationsResourceNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return frequentlyChangingAnnotationsResourceNamespaceLister{listers.NewNamespaced[*v2alpha1.FrequentlyChangingAnnotationsResource](s.ResourceIndexer, namespace)}
 }
 
 // FrequentlyChangingAnnotationsResourceNamespaceLister helps list and get FrequentlyChangingAnnotationsResources.
@@ -74,26 +66,5 @@ type FrequentlyChangingAnnotationsResourceNamespaceLister interface {
 // frequentlyChangingAnnotationsResourceNamespaceLister implements the FrequentlyChangingAnnotationsResourceNamespaceLister
 // interface.
 type frequentlyChangingAnnotationsResourceNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all FrequentlyChangingAnnotationsResources in the indexer for a given namespace.
-func (s frequentlyChangingAnnotationsResourceNamespaceLister) List(selector labels.Selector) (ret []*v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2alpha1.FrequentlyChangingAnnotationsResource))
-	})
-	return ret, err
-}
-
-// Get retrieves the FrequentlyChangingAnnotationsResource from the indexer for a given namespace and name.
-func (s frequentlyChangingAnnotationsResourceNamespaceLister) Get(name string) (*v2alpha1.FrequentlyChangingAnnotationsResource, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2alpha1.Resource("frequentlychangingannotationsresource"), name)
-	}
-	return obj.(*v2alpha1.FrequentlyChangingAnnotationsResource), nil
+	listers.ResourceIndexer[*v2alpha1.FrequentlyChangingAnnotationsResource]
 }

@@ -20,8 +20,8 @@ package v2alpha1
 
 import (
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type MockResourceLister interface {
 
 // mockResourceLister implements the MockResourceLister interface.
 type mockResourceLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v2alpha1.MockResource]
 }
 
 // NewMockResourceLister returns a new MockResourceLister.
 func NewMockResourceLister(indexer cache.Indexer) MockResourceLister {
-	return &mockResourceLister{indexer: indexer}
-}
-
-// List lists all MockResources in the indexer.
-func (s *mockResourceLister) List(selector labels.Selector) (ret []*v2alpha1.MockResource, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2alpha1.MockResource))
-	})
-	return ret, err
+	return &mockResourceLister{listers.New[*v2alpha1.MockResource](indexer, v2alpha1.Resource("mockresource"))}
 }
 
 // MockResources returns an object that can list and get MockResources.
 func (s *mockResourceLister) MockResources(namespace string) MockResourceNamespaceLister {
-	return mockResourceNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return mockResourceNamespaceLister{listers.NewNamespaced[*v2alpha1.MockResource](s.ResourceIndexer, namespace)}
 }
 
 // MockResourceNamespaceLister helps list and get MockResources.
@@ -74,26 +66,5 @@ type MockResourceNamespaceLister interface {
 // mockResourceNamespaceLister implements the MockResourceNamespaceLister
 // interface.
 type mockResourceNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all MockResources in the indexer for a given namespace.
-func (s mockResourceNamespaceLister) List(selector labels.Selector) (ret []*v2alpha1.MockResource, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2alpha1.MockResource))
-	})
-	return ret, err
-}
-
-// Get retrieves the MockResource from the indexer for a given namespace and name.
-func (s mockResourceNamespaceLister) Get(name string) (*v2alpha1.MockResource, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2alpha1.Resource("mockresource"), name)
-	}
-	return obj.(*v2alpha1.MockResource), nil
+	listers.ResourceIndexer[*v2alpha1.MockResource]
 }

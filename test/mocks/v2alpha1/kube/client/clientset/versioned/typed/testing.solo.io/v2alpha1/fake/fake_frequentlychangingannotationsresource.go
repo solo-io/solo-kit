@@ -20,11 +20,8 @@ package fake
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
 
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
-	testingsoloiov2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client/applyconfiguration/testing.solo.io/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -44,22 +41,24 @@ var frequentlychangingannotationsresourcesKind = v2alpha1.SchemeGroupVersion.Wit
 
 // Get takes name of the frequentlyChangingAnnotationsResource, and returns the corresponding frequentlyChangingAnnotationsResource object, and an error if there is any.
 func (c *FakeFrequentlyChangingAnnotationsResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+	emptyResult := &v2alpha1.FrequentlyChangingAnnotationsResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(frequentlychangingannotationsresourcesResource, c.ns, name), &v2alpha1.FrequentlyChangingAnnotationsResource{})
+		Invokes(testing.NewGetActionWithOptions(frequentlychangingannotationsresourcesResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.FrequentlyChangingAnnotationsResource), err
 }
 
 // List takes label and field selectors, and returns the list of FrequentlyChangingAnnotationsResources that match those selectors.
 func (c *FakeFrequentlyChangingAnnotationsResources) List(ctx context.Context, opts v1.ListOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResourceList, err error) {
+	emptyResult := &v2alpha1.FrequentlyChangingAnnotationsResourceList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(frequentlychangingannotationsresourcesResource, frequentlychangingannotationsresourcesKind, c.ns, opts), &v2alpha1.FrequentlyChangingAnnotationsResourceList{})
+		Invokes(testing.NewListActionWithOptions(frequentlychangingannotationsresourcesResource, frequentlychangingannotationsresourcesKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -78,28 +77,30 @@ func (c *FakeFrequentlyChangingAnnotationsResources) List(ctx context.Context, o
 // Watch returns a watch.Interface that watches the requested frequentlyChangingAnnotationsResources.
 func (c *FakeFrequentlyChangingAnnotationsResources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(frequentlychangingannotationsresourcesResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(frequentlychangingannotationsresourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a frequentlyChangingAnnotationsResource and creates it.  Returns the server's representation of the frequentlyChangingAnnotationsResource, and an error, if there is any.
 func (c *FakeFrequentlyChangingAnnotationsResources) Create(ctx context.Context, frequentlyChangingAnnotationsResource *v2alpha1.FrequentlyChangingAnnotationsResource, opts v1.CreateOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+	emptyResult := &v2alpha1.FrequentlyChangingAnnotationsResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(frequentlychangingannotationsresourcesResource, c.ns, frequentlyChangingAnnotationsResource), &v2alpha1.FrequentlyChangingAnnotationsResource{})
+		Invokes(testing.NewCreateActionWithOptions(frequentlychangingannotationsresourcesResource, c.ns, frequentlyChangingAnnotationsResource, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.FrequentlyChangingAnnotationsResource), err
 }
 
 // Update takes the representation of a frequentlyChangingAnnotationsResource and updates it. Returns the server's representation of the frequentlyChangingAnnotationsResource, and an error, if there is any.
 func (c *FakeFrequentlyChangingAnnotationsResources) Update(ctx context.Context, frequentlyChangingAnnotationsResource *v2alpha1.FrequentlyChangingAnnotationsResource, opts v1.UpdateOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+	emptyResult := &v2alpha1.FrequentlyChangingAnnotationsResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(frequentlychangingannotationsresourcesResource, c.ns, frequentlyChangingAnnotationsResource), &v2alpha1.FrequentlyChangingAnnotationsResource{})
+		Invokes(testing.NewUpdateActionWithOptions(frequentlychangingannotationsresourcesResource, c.ns, frequentlyChangingAnnotationsResource, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.FrequentlyChangingAnnotationsResource), err
 }
@@ -114,7 +115,7 @@ func (c *FakeFrequentlyChangingAnnotationsResources) Delete(ctx context.Context,
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeFrequentlyChangingAnnotationsResources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(frequentlychangingannotationsresourcesResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(frequentlychangingannotationsresourcesResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v2alpha1.FrequentlyChangingAnnotationsResourceList{})
 	return err
@@ -122,33 +123,12 @@ func (c *FakeFrequentlyChangingAnnotationsResources) DeleteCollection(ctx contex
 
 // Patch applies the patch and returns the patched frequentlyChangingAnnotationsResource.
 func (c *FakeFrequentlyChangingAnnotationsResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
+	emptyResult := &v2alpha1.FrequentlyChangingAnnotationsResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(frequentlychangingannotationsresourcesResource, c.ns, name, pt, data, subresources...), &v2alpha1.FrequentlyChangingAnnotationsResource{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(frequentlychangingannotationsresourcesResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v2alpha1.FrequentlyChangingAnnotationsResource), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied frequentlyChangingAnnotationsResource.
-func (c *FakeFrequentlyChangingAnnotationsResources) Apply(ctx context.Context, frequentlyChangingAnnotationsResource *testingsoloiov2alpha1.FrequentlyChangingAnnotationsResourceApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.FrequentlyChangingAnnotationsResource, err error) {
-	if frequentlyChangingAnnotationsResource == nil {
-		return nil, fmt.Errorf("frequentlyChangingAnnotationsResource provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(frequentlyChangingAnnotationsResource)
-	if err != nil {
-		return nil, err
-	}
-	name := frequentlyChangingAnnotationsResource.Name
-	if name == nil {
-		return nil, fmt.Errorf("frequentlyChangingAnnotationsResource.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(frequentlychangingannotationsresourcesResource, c.ns, *name, types.ApplyPatchType, data), &v2alpha1.FrequentlyChangingAnnotationsResource{})
-
-	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.FrequentlyChangingAnnotationsResource), err
 }

@@ -24,7 +24,7 @@ mkdir -p $GOPATH/src/github.com/solo-io/gloo
 ln -s $SCRIPT_ROOT $GOPATH/src/github.com/solo-io/gloo
 
 readonly CODEGEN_PKG=$(go list -f {{` + `"'{{ .Dir }}'"` + `}} -m k8s.io/code-generator)
-readonly GENGO_PKG=$(go list -f {{` + `"'{{ .Dir }}'"` + `}} -m k8s.io/gengo)
+readonly GENGO_PKG=$(go list -f {{` + `"'{{ .Dir }}'"` + `}} -m k8s.io/gengo/v2)
 
 readonly ROOT_PKG={{ .ProjectConfig.GoPackage }}
 readonly OUTPUT_PKG=${ROOT_PKG}/kube/client
@@ -63,7 +63,7 @@ go run $CODEGEN_PKG/cmd/lister-gen \
     ${PROJECT_INPUT_DIRS_COMMA}
 
 echo "Generating informers at ${OUTPUT_PKG}/informers"
-go run k8s.io/code-generator/cmd/informer-gen \
+go run $CODEGEN_PKG/cmd/informer-gen \
     --versioned-clientset-package "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME}/${CLIENTSET_NAME}" \
     --listers-package "${OUTPUT_PKG}/listers" \
     --output-dir "$OUTPUT_DIR/informers" \

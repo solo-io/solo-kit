@@ -21,4 +21,5 @@ import (
 	_ "github.com/solo-io/protoc-gen-ext"
 	_ "github.com/solo-io/protoc-gen-openapi"
 	_ "k8s.io/code-generator"
+	_ "k8s.io/gengo/v2"
 )

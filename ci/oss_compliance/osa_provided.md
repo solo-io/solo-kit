@@ -33,6 +33,7 @@ Name|Version|License
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.31.0|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.31.0|Apache License 2.0
 [k8s.io/code-generator](https://k8s.io/code-generator)|v0.31.0|Apache License 2.0
+[gengo/v2](https://k8s.io/gengo/v2)|v2.0.0-20240228010128-51d4e06bde70|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20240711033017-18e509b52bc8|Apache License 2.0
 [structured-merge-diff/v4](https://sigs.k8s.io/structured-merge-diff/v4)|v4.4.1|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.4.0|MIT License

@@ -20,11 +20,8 @@ package fake
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
 
 	v2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/apis/testing.solo.io/v2alpha1"
-	testingsoloiov2alpha1 "github.com/solo-io/solo-kit/test/mocks/v2alpha1/kube/client/applyconfiguration/testing.solo.io/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -44,22 +41,24 @@ var mockresourcesKind = v2alpha1.SchemeGroupVersion.WithKind("MockResource")
 
 // Get takes name of the mockResource, and returns the corresponding mockResource object, and an error if there is any.
 func (c *FakeMockResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2alpha1.MockResource, err error) {
+	emptyResult := &v2alpha1.MockResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(mockresourcesResource, c.ns, name), &v2alpha1.MockResource{})
+		Invokes(testing.NewGetActionWithOptions(mockresourcesResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.MockResource), err
 }
 
 // List takes label and field selectors, and returns the list of MockResources that match those selectors.
 func (c *FakeMockResources) List(ctx context.Context, opts v1.ListOptions) (result *v2alpha1.MockResourceList, err error) {
+	emptyResult := &v2alpha1.MockResourceList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(mockresourcesResource, mockresourcesKind, c.ns, opts), &v2alpha1.MockResourceList{})
+		Invokes(testing.NewListActionWithOptions(mockresourcesResource, mockresourcesKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -78,40 +77,43 @@ func (c *FakeMockResources) List(ctx context.Context, opts v1.ListOptions) (resu
 // Watch returns a watch.Interface that watches the requested mockResources.
 func (c *FakeMockResources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(mockresourcesResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(mockresourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a mockResource and creates it.  Returns the server's representation of the mockResource, and an error, if there is any.
 func (c *FakeMockResources) Create(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.CreateOptions) (result *v2alpha1.MockResource, err error) {
+	emptyResult := &v2alpha1.MockResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(mockresourcesResource, c.ns, mockResource), &v2alpha1.MockResource{})
+		Invokes(testing.NewCreateActionWithOptions(mockresourcesResource, c.ns, mockResource, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.MockResource), err
 }
 
 // Update takes the representation of a mockResource and updates it. Returns the server's representation of the mockResource, and an error, if there is any.
 func (c *FakeMockResources) Update(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (result *v2alpha1.MockResource, err error) {
+	emptyResult := &v2alpha1.MockResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(mockresourcesResource, c.ns, mockResource), &v2alpha1.MockResource{})
+		Invokes(testing.NewUpdateActionWithOptions(mockresourcesResource, c.ns, mockResource, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.MockResource), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeMockResources) UpdateStatus(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (*v2alpha1.MockResource, error) {
+func (c *FakeMockResources) UpdateStatus(ctx context.Context, mockResource *v2alpha1.MockResource, opts v1.UpdateOptions) (result *v2alpha1.MockResource, err error) {
+	emptyResult := &v2alpha1.MockResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(mockresourcesResource, "status", c.ns, mockResource), &v2alpha1.MockResource{})
+		Invokes(testing.NewUpdateSubresourceActionWithOptions(mockresourcesResource, "status", c.ns, mockResource, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.MockResource), err
 }
@@ -126,7 +128,7 @@ func (c *FakeMockResources) Delete(ctx context.Context, name string, opts v1.Del
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeMockResources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(mockresourcesResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(mockresourcesResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v2alpha1.MockResourceList{})
 	return err
@@ -134,56 +136,12 @@ func (c *FakeMockResources) DeleteCollection(ctx context.Context, opts v1.Delete
 
 // Patch applies the patch and returns the patched mockResource.
 func (c *FakeMockResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.MockResource, err error) {
+	emptyResult := &v2alpha1.MockResource{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(mockresourcesResource, c.ns, name, pt, data, subresources...), &v2alpha1.MockResource{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(mockresourcesResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v2alpha1.MockResource), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied mockResource.
-func (c *FakeMockResources) Apply(ctx context.Context, mockResource *testingsoloiov2alpha1.MockResourceApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.MockResource, err error) {
-	if mockResource == nil {
-		return nil, fmt.Errorf("mockResource provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(mockResource)
-	if err != nil {
-		return nil, err
-	}
-	name := mockResource.Name
-	if name == nil {
-		return nil, fmt.Errorf("mockResource.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(mockresourcesResource, c.ns, *name, types.ApplyPatchType, data), &v2alpha1.MockResource{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v2alpha1.MockResource), err
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *FakeMockResources) ApplyStatus(ctx context.Context, mockResource *testingsoloiov2alpha1.MockResourceApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.MockResource, err error) {
-	if mockResource == nil {
-		return nil, fmt.Errorf("mockResource provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(mockResource)
-	if err != nil {
-		return nil, err
-	}
-	name := mockResource.Name
-	if name == nil {
-		return nil, fmt.Errorf("mockResource.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(mockresourcesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v2alpha1.MockResource{})
-
-	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v2alpha1.MockResource), err
 }
