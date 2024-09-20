@@ -91,10 +91,10 @@ install-protoc:
 	if [ $(shell ${DEPSGOBIN}/protoc --version | grep -c ${PROTOC_VERSION}) -ne 0 ]; then \
 		echo expected protoc version ${PROTOC_VERSION} already installed ;\
 	else \
-		if [ "$(shell uname)" == "Darwin" ]; then \
+		if [ "$(shell uname)" = "Darwin" ]; then \
 			echo "downloading protoc for osx" ;\
 			wget $(PROTOC_URL)-osx-x86_64.zip -O $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
-		elif [ "$(shell uname -m)" == "aarch64" ]; then \
+		elif [ "$(shell uname -m)" = "aarch64" ]; then \
 			echo "downloading protoc for linux aarch64" ;\
 			wget $(PROTOC_URL)-linux-aarch_64.zip -O $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
 		else \
