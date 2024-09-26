@@ -1,0 +1,10 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/9683
+  resolvesIssue: false
+  description: >-
+    Fix the hack/update-codegen.sh bash script to work with Kubernetes 1.31
+    code generation. Previously, consumers were unable to run the generated
+    hack/update-codegen.sh script due to an invalid "source" command. Additionally,
+    the script has been adapted to run each k8s.io/code-generator binary directly
+    instead of interacting with the new bash script.
