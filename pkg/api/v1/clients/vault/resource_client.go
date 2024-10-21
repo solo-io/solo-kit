@@ -76,20 +76,23 @@ type ResourceClient struct {
 
 	// Tells Vault which secrets engine it should route traffic to. Defaults to "secret".
 	// https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines
-	pathPrefix   string
-	resourceType resources.VersionedResource
+	pathPrefix string
+	// This is for tuning the secret path to remove <resource_group>/<group_version>/Secret
+	ignoreGvkInSecretPath bool
+	resourceType          resources.VersionedResource
 }
 
-func NewResourceClient(client *api.Client, pathPrefix string, rootKey string, resourceType resources.VersionedResource) *ResourceClient {
+func NewResourceClient(client *api.Client, pathPrefix, rootKey string, ignoreGvk bool, resourceType resources.VersionedResource) *ResourceClient {
 	if pathPrefix == "" {
 		pathPrefix = "secret"
 	}
 
 	return &ResourceClient{
-		vault:        client,
-		pathPrefix:   pathPrefix,
-		root:         rootKey,
-		resourceType: resourceType,
+		vault:                 client,
+		pathPrefix:            pathPrefix,
+		root:                  rootKey,
+		ignoreGvkInSecretPath: ignoreGvk,
+		resourceType:          resourceType,
 	}
 }
 
@@ -321,13 +324,18 @@ const (
 )
 
 func (rc *ResourceClient) resourceDirectory(namespace, directoryType string) string {
+	gvkPath := ""
+	if !rc.ignoreGvkInSecretPath {
+		gvkPath = "/" + strings.Join([]string{
+			rc.resourceType.GroupVersionKind().Group,
+			rc.resourceType.GroupVersionKind().Version,
+			rc.resourceType.GroupVersionKind().Kind,
+		}, "/")
+	}
 	return strings.Join([]string{
 		rc.pathPrefix,
 		directoryType,
-		rc.root,
-		rc.resourceType.GroupVersionKind().Group,
-		rc.resourceType.GroupVersionKind().Version,
-		rc.resourceType.GroupVersionKind().Kind,
+		rc.root + gvkPath,
 		namespace,
 	}, "/")
 }

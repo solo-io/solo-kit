@@ -34,7 +34,7 @@ var _ = Describe("Base", func() {
 		c.SetToken(vaultInstance.Token())
 		Expect(err).NotTo(HaveOccurred())
 		vault = c
-		secrets = NewResourceClient(vault, pathPrefix, rootKey, &v1.MockResource{})
+		secrets = NewResourcegitClient(vault, pathPrefix, rootKey, false, &v1.MockResource{})
 	})
 	AfterEach(func() {
 		vault.Logical().Delete(rootKey)
