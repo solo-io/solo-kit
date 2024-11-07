@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -149,7 +148,7 @@ func (s *GenericSnapshot) Clone() Snapshot {
 			Items:   make(map[string]Resource, len(resources.Items)),
 		}
 		for k, v := range resources.Items {
-			resourcesCopy.Items[k] = proto.Clone(v.ResourceProto()).(Resource) // TODO(kdorosh) this is a bug, see https://github.com/solo-io/solo-kit/issues/461
+			resourcesCopy.Items[k] = v //proto.Clone(v.ResourceProto()).(Resource) // TODO(kdorosh) this is a bug, see https://github.com/solo-io/solo-kit/issues/461
 		}
 		typedResourcesCopy[typeName] = resourcesCopy
 	}
