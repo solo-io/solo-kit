@@ -318,8 +318,13 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 				linkedFile = filepath.Base(file.GetName())
 				//return "", errors.Errorf("failed to get generated file path for proto %v in list %v", file.GetName(), project.Request.FileToGenerate)
 			}
-			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
 
+			// Don't link to external apis docs, as they will be deleted
+			if strings.HasPrefix(linkedFile, "github.com/solo-io/gloo/projects/gloo/api/external") {
+				return typeName, nil
+			}
+
+			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
 			if docsOptions.Output == options.Restructured {
 				linkText = ":ref:`message." + strings.TrimPrefix(field.GetTypeName(), ".") + "`"
 			} else {
