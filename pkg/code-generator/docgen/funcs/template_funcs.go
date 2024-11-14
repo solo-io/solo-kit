@@ -320,7 +320,7 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 			}
 
 			// Skip links for packages that are configured to be skipped
-			for _, pkg := range docsOptions.RenderOptions.GetSkipLinksForPackages() {
+			for _, pkg := range docsOptions.RenderOptions.GetSkipLinksForPathPrefixes() {
 				if strings.HasPrefix(linkedFile, pkg) {
 					return typeName, nil
 				}

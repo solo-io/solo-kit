@@ -28,14 +28,16 @@ type DocsOptions struct {
 
 // RenderOptions provides options for rendering documentation
 type RenderOptions struct {
-	SkipLinksForPackages []string // when rendering markdown, do not attempt to link to these packages or their subpackages
+	// SkipLinksForPathPrefixes is a list of file path prefixes foofr APIs to which we should not be attempting to link
+	// For example: "github.com/solo-io/gloo/projects/gloo/api/external"
+	SkipLinksForPathPrefixes []string
 }
 
-func (o *RenderOptions) GetSkipLinksForPackages() []string {
+func (o *RenderOptions) GetSkipLinksForPathPrefixes() []string {
 	if o == nil {
 		return nil
 	}
-	return o.SkipLinksForPackages
+	return o.SkipLinksForPathPrefixes
 }
 
 const (
