@@ -21,8 +21,23 @@ type HugoOptions struct {
 }
 
 type DocsOptions struct {
-	Output      DocsOutput
-	HugoOptions *HugoOptions
+	Output        DocsOutput
+	HugoOptions   *HugoOptions
+	RenderOptions *RenderOptions
+}
+
+// RenderOptions provides options for rendering documentation
+type RenderOptions struct {
+	// SkipLinksForPathPrefixes is a list of file path prefixes of APIs to which we should not be attempting to link
+	// For example: "github.com/solo-io/gloo/projects/gloo/api/external"
+	SkipLinksForPathPrefixes []string
+}
+
+func (o *RenderOptions) GetSkipLinksForPathPrefixes() []string {
+	if o == nil {
+		return nil
+	}
+	return o.SkipLinksForPathPrefixes
 }
 
 const (
