@@ -28,7 +28,7 @@ type DocsOptions struct {
 
 // RenderOptions provides options for rendering documentation
 type RenderOptions struct {
-	// SkipLinksForPathPrefixes is a list of file path prefixes foofr APIs to which we should not be attempting to link
+	// SkipLinksForPathPrefixes is a list of file path prefixes of APIs to which we should not be attempting to link
 	// For example: "github.com/solo-io/gloo/projects/gloo/api/external"
 	SkipLinksForPathPrefixes []string
 }
