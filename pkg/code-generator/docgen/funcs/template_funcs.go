@@ -319,9 +319,11 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 				//return "", errors.Errorf("failed to get generated file path for proto %v in list %v", file.GetName(), project.Request.FileToGenerate)
 			}
 
-			// Don't link to external apis docs, as they will be deleted
-			if strings.HasPrefix(linkedFile, "github.com/solo-io/gloo/projects/gloo/api/external") {
-				return typeName, nil
+			// Skip links for packages that are configured to be skipped
+			for _, pkg := range docsOptions.RenderOptions.GetSkipLinksForPackages() {
+				if strings.HasPrefix(linkedFile, pkg) {
+					return typeName, nil
+				}
 			}
 
 			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
