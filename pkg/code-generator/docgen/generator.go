@@ -163,9 +163,15 @@ weight: 5
 
 func (d *DocsGen) hugoFileHeader(filename string) string {
 	name := filepath.Base(filename)
+
+	// Remove the "sk.md" extensions
 	if strings.HasSuffix(name, d.protoSuffix()) {
 		name = name[:len(name)-len(d.protoSuffix())]
 	}
+
+	// "Remove the ".proto" extension
+	extension := filepath.Ext(name)
+	name = filename[0 : len(filename)-len(extension)]
 
 	return strcase.ToCamel(name)
 }
