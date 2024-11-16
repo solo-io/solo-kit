@@ -156,21 +156,16 @@ func (d *DocsGen) FileHeader(filename string) string {
 func (d *DocsGen) hugoFileHeader(filename string) string {
 	name := filepath.Base(filename)
 
-	// Remove the "sk.md" extensions
-	if strings.HasSuffix(name, d.protoSuffix()) {
-		name = name[:len(name)-len(d.protoSuffix())]
-	}
-
 	var title string
-	extension := filepath.Ext(name)
-	switch extension {
-	case ".proto":
-		name = filename[0 : len(filename)-len(extension)]
-		title = strcase.ToCamel(name)
-		break
+	if strings.HasSuffix(name, d.protoSuffix()) {
+		// Remove the "sk.md" extensions
+		name = name[:len(name)-len(d.protoSuffix())]
 
-	default:
-		// do nothing
+		// Remove the ".proto" extension
+		extension := filepath.Ext(name)
+		title = strcase.ToCamel(name[0 : len(name)-len(extension)])
+	} else {
+		// Not a file for a proto file, leave the title to match the name of the file
 		title = name
 	}
 
