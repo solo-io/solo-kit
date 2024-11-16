@@ -25,7 +25,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 {{ end }}
 
 {{- if gt (len .Messages) 0 }} 
-#### Types:
+**Types:**
 
 {{ $linkMessage :=  "- [{{ printfptr \"%v\" .Name }}](#{{ toAnchorLink \"%v\" .Name }}) {{- if (resourceForMessage .) }} **Top-Level Resource**{{ end }}" }}
 {{ $linkEnum :=  "- [{{ printfptr \"%v\" .Name }}](#{{ toAnchorLink \"%v\" .Name }})" }}
@@ -44,7 +44,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 
 {{ end}}
 
-##### Source File: {{ githubLinkForFile "main" .Name }}
+**Source File: {{ githubLinkForFile "main" .Name }}**
 
 {{ $msgLongInfo :=  ` + "`" + `
 {{ $Message := . -}}
