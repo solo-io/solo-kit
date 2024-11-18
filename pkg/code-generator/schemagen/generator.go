@@ -46,6 +46,11 @@ type ValidationSchemaOptions struct {
 	// A list of messages (core.solo.io.Status) whose validation schema should
 	// not be generated
 	MessagesWithEmptySchema []string
+
+	// Whether to exclude kubebuilder markers and validations (such as PreserveUnknownFields, MinItems, default, and all CEL rules)
+	// Type and Required markers will be included regardless
+	// Default: false
+	DisableKubeMarkers bool
 }
 
 type JsonSchemaGenerator interface {
