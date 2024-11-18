@@ -1,0 +1,8 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/16010
+  resolvesIssue: false
+  description: |
+    Reverts the change in https://github.com/solo-io/solo-kit/pull/554 (released in v0.35.1) that implemented json.Marshaler in snapshot templates.
+    That change was unused (the initial issue was resolved without it).
+    However, when pulled into the https://github.com/solo-io/gloo repo to get the subsequent change, it resulted in test failures; reverting to fix the tests.

@@ -10,9 +10,9 @@ ROOT_PKG=github.com/solo-io/solo-kit/test/mocks/v2alpha1
 CLIENT_PKG=${ROOT_PKG}/kube/client
 APIS_PKG=${ROOT_PKG}/kube/apis
 
-# Below code is copied from https://github.com/weaveworks/flagger/blob/master/hack/update-codegen.sh
+# Grab code-generator version from go.sum.
 CODEGEN_PKG=$(go list -f '{{ .Dir }}' -m k8s.io/code-generator)
-
+GENGO_PKG=$(go list -f '{{ .Dir }}' -m k8s.io/gengo/v2)
 
 echo ">> Using ${CODEGEN_PKG}"
 
@@ -29,15 +29,22 @@ trap "cleanup" EXIT SIGINT
 
 echo ">> Temporary output directory ${TEMP_DIR}"
 
+mkdir -p "${TEMP_DIR}/${ROOT_PKG}/pkg/client/informers" \
+         "${TEMP_DIR}/${ROOT_PKG}/pkg/client/listers" \
+         "${TEMP_DIR}/${ROOT_PKG}/pkg/client/clientset"
+
 # Ensure we can execute.
-chmod +x ${CODEGEN_PKG}/generate-groups.sh
+chmod +x ${CODEGEN_PKG}/kube_codegen.sh
 
+source ${CODEGEN_PKG}/kube_codegen.sh kube::codegen::gen_client \
+    --output-dir "${TEMP_DIR}" \
+    --output-pkg "${CLIENT_PKG}" \
+    --with-watch \
+    --boilerplate "${GENGO_PKG}/boilerplate/boilerplate.go.txt" \
+    ${APIS_PKG}
 
-${CODEGEN_PKG}/generate-groups.sh all \
-    ${CLIENT_PKG} \
-    ${APIS_PKG} \
-    testing.solo.io:v2alpha1 \
-    --output-base "${TEMP_DIR}" --go-header-file "${CODEGEN_PKG}/hack/boilerplate.go.txt"
+ls -lha $TEMP_DIR
+
 # Copy everything back.
-cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/.."
+cp -r "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
 

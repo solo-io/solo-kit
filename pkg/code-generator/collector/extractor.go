@@ -87,9 +87,10 @@ func (i *synchronizedImportsExtractor) FetchImportsForFile(protoFile string, imp
 	i.activeRequestsMu.Unlock()
 
 	select {
-	case <-time.After(5 * time.Second):
+	case <-time.After(15 * time.Second):
 		// We should never reach this. This can only occur if we deadlock on file imports
-		// which only happens with cyclic dependencies
+		// which only happens with cyclic dependencies or golang is being very slow.
+		// The deadlock occurs on file imports with cyclic dependencies.
 		// Perhaps a safer alternative to erroring is just to execute the importsFetcher:
 		// 	return importsFetcher(protoFile)
 		return nil, FetchImportsTimeout(protoFile)
