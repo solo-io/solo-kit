@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/solo-projects/issues/6768
+  resolvesIssue: false
+  description: >-
+    Update protobuf processing to no longer render links to locally hosted external API docs, as they are being removed.

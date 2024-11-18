@@ -318,8 +318,15 @@ func linkForField(project *model.Project, docsOptions *options.DocsOptions) func
 				linkedFile = filepath.Base(file.GetName())
 				//return "", errors.Errorf("failed to get generated file path for proto %v in list %v", file.GetName(), project.Request.FileToGenerate)
 			}
-			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
 
+			// Skip links for packages that are configured to be skipped
+			for _, pkg := range docsOptions.RenderOptions.GetSkipLinksForPathPrefixes() {
+				if strings.HasPrefix(linkedFile, pkg) {
+					return typeName, nil
+				}
+			}
+
+			linkedFile = relativeFilename(forFile.GetName(), linkedFile)
 			if docsOptions.Output == options.Restructured {
 				linkText = ":ref:`message." + strings.TrimPrefix(field.GetTypeName(), ".") + "`"
 			} else {
