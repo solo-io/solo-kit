@@ -35,7 +35,7 @@ func ProtoFileTemplate(project *model.Project, docsOptions *options.DocsOptions)
 
 {{- if gt (len .Enums) 0 }} 
 
-##### Enums:
+**Types:**
 
 {{ range .Enums}}
 	- [{{ printfptr "%v" .Name }}](#{{ toAnchorLink "%v" .Name }})
