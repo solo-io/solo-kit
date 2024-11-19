@@ -160,7 +160,7 @@ func (d *DocsGen) hugoFileHeader(filename string) string {
 	protoExtension := ".proto" + d.protoSuffix()
 	if strings.HasSuffix(name, protoExtension) {
 		// Remove the "proto.sk.md" extension
-		name = name[:len(name)-len(protoExtension)]
+		name = strings.TrimSuffix(name, protoExtension)
 
 		title = strcase.ToCamel(name)
 	} else {
