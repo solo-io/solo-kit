@@ -171,8 +171,7 @@ func (d *DocsGen) hugoFileHeader(filename string) string {
 	// This means that custom_resource.proto.sk.md will have a title of CustomResource
 	protoSuffix := ".proto"
 	if strings.HasSuffix(title, protoSuffix) {
-		name = strings.TrimSuffix(title, protoSuffix)
-		title = strcase.ToCamel(title)
+		title = strcase.ToCamel(strings.TrimSuffix(title, protoSuffix))
 	}
 
 	return fmt.Sprintf(`
