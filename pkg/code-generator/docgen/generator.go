@@ -157,7 +157,7 @@ func (d *DocsGen) hugoFileHeader(filename string) string {
 	name := filepath.Base(filename)
 
 	var title string
-        protoExtension := ".proto"+d.protoSuffix()
+	protoExtension := ".proto" + d.protoSuffix()
 	if strings.HasSuffix(name, protoExtension) {
 		// Remove the "proto.sk.md" extension
 		name = name[:len(name)-len(protoExtension)]
