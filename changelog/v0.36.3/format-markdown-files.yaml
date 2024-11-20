@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/solo-projects/issues/6612
+  resolvesIssue: false
+  description: >-
+    Update the markdown templates to fit new formatting guidelines.
