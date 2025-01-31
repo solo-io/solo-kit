@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/kgateway-dev/kgateway/issues/8626
+  resolvesIssue: true
+  description: >-
+    Downgrade the level of message "respond open watch priority %d and index %d :%v with new version %q" to debug.
