@@ -189,6 +189,20 @@ func (mr *MockTestingEmitterMockRecorder) MockCustomType() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MockCustomType", reflect.TypeOf((*MockTestingEmitter)(nil).MockCustomType))
 }
 
+// MockCustomSpecHashType mocks base method
+func (m *MockTestingEmitter) MockCustomSpecHashType() v1.MockCustomSpecHashTypeClient {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MockCustomSpecHashType")
+	ret0, _ := ret[0].(v1.MockCustomSpecHashTypeClient)
+	return ret0
+}
+
+// MockCustomSpecHashType indicates an expected call of MockCustomSpecHashType
+func (mr *MockTestingEmitterMockRecorder) MockCustomSpecHashType() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MockCustomSpecHashType", reflect.TypeOf((*MockTestingEmitter)(nil).MockCustomSpecHashType))
+}
+
 // Pod mocks base method
 func (m *MockTestingEmitter) Pod() kubernetes.PodClient {
 	m.ctrl.T.Helper()
