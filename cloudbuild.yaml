@@ -45,7 +45,7 @@ steps:
 
 # check code gen for kubernetes custom resources
 # this step passes if there is no generated diff, fails otherwise
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.11.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.12.0'
   entrypoint: 'bash'
   args: ['ci/check-code-gen.sh']
   waitFor: ['update-deps']
