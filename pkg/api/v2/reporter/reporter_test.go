@@ -175,7 +175,7 @@ var _ = Describe("Reporter", func() {
 		}
 
 		resourceErrs := rep.ResourceReports{
-			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf(veryLargeError)},
+			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("%s", veryLargeError)},
 		}
 		err = reporter.WriteReports(context.TODO(), resourceErrs, subresourceStatuses)
 		Expect(err).NotTo(HaveOccurred())
@@ -235,7 +235,7 @@ var _ = Describe("Reporter", func() {
 		}
 
 		resourceErrs := rep.ResourceReports{
-			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf(veryLargeError)},
+			r1.(*v1.MockResource): rep.Report{Errors: fmt.Errorf("%s", veryLargeError)},
 		}
 		err = reporter.WriteReports(context.TODO(), resourceErrs, subresourceStatuses)
 		Expect(err).NotTo(HaveOccurred())
