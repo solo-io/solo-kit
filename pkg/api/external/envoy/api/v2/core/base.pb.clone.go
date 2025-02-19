@@ -13,15 +13,15 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
-
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_solo_kit_pkg_api_external_envoy_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
+
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -67,9 +67,9 @@ func (m *BuildVersion) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Metadata = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Metadata = proto.Clone(m.GetMetadata()).(*google_golang_org_protobuf_types_known_structpb.Struct)
 	}
 
 	return target
@@ -113,9 +113,9 @@ func (m *Node) Clone() proto.Message {
 	target.Cluster = m.GetCluster()
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Metadata = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Metadata = proto.Clone(m.GetMetadata()).(*google_golang_org_protobuf_types_known_structpb.Struct)
 	}
 
 	if h, ok := interface{}(m.GetLocality()).(clone.Cloner); ok {
@@ -197,13 +197,13 @@ func (m *Metadata) Clone() proto.Message {
 	target = &Metadata{}
 
 	if m.GetFilterMetadata() != nil {
-		target.FilterMetadata = make(map[string]*github_com_golang_protobuf_ptypes_struct.Struct, len(m.GetFilterMetadata()))
+		target.FilterMetadata = make(map[string]*google_golang_org_protobuf_types_known_structpb.Struct, len(m.GetFilterMetadata()))
 		for k, v := range m.GetFilterMetadata() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.FilterMetadata[k] = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.FilterMetadata[k] = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 			} else {
-				target.FilterMetadata[k] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.FilterMetadata[k] = proto.Clone(v).(*google_golang_org_protobuf_types_known_structpb.Struct)
 			}
 
 		}
@@ -236,9 +236,9 @@ func (m *RuntimeFeatureFlag) Clone() proto.Message {
 	target = &RuntimeFeatureFlag{}
 
 	if h, ok := interface{}(m.GetDefaultValue()).(clone.Cloner); ok {
-		target.DefaultValue = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DefaultValue = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.DefaultValue = proto.Clone(m.GetDefaultValue()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DefaultValue = proto.Clone(m.GetDefaultValue()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	target.RuntimeKey = m.GetRuntimeKey()
@@ -270,9 +270,9 @@ func (m *HeaderValueOption) Clone() proto.Message {
 	target = &HeaderValueOption{}
 
 	if h, ok := interface{}(m.GetAppend()).(clone.Cloner); ok {
-		target.Append = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Append = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Append = proto.Clone(m.GetAppend()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Append = proto.Clone(m.GetAppend()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	switch m.HeaderOption.(type) {
@@ -445,11 +445,11 @@ func (m *TransportSocket) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetConfig()).(clone.Cloner); ok {
 			target.ConfigType = &TransportSocket_Config{
-				Config: h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct),
+				Config: h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct),
 			}
 		} else {
 			target.ConfigType = &TransportSocket_Config{
-				Config: proto.Clone(m.GetConfig()).(*github_com_golang_protobuf_ptypes_struct.Struct),
+				Config: proto.Clone(m.GetConfig()).(*google_golang_org_protobuf_types_known_structpb.Struct),
 			}
 		}
 
@@ -457,11 +457,11 @@ func (m *TransportSocket) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetTypedConfig()).(clone.Cloner); ok {
 			target.ConfigType = &TransportSocket_TypedConfig{
-				TypedConfig: h.Clone().(*github_com_golang_protobuf_ptypes_any.Any),
+				TypedConfig: h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any),
 			}
 		} else {
 			target.ConfigType = &TransportSocket_TypedConfig{
-				TypedConfig: proto.Clone(m.GetTypedConfig()).(*github_com_golang_protobuf_ptypes_any.Any),
+				TypedConfig: proto.Clone(m.GetTypedConfig()).(*google_golang_org_protobuf_types_known_anypb.Any),
 			}
 		}
 
