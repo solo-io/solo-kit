@@ -4,3 +4,23 @@ changelog:
       Bump dependencies to support Go 1.24
     issueLink: https://github.com/solo-io/solo-projects/issues/7609
     resolvesIssue: false
+  - dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.28.4
+    type: DEPENDENCY_BUMP
+  - dependencyOwner: solo-io
+    dependencyRepo: anyvendor
+    dependencyTag: v0.2.0
+    type: DEPENDENCY_BUMP
+  - dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.10.0
+    type: DEPENDENCY_BUMP
+  - dependencyOwner: solo-io
+    dependencyRepo: protoc-gen-ext
+    dependencyTag: v0.1.0
+    type: DEPENDENCY_BUMP
+  - dependencyOwner: solo-io
+    dependencyRepo: protoc-gen-openapi
+    dependencyTag: v0.3.0
+    type: DEPENDENCY_BUMP
