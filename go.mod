@@ -27,12 +27,12 @@ require (
 	github.com/pseudomuto/protokit v0.2.0
 	github.com/radovskyb/watcher v1.0.2
 	github.com/rotisserie/eris v0.1.1
-	github.com/solo-io/anyvendor v0.0.1
+	github.com/solo-io/anyvendor v0.2.0
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.27.4
-	github.com/solo-io/k8s-utils v0.9.0
-	github.com/solo-io/protoc-gen-ext v0.0.18
-	github.com/solo-io/protoc-gen-openapi v0.2.4
+	github.com/solo-io/go-utils v0.28.4
+	github.com/solo-io/k8s-utils v0.10.0
+	github.com/solo-io/protoc-gen-ext v0.1.0
+	github.com/solo-io/protoc-gen-openapi v0.3.0
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.8.0
@@ -99,7 +99,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-zglob v0.0.1 // indirect
+	github.com/mattn/go-zglob v0.0.3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
