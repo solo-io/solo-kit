@@ -10,9 +10,9 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
 )
 
 const (
@@ -109,7 +109,7 @@ func (x *Resource) GetSkipHashingAnnotations() bool {
 
 var file_solo_kit_proto_extTypes = []protoimpl.ExtensionInfo{
 	{
-		ExtendedType:  (*descriptor.MessageOptions)(nil),
+		ExtendedType:  (*descriptorpb.MessageOptions)(nil),
 		ExtensionType: (*Resource)(nil),
 		Field:         10000,
 		Name:          "core.solo.io.resource",
@@ -118,7 +118,7 @@ var file_solo_kit_proto_extTypes = []protoimpl.ExtensionInfo{
 	},
 }
 
-// Extension fields to descriptor.MessageOptions.
+// Extension fields to descriptorpb.MessageOptions.
 var (
 	// options for a message that's intended to become a solo-kit resource
 	//
@@ -172,8 +172,8 @@ func file_solo_kit_proto_rawDescGZIP() []byte {
 
 var file_solo_kit_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_solo_kit_proto_goTypes = []interface{}{
-	(*Resource)(nil),                  // 0: core.solo.io.Resource
-	(*descriptor.MessageOptions)(nil), // 1: google.protobuf.MessageOptions
+	(*Resource)(nil),                    // 0: core.solo.io.Resource
+	(*descriptorpb.MessageOptions)(nil), // 1: google.protobuf.MessageOptions
 }
 var file_solo_kit_proto_depIdxs = []int32{
 	1, // 0: core.solo.io.resource:extendee -> google.protobuf.MessageOptions

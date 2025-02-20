@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
-
 	github_com_solo_io_solo_kit_pkg_api_external_envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
 	google_golang_org_genproto_googleapis_rpc_status "google.golang.org/genproto/googleapis/rpc/status"
+
+	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -80,13 +80,13 @@ func (m *DiscoveryResponse) Clone() proto.Message {
 	target.VersionInfo = m.GetVersionInfo()
 
 	if m.GetResources() != nil {
-		target.Resources = make([]*github_com_golang_protobuf_ptypes_any.Any, len(m.GetResources()))
+		target.Resources = make([]*google_golang_org_protobuf_types_known_anypb.Any, len(m.GetResources()))
 		for idx, v := range m.GetResources() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Resources[idx] = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+				target.Resources[idx] = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 			} else {
-				target.Resources[idx] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_any.Any)
+				target.Resources[idx] = proto.Clone(v).(*google_golang_org_protobuf_types_known_anypb.Any)
 			}
 
 		}
@@ -222,9 +222,9 @@ func (m *Resource) Clone() proto.Message {
 	target.Version = m.GetVersion()
 
 	if h, ok := interface{}(m.GetResource()).(clone.Cloner); ok {
-		target.Resource = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.Resource = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.Resource = proto.Clone(m.GetResource()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.Resource = proto.Clone(m.GetResource()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	return target

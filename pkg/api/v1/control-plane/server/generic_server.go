@@ -302,7 +302,7 @@ func (s *server) process(
 				return status.Errorf(codes.Unavailable, "watching failed")
 			}
 			if resp.Response == nil {
-				return status.Errorf(codes.Unavailable, "watching failed for "+resp.TypeUrl)
+				return status.Error(codes.Unavailable, "watching failed for "+resp.TypeUrl)
 			}
 			typeurl := resp.TypeUrl
 			nonce, err := send(*resp.Response, typeurl, streamID, &streamNonce)

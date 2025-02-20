@@ -11,14 +11,14 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -292,7 +292,7 @@ type BuildVersion struct {
 	Version *_type.SemanticVersion `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
 	// Free-form build information.
 	// Envoy defines several well known keys in the source/common/version/version.h file
-	Metadata *_struct.Struct `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Metadata *structpb.Struct `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
 }
 
 func (x *BuildVersion) Reset() {
@@ -334,7 +334,7 @@ func (x *BuildVersion) GetVersion() *_type.SemanticVersion {
 	return nil
 }
 
-func (x *BuildVersion) GetMetadata() *_struct.Struct {
+func (x *BuildVersion) GetMetadata() *structpb.Struct {
 	if x != nil {
 		return x.Metadata
 	}
@@ -467,7 +467,7 @@ type Node struct {
 	Cluster string `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Opaque metadata extending the node identifier. Envoy will pass this
 	// directly to the management server.
-	Metadata *_struct.Struct `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Metadata *structpb.Struct `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// Locality specifying where the Envoy instance is running.
 	Locality *Locality `protobuf:"bytes,4,opt,name=locality,proto3" json:"locality,omitempty"`
 	// This is motivated by informing a management server during canary which
@@ -546,7 +546,7 @@ func (x *Node) GetCluster() string {
 	return ""
 }
 
-func (x *Node) GetMetadata() *_struct.Struct {
+func (x *Node) GetMetadata() *structpb.Struct {
 	if x != nil {
 		return x.Metadata
 	}
@@ -664,7 +664,7 @@ type Metadata struct {
 
 	// Key is the reverse DNS filter name, e.g. com.acme.widget. The envoy.*
 	// namespace is reserved for Envoy's built-in filters.
-	FilterMetadata map[string]*_struct.Struct `protobuf:"bytes,1,rep,name=filter_metadata,json=filterMetadata,proto3" json:"filter_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	FilterMetadata map[string]*structpb.Struct `protobuf:"bytes,1,rep,name=filter_metadata,json=filterMetadata,proto3" json:"filter_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *Metadata) Reset() {
@@ -699,7 +699,7 @@ func (*Metadata) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *Metadata) GetFilterMetadata() map[string]*_struct.Struct {
+func (x *Metadata) GetFilterMetadata() map[string]*structpb.Struct {
 	if x != nil {
 		return x.FilterMetadata
 	}
@@ -771,7 +771,7 @@ type RuntimeFeatureFlag struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Default value if runtime value is not available.
-	DefaultValue *wrappers.BoolValue `protobuf:"bytes,1,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	DefaultValue *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 	// Runtime key to get value for comparison. This value is used if defined. The boolean value must
 	// be represented via its
 	// `canonical JSON encoding <https://developers.google.com/protocol-buffers/docs/proto3#json>`_.
@@ -810,7 +810,7 @@ func (*RuntimeFeatureFlag) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *RuntimeFeatureFlag) GetDefaultValue() *wrappers.BoolValue {
+func (x *RuntimeFeatureFlag) GetDefaultValue() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.DefaultValue
 	}
@@ -901,7 +901,7 @@ type HeaderValueOption struct {
 	HeaderOption isHeaderValueOption_HeaderOption `protobuf_oneof:"header_option"`
 	// Should the value be appended? If true (default), the value is appended to
 	// existing values.
-	Append *wrappers.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
+	Append *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
 }
 
 func (x *HeaderValueOption) Reset() {
@@ -957,7 +957,7 @@ func (x *HeaderValueOption) GetHeaderSecretRef() *core.ResourceRef {
 	return nil
 }
 
-func (x *HeaderValueOption) GetAppend() *wrappers.BoolValue {
+func (x *HeaderValueOption) GetAppend() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Append
 	}
@@ -1339,14 +1339,14 @@ func (m *TransportSocket) GetConfigType() isTransportSocket_ConfigType {
 	return nil
 }
 
-func (x *TransportSocket) GetConfig() *_struct.Struct {
+func (x *TransportSocket) GetConfig() *structpb.Struct {
 	if x, ok := x.GetConfigType().(*TransportSocket_Config); ok {
 		return x.Config
 	}
 	return nil
 }
 
-func (x *TransportSocket) GetTypedConfig() *any1.Any {
+func (x *TransportSocket) GetTypedConfig() *anypb.Any {
 	if x, ok := x.GetConfigType().(*TransportSocket_TypedConfig); ok {
 		return x.TypedConfig
 	}
@@ -1358,11 +1358,11 @@ type isTransportSocket_ConfigType interface {
 }
 
 type TransportSocket_Config struct {
-	Config *_struct.Struct `protobuf:"bytes,2,opt,name=config,proto3,oneof"`
+	Config *structpb.Struct `protobuf:"bytes,2,opt,name=config,proto3,oneof"`
 }
 
 type TransportSocket_TypedConfig struct {
-	TypedConfig *any1.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
+	TypedConfig *anypb.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
 }
 
 func (*TransportSocket_Config) isTransportSocket_ConfigType() {}
@@ -1749,12 +1749,12 @@ var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_g
 	(*ControlPlane)(nil),             // 18: solo.io.envoy.api.v2.core.ControlPlane
 	nil,                              // 19: solo.io.envoy.api.v2.core.Metadata.FilterMetadataEntry
 	(*_type.SemanticVersion)(nil),    // 20: solo.io.envoy.type.SemanticVersion
-	(*_struct.Struct)(nil),           // 21: google.protobuf.Struct
+	(*structpb.Struct)(nil),          // 21: google.protobuf.Struct
 	(*Address)(nil),                  // 22: solo.io.envoy.api.v2.core.Address
-	(*wrappers.BoolValue)(nil),       // 23: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),     // 23: google.protobuf.BoolValue
 	(*core.ResourceRef)(nil),         // 24: core.solo.io.ResourceRef
 	(*HttpUri)(nil),                  // 25: solo.io.envoy.api.v2.core.HttpUri
-	(*any1.Any)(nil),                 // 26: google.protobuf.Any
+	(*anypb.Any)(nil),                // 26: google.protobuf.Any
 	(*_type.FractionalPercent)(nil),  // 27: solo.io.envoy.type.FractionalPercent
 }
 var file_github_com_solo_io_solo_kit_api_external_envoy_api_v2_core_base_proto_depIdxs = []int32{

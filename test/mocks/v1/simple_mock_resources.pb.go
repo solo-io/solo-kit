@@ -10,17 +10,17 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	any1 "github.com/golang/protobuf/ptypes/any"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	empty "github.com/golang/protobuf/ptypes/empty"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -108,35 +108,35 @@ type SimpleMockResource struct {
 	// nested_message_list comment
 	NestedMessageList []*SimpleMockResource_NestedMessage `protobuf:"bytes,5,rep,name=nested_message_list,json=nestedMessageList,proto3" json:"nested_message_list,omitempty"`
 	// any comment
-	Any *any1.Any `protobuf:"bytes,11,opt,name=any,proto3" json:"any,omitempty"`
+	Any *anypb.Any `protobuf:"bytes,11,opt,name=any,proto3" json:"any,omitempty"`
 	// struct comment
-	Struct *_struct.Struct `protobuf:"bytes,12,opt,name=struct,proto3" json:"struct,omitempty"`
+	Struct *structpb.Struct `protobuf:"bytes,12,opt,name=struct,proto3" json:"struct,omitempty"`
 	// mapped_struct comment
-	MappedStruct map[string]*_struct.Struct `protobuf:"bytes,13,rep,name=mapped_struct,json=mappedStruct,proto3" json:"mapped_struct,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	MappedStruct map[string]*structpb.Struct `protobuf:"bytes,13,rep,name=mapped_struct,json=mappedStruct,proto3" json:"mapped_struct,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// bool_value comment
-	BoolValue *wrappers.BoolValue `protobuf:"bytes,14,opt,name=bool_value,json=boolValue,proto3" json:"bool_value,omitempty"`
+	BoolValue *wrapperspb.BoolValue `protobuf:"bytes,14,opt,name=bool_value,json=boolValue,proto3" json:"bool_value,omitempty"`
 	// int32_value comment
-	Int32Value *wrappers.Int32Value `protobuf:"bytes,15,opt,name=int32_value,json=int32Value,proto3" json:"int32_value,omitempty"`
+	Int32Value *wrapperspb.Int32Value `protobuf:"bytes,15,opt,name=int32_value,json=int32Value,proto3" json:"int32_value,omitempty"`
 	// uint32_value comment
-	Uint32Value *wrappers.UInt32Value `protobuf:"bytes,16,opt,name=uint32_value,json=uint32Value,proto3" json:"uint32_value,omitempty"`
+	Uint32Value *wrapperspb.UInt32Value `protobuf:"bytes,16,opt,name=uint32_value,json=uint32Value,proto3" json:"uint32_value,omitempty"`
 	// float_value comment
-	FloatValue *wrappers.FloatValue `protobuf:"bytes,17,opt,name=float_value,json=floatValue,proto3" json:"float_value,omitempty"`
+	FloatValue *wrapperspb.FloatValue `protobuf:"bytes,17,opt,name=float_value,json=floatValue,proto3" json:"float_value,omitempty"`
 	// duration comment
-	Duration *duration.Duration `protobuf:"bytes,18,opt,name=duration,proto3" json:"duration,omitempty"`
+	Duration *durationpb.Duration `protobuf:"bytes,18,opt,name=duration,proto3" json:"duration,omitempty"`
 	// empty comment
-	Empty *empty.Empty `protobuf:"bytes,19,opt,name=empty,proto3" json:"empty,omitempty"`
+	Empty *emptypb.Empty `protobuf:"bytes,19,opt,name=empty,proto3" json:"empty,omitempty"`
 	// string_value comment
-	StringValue *wrappers.StringValue `protobuf:"bytes,20,opt,name=string_value,json=stringValue,proto3" json:"string_value,omitempty"`
+	StringValue *wrapperspb.StringValue `protobuf:"bytes,20,opt,name=string_value,json=stringValue,proto3" json:"string_value,omitempty"`
 	// double_value comment
-	DoubleValue *wrappers.DoubleValue `protobuf:"bytes,21,opt,name=double_value,json=doubleValue,proto3" json:"double_value,omitempty"`
+	DoubleValue *wrapperspb.DoubleValue `protobuf:"bytes,21,opt,name=double_value,json=doubleValue,proto3" json:"double_value,omitempty"`
 	// timestamp comment
-	Timestamp *timestamp.Timestamp `protobuf:"bytes,22,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp *timestamppb.Timestamp `protobuf:"bytes,22,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// enum_options comment
 	EnumOptions SimpleMockResource_EnumOptions `protobuf:"varint,30,opt,name=enum_options,json=enumOptions,proto3,enum=testing.solo.io.SimpleMockResource_EnumOptions" json:"enum_options,omitempty"`
 	// int64_value comment
-	Int64Value *wrappers.Int64Value `protobuf:"bytes,31,opt,name=int64_value,json=int64Value,proto3" json:"int64_value,omitempty"`
+	Int64Value *wrapperspb.Int64Value `protobuf:"bytes,31,opt,name=int64_value,json=int64Value,proto3" json:"int64_value,omitempty"`
 	// uint64_value comment
-	Uint64Value *wrappers.UInt64Value `protobuf:"bytes,32,opt,name=uint64_value,json=uint64Value,proto3" json:"uint64_value,omitempty"`
+	Uint64Value *wrapperspb.UInt64Value `protobuf:"bytes,32,opt,name=uint64_value,json=uint64Value,proto3" json:"uint64_value,omitempty"`
 }
 
 func (x *SimpleMockResource) Reset() {
@@ -227,84 +227,84 @@ func (x *SimpleMockResource) GetNestedMessageList() []*SimpleMockResource_Nested
 	return nil
 }
 
-func (x *SimpleMockResource) GetAny() *any1.Any {
+func (x *SimpleMockResource) GetAny() *anypb.Any {
 	if x != nil {
 		return x.Any
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetStruct() *_struct.Struct {
+func (x *SimpleMockResource) GetStruct() *structpb.Struct {
 	if x != nil {
 		return x.Struct
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetMappedStruct() map[string]*_struct.Struct {
+func (x *SimpleMockResource) GetMappedStruct() map[string]*structpb.Struct {
 	if x != nil {
 		return x.MappedStruct
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetBoolValue() *wrappers.BoolValue {
+func (x *SimpleMockResource) GetBoolValue() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.BoolValue
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetInt32Value() *wrappers.Int32Value {
+func (x *SimpleMockResource) GetInt32Value() *wrapperspb.Int32Value {
 	if x != nil {
 		return x.Int32Value
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetUint32Value() *wrappers.UInt32Value {
+func (x *SimpleMockResource) GetUint32Value() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Uint32Value
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetFloatValue() *wrappers.FloatValue {
+func (x *SimpleMockResource) GetFloatValue() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.FloatValue
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetDuration() *duration.Duration {
+func (x *SimpleMockResource) GetDuration() *durationpb.Duration {
 	if x != nil {
 		return x.Duration
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetEmpty() *empty.Empty {
+func (x *SimpleMockResource) GetEmpty() *emptypb.Empty {
 	if x != nil {
 		return x.Empty
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetStringValue() *wrappers.StringValue {
+func (x *SimpleMockResource) GetStringValue() *wrapperspb.StringValue {
 	if x != nil {
 		return x.StringValue
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetDoubleValue() *wrappers.DoubleValue {
+func (x *SimpleMockResource) GetDoubleValue() *wrapperspb.DoubleValue {
 	if x != nil {
 		return x.DoubleValue
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetTimestamp() *timestamp.Timestamp {
+func (x *SimpleMockResource) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
@@ -318,14 +318,14 @@ func (x *SimpleMockResource) GetEnumOptions() SimpleMockResource_EnumOptions {
 	return SimpleMockResource_OPTION_A
 }
 
-func (x *SimpleMockResource) GetInt64Value() *wrappers.Int64Value {
+func (x *SimpleMockResource) GetInt64Value() *wrapperspb.Int64Value {
 	if x != nil {
 		return x.Int64Value
 	}
 	return nil
 }
 
-func (x *SimpleMockResource) GetUint64Value() *wrappers.UInt64Value {
+func (x *SimpleMockResource) GetUint64Value() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.Uint64Value
 	}
@@ -556,19 +556,19 @@ var file_github_com_solo_io_solo_kit_test_mocks_api_v1_simple_mock_resources_pro
 	nil,                                      // 3: testing.solo.io.SimpleMockResource.MappedStructEntry
 	(*SimpleMockResource_NestedMessage)(nil), // 4: testing.solo.io.SimpleMockResource.NestedMessage
 	(*core.Metadata)(nil),                    // 5: core.solo.io.Metadata
-	(*any1.Any)(nil),                         // 6: google.protobuf.Any
-	(*_struct.Struct)(nil),                   // 7: google.protobuf.Struct
-	(*wrappers.BoolValue)(nil),               // 8: google.protobuf.BoolValue
-	(*wrappers.Int32Value)(nil),              // 9: google.protobuf.Int32Value
-	(*wrappers.UInt32Value)(nil),             // 10: google.protobuf.UInt32Value
-	(*wrappers.FloatValue)(nil),              // 11: google.protobuf.FloatValue
-	(*duration.Duration)(nil),                // 12: google.protobuf.Duration
-	(*empty.Empty)(nil),                      // 13: google.protobuf.Empty
-	(*wrappers.StringValue)(nil),             // 14: google.protobuf.StringValue
-	(*wrappers.DoubleValue)(nil),             // 15: google.protobuf.DoubleValue
-	(*timestamp.Timestamp)(nil),              // 16: google.protobuf.Timestamp
-	(*wrappers.Int64Value)(nil),              // 17: google.protobuf.Int64Value
-	(*wrappers.UInt64Value)(nil),             // 18: google.protobuf.UInt64Value
+	(*anypb.Any)(nil),                        // 6: google.protobuf.Any
+	(*structpb.Struct)(nil),                  // 7: google.protobuf.Struct
+	(*wrapperspb.BoolValue)(nil),             // 8: google.protobuf.BoolValue
+	(*wrapperspb.Int32Value)(nil),            // 9: google.protobuf.Int32Value
+	(*wrapperspb.UInt32Value)(nil),           // 10: google.protobuf.UInt32Value
+	(*wrapperspb.FloatValue)(nil),            // 11: google.protobuf.FloatValue
+	(*durationpb.Duration)(nil),              // 12: google.protobuf.Duration
+	(*emptypb.Empty)(nil),                    // 13: google.protobuf.Empty
+	(*wrapperspb.StringValue)(nil),           // 14: google.protobuf.StringValue
+	(*wrapperspb.DoubleValue)(nil),           // 15: google.protobuf.DoubleValue
+	(*timestamppb.Timestamp)(nil),            // 16: google.protobuf.Timestamp
+	(*wrapperspb.Int64Value)(nil),            // 17: google.protobuf.Int64Value
+	(*wrapperspb.UInt64Value)(nil),           // 18: google.protobuf.UInt64Value
 }
 var file_github_com_solo_io_solo_kit_test_mocks_api_v1_simple_mock_resources_proto_depIdxs = []int32{
 	5,  // 0: testing.solo.io.SimpleMockResource.metadata:type_name -> core.solo.io.Metadata
