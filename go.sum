@@ -558,8 +558,8 @@ github.com/solo-io/anyvendor v0.2.0/go.mod h1:WIJdoBmSQCii7hsiCpjXNWa0AnRzOLbg6P
 github.com/solo-io/go-list-licenses v0.1.4 h1:u4xh1OUORT4iSWuAp3Q4NsfHcDaeUV8QRDH8ACQqbxw=
 github.com/solo-io/go-list-licenses v0.1.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6B3F6TrWYfcdHVroA=
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
-github.com/solo-io/go-utils v0.28.5 h1:SendslIDYc46qp2QLtfd7cEi6jJWf90W51dzzQg3eRg=
-github.com/solo-io/go-utils v0.28.5/go.mod h1:/V0ovlR+tGhb4+QNYIffKscuhtUIEoN29mJhWjYLYA4=
+github.com/solo-io/go-utils v0.28.6 h1:Ai/3Yo+Exa6w5N3CanQXHmxW7471Ne23vO1bpkQT/lg=
+github.com/solo-io/go-utils v0.28.6/go.mod h1:xA4ARGfGXD2QRRGpFFX6AQVTn4mUklnzrS5FJ5Xcgbo=
 github.com/solo-io/k8s-utils v0.11.0 h1:HxeqetI7rHlZaYjh7WX1QV0S1QFH910dJZy01DVyiPw=
 github.com/solo-io/k8s-utils v0.11.0/go.mod h1:3SeJQq6VGTwmCDhw5WM49A2Awa9dM370fk/TVCdH70A=
 github.com/solo-io/protoc-gen-ext v0.1.0 h1:WvmXaontRCax9Wq5vAdewv+4tCwTrubC5rbk6coSajQ=

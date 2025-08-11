@@ -1,6 +1,6 @@
 module github.com/solo-io/solo-kit
 
-go 1.24.4
+go 1.24.6
 
 require (
 	cuelang.org/go v0.3.2
@@ -29,7 +29,7 @@ require (
 	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/anyvendor v0.2.0
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.28.5
+	github.com/solo-io/go-utils v0.28.6
 	github.com/solo-io/k8s-utils v0.11.0
 	github.com/solo-io/protoc-gen-ext v0.1.0
 	github.com/solo-io/protoc-gen-openapi v0.3.0
