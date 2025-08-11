@@ -1,6 +1,6 @@
 module github.com/solo-io/solo-kit
 
-go 1.24.4
+go 1.24.6
 
 require (
 	cuelang.org/go v0.3.2
