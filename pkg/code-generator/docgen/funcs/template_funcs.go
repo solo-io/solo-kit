@@ -137,10 +137,20 @@ func toHeading(docsOptions *options.DocsOptions) func(format string, p *string) 
 	if docsOptions.Output == options.Hugo {
 		return printPointer
 	} else {
+		// Track anchor names to handle duplicates
+		anchorCounts := make(map[string]int)
 		//--> <a name="{{ printfptr "%v" .Name }}">{{ printfptr "%v" .Name }}</a>
 		return func(format string, p *string) string {
 			val := printPointer(format, p)
-			return "<a name=" + val + ">" + val + "</a>"
+			name := strings.ToLower(val)
+			anchorCounts[name]++
+			var anchorName string
+			if anchorCounts[name] > 1 {
+				anchorName = fmt.Sprintf("%s-%d", name, anchorCounts[name]-1)
+			} else {
+				anchorName = name
+			}
+			return "<a name=" + anchorName + ">" + val + "</a>"
 		}
 	}
 }
@@ -149,8 +159,15 @@ func toAnchorLink(docsOptions *options.DocsOptions) func(format string, p *strin
 	if docsOptions.Output != options.Hugo {
 		return printPointer
 	} else {
+		// Track anchor names to handle duplicates
+		anchorCounts := make(map[string]int)
 		return func(format string, p *string) string {
-			return strings.ToLower(printPointer(format, p))
+			name := strings.ToLower(printPointer(format, p))
+			anchorCounts[name]++
+			if anchorCounts[name] > 1 {
+				return fmt.Sprintf("%s-%d", name, anchorCounts[name]-1)
+			}
+			return name
 		}
 	}
 }
