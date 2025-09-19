@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/doctopus/issues/124
+  resolvesIssue: true
+  description: >-
+    Fix a bug where headings on the same doc page have the same anchor and hence do not work. Numbers anchors for the same headings sequentially.
