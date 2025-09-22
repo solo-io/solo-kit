@@ -135,7 +135,18 @@ func TemplateFuncs(project *model.Project, docsOptions *options.DocsOptions) tem
 
 func toHeading(docsOptions *options.DocsOptions) func(format string, p *string) string {
 	if docsOptions.Output == options.Hugo {
-		return printPointer
+		// For Hugo, we need to generate the same numbered anchors as toAnchorLink
+		// Track anchor names to handle duplicates
+		anchorCounts := make(map[string]int)
+		return func(format string, p *string) string {
+			val := printPointer(format, p)
+			name := strings.ToLower(val)
+			anchorCounts[name]++
+			if anchorCounts[name] > 1 {
+				return fmt.Sprintf("%s {#%s-%d}", val, name, anchorCounts[name]-1)
+			}
+			return fmt.Sprintf("%s {#%s}", val, name)
+		}
 	} else {
 		// Track anchor names to handle duplicates
 		anchorCounts := make(map[string]int)
