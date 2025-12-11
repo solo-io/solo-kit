@@ -1,0 +1,39 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: >
+    Bump dependencies to support Kubernetes 1.34
+  issueLink: https://github.com/solo-io/solo-projects/issues/8681 
+  resolvesIssue: false
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: api
+  dependencyTag: v0.34.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apimachinery
+  dependencyTag: v0.34.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apiextensions-apiserver
+  dependencyTag: v0.34.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: client-go
+  dependencyTag: v0.34.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: go-utils
+  dependencyTag: v0.28.5
+- type: DEPENDENCY_BUMP
+  dependencyOwner: golang
+  dependencyRepo: go
+  dependencyTag: v1.25.5
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo.io
+  dependencyRepo: go-utils
+  dependencyTag: v0.29.0
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo.io
+  dependencyRepo: k8a-utils
+  dependencyTag: v0.12.0
+
