@@ -5,7 +5,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     helm.sh/hook: crd-install
-  creationTimestamp: null
   name: mocks.testing.solo.io
 spec:
   group: testing.solo.io
