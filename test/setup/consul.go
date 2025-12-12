@@ -51,6 +51,7 @@ func NewConsulFactory() (*ConsulFactory, error) {
 
 	bash := fmt.Sprintf(`
 set -ex
+export DOCKER_API_VERSION=1.41
 CID=$(docker run -d  %s /bin/sh -c exit)
 
 # just print the image sha for repoducibility
