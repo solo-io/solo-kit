@@ -74,7 +74,7 @@ install-tools: update-deps install-protoc
 update-deps:
 	mkdir -p $(DEPSGOBIN)
 	go install github.com/solo-io/protoc-gen-ext@v0.0.18
-	go install github.com/solo-io/protoc-gen-openapi@v0.3.1
+	go install github.com/solo-io/protoc-gen-openapi@v0.4.0
 	go install golang.org/x/tools/cmd/goimports
 	go install github.com/golang/protobuf/protoc-gen-go@v1.5.4
 	go install github.com/envoyproxy/protoc-gen-validate@v1.0.4
