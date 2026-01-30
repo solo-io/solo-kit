@@ -168,10 +168,12 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 				// empty resource - intended behavior is for the resources to be cleared
 				if resources != nil {
 					// snapshot has been initialized and exists
-					cache.respond(watch.Request, watch.Response, resources, version)
-
-					// discard the watch
-					watches.Delete(pi)
+					if cache.respond(watch.Request, watch.Response, resources, version) {
+						// discard the watch
+						watches.Delete(pi)
+					} else if cache.log != nil {
+						cache.log.Debugf("skipped deleting watch %v", watch.Request.ResourceNames)
+					}
 				}
 			}
 		}
@@ -306,7 +308,7 @@ func (cache *snapshotCache) cancelWatch(nodeID string, watchIndex PriorityIndex)
 
 // Respond to a watch with the snapshot value. The value channel should have capacity not to block.
 // TODO(kuat) do not respond always, see issue https://github.com/envoyproxy/go-control-plane/issues/46
-func (cache *snapshotCache) respond(request Request, value chan Response, resources map[string]Resource, version string) {
+func (cache *snapshotCache) respond(request Request, value chan Response, resources map[string]Resource, version string) bool {
 	// for ADS, the request names must match the snapshot names
 	// if they do not, then the watch is never responded, and it is expected that envoy makes another request
 	if len(request.ResourceNames) != 0 && cache.ads {
@@ -314,7 +316,7 @@ func (cache *snapshotCache) respond(request Request, value chan Response, resour
 			if cache.log != nil {
 				cache.log.Debugf("ADS mode: not responding to request: %v", err)
 			}
-			return
+			return false
 		}
 	}
 	if cache.log != nil {
@@ -325,6 +327,7 @@ func (cache *snapshotCache) respond(request Request, value chan Response, resour
 		tag.Insert(KeyType, request.GetTypeUrl()),
 	}, MResponses.M(1))
 	value <- createResponse(request, resources, version)
+	return true
 }
 
 func createResponse(request Request, resources map[string]Resource, version string) Response {
