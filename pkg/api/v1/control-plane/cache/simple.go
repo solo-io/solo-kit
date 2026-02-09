@@ -29,9 +29,11 @@ import (
 )
 
 var (
-	MResponses = stats.Int64("xds/responses", "The responses for envoy", "1")
+	MResponses           = stats.Int64("xds/responses", "The responses for envoy", "1")
+	MSuppressedResponses = stats.Int64("xds/suppressed_responses", "The responses intentionally suppressed by cache logic", "1")
 
-	KeyType = tag.MustNewKey("type")
+	KeyType   = tag.MustNewKey("type")
+	KeyReason = tag.MustNewKey("reason")
 
 	ResponsesView = &view.View{
 		Name:        "xds/responses",
@@ -42,6 +44,16 @@ var (
 			KeyType,
 		},
 	}
+	SuppressedResponsesView = &view.View{
+		Name:        "xds/suppressed_responses",
+		Measure:     MSuppressedResponses,
+		Description: "The times the cache intentionally withheld an xDS response",
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{
+			KeyType,
+			KeyReason,
+		},
+	}
 
 	VersionUpToDateError = errors.New("skip fetch: version up to date")
 
@@ -49,8 +61,10 @@ var (
 	_ SnapshotCache = new(snapshotCache)
 )
 
+const suppressedResponseReasonAdsNameMismatch = "ads_name_mismatch"
+
 func init() {
-	view.Register(ResponsesView)
+	view.Register(ResponsesView, SuppressedResponsesView)
 }
 
 // SnapshotCache is a snapshot-based cache that maintains a single versioned
@@ -168,10 +182,11 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 				// empty resource - intended behavior is for the resources to be cleared
 				if resources != nil {
 					// snapshot has been initialized and exists
-					cache.respond(watch.Request, watch.Response, resources, version)
-
-					// discard the watch
-					watches.Delete(pi)
+					responded := cache.respond(watch.Request, watch.Response, resources, version)
+					if responded {
+						// discard the watch
+						watches.Delete(pi)
+					}
 				}
 			}
 		}
@@ -260,14 +275,7 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 	// allocate capacity 1 to allow one-time non-blocking use
 	value := make(chan Response, 1)
 
-	snapshot, exists := cache.snapshots[nodeID]
-	if snapshot == nil {
-		snapshot = NilSnapshot{}
-	}
-	version := snapshot.GetResources(request.TypeUrl).Version
-
-	// if the requested version is up-to-date or missing a response, leave an open watch
-	if !exists || request.VersionInfo == version {
+	addWatch := func() (chan Response, func()) {
 		info.mu.Lock()
 		// check SetSnapshot() for responses on the watches map
 		priority := info.watches.Add(ResponseWatch{Request: request, Response: value})
@@ -279,8 +287,25 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 		return value, cache.cancelWatch(nodeID, priority)
 	}
 
+	snapshot, exists := cache.snapshots[nodeID]
+	if snapshot == nil {
+		snapshot = NilSnapshot{}
+	}
+	version := snapshot.GetResources(request.TypeUrl).Version
+
+	// if the requested version is up-to-date or missing a response, leave an open watch
+	if !exists || request.VersionInfo == version {
+		return addWatch()
+	}
+
 	// otherwise, the watch may be responded immediately
-	cache.respond(request, value, snapshot.GetResources(request.TypeUrl).Items, version)
+	responded := cache.respond(request, value, snapshot.GetResources(request.TypeUrl).Items, version)
+	if !responded {
+		// In ADS mode, the response can be suppressed if requested names are not
+		// a superset of snapshot resources. Keep an open watch so a later snapshot
+		// update can still satisfy this request.
+		return addWatch()
+	}
 
 	return value, func() {
 		close(value)
@@ -306,7 +331,7 @@ func (cache *snapshotCache) cancelWatch(nodeID string, watchIndex PriorityIndex)
 
 // Respond to a watch with the snapshot value. The value channel should have capacity not to block.
 // TODO(kuat) do not respond always, see issue https://github.com/envoyproxy/go-control-plane/issues/46
-func (cache *snapshotCache) respond(request Request, value chan Response, resources map[string]Resource, version string) {
+func (cache *snapshotCache) respond(request Request, value chan Response, resources map[string]Resource, version string) bool {
 	// for ADS, the request names must match the snapshot names
 	// if they do not, then the watch is never responded, and it is expected that envoy makes another request
 	if len(request.ResourceNames) != 0 && cache.ads {
@@ -314,7 +339,11 @@ func (cache *snapshotCache) respond(request Request, value chan Response, resour
 			if cache.log != nil {
 				cache.log.Debugf("ADS mode: not responding to request: %v", err)
 			}
-			return
+			stats.RecordWithTags(context.TODO(), []tag.Mutator{
+				tag.Insert(KeyType, request.GetTypeUrl()),
+				tag.Insert(KeyReason, suppressedResponseReasonAdsNameMismatch),
+			}, MSuppressedResponses.M(1))
+			return false
 		}
 	}
 	if cache.log != nil {
@@ -325,6 +354,7 @@ func (cache *snapshotCache) respond(request Request, value chan Response, resour
 		tag.Insert(KeyType, request.GetTypeUrl()),
 	}, MResponses.M(1))
 	value <- createResponse(request, resources, version)
+	return true
 }
 
 func createResponse(request Request, resources map[string]Resource, version string) Response {
