@@ -14,8 +14,8 @@ Name|Version|License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.3.0|Apache License 2.0
 [iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.0.0-20191112232945-16388991a334|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
-[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.22.0|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.36.1|MIT License
+[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.27.2|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.38.2|MIT License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [pseudomuto/protoc-gen-doc](https://github.com/pseudomuto/protoc-gen-doc)|v1.5.0|MIT License
 [pseudomuto/protokit](https://github.com/pseudomuto/protokit)|v0.2.0|MIT License
@@ -23,18 +23,18 @@ Name|Version|License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.1.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
-[x/sync](https://golang.org/x/sync)|v0.12.0|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.18.0|BSD 3-clause "New" or "Revised" License
 [googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20250303144028-a0af3efb3deb|Apache License 2.0
-[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20250303144028-a0af3efb3deb|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.72.1|Apache License 2.0
-[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.5|BSD 3-clause "New" or "Revised" License
+[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20250528174236-200df99c418a|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.72.2|Apache License 2.0
+[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.8|BSD 3-clause "New" or "Revised" License
 [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2)|v2.4.0|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.34.2|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.34.2|Apache License 2.0
-[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.34.2|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.34.2|Apache License 2.0
-[k8s.io/code-generator](https://k8s.io/code-generator)|v0.34.2|Apache License 2.0
-[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20250604170112-4c0f3b243397|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.35.2|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.35.2|Apache License 2.0
+[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.35.2|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.35.2|Apache License 2.0
+[k8s.io/code-generator](https://k8s.io/code-generator)|v0.35.2|Apache License 2.0
+[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20251002143259-bc988d571ff4|Apache License 2.0
 [structured-merge-diff/v4](https://sigs.k8s.io/structured-merge-diff/v4)|v4.6.0|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.6.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
