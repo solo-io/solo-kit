@@ -173,6 +173,13 @@ verify-envoy-protos:
 # Tests
 #----------------------------------------------------------------------------------
 
+# Disable WatchListClient to prevent 10s timeouts when using fake clients.
+# Since client-go v0.35, WatchListClient is enabled by default, but fake
+# clients don't emit the required bookmark events, causing reflectors to
+# stall for 10 seconds before falling back to the legacy list/watch path.
+# Only disable if it is actually on; pre-v0.35 client-go defaults it to
+# false so this is a no-op there, but makes the intent explicit.
+KUBE_FEATURE_FLAGS ?= KUBE_FEATURE_WatchListClient=false
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --randomize-all --trace -progress -race
@@ -191,7 +198,7 @@ install-test-tools:
 .PHONY: test
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
-	$(GINKGO_ENV) ginkgo \
+	$(KUBE_FEATURE_FLAGS) $(GINKGO_ENV) ginkgo \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 endif
