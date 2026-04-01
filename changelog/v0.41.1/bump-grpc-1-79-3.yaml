@@ -1,0 +1,6 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: google.golang.org
+  dependencyRepo: grpc
+  dependencyTag: v1.79.3
+  description: Bump grpc-go to v1.79.3 to address GHSA-p77j-4mvh-x3m3.
