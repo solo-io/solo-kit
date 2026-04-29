@@ -1,0 +1,11 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: go-jose
+  dependencyRepo: go-jose
+  dependencyTag: v4.1.4
+  description: Bump for CVE-2026-34986
+- type: DEPENDENCY_BUMP
+  dependencyOwner: hashicorp
+  dependencyRepo: vault
+  dependencyTag: v1.22.0
+  description: Bump vault api to version used in gloo-mesh, gets rid of old go-jose square without being a major break
