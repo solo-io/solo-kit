@@ -9,7 +9,7 @@ Name|Version|License
 [fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
 [getkin/kin-openapi](https://github.com/getkin/kin-openapi)|v0.131.0|MIT License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
-[go-test/deep](https://github.com/go-test/deep)|v1.0.8|MIT License
+[go-test/deep](https://github.com/go-test/deep)|v1.1.1|MIT License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.3.0|Apache License 2.0
 [iancoleman/strcase](https://github.com/iancoleman/strcase)|v0.0.0-20191112232945-16388991a334|MIT License
