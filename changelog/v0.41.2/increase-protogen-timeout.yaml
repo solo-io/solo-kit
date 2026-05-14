@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/solo-projects/issues/8953
     resolvesIssue: false
     description: |
-      Increase timeout for code generation.
+      Increase timeout for code generation
