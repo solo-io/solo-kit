@@ -1,0 +1,15 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/pull/586
+    resolvesIssue: false
+    description: >-
+      Keep an xDS watch open when its response has to be withheld. In ADS mode
+      the snapshot cache does not answer a request whose resource names do not
+      cover the snapshot's resources of that type, which happens while a client
+      has not yet subscribed to a resource the snapshot already carries. Both
+      call sites treated the withheld response as a completed request, so the
+      watch was discarded on a snapshot update and never registered for a new
+      request. Because a client only issues a new request after receiving a
+      response, nothing re-armed delivery, and it stayed on its previous
+      configuration until it reconnected. The watch is now retained on both
+      paths and answered by the first snapshot it can accept.
