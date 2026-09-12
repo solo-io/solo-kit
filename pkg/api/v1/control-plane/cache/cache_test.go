@@ -1,6 +1,8 @@
 package cache_test
 
 import (
+	"time"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -144,6 +146,61 @@ var _ = Describe("Control Plane Cache", func() {
 		// the cache will reset to empty version for missing resources
 		Expect(snap2.GetResources(types.ListenerTypeV3).Version).To(Equal(""))
 		Expect(snap2.GetResources(types.RouteTypeV3).Version).To(Equal(""))
+	})
+
+	It("retains ADS watches when immediate response is suppressed by resource-name mismatch", func() {
+		settings := cache.CacheSettings{
+			Ads:  true,
+			Hash: TestIDHash{},
+		}
+		c := cache.NewSnapshotCache(settings)
+		key := "test"
+
+		snapshotV1 := &TestSnapshot{
+			Endpoints: cache.NewResources("v1", []cache.Resource{
+				resource.NewEnvoyResource(makeEndpoint("a")),
+				resource.NewEnvoyResource(makeEndpoint("b")),
+			}),
+		}
+		c.SetSnapshot(key, snapshotV1)
+
+		respChan, cancel := c.CreateWatch(cache.Request{
+			TypeUrl:       types.EndpointTypeV3,
+			ResourceNames: []string{"a"},
+			VersionInfo:   "v0",
+			Node: &envoy_config_core_v3.Node{
+				Id: key,
+			},
+		})
+		defer cancel()
+
+		Consistently(respChan, 200*time.Millisecond, 20*time.Millisecond).ShouldNot(Receive())
+		Expect(c.GetStatusInfo(key).GetNumWatches()).To(Equal(1))
+
+		snapshotV2 := &TestSnapshot{
+			Endpoints: cache.NewResources("v2", []cache.Resource{
+				resource.NewEnvoyResource(makeEndpoint("a")),
+				resource.NewEnvoyResource(makeEndpoint("b")),
+			}),
+		}
+		c.SetSnapshot(key, snapshotV2)
+
+		Consistently(respChan, 200*time.Millisecond, 20*time.Millisecond).ShouldNot(Receive())
+		Expect(c.GetStatusInfo(key).GetNumWatches()).To(Equal(1))
+
+		snapshotV3 := &TestSnapshot{
+			Endpoints: cache.NewResources("v3", []cache.Resource{
+				resource.NewEnvoyResource(makeEndpoint("a")),
+			}),
+		}
+		c.SetSnapshot(key, snapshotV3)
+
+		var resp cache.Response
+		Eventually(respChan, time.Second, 20*time.Millisecond).Should(Receive(&resp))
+		Expect(resp.Version).To(Equal("v3"))
+		Expect(resp.Resources).To(HaveLen(1))
+		Expect(resp.Resources[0].Self().Name).To(Equal("a"))
+		Expect(c.GetStatusInfo(key).GetNumWatches()).To(Equal(0))
 	})
 
 })
