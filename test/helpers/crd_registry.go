@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -20,6 +21,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
+)
+
+const (
+	crdRegistrationPollInterval = 100 * time.Millisecond
+	crdRegistrationTimeout      = 30 * time.Second
 )
 
 // The CRDRegistry is designed to be used only by tests
@@ -134,9 +141,31 @@ func (r *crdRegistry) registerCrd(ctx context.Context, gvk schema.GroupVersionKi
 	if err != nil {
 		return err
 	}
-	_, err = clientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.TODO(), toRegister, metav1.CreateOptions{})
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return fmt.Errorf("failed to register crd: %v", err)
+	crdClient := clientset.ApiextensionsV1().CustomResourceDefinitions()
+	err = wait.PollUntilContextTimeout(ctx, crdRegistrationPollInterval, crdRegistrationTimeout, true, func(ctx context.Context) (bool, error) {
+		_, err := crdClient.Create(ctx, toRegister.DeepCopy(), metav1.CreateOptions{})
+		if err == nil {
+			return true, nil
+		}
+		if !apierrors.IsAlreadyExists(err) {
+			return false, fmt.Errorf("create crd %s: %w", toRegister.Name, err)
+		}
+
+		existing, err := crdClient.Get(ctx, toRegister.Name, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, fmt.Errorf("get existing crd %s: %w", toRegister.Name, err)
+		}
+
+		// A CRD remains visible with its Established condition while deletion is
+		// in progress, but its resource endpoint may already return 404. Wait for
+		// it to disappear so the desired definition can be created cleanly.
+		return existing.DeletionTimestamp == nil, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to register crd %s: %w", toRegister.Name, err)
 	}
 	return kubeutils.WaitForCrdActive(ctx, clientset, toRegister.Name)
 }
