@@ -11,5 +11,11 @@ changelog:
       watch was discarded on a snapshot update and never registered for a new
       request. Because a client only issues a new request after receiving a
       response, nothing re-armed delivery, and it stayed on its previous
-      configuration until it reconnected. The watch is now retained on both
+      configuration until it reconnected. When enabled, the watch is retained on both
       paths and answered by the first snapshot it can accept.
+      Set SOLOKIT_RETAIN_UNANSWERED_XDS_WATCHES to "off" to restore the previous
+      behavior on both paths, or "on" to force retention. "default", unset, and
+      empty values follow the release default (currently off), which may change
+      in a future release; explicit "on" and "off" remain pinned. Other values
+      log a warning and use the release default. The setting is read when each
+      snapshot cache is created.

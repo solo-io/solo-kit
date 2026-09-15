@@ -18,6 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+
+	"github.com/solo-io/go-utils/contextutils"
 	"sync"
 	"time"
 
@@ -100,8 +103,38 @@ type CacheSettings struct {
 	PrioritySet map[int][]string
 }
 
+// RetainUnansweredXDSWatchesEnv controls retention of withheld ADS watches.
+// "on" and "off" pin the behavior; "default", unset, and empty follow the
+// release default. Invalid values warn and also follow the release default.
+const RetainUnansweredXDSWatchesEnv = "SOLOKIT_RETAIN_UNANSWERED_XDS_WATCHES"
+
+// Change this default independently of the explicit on/off overrides.
+const retainUnansweredXDSWatchesDefault = false
+
+func retainUnansweredXDSWatches(logger log.Logger) bool {
+	value := os.Getenv(RetainUnansweredXDSWatchesEnv)
+	switch value {
+	case "on":
+		return true
+	case "off":
+		return false
+	case "", "default":
+		return retainUnansweredXDSWatchesDefault
+	default:
+		// The cache logger predates warning support. Use it when available,
+		// otherwise use the standard application logger without changing its interface.
+		warningLogger, ok := logger.(interface{ Warnf(string, ...interface{}) })
+		if !ok {
+			warningLogger = contextutils.LoggerFrom(context.Background())
+		}
+		warningLogger.Warnf("invalid %s value %q: expected default, on, or off; using default (%t)", RetainUnansweredXDSWatchesEnv, value, retainUnansweredXDSWatchesDefault)
+		return retainUnansweredXDSWatchesDefault
+	}
+}
+
 type snapshotCache struct {
-	log log.Logger
+	retainUnansweredWatches bool
+	log                     log.Logger
 
 	// ads flag to hold responses until all resources are named
 	ads bool
@@ -132,14 +165,16 @@ type snapshotCache struct {
 // is OK.
 //
 // Logger is optional.
+// RetainUnansweredXDSWatchesEnv is read once when each cache is created.
 func NewSnapshotCache(settings CacheSettings) SnapshotCache {
 	return &snapshotCache{
-		log:         settings.Logger,
-		ads:         settings.Ads,
-		snapshots:   make(map[string]Snapshot),
-		status:      make(map[string]*statusInfo),
-		hash:        settings.Hash,
-		prioritySet: settings.PrioritySet,
+		retainUnansweredWatches: retainUnansweredXDSWatches(settings.Logger),
+		log:                     settings.Logger,
+		ads:                     settings.Ads,
+		snapshots:               make(map[string]Snapshot),
+		status:                  make(map[string]*statusInfo),
+		hash:                    settings.Hash,
+		prioritySet:             settings.PrioritySet,
 	}
 }
 
@@ -168,7 +203,7 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 				// empty resource - intended behavior is for the resources to be cleared
 				if resources != nil {
 					// snapshot has been initialized and exists
-					if !cache.respond(watch.Request, watch.Response, resources, version) {
+					if sent := cache.respond(watch.Request, watch.Response, resources, version); !sent && cache.retainUnansweredWatches {
 						// The response was withheld (see respond): keep the watch so a
 						// later snapshot that this request can accept is delivered to it.
 						if cache.log != nil {
@@ -178,7 +213,7 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) {
 						return
 					}
 
-					// discard the watch: the client creates a new one when it acks
+					// Discard answered watches, or all watches when retention is disabled.
 					watches.Delete(pi)
 				}
 			}
@@ -276,12 +311,12 @@ func (cache *snapshotCache) CreateWatch(request Request) (chan Response, func())
 
 	// If the snapshot is newer than the requested version, try to answer the
 	// request immediately. The response can still be withheld in ADS mode (see
-	// respond), in which case the request has to become an open watch: the
+	// respond), in which case retention opens a watch: the
 	// client is waiting for this response and does not issue a new request
 	// until it receives one, so dropping the request here would leave the
 	// client on its current configuration until it reconnects.
 	if exists && request.VersionInfo != version {
-		if cache.respond(request, value, snapshot.GetResources(request.TypeUrl).Items, version) {
+		if sent := cache.respond(request, value, snapshot.GetResources(request.TypeUrl).Items, version); sent || !cache.retainUnansweredWatches {
 			return value, func() {
 				close(value)
 			}
@@ -323,14 +358,14 @@ func (cache *snapshotCache) cancelWatch(nodeID string, watchIndex PriorityIndex)
 //
 // It reports whether a response was sent. In ADS mode a request whose resource
 // names do not cover the snapshot cannot be answered yet, and callers must keep
-// the watch open instead of treating the request as served: nothing else will
+// the watch open when retention is enabled: nothing else will
 // answer it, because the client is waiting for this response and only issues a
 // new request once it receives one.
 //
 // TODO(kuat) do not respond always, see issue https://github.com/envoyproxy/go-control-plane/issues/46
 func (cache *snapshotCache) respond(request Request, value chan Response, resources map[string]Resource, version string) bool {
 	// for ADS, the request names must match the snapshot names
-	// if they do not, the response is withheld and false is returned, so the caller keeps the watch open
+	// if they do not, return false so callers can retain the watch when enabled
 	if len(request.ResourceNames) != 0 && cache.ads {
 		if err := Superset(nameSet(request.ResourceNames), resources); err != nil {
 			if cache.log != nil {

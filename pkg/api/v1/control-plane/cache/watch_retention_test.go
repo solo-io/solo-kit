@@ -24,6 +24,7 @@ var _ = Describe("Snapshot cache watch retention", func() {
 	var snapshotCache cache.SnapshotCache
 
 	BeforeEach(func() {
+		GinkgoT().Setenv(cache.RetainUnansweredXDSWatchesEnv, "on")
 		snapshotCache = cache.NewSnapshotCache(cache.CacheSettings{Ads: true, Hash: TestIDHash{}})
 	})
 
@@ -129,4 +130,32 @@ var _ = Describe("Snapshot cache watch retention", func() {
 		Eventually(parked, time.Second).Should(Receive())
 		Expect(openWatches()).To(Equal(0))
 	})
+	Context("with retention disabled", func() {
+		BeforeEach(func() {
+			GinkgoT().Setenv(cache.RetainUnansweredXDSWatchesEnv, "off")
+			snapshotCache = cache.NewSnapshotCache(cache.CacheSettings{Ads: true, Hash: TestIDHash{}})
+		})
+
+		It("discards a parked watch even when the snapshot response is withheld", func() {
+			snapshotCache.SetSnapshot(retentionNode, endpointSnapshot("1", "cluster-a"))
+			pending, cancel := snapshotCache.CreateWatch(endpointRequest("1", "cluster-a"))
+			defer cancel()
+			Expect(openWatches()).To(Equal(1))
+			snapshotCache.SetSnapshot(retentionNode, endpointSnapshot("2", "cluster-a", "cluster-b"))
+			Expect(openWatches()).To(Equal(0))
+			snapshotCache.SetSnapshot(retentionNode, endpointSnapshot("3", "cluster-a"))
+			Expect(pending).ShouldNot(Receive())
+		})
+
+		It("does not register a stale request whose immediate response is withheld", func() {
+			snapshotCache.SetSnapshot(retentionNode, endpointSnapshot("2", "cluster-a", "cluster-b"))
+			pending, cancel := snapshotCache.CreateWatch(endpointRequest("1", "cluster-a"))
+			Expect(openWatches()).To(Equal(0))
+			snapshotCache.SetSnapshot(retentionNode, endpointSnapshot("3", "cluster-a"))
+			Expect(pending).ShouldNot(Receive())
+			cancel()
+			Expect(pending).To(BeClosed())
+		})
+	})
+
 })
