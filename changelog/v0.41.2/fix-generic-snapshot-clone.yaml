@@ -1,0 +1,15 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/solo-kit/issues/461
+  resolvesIssue: true
+  description: >-
+    Fixes GenericSnapshot.Clone, which panicked on every resource it held. It
+    unwrapped each resource to the proto inside it and asserted that proto back
+    to cache.Resource, but cache.ResourceProto is an alias for proto.Message, so
+    the assertion could never succeed. SnapshotCache.GetSnapshot clones
+    unconditionally, so this made every read of a snapshot served to the extension
+    services -- rate limit and ext auth among them -- panic instead of returning
+    the configuration. Clone now copies each resource's proto and carries the name,
+    type and references the original reported. GenericSnapshot also marshals its
+    resources now, rather than rendering as an empty object, so consumers that
+    display a snapshot show what it contains.
