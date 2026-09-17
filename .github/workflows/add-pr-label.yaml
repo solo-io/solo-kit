@@ -7,11 +7,12 @@ jobs:
   add-label:
     name: Add `keep pr updated` Label
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v3
       - uses: christianvuerings/add-labels@v1
         with:
           labels: |
             keep pr updated
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
