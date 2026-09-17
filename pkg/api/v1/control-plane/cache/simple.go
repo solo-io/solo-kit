@@ -32,9 +32,11 @@ import (
 )
 
 var (
-	MResponses = stats.Int64("xds/responses", "The responses for envoy", "1")
+	MResponses           = stats.Int64("xds/responses", "The responses for envoy", "1")
+	MSuppressedResponses = stats.Int64("xds/suppressed_responses", "The responses intentionally suppressed by cache logic", "1")
 
-	KeyType = tag.MustNewKey("type")
+	KeyType   = tag.MustNewKey("type")
+	KeyReason = tag.MustNewKey("reason")
 
 	ResponsesView = &view.View{
 		Name:        "xds/responses",
@@ -46,14 +48,35 @@ var (
 		},
 	}
 
+	// SuppressedResponsesView counts responses the cache withholds. It is
+	// recorded whether or not watch retention is enabled, because it is the only
+	// signal that says how often the condition fires at all: with retention off
+	// a withheld response silently discards the watch, and with it on the watch
+	// is kept but still goes unanswered until a compatible snapshot arrives.
+	// Either way nothing else in the cache reports that it happened.
+	SuppressedResponsesView = &view.View{
+		Name:        "xds/suppressed_responses",
+		Measure:     MSuppressedResponses,
+		Description: "The times the cache intentionally withheld an xDS response",
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{
+			KeyType,
+			KeyReason,
+		},
+	}
+
 	VersionUpToDateError = errors.New("skip fetch: version up to date")
 
 	// Compile-time assertion
 	_ SnapshotCache = new(snapshotCache)
 )
 
+// suppressedResponseReasonAdsNameMismatch is recorded when ADS withholds a
+// response because the request does not name every resource in the snapshot.
+const suppressedResponseReasonAdsNameMismatch = "ads_name_mismatch"
+
 func init() {
-	view.Register(ResponsesView)
+	view.Register(ResponsesView, SuppressedResponsesView)
 }
 
 // SnapshotCache is a snapshot-based cache that maintains a single versioned
@@ -371,6 +394,10 @@ func (cache *snapshotCache) respond(request Request, value chan Response, resour
 			if cache.log != nil {
 				cache.log.Debugf("ADS mode: not responding to request: %v", err)
 			}
+			stats.RecordWithTags(context.TODO(), []tag.Mutator{
+				tag.Insert(KeyType, request.GetTypeUrl()),
+				tag.Insert(KeyReason, suppressedResponseReasonAdsNameMismatch),
+			}, MSuppressedResponses.M(1))
 			return false
 		}
 	}
