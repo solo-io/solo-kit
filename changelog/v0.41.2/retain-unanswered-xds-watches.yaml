@@ -13,7 +13,7 @@ changelog:
       response, nothing re-armed delivery, and it stayed on its previous
       configuration until it reconnected. When enabled, the watch is retained on both
       paths and answered by the first snapshot it can accept.
-      Set SOLOKIT_RETAIN_UNANSWERED_XDS_WATCHES to "off" to restore the previous
+      Set EXP_FIX to "off" to restore the previous
       behavior on both paths, or "on" to force retention. "default", unset, and
       empty values follow the release default (currently off), which may change
       in a future release; explicit "on" and "off" remain pinned. Other values
@@ -32,4 +32,4 @@ changelog:
       off the watch is silently discarded, and with it on the watch survives but
       still goes unanswered until a compatible snapshot arrives. It is therefore
       the signal for how often this occurs in a running fleet, and the basis for
-      deciding the release default of SOLOKIT_RETAIN_UNANSWERED_XDS_WATCHES.
+      deciding the release default of EXP_FIX.

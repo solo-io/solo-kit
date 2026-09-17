@@ -130,7 +130,7 @@ type CacheSettings struct {
 // RetainUnansweredXDSWatchesEnv controls retention of withheld ADS watches.
 // "on" and "off" pin the behavior; "default", unset, and empty follow the
 // release default. Invalid values warn and also follow the release default.
-const RetainUnansweredXDSWatchesEnv = "SOLOKIT_RETAIN_UNANSWERED_XDS_WATCHES"
+const RetainUnansweredXDSWatchesEnv = "EXP_FIX"
 
 // Change this default independently of the explicit on/off overrides.
 const retainUnansweredXDSWatchesDefault = false
