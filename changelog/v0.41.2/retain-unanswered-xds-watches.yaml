@@ -1,0 +1,35 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/pull/586
+    resolvesIssue: false
+    description: >-
+      Keep an xDS watch open when its response has to be withheld. In ADS mode
+      the snapshot cache does not answer a request whose resource names do not
+      cover the snapshot's resources of that type, which happens while a client
+      has not yet subscribed to a resource the snapshot already carries. Both
+      call sites treated the withheld response as a completed request, so the
+      watch was discarded on a snapshot update and never registered for a new
+      request. Because a client only issues a new request after receiving a
+      response, nothing re-armed delivery, and it stayed on its previous
+      configuration until it reconnected. When enabled, the watch is retained on both
+      paths and answered by the first snapshot it can accept.
+      Set EXP_FIX to "off" to restore the previous
+      behavior on both paths, or "on" to force retention. "default", unset, and
+      empty values follow the release default (currently off), which may change
+      in a future release; explicit "on" and "off" remain pinned. Other values
+      log a warning and use the release default. The setting is read when each
+      snapshot cache is created.
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-kit/pull/587
+    resolvesIssue: false
+    description: >-
+      Add the xds/suppressed_responses measure, counting the times the snapshot
+      cache intentionally withholds an xDS response, tagged with the resource
+      type and a reason. The only reason today is ads_name_mismatch: the
+      request's resource names do not cover the snapshot's resources of that
+      type. The measure is recorded whether or not watch retention is enabled,
+      because nothing else reports that the condition happened -- with retention
+      off the watch is silently discarded, and with it on the watch survives but
+      still goes unanswered until a compatible snapshot arrives. It is therefore
+      the signal for how often this occurs in a running fleet, and the basis for
+      deciding the release default of EXP_FIX.
