@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/go-utils/contextutils"
 	"sync"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/log"
 
