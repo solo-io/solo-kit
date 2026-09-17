@@ -16,6 +16,7 @@ package cache
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -139,19 +140,59 @@ func (s *GenericSnapshot) GetResources(typ string) Resources {
 	return s.typedResources[typ]
 }
 
+// Clone deep-copies the snapshot, carrying each resource's identity -- name,
+// type and references -- across to the copy.
+//
+// The identity has to be carried rather than recomputed. A GenericSnapshot
+// holds arbitrary Resource implementations, and those name themselves from
+// whatever field of the wrapped proto suits them, so nothing here can work out
+// what a copied proto should be called. Asking the original is the only option
+// that keeps a copy indistinguishable from what it was copied from.
 func (s *GenericSnapshot) Clone() Snapshot {
-	// the bug is fine since generic snapshots are only used by extauth/ratelimit extensions syncers; and we don't call
-	// clone today on any code path for those xds snapshots e.g. https://github.com/solo-io/solo-kit/blob/2986d1b6d33f7beec9008731fdaee4a9deb9f726/pkg/api/v1/control-plane/cache/simple.go#L176
-	typedResourcesCopy := make(TypedResources)
+	if s == nil {
+		return &GenericSnapshot{}
+	}
+	typedResourcesCopy := make(TypedResources, len(s.typedResources))
 	for typeName, resources := range s.typedResources {
 		resourcesCopy := Resources{
 			Version: resources.Version,
 			Items:   make(map[string]Resource, len(resources.Items)),
 		}
 		for k, v := range resources.Items {
-			resourcesCopy.Items[k] = proto.Clone(v.ResourceProto()).(Resource) // TODO(kdorosh) this is a bug, see https://github.com/solo-io/solo-kit/issues/461
+			resourcesCopy.Items[k] = &clonedResource{
+				ProtoMessage: proto.Clone(v.ResourceProto()),
+				self:         v.Self(),
+				references:   v.References(),
+			}
 		}
 		typedResourcesCopy[typeName] = resourcesCopy
 	}
 	return &GenericSnapshot{typedResources: typedResourcesCopy}
 }
+
+// MarshalJSON renders the snapshot's resources, grouped by type URL. Without it
+// the resources are unreachable to a marshaller, because they are held in an
+// unexported field, and a snapshot renders as an empty object.
+func (s *GenericSnapshot) MarshalJSON() ([]byte, error) {
+	if s == nil {
+		return []byte("null"), nil
+	}
+	return json.Marshal(s.typedResources)
+}
+
+// clonedResource is a Resource produced by copying another one. It holds a copy
+// of the original's proto alongside the identity the original reported.
+type clonedResource struct {
+	// ProtoMessage is exported so that a cloned resource marshals the way
+	// resource.EnvoyResource does, which names the same field.
+	ProtoMessage ResourceProto
+
+	self       XdsResourceReference
+	references []XdsResourceReference
+}
+
+var _ Resource = new(clonedResource)
+
+func (r *clonedResource) Self() XdsResourceReference         { return r.self }
+func (r *clonedResource) ResourceProto() ResourceProto       { return r.ProtoMessage }
+func (r *clonedResource) References() []XdsResourceReference { return r.references }
