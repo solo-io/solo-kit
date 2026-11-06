@@ -126,31 +126,54 @@ func NewSharedInformer(ctx context.Context, resyncPeriod time.Duration, objType 
 	listFunc func(options metav1.ListOptions) (runtime.Object, error),
 	watchFunc func(context.Context, metav1.ListOptions) (kubewatch.Interface, error)) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				listCtx := ctx
-				if ctxWithTags, err := tag.New(listCtx, tag.Insert(KeyOpKind, "list")); err == nil {
-					listCtx = ctxWithTags
-				}
-				stats.Record(listCtx, MLists.M(1), MInFlight.M(1))
-				defer stats.Record(listCtx, MInFlight.M(-1))
-				return listFunc(options)
-			},
-			WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
-				watchCtx := ctx
-				if ctxWithTags, err := tag.New(watchCtx, tag.Insert(KeyOpKind, "watch")); err == nil {
-					watchCtx = ctxWithTags
-				}
-
-				stats.Record(watchCtx, MWatches.M(1), MInFlight.M(1))
-				defer stats.Record(watchCtx, MInFlight.M(-1))
-				return watchFunc(ctx, options)
-			},
-		},
+		instrumentedListWatch(ctx, listFunc, watchFunc),
 		objType,
 		resyncPeriod,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
+}
+
+// NewSharedInformerForClient is NewSharedInformer for list and watch functions
+// that call client. The informer learns from client whether it supports
+// watch-list streams, as client-go's own informers do. Fake clientsets do not, so
+// with this constructor their informers sync with a LIST and WATCH instead of
+// waiting forever for the end of an initial event stream.
+func NewSharedInformerForClient(ctx context.Context, resyncPeriod time.Duration, objType runtime.Object, client any,
+	listFunc func(options metav1.ListOptions) (runtime.Object, error),
+	watchFunc func(context.Context, metav1.ListOptions) (kubewatch.Interface, error)) cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(
+		cache.ToListWatcherWithWatchListSemantics(instrumentedListWatch(ctx, listFunc, watchFunc), client),
+		objType,
+		resyncPeriod,
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+	)
+}
+
+// instrumentedListWatch records list and watch metrics around listFunc and watchFunc.
+func instrumentedListWatch(ctx context.Context,
+	listFunc func(options metav1.ListOptions) (runtime.Object, error),
+	watchFunc func(context.Context, metav1.ListOptions) (kubewatch.Interface, error)) *cache.ListWatch {
+	return &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			listCtx := ctx
+			if ctxWithTags, err := tag.New(listCtx, tag.Insert(KeyOpKind, "list")); err == nil {
+				listCtx = ctxWithTags
+			}
+			stats.Record(listCtx, MLists.M(1), MInFlight.M(1))
+			defer stats.Record(listCtx, MInFlight.M(-1))
+			return listFunc(options)
+		},
+		WatchFunc: func(options metav1.ListOptions) (kubewatch.Interface, error) {
+			watchCtx := ctx
+			if ctxWithTags, err := tag.New(watchCtx, tag.Insert(KeyOpKind, "watch")); err == nil {
+				watchCtx = ctxWithTags
+			}
+
+			stats.Record(watchCtx, MWatches.M(1), MInFlight.M(1))
+			defer stats.Record(watchCtx, MInFlight.M(-1))
+			return watchFunc(ctx, options)
+		},
+	}
 }
 
 // Creates a new SharedIndexInformer and adds it to the factory's informer registry.

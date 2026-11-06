@@ -1,0 +1,30 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-kit/issues/184
+    resolvesIssue: true
+    description: >-
+      Add options to NewKubeCoreCacheWithOptions for choosing and shaping what the
+      Kubernetes core cache watches. WithResources limits the cache to the named
+      resources (Pods, Services, ConfigMaps, Secrets, Namespaces), so it neither
+      lists, watches, nor needs RBAC for the others; the listers of a resource it
+      does not watch return nil. WithFieldSelector limits the objects of a resource
+      to those matching a field selector, applied by the API server, and
+      WithSecretsFieldSelector is now a shorthand for it. WithTransformFunc applies a
+      client-go transform to the objects of a resource before the cache stores them,
+      for example to drop fields the caller never reads. Without options the cache
+      watches the same resources as before. Invalid combinations, such as no
+      resources, an unknown resource, Namespaces while watching specific
+      namespaces, or a selector or transform for a resource the cache does not
+      watch, make the constructor return an error.
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/184
+    resolvesIssue: false
+    description: >-
+      Make the core cache work with clients that do not support watch-list
+      streams, such as client-go's fake clientsets. Since client-go v0.35 turned on
+      WatchListClient by default, its informers first try a watch-list stream
+      unless the client says it does not support one, but the core cache hid the
+      client from them, so a core cache over a fake clientset never synced. The
+      core cache now builds its informers with the new
+      NewSharedInformerForClient, which passes on that signal as client-go's own
+      informers do. Clients that support watch-list streams behave as before.
