@@ -15,11 +15,34 @@ import (
 
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	kubewatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
+
+// Option configures a core cache created by NewKubeCoreCacheWithOptions.
+type Option func(*coreCacheOptions)
+
+type coreCacheOptions struct {
+	secretsFieldSelector string
+}
+
+// WithSecretsFieldSelector limits the Secrets the cache lists and watches to
+// those matching selector, for example type!=helm.sh/release.v1. The API server
+// applies it, so excluded Secrets are never stored and the secret listers do not
+// return them. Secrets support selecting on metadata.name, metadata.namespace,
+// and type only. A nil or empty selector caches every Secret.
+func WithSecretsFieldSelector(selector fields.Selector) Option {
+	return func(o *coreCacheOptions) {
+		o.secretsFieldSelector = ""
+		if selector != nil {
+			o.secretsFieldSelector = selector.String()
+		}
+	}
+}
 
 type ServiceLister interface {
 	// List lists all Services in the indexer.
@@ -86,7 +109,11 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 	return NewKubeCoreCacheWithOptions(ctx, client, resyncDuration, []string{metav1.NamespaceAll})
 }
 
-func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string) (*kubeCoreCaches, error) {
+func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string, opts ...Option) (*kubeCoreCaches, error) {
+	var cacheOptions coreCacheOptions
+	for _, opt := range opts {
+		opt(&cacheOptions)
+	}
 
 	if len(namesapcesToWatch) == 0 {
 		namesapcesToWatch = []string{metav1.NamespaceAll}
@@ -163,8 +190,12 @@ func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interfac
 				typeCtx = ctxWithTags
 			}
 			// Secrets
-			watch := client.CoreV1().Secrets(nsToWatch).Watch
+			watch := func(ctx context.Context, options metav1.ListOptions) (kubewatch.Interface, error) {
+				options.FieldSelector = cacheOptions.secretsFieldSelector
+				return client.CoreV1().Secrets(nsToWatch).Watch(ctx, options)
+			}
 			list := func(options metav1.ListOptions) (runtime.Object, error) {
+				options.FieldSelector = cacheOptions.secretsFieldSelector
 				return client.CoreV1().Secrets(nsToWatch).List(ctx, options)
 			}
 			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Secret{}, list, watch)
