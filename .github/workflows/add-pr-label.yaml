@@ -10,7 +10,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: christianvuerings/add-labels@v1
+      - uses: christianvuerings/add-labels@b3cc83b6b466869c556a6623c93f1321485dbda0 # v1
         with:
           labels: |
             keep pr updated
