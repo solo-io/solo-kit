@@ -23,25 +23,155 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// Resource names a kind of object the core cache can list and watch.
+type Resource string
+
+const (
+	Pods       Resource = "Pods"
+	Services   Resource = "Services"
+	ConfigMaps Resource = "ConfigMaps"
+	Secrets    Resource = "Secrets"
+	// Namespaces are cluster-scoped, so the cache watches them only when it
+	// watches all namespaces (metav1.NamespaceAll).
+	Namespaces Resource = "Namespaces"
+)
+
+var allResources = []Resource{Pods, Services, ConfigMaps, Secrets, Namespaces}
+
 // Option configures a core cache created by NewKubeCoreCacheWithOptions.
 type Option func(*coreCacheOptions)
 
 type coreCacheOptions struct {
-	secretsFieldSelector string
+	// resources is nil unless WithResources was given, meaning every resource.
+	resources      map[Resource]bool
+	fieldSelectors map[Resource]string
+	transforms     map[Resource]cache.TransformFunc
 }
 
-// WithSecretsFieldSelector limits the Secrets the cache lists and watches to
-// those matching selector, for example type!=helm.sh/release.v1. The API server
-// applies it, so excluded Secrets are never stored and the secret listers do not
-// return them. Secrets support selecting on metadata.name, metadata.namespace,
-// and type only. A nil or empty selector caches every Secret.
-func WithSecretsFieldSelector(selector fields.Selector) Option {
+// WithResources limits the cache to the given resources, so it neither lists,
+// watches, nor needs RBAC for the others. The listers of a resource the cache does
+// not watch return nil. Without this option the cache watches every resource, and
+// Namespaces only when it watches all namespaces; naming Namespaces here while
+// watching specific namespaces is an error.
+func WithResources(resources ...Resource) Option {
 	return func(o *coreCacheOptions) {
-		o.secretsFieldSelector = ""
-		if selector != nil {
-			o.secretsFieldSelector = selector.String()
+		o.resources = map[Resource]bool{}
+		for _, r := range resources {
+			o.resources[r] = true
 		}
 	}
+}
+
+// WithFieldSelector limits the objects of resource that the cache lists and
+// watches to those matching selector. The API server applies it, so excluded
+// objects are never sent or stored, and the listers do not return them. Each
+// resource supports its own selectable fields; the API server rejects others,
+// which leaves the cache unable to sync. A nil or empty selector removes the limit.
+func WithFieldSelector(resource Resource, selector fields.Selector) Option {
+	return func(o *coreCacheOptions) {
+		if o.fieldSelectors == nil {
+			o.fieldSelectors = map[Resource]string{}
+		}
+		o.fieldSelectors[resource] = ""
+		if selector != nil {
+			o.fieldSelectors[resource] = selector.String()
+		}
+	}
+}
+
+// WithSecretsFieldSelector is WithFieldSelector for Secrets, for example to
+// exclude type!=helm.sh/release.v1. Secrets support selecting on metadata.name,
+// metadata.namespace, and type only.
+func WithSecretsFieldSelector(selector fields.Selector) Option {
+	return WithFieldSelector(Secrets, selector)
+}
+
+// WithTransformFunc applies transform to each object of resource before the cache
+// stores it, for example to drop fields the caller never reads and save memory.
+// It follows the contract of client-go's cache.TransformFunc: it may modify and
+// return the object it is given. A nil transform removes a previous one.
+func WithTransformFunc(resource Resource, transform cache.TransformFunc) Option {
+	return func(o *coreCacheOptions) {
+		if o.transforms == nil {
+			o.transforms = map[Resource]cache.TransformFunc{}
+		}
+		o.transforms[resource] = transform
+	}
+}
+
+// watches reports whether the cache watches resource, given whether it watches
+// all namespaces.
+func (o *coreCacheOptions) watches(resource Resource, allNamespaces bool) bool {
+	if resource == Namespaces && !allNamespaces {
+		return false
+	}
+	return o.resources == nil || o.resources[resource]
+}
+
+func (o *coreCacheOptions) validate(allNamespaces bool) error {
+	known := map[Resource]bool{}
+	for _, r := range allResources {
+		known[r] = true
+	}
+	if o.resources != nil {
+		if len(o.resources) == 0 {
+			return errors.Errorf("WithResources must name at least one resource")
+		}
+		for r := range o.resources {
+			if !known[r] {
+				return errors.Errorf("WithResources: unknown resource %q", r)
+			}
+		}
+		if o.resources[Namespaces] && !allNamespaces {
+			return errors.Errorf("WithResources: %s can only be watched with metav1.NamespaceAll", Namespaces)
+		}
+	}
+	for r, selector := range o.fieldSelectors {
+		if !known[r] {
+			return errors.Errorf("WithFieldSelector: unknown resource %q", r)
+		}
+		if selector != "" && !o.watches(r, allNamespaces) {
+			return errors.Errorf("WithFieldSelector: the cache does not watch %q", r)
+		}
+	}
+	for r, transform := range o.transforms {
+		if !known[r] {
+			return errors.Errorf("WithTransformFunc: unknown resource %q", r)
+		}
+		if transform != nil && !o.watches(r, allNamespaces) {
+			return errors.Errorf("WithTransformFunc: the cache does not watch %q", r)
+		}
+	}
+	return nil
+}
+
+// newInformer returns an informer for resource that applies the resource's
+// field selector and transform and records solo-kit's list and watch metrics.
+func (o *coreCacheOptions) newInformer(ctx context.Context, resource Resource, resyncDuration time.Duration, objType runtime.Object, client kubernetes.Interface,
+	list func(context.Context, metav1.ListOptions) (runtime.Object, error),
+	watch func(context.Context, metav1.ListOptions) (kubewatch.Interface, error),
+) (cache.SharedIndexInformer, error) {
+	selector, hasSelector := o.fieldSelectors[resource]
+	informer := skkube.NewSharedInformerForClient(ctx, resyncDuration, objType, client,
+		func(options metav1.ListOptions) (runtime.Object, error) {
+			if hasSelector {
+				options.FieldSelector = selector
+			}
+			return list(ctx, options)
+		},
+		func(watchCtx context.Context, options metav1.ListOptions) (kubewatch.Interface, error) {
+			if hasSelector {
+				options.FieldSelector = selector
+			}
+			return watch(watchCtx, options)
+		},
+	)
+	if transform := o.transforms[resource]; transform != nil {
+		if err := informer.SetTransform(transform); err != nil {
+			return nil, err
+		}
+	}
+	return informer, nil
 }
 
 type ServiceLister interface {
@@ -109,118 +239,112 @@ func NewKubeCoreCache(ctx context.Context, client kubernetes.Interface) (*kubeCo
 	return NewKubeCoreCacheWithOptions(ctx, client, resyncDuration, []string{metav1.NamespaceAll})
 }
 
-func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namesapcesToWatch []string, opts ...Option) (*kubeCoreCaches, error) {
+// NewKubeCoreCacheWithOptions creates a core cache of the given namespaces. By
+// default it watches Pods, Services, ConfigMaps, and Secrets in each namespace, and
+// Namespaces when it watches all namespaces; opts can narrow and configure that.
+// The cache runs until ctx is done, and the constructor returns once it has synced.
+func NewKubeCoreCacheWithOptions(ctx context.Context, client kubernetes.Interface, resyncDuration time.Duration, namespacesToWatch []string, opts ...Option) (*kubeCoreCaches, error) {
 	var cacheOptions coreCacheOptions
 	for _, opt := range opts {
 		opt(&cacheOptions)
 	}
 
-	if len(namesapcesToWatch) == 0 {
-		namesapcesToWatch = []string{metav1.NamespaceAll}
+	if len(namespacesToWatch) == 0 {
+		namespacesToWatch = []string{metav1.NamespaceAll}
 	}
 
-	if len(namesapcesToWatch) > 1 {
-		if stringutils.ContainsString(metav1.NamespaceAll, namesapcesToWatch) {
-			return nil, errors.Errorf("if metav1.NamespaceAll is provided, it must be the only one. namespaces provided %v", namesapcesToWatch)
+	if len(namespacesToWatch) > 1 {
+		if stringutils.ContainsString(metav1.NamespaceAll, namespacesToWatch) {
+			return nil, errors.Errorf("if metav1.NamespaceAll is provided, it must be the only one. namespaces provided %v", namespacesToWatch)
 		}
+	}
+	allNamespaces := len(namespacesToWatch) == 1 && namespacesToWatch[0] == metav1.NamespaceAll
+	if err := cacheOptions.validate(allNamespaces); err != nil {
+		return nil, err
 	}
 
 	var informers []cache.SharedIndexInformer
+	// addInformer tags ctx with the metric kind of resource, creates its informer,
+	// and registers it to run.
+	addInformer := func(ctx context.Context, resource Resource, metricKind string, objType runtime.Object,
+		list func(context.Context, metav1.ListOptions) (runtime.Object, error),
+		watch func(context.Context, metav1.ListOptions) (kubewatch.Interface, error),
+	) (cache.Indexer, error) {
+		typeCtx := ctx
+		if ctxWithTags, err := tag.New(ctx, tag.Insert(skkube.KeyKind, metricKind)); err == nil {
+			typeCtx = ctxWithTags
+		}
+		informer, err := cacheOptions.newInformer(typeCtx, resource, resyncDuration, objType, client, list, watch)
+		if err != nil {
+			return nil, err
+		}
+		informers = append(informers, informer)
+		return informer.GetIndexer(), nil
+	}
 
 	pods := map[string]kubelisters.PodLister{}
 	services := map[string]kubelisters.ServiceLister{}
 	configMaps := map[string]kubelisters.ConfigMapLister{}
 	secrets := map[string]kubelisters.SecretLister{}
 
-	for _, nsToWatch := range namesapcesToWatch {
+	for _, nsToWatch := range namespacesToWatch {
 		nsToWatch := nsToWatch
 		nsCtx := ctx
 		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(nsToWatch))); err == nil {
 			nsCtx = ctxWithTags
 		}
 
-		{
-			var typeCtx = nsCtx
-			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Pods")); err == nil {
-				typeCtx = ctxWithTags
+		if cacheOptions.watches(Pods, allNamespaces) {
+			c := client.CoreV1().Pods(nsToWatch)
+			indexer, err := addInformer(nsCtx, Pods, "Pods", &v1.Pod{},
+				func(ctx context.Context, o metav1.ListOptions) (runtime.Object, error) { return c.List(ctx, o) }, c.Watch)
+			if err != nil {
+				return nil, err
 			}
-			// Pods
-			watch := client.CoreV1().Pods(nsToWatch).Watch
-			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Pods(nsToWatch).List(ctx, options)
-			}
-			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Pod{}, list, watch)
-			informers = append(informers, informer)
-			lister := kubelisters.NewPodLister(informer.GetIndexer())
-			pods[nsToWatch] = lister
+			pods[nsToWatch] = kubelisters.NewPodLister(indexer)
 		}
-		{
-			var typeCtx = nsCtx
-			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Services")); err == nil {
-				typeCtx = ctxWithTags
+		if cacheOptions.watches(Services, allNamespaces) {
+			c := client.CoreV1().Services(nsToWatch)
+			indexer, err := addInformer(nsCtx, Services, "Services", &v1.Service{},
+				func(ctx context.Context, o metav1.ListOptions) (runtime.Object, error) { return c.List(ctx, o) }, c.Watch)
+			if err != nil {
+				return nil, err
 			}
-			// Services
-			watch := client.CoreV1().Services(nsToWatch).Watch
-			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Services(nsToWatch).List(ctx, options)
-			}
-			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Service{}, list, watch)
-			informers = append(informers, informer)
-			lister := kubelisters.NewServiceLister(informer.GetIndexer())
-			services[nsToWatch] = lister
+			services[nsToWatch] = kubelisters.NewServiceLister(indexer)
 		}
-		{
-			var typeCtx = nsCtx
-			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "ConfigMap")); err == nil {
-				typeCtx = ctxWithTags
+		if cacheOptions.watches(ConfigMaps, allNamespaces) {
+			c := client.CoreV1().ConfigMaps(nsToWatch)
+			indexer, err := addInformer(nsCtx, ConfigMaps, "ConfigMap", &v1.ConfigMap{},
+				func(ctx context.Context, o metav1.ListOptions) (runtime.Object, error) { return c.List(ctx, o) }, c.Watch)
+			if err != nil {
+				return nil, err
 			}
-			// ConfigMap
-			watch := client.CoreV1().ConfigMaps(nsToWatch).Watch
-			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().ConfigMaps(nsToWatch).List(ctx, options)
-			}
-			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.ConfigMap{}, list, watch)
-			informers = append(informers, informer)
-			lister := kubelisters.NewConfigMapLister(informer.GetIndexer())
-			configMaps[nsToWatch] = lister
+			configMaps[nsToWatch] = kubelisters.NewConfigMapLister(indexer)
 		}
-		{
-			var typeCtx = nsCtx
-			if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyKind, "Secrets")); err == nil {
-				typeCtx = ctxWithTags
+		if cacheOptions.watches(Secrets, allNamespaces) {
+			c := client.CoreV1().Secrets(nsToWatch)
+			indexer, err := addInformer(nsCtx, Secrets, "Secrets", &v1.Secret{},
+				func(ctx context.Context, o metav1.ListOptions) (runtime.Object, error) { return c.List(ctx, o) }, c.Watch)
+			if err != nil {
+				return nil, err
 			}
-			// Secrets
-			watch := func(ctx context.Context, options metav1.ListOptions) (kubewatch.Interface, error) {
-				options.FieldSelector = cacheOptions.secretsFieldSelector
-				return client.CoreV1().Secrets(nsToWatch).Watch(ctx, options)
-			}
-			list := func(options metav1.ListOptions) (runtime.Object, error) {
-				options.FieldSelector = cacheOptions.secretsFieldSelector
-				return client.CoreV1().Secrets(nsToWatch).List(ctx, options)
-			}
-			informer := skkube.NewSharedInformer(typeCtx, resyncDuration, &v1.Secret{}, list, watch)
-			informers = append(informers, informer)
-			lister := kubelisters.NewSecretLister(informer.GetIndexer())
-			secrets[nsToWatch] = lister
+			secrets[nsToWatch] = kubelisters.NewSecretLister(indexer)
 		}
-
 	}
 
 	var namespaceLister kubelisters.NamespaceLister
-	if len(namesapcesToWatch) == 1 && namesapcesToWatch[0] == metav1.NamespaceAll {
-
-		// Pods
-		watch := client.CoreV1().Namespaces().Watch
-		list := func(options metav1.ListOptions) (runtime.Object, error) {
-			return client.CoreV1().Namespaces().List(ctx, options)
-		}
+	if cacheOptions.watches(Namespaces, allNamespaces) {
 		nsCtx := ctx
-		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(metav1.NamespaceAll)), tag.Insert(skkube.KeyKind, "Namespaces")); err == nil {
+		if ctxWithTags, err := tag.New(nsCtx, tag.Insert(skkube.KeyNamespaceKind, skkube.NotEmptyValue(metav1.NamespaceAll))); err == nil {
 			nsCtx = ctxWithTags
 		}
-		informer := skkube.NewSharedInformer(nsCtx, resyncDuration, &v1.Namespace{}, list, watch)
-		informers = append(informers, informer)
-		namespaceLister = kubelisters.NewNamespaceLister(informer.GetIndexer())
+		c := client.CoreV1().Namespaces()
+		indexer, err := addInformer(nsCtx, Namespaces, "Namespaces", &v1.Namespace{},
+			func(ctx context.Context, o metav1.ListOptions) (runtime.Object, error) { return c.List(ctx, o) }, c.Watch)
+		if err != nil {
+			return nil, err
+		}
+		namespaceLister = kubelisters.NewNamespaceLister(indexer)
 	}
 
 	k := &kubeCoreCaches{
